@@ -1,0 +1,46 @@
+<svg width="1600" height="420" viewBox="0 0 1600 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Temperature Comfort Recommender</title>
+  <desc id="desc">Banner for the Home Assistant comfort recommendation project.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="0.5" stop-color="#0D1E33"/>
+      <stop offset="1" stop-color="#17324F"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="220" y1="50" x2="1380" y2="380" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#41BDF5"/>
+      <stop offset="1" stop-color="#7FF2C8"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1600" height="420" filterUnits="userSpaceOnUse">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="30"/>
+      <feOffset dy="20"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.02 0 0 0 0 0.05 0 0 0 0 0.10 0 0 0 0.45 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="420" rx="36" fill="url(#bg)"/>
+  <circle cx="1380" cy="90" r="150" fill="#41BDF5" fill-opacity="0.14"/>
+  <circle cx="250" cy="330" r="180" fill="#7FF2C8" fill-opacity="0.08"/>
+  <path d="M1270 60C1350 100 1410 160 1440 240" stroke="url(#accent)" stroke-width="14" stroke-linecap="round" opacity="0.65"/>
+  <path d="M1180 300C1285 286 1360 230 1420 150" stroke="url(#accent)" stroke-width="10" stroke-linecap="round" opacity="0.35"/>
+
+  <g filter="url(#shadow)">
+    <rect x="88" y="88" width="1424" height="244" rx="28" fill="#0B1628" fill-opacity="0.88" stroke="rgba(255,255,255,0.12)"/>
+  </g>
+
+  <text x="140" y="182" fill="#F4FAFF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" letter-spacing="-1">Temperature Comfort Recommender</text>
+  <text x="140" y="240" fill="#B9CADB" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="500">Comfort-based window recommendations for Home Assistant, built for HACS.</text>
+
+  <g>
+    <rect x="140" y="274" rx="18" width="206" height="44" fill="#17324F" stroke="rgba(255,255,255,0.12)"/>
+    <text x="168" y="304" fill="#D9F4FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="600">Multi-room</text>
+    <rect x="366" y="274" rx="18" width="178" height="44" fill="#17324F" stroke="rgba(255,255,255,0.12)"/>
+    <text x="394" y="304" fill="#D9F4FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="600">UI-first</text>
+    <rect x="564" y="274" rx="18" width="188" height="44" fill="#17324F" stroke="rgba(255,255,255,0.12)"/>
+    <text x="592" y="304" fill="#D9F4FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="600">Quiet hours</text>
+    <rect x="772" y="274" rx="18" width="190" height="44" fill="#17324F" stroke="rgba(255,255,255,0.12)"/>
+    <text x="800" y="304" fill="#D9F4FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="600">HACS-ready</text>
+  </g>
+</svg>
