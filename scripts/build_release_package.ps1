@@ -20,6 +20,7 @@ $items = @(
   (Join-Path $root "custom_components\temperature_comfort_recommender"),
   (Join-Path $root "README.md"),
   (Join-Path $root "LICENSE"),
+  (Join-Path $root "NOTICE"),
   (Join-Path $root "hacs.json"),
   (Join-Path $root "brand")
 ) | Where-Object { Test-Path -LiteralPath $_ }
