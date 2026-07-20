@@ -10,8 +10,9 @@ This folder contains the development documentation for the project.
 3. `docs/scoring-model.md`
 4. `docs/home-assistant-integration.md`
 5. `docs/testing.md`
-6. `docs/hacs-packaging.md`
-7. `docs/NOTICE.md`
+6. `docs/development.md`
+7. `docs/hacs-packaging.md`
+8. `docs/NOTICE.md`
 
 ## Purpose
 

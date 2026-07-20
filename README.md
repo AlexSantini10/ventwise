@@ -55,8 +55,16 @@ From Home Assistant, you should be able to:
 - [Scoring model](docs/scoring-model.md)
 - [Home Assistant integration](docs/home-assistant-integration.md)
 - [Testing](docs/testing.md)
+- [Development workflow](docs/development.md)
 - [HACS packaging](docs/hacs-packaging.md)
 - [License and disclaimer](docs/NOTICE.md)
+
+## Development
+
+- install the project in editable mode with the `dev` extra
+- run `pytest` for the local test suite
+- keep repository hygiene rules in `.gitignore`
+- keep the backlog in GitHub issues rather than duplicating it in the repo
 
 ## License
 
