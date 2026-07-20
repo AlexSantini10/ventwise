@@ -1,0 +1,14 @@
+{
+  "domain": "temperature_comfort_recommender",
+  "name": "Temperature Comfort Recommender",
+  "version": "0.1.0",
+  "documentation": "https://github.com/AlexSantini10/ventwise",
+  "issue_tracker": "https://github.com/AlexSantini10/ventwise/issues",
+  "codeowners": [
+    "@AlexSantini10"
+  ],
+  "config_flow": true,
+  "iot_class": "calculated",
+  "requirements": [],
+  "dependencies": []
+}

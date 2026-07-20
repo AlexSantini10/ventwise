@@ -1,0 +1,33 @@
+{
+  "title": "Temperature Comfort Recommender",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Temperature Comfort Recommender",
+        "description": "Choose the shared sensors and comfort thresholds."
+      },
+      "room": {
+        "title": "Room setup",
+        "description": "Configure one room at a time."
+      }
+    },
+    "error": {
+      "invalid_input": "One or more values are invalid."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Adjust Temperature Comfort Recommender",
+        "description": "Update shared settings and the number of rooms."
+      },
+      "room": {
+        "title": "Room setup",
+        "description": "Adjust one room at a time."
+      }
+    },
+    "error": {
+      "invalid_input": "One or more values are invalid."
+    }
+  }
+}

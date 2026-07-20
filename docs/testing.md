@@ -1,0 +1,61 @@
+# Testing
+
+## Source of Truth
+
+The test suite is the main safety net for the project. It should evolve with
+the core engine and the Home Assistant runtime layer.
+
+## What Must Be Verified
+
+### Functional behavior
+
+- open recommendation when outside is clearly more comfortable
+- close recommendation when inside is already better
+- no recommendation when the advantage is marginal
+
+### Seasonal behavior
+
+- summer scenario with outside cooler
+- summer scenario with outside warm but still better perceived
+- winter scenario with outside warmer and more comfortable
+- winter scenario with no real benefit
+
+### Noise control
+
+- notifications do not repeat too often
+- cooldown works
+- quiet hours block notifications correctly
+- short-lived spikes do not trigger alerts
+
+## Test Types
+
+- pure Python unit tests for scoring
+- integration tests for configuration handling
+- Home Assistant behavior tests for entity updates, if needed later
+- coverage checks on the reusable core and the HA runtime helpers
+
+## Recommended Test Matrix
+
+- inside hotter, outside cooler
+- inside cooler, outside hotter
+- inside more humid, outside drier
+- windy cold outside with warm inside
+- neutral conditions near the target
+- multi-room evaluation with different room weights
+- quiet hours and cooldown gate the recommendation
+
+## Local Workflow
+
+```bash
+pytest
+coverage run -m pytest
+coverage report
+```
+
+## Expectations
+
+- keep the reusable core fully testable without Home Assistant
+- add a focused regression test for every new scoring rule
+- prefer parametrized tests for scenario matrices
+- keep runtime helper tests small and deterministic
+
