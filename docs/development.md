@@ -30,6 +30,12 @@ coverage report
 - `tests/` for unit and runtime coverage
 - `docs/` for architecture and packaging notes
 
+## CI / Release
+
+- pushes to `main` run unit tests, HACS validation, Hassfest, and package build
+- tag pushes matching `v*` rerun validation, build the package, and create the GitHub Release
+- release checks reuse the same packaging script as CI
+
 ## Working Rules
 
 - keep the reusable core independent from Home Assistant APIs
@@ -41,4 +47,4 @@ coverage report
 
 - the core package should remain versioned through `pyproject.toml`
 - HACS publication continues to use the integration manifest version
-- release automation will be handled in a later task
+- release automation is handled by GitHub Actions
