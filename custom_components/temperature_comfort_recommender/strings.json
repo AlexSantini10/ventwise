@@ -16,6 +16,8 @@
           "outdoor_temperature_entity_id": "Outdoor temperature sensor",
           "outdoor_humidity_entity_id": "Outdoor humidity sensor",
           "wind_speed_entity_id": "Wind speed sensor",
+          "master_control_entity_id": "Master control entity",
+          "notification_device_id": "Notification device",
           "room_count": "Number of rooms"
         }
       },
@@ -51,6 +53,8 @@
           "outdoor_temperature_entity_id": "Outdoor temperature sensor",
           "outdoor_humidity_entity_id": "Outdoor humidity sensor",
           "wind_speed_entity_id": "Wind speed sensor",
+          "master_control_entity_id": "Master control entity",
+          "notification_device_id": "Notification device",
           "room_count": "Number of rooms"
         }
       },

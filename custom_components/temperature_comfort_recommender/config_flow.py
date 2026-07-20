@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import Any
 
-import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.core import callback
 
 from .const import CONF_ROOMS, DOMAIN, NAME
 from .const import CONF_ROOM_COUNT
@@ -77,9 +76,13 @@ class TemperatureComfortRecommenderConfigFlow(config_entries.ConfigFlow, domain=
         )
 
 
-async def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-    """Return the options flow handler."""
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Return the options flow handler."""
 
-    from .options_flow import TemperatureComfortRecommenderOptionsFlowHandler
+        from .options_flow import TemperatureComfortRecommenderOptionsFlowHandler
 
-    return TemperatureComfortRecommenderOptionsFlowHandler(config_entry)
+        return TemperatureComfortRecommenderOptionsFlowHandler(config_entry)

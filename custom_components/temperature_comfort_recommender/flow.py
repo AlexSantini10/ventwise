@@ -6,12 +6,15 @@ from collections.abc import Mapping
 
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.selector import DeviceSelector, EntitySelector
 
 from .const import (
     CONF_COOLDOWN_MINUTES,
     CONF_MINIMUM_SCORE,
+    CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_NOTIFICATION_DEVICE_ID,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
@@ -81,16 +84,24 @@ def build_global_schema(defaults: Mapping[str, object]) -> vol.Schema:
             ): vol.All(cv.string, vol.Match(r"^\d{2}:\d{2}(:\d{2})?$")),
             vol.Required(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID, ""),
-            ): cv.entity_id,
+                default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+            ): EntitySelector(),
             vol.Required(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID, ""),
-            ): cv.entity_id,
+                default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+            ): EntitySelector(),
             vol.Optional(
                 CONF_WIND_SPEED_ENTITY_ID,
-                default=defaults.get(CONF_WIND_SPEED_ENTITY_ID, ""),
-            ): cv.string,
+                default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
+            ): EntitySelector(),
+            vol.Optional(
+                CONF_MASTER_CONTROL_ENTITY_ID,
+                default=defaults.get(CONF_MASTER_CONTROL_ENTITY_ID) or None,
+            ): EntitySelector(),
+            vol.Optional(
+                CONF_NOTIFICATION_DEVICE_ID,
+                default=defaults.get(CONF_NOTIFICATION_DEVICE_ID) or None,
+            ): DeviceSelector(),
             vol.Required(
                 CONF_ROOM_COUNT,
                 default=defaults.get(CONF_ROOM_COUNT, DEFAULT_ROOM_COUNT),
@@ -107,12 +118,12 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int) -> vol.S
             vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, f"Room {room_number + 1}")): cv.string,
             vol.Required(
                 CONF_ROOM_TEMPERATURE_ENTITY_ID,
-                default=defaults.get(CONF_ROOM_TEMPERATURE_ENTITY_ID, ""),
-            ): cv.entity_id,
+                default=defaults.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
+            ): EntitySelector(),
             vol.Required(
                 CONF_ROOM_HUMIDITY_ENTITY_ID,
-                default=defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID, ""),
-            ): cv.entity_id,
+                default=defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
+            ): EntitySelector(),
             vol.Required(
                 CONF_ROOM_WEIGHT,
                 default=defaults.get(CONF_ROOM_WEIGHT, DEFAULT_ROOM_WEIGHT),
@@ -125,8 +136,13 @@ def normalize_global_config(user_input: Mapping[str, object]) -> dict[str, objec
     """Normalize global flow data for storage."""
 
     data = dict(user_input)
-    wind_sensor = str(data.get(CONF_WIND_SPEED_ENTITY_ID, "")).strip()
-    data[CONF_WIND_SPEED_ENTITY_ID] = wind_sensor or None
+    for key in (
+        CONF_WIND_SPEED_ENTITY_ID,
+        CONF_MASTER_CONTROL_ENTITY_ID,
+        CONF_NOTIFICATION_DEVICE_ID,
+    ):
+        value = data.get(key)
+        data[key] = value or None
     return data
 
 
