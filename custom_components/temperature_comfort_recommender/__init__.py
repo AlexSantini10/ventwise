@@ -11,7 +11,6 @@ try:  # Home Assistant is not installed in the unit-test environment.
     from homeassistant.const import Platform
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
-    from homeassistant.helpers import config_validation as cv
 
     from .coordinator import TemperatureComfortRecommenderCoordinator
 
@@ -20,14 +19,12 @@ try:  # Home Assistant is not installed in the unit-test environment.
         Platform.SENSOR,
         Platform.SWITCH,
     ]
-    CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
     HA_AVAILABLE = True
 except ModuleNotFoundError:  # pragma: no cover - test-time fallback
     ConfigEntry = Any  # type: ignore[assignment]
     HomeAssistant = Any  # type: ignore[assignment]
     TemperatureComfortRecommenderCoordinator = Any  # type: ignore[assignment]
     PLATFORMS: list[Any] = []
-    CONFIG_SCHEMA = lambda config: config  # type: ignore[assignment]
     HA_AVAILABLE = False
 
 
@@ -36,13 +33,6 @@ class IntegrationRuntimeData:
     """Runtime storage for the integration."""
 
     coordinator: TemperatureComfortRecommenderCoordinator
-
-
-async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
-    """Set up the integration from YAML, if present."""
-
-    hass.data.setdefault(DOMAIN, {})
-    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
