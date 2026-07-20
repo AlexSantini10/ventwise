@@ -1,0 +1,24 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+addopts = "-ra"
+filterwarnings = [
+  "error::DeprecationWarning",
+  "error::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["temperature_comfort_recommender_core", "custom_components.temperature_comfort_recommender"]
+omit = [
+  "tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+precision = 2
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+]

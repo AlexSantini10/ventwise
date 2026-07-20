@@ -126,3 +126,39 @@ def test_recommender_returns_none_for_quiet_hours() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.blocked_by == "quiet_hours"
+
+
+def test_recommender_prefers_the_best_weighted_room() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    rooms = [
+        RoomProfile(
+            name="Studio",
+            indoor=RoomObservation(temperature_c=27.0, humidity_percent=55.0),
+            weight=3.0,
+        ),
+        RoomProfile(
+            name="Kitchen",
+            indoor=RoomObservation(temperature_c=29.5, humidity_percent=60.0),
+            weight=0.5,
+        ),
+    ]
+    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
+
+    result = recommender.evaluate(rooms, outdoor)
+
+    assert result.action == RecommendationAction.OPEN
+    assert result.best_room == "Studio"
+    assert len(result.room_recommendations) == 2
+    assert result.room_recommendations[0].room_name == "Studio"
+
+
+def test_recommender_returns_none_when_no_rooms_are_configured() -> None:
+    recommender = ComfortRecommender()
+    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
+
+    result = recommender.evaluate([], outdoor)
+
+    assert result.action == RecommendationAction.NONE
+    assert result.reason == "No rooms configured."

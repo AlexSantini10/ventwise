@@ -34,8 +34,11 @@ from custom_components.temperature_comfort_recommender.runtime import (
 def test_state_helpers_parse_values() -> None:
     assert state_to_float(SimpleNamespace(state="21.5")) == 21.5
     assert state_to_float(SimpleNamespace(state="unknown")) is None
+    assert state_to_float(SimpleNamespace(state="not-a-number")) is None
     assert state_to_bool(SimpleNamespace(state="on")) is True
     assert state_to_bool(SimpleNamespace(state="off")) is False
+    assert state_to_bool(SimpleNamespace(state="1")) is True
+    assert state_to_bool(SimpleNamespace(state="0")) is False
 
 
 def test_quiet_hours_support_wraparound_midnight() -> None:
@@ -87,3 +90,24 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert len(rooms) == 1
     assert rooms[0].name == "Camera"
     assert rooms[0].weight == 1.5
+
+
+def test_build_room_profiles_skips_missing_sensor_values() -> None:
+    config = build_integration_config(
+        {
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                    CONF_ROOM_WEIGHT: 1.0,
+                }
+            ],
+        }
+    )
+
+    rooms, outdoor = build_room_profiles(config, {}.get)
+
+    assert outdoor is None
+    assert rooms == []
