@@ -11,10 +11,12 @@ The UI should allow the user to:
 
 - add and remove rooms
 - select temperature and humidity sensors per room
+- define notification targets and the devices that should receive them
 - define the ideal comfort temperature
+- configure all entity references used by the integration
 - set notification cooldown
-- define quiet hours
-- temporarily disable notifications
+- define quiet hours and do-not-disturb windows
+- temporarily disable notifications without disabling the whole integration
 - enable or disable the whole integration
 
 ## Implementation Pattern
@@ -29,13 +31,17 @@ Use `options flow` for later edits.
 
 ### Device and Entities
 
-Expose one logical device that groups:
+Expose one logical device that groups runtime state and controls:
 
 - recommendation state
 - score
 - reason
 - master enable control
 - quiet-hour or notification state
+- notification target or delivery state
+
+Use the config flow and options flow for all user-editable inputs such as room
+sensors, comfort temperature, and notification target entities.
 
 ## Storage
 

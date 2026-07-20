@@ -36,8 +36,11 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   - score
   - reason
   - master enable/disable
-  - quiet hours / notification controls
+  - quiet hours / do-not-disturb controls
+  - notification target or delivery state
 - Stores room configuration and thresholds in the integration config entry.
+- Keeps all user-editable entity references and comfort settings in the
+  config entry, surfaced through the UI.
 
 ### 3. HACS Packaging
 
@@ -51,9 +54,11 @@ The user should be able to:
 
 - define rooms from the UI
 - choose the sensors for each room
+- choose notification targets and devices
 - set the ideal comfort temperature
+- configure all entity selectors used by the integration
 - configure notification frequency
-- configure quiet hours, such as night silence
+- configure quiet hours and do-not-disturb windows, such as night silence
 - temporarily block notifications without disabling the whole integration
 
 ## Recommended Entity Model
