@@ -13,6 +13,7 @@ custom integration.
 - documentation for installation and configuration
 - a versioning strategy for releases
 - a clean development workflow and repeatable test setup
+- GitHub Actions for HACS validation, Hassfest, and release packaging
 
 ## Suggested Repository Shape
 
@@ -35,4 +36,5 @@ custom integration.
 - The integration should have clear metadata and a stable slug.
 - The final public name should remain readable and user-friendly.
 - the repository root should stay clean and reproducible for releases
+- release artifacts should be produced automatically for installation in Home Assistant
 

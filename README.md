@@ -65,6 +65,8 @@ From Home Assistant, you should be able to:
 - run `pytest` for the local test suite
 - keep repository hygiene rules in `.gitignore`
 - keep the backlog in GitHub issues rather than duplicating it in the repo
+- CI validates HACS and Hassfest before releases
+- release workflows publish an installable Home Assistant zip artifact
 
 ## License
 
