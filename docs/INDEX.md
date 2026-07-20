@@ -12,7 +12,6 @@ This folder contains the development documentation for the project.
 5. `docs/testing.md`
 6. `docs/hacs-packaging.md`
 7. `docs/NOTICE.md`
-8. `docs/TODO.md`
 
 ## Purpose
 
@@ -29,4 +28,4 @@ The project is intended to become:
 - Keep the UI as the primary configuration path.
 - Keep the logic bidirectional: summer and winter must both work.
 - Keep anti-spam behavior central to the design.
-- Keep the backlog mirrored in GitHub issues, not duplicated in detail here.
+- Keep the backlog only in GitHub issues; do not duplicate it in the repo.
