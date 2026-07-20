@@ -12,6 +12,7 @@ custom integration.
 - metadata describing the integration
 - documentation for installation and configuration
 - a versioning strategy for releases
+- a clean development workflow and repeatable test setup
 
 ## Suggested Repository Shape
 
@@ -33,4 +34,5 @@ custom integration.
 - The repository should be ready to add as a HACS custom repository.
 - The integration should have clear metadata and a stable slug.
 - The final public name should remain readable and user-friendly.
+- the repository root should stay clean and reproducible for releases
 
