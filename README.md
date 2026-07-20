@@ -1,6 +1,6 @@
 # Temperature Comfort Recommender
 
-**A Home Assistant comfort assistant for windows, built for HACS.**
+**A Home Assistant custom integration for comfort-based window recommendations, built for HACS.**
 
 Temperature Comfort Recommender helps you decide when opening or closing
 windows is likely to improve indoor comfort. It evaluates temperature,
@@ -9,6 +9,19 @@ back to Home Assistant.
 
 This project is a native Home Assistant custom integration, not an AppDaemon
 app.
+
+## GitHub metadata
+
+If you want the repository settings to match the project scope, use:
+
+- Description: `Home Assistant custom integration for comfort-based window recommendations`
+- Topics:
+  - `home-assistant`
+  - `hacs`
+  - `custom-integration`
+  - `home-automation`
+  - `comfort`
+  - `climate`
 
 ## Why this project exists
 
