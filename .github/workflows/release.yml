@@ -63,6 +63,45 @@ jobs:
         run: |
           ./scripts/build_release_package.ps1 -OutputPath dist/ventwise.zip
 
+      - name: Verify package structure
+        if: steps.release_check.outputs.exists != 'true'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          import zipfile
+
+          zip_path = pathlib.Path("dist/ventwise.zip")
+          repo_root = pathlib.Path(".")
+          integration_dir = repo_root / "custom_components" / "ventwise"
+
+          with zipfile.ZipFile(zip_path) as archive:
+              entries = {entry.filename for entry in archive.infolist() if not entry.is_dir()}
+
+          expected = {
+              path.relative_to(integration_dir).as_posix()
+              for path in integration_dir.rglob("*")
+              if path.is_file()
+              and path.name != ".gitkeep"
+              and "__pycache__" not in path.parts
+              and path.suffix != ".pyc"
+          }
+          expected.update({"README.md", "LICENSE", "NOTICE", "hacs.json"})
+
+          if any(entry.startswith("custom_components/ventwise/") for entry in entries):
+              raise SystemExit("package contains an extra custom_components/ventwise/ wrapper")
+
+          if any("__pycache__" in entry or entry.endswith(".pyc") for entry in entries):
+              raise SystemExit("package contains cached Python artifacts")
+
+          missing = sorted(expected.difference(entries))
+          extra = sorted(entries.difference(expected))
+          if missing:
+              raise SystemExit(f"package missing required entries: {missing}")
+          if extra:
+              raise SystemExit(f"package contains unexpected entries: {extra}")
+          PY
+
       - name: Create GitHub Release
         if: steps.release_check.outputs.exists != 'true'
         env:
