@@ -49,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -e .[dev]
 
+      - name: Install Home Assistant test dependencies
+        run: python -m pip install homeassistant
+
       - name: Run config flow tests
         run: python -m pytest tests/test_flow.py -q
 
