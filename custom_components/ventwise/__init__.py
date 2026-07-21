@@ -3,29 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .const import DOMAIN, NAME
 
-try:  # Home Assistant is not installed in the unit-test environment.
-    from homeassistant.const import Platform
+if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
     from .coordinator import VentWiseCoordinator
-
-    PLATFORMS: list[Platform] = [
-        Platform.BINARY_SENSOR,
-        Platform.SENSOR,
-        Platform.SWITCH,
-    ]
-    HA_AVAILABLE = True
-except ModuleNotFoundError:  # pragma: no cover - test-time fallback
+    VentWiseCoordinator = Any  # type: ignore[assignment]
+else:
     ConfigEntry = Any  # type: ignore[assignment]
     HomeAssistant = Any  # type: ignore[assignment]
     VentWiseCoordinator = Any  # type: ignore[assignment]
-    PLATFORMS: list[Any] = []
-    HA_AVAILABLE = False
 
 
 @dataclass(slots=True)
@@ -38,8 +29,9 @@ class IntegrationRuntimeData:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a config entry."""
 
-    if not HA_AVAILABLE:  # pragma: no cover - safety net for local imports
-        return True
+    from homeassistant.const import Platform
+
+    from .coordinator import VentWiseCoordinator
 
     coordinator = VentWiseCoordinator(
         hass,
@@ -51,17 +43,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(
+        entry,
+        [
+            Platform.BINARY_SENSOR,
+            Platform.SENSOR,
+            Platform.SWITCH,
+        ],
+    )
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
 
-    if not HA_AVAILABLE:  # pragma: no cover - safety net for local imports
-        return True
+    from homeassistant.const import Platform
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_unload_platforms(
+        entry,
+        [
+            Platform.BINARY_SENSOR,
+            Platform.SENSOR,
+            Platform.SWITCH,
+        ],
+    )
     if unload_ok:
         domain_data = hass.data.get(DOMAIN, {})
         domain_data.pop(entry.entry_id, None)
@@ -71,8 +76,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload the integration when config entry options change."""
 
-    if not HA_AVAILABLE:  # pragma: no cover - safety net for local imports
-        return None
-
     await hass.config_entries.async_reload(entry.entry_id)
-
