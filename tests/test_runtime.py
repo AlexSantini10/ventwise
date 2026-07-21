@@ -154,6 +154,34 @@ def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_miss
     assert len(rooms) == 1
 
 
+def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> None:
+    config = build_integration_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_WEIGHT: 1.0,
+                }
+            ],
+        }
+    )
+
+    fake_states = {
+        "weather.home": SimpleNamespace(state="21.5", attributes={}),
+        "sensor.room_temp": SimpleNamespace(state="25.0"),
+    }
+
+    rooms, outdoor = build_room_profiles(config, fake_states.get)
+
+    assert outdoor is not None
+    assert outdoor.temperature_c == 21.5
+    assert outdoor.humidity_percent == 21.5
+    assert outdoor.wind_speed_m_s == 21.5
+    assert rooms[0].name == "Camera"
+
+
 def test_build_room_profiles_skips_unknown_room_temperature() -> None:
     config = build_integration_config(
         {
@@ -205,3 +233,21 @@ def test_runtime_state_round_trips_through_storage() -> None:
     assert runtime_state[CONF_RUNTIME_LAST_ACTION_STARTED_AT] == started_at.isoformat()
     assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE] == ["open", "Camera"]
     assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_AT] == notification_at.isoformat()
+
+
+def test_load_runtime_state_ignores_corrupted_markers() -> None:
+    loaded = load_runtime_state(
+        {
+            CONF_RUNTIME_STATE: {
+                CONF_RUNTIME_LAST_ACTION_SIGNATURE: "invalid",
+                CONF_RUNTIME_LAST_ACTION_STARTED_AT: "not-a-timestamp",
+                CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE: ["open", "Camera"],
+                CONF_RUNTIME_LAST_NOTIFICATION_AT: "2026-07-21T13:05:00+00:00",
+            }
+        }
+    )
+
+    assert loaded.last_action_signature is None
+    assert loaded.last_action_started_at is None
+    assert loaded.last_notification_signature == ("open", "Camera")
+    assert loaded.last_notification_at == datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)

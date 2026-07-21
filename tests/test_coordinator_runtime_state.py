@@ -95,3 +95,22 @@ def test_coordinator_persists_runtime_state_without_dropping_options() -> None:
     ]
     assert persisted[CONF_RUNTIME_STATE][CONF_RUNTIME_LAST_ACTION_STARTED_AT] == timestamp.isoformat()
     assert entry.options == persisted
+
+
+def test_coordinator_ignores_corrupted_runtime_state_payload() -> None:
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_RUNTIME_STATE: {
+                CONF_RUNTIME_LAST_ACTION_SIGNATURE: "invalid",
+                CONF_RUNTIME_LAST_ACTION_STARTED_AT: "not-a-timestamp",
+                CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE: ["open", "Camera"],
+                CONF_RUNTIME_LAST_NOTIFICATION_AT: "also-invalid",
+            },
+        }
+    )
+
+    assert coordinator._last_action_signature is None
+    assert coordinator._last_action_started_at is not None
+    assert coordinator._last_notification_signature == ("open", "Camera")
+    assert coordinator._last_notification_at is not None
