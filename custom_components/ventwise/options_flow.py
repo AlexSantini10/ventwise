@@ -11,6 +11,7 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import CONF_ROOM_KIND, CONF_ROOM_NAME, CONF_ROOM_SELECTION, CONF_ROOMS, NAME
 from .flow import (
+    ConfigValidationError,
     build_advanced_options_schema,
     build_basic_options_schema,
     build_room_schema,
@@ -57,6 +58,8 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             try:
                 self._current_config.update(normalize_basic_config(user_input))
                 return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
 
@@ -74,6 +77,8 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             try:
                 self._current_config.update(normalize_advanced_config(user_input))
                 return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
 
@@ -204,6 +209,8 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 self._current_config[CONF_ROOMS] = deepcopy(self._rooms)
                 self._selected_room_index = None
                 return await self.async_step_rooms()
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
 
