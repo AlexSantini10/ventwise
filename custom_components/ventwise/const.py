@@ -42,6 +42,11 @@ CONF_ROOM_START_ENTITY_ID = "start_entity_id"
 CONF_ROOM_STOP_ENTITY_ID = "stop_entity_id"
 CONF_ROOM_PAUSE_ENTITY_ID = "pause_entity_id"
 CONF_ROOM_COUNT = "room_count"
+CONF_RUNTIME_STATE = "_runtime_state"
+CONF_RUNTIME_LAST_ACTION_SIGNATURE = "last_action_signature"
+CONF_RUNTIME_LAST_ACTION_STARTED_AT = "last_action_started_at"
+CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE = "last_notification_signature"
+CONF_RUNTIME_LAST_NOTIFICATION_AT = "last_notification_at"
 
 MIN_ROOM_WEIGHT = 0.1
 MAX_ROOM_WEIGHT = 3.0

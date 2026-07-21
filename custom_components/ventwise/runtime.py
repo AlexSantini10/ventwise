@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable, Mapping
 from datetime import datetime, time
-from typing import Any, Callable, Mapping
+from typing import Any
 
 from ventwise_core import (
     ComfortObservation,
@@ -38,6 +39,11 @@ from .const import (
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_WEIGHT,
     CONF_ROOMS,
+    CONF_RUNTIME_STATE,
+    CONF_RUNTIME_LAST_ACTION_SIGNATURE,
+    CONF_RUNTIME_LAST_ACTION_STARTED_AT,
+    CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
+    CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
@@ -106,6 +112,16 @@ class RuntimeSnapshot:
     last_updated: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class RuntimeState:
+    """Persisted runtime markers that should survive restarts."""
+
+    last_action_signature: tuple[str, str] | None = None
+    last_action_started_at: datetime | None = None
+    last_notification_signature: tuple[str, str] | None = None
+    last_notification_at: datetime | None = None
+
+
 def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     """Convert raw config entry data into a runtime config object."""
 
@@ -156,6 +172,39 @@ def build_scoring_config(config: IntegrationConfig) -> ScoringConfig:
         minimum_score=config.minimum_score,
         minimum_stability_seconds=config.stability_minutes * 60,
     )
+
+
+def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
+    """Load persisted runtime markers from stored config entry data."""
+
+    raw_state = data.get(CONF_RUNTIME_STATE)
+    if not isinstance(raw_state, Mapping):
+        return RuntimeState()
+    return RuntimeState(
+        last_action_signature=_load_signature(raw_state.get(CONF_RUNTIME_LAST_ACTION_SIGNATURE)),
+        last_action_started_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_ACTION_STARTED_AT)),
+        last_notification_signature=_load_signature(
+            raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE)
+        ),
+        last_notification_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_AT)),
+    )
+
+
+def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
+    """Serialize persisted runtime markers for storage in the config entry."""
+
+    return {
+        CONF_RUNTIME_STATE: {
+            CONF_RUNTIME_LAST_ACTION_SIGNATURE: list(state.last_action_signature)
+            if state.last_action_signature is not None
+            else None,
+            CONF_RUNTIME_LAST_ACTION_STARTED_AT: _dump_datetime(state.last_action_started_at),
+            CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE: list(state.last_notification_signature)
+            if state.last_notification_signature is not None
+            else None,
+            CONF_RUNTIME_LAST_NOTIFICATION_AT: _dump_datetime(state.last_notification_at),
+        }
+    }
 
 
 def state_to_float(state: Any | None) -> float | None:
@@ -289,3 +338,25 @@ def _parse_time(value: str) -> time:
     if len(text.split(":")) == 2:
         return datetime.strptime(text, "%H:%M").time()
     return datetime.strptime(text, "%H:%M:%S").time()
+
+
+def _load_signature(value: Any) -> tuple[str, str] | None:
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        return None
+    first, second = value
+    return str(first), str(second)
+
+
+def _load_datetime(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _dump_datetime(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    return value.isoformat()
