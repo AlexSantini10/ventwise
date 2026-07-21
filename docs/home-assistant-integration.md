@@ -9,7 +9,7 @@ through HACS.
 
 The UI should allow the user to:
 
-- add and remove rooms
+- add, edit, and remove rooms
 - select temperature and humidity sensors per room
 - define notification targets and the devices that should receive them
 - define the ideal comfort temperature
@@ -18,6 +18,7 @@ The UI should allow the user to:
 - define quiet hours and do-not-disturb windows
 - temporarily disable notifications without disabling the whole integration
 - enable or disable the whole integration
+- keep runtime state after a restart
 
 ## Implementation Pattern
 
@@ -29,6 +30,11 @@ Use `config flow` for first-time setup.
 
 Use `options flow` for later edits.
 
+### Validation
+
+Validate entity domains, numeric ranges, and room definitions before storing
+changes in the config entry.
+
 ### Device and Entities
 
 Expose one logical device that groups runtime state and controls:
@@ -39,6 +45,7 @@ Expose one logical device that groups runtime state and controls:
 - master enable control
 - quiet-hour or notification state
 - notification target or delivery state
+- detailed debug attributes for the recommendation sensors
 
 Use the config flow and options flow for all user-editable inputs such as room
 sensors, comfort temperature, and notification target entities.
@@ -47,10 +54,12 @@ sensors, comfort temperature, and notification target entities.
 
 Store configuration in the integration config entry.
 
+Store runtime markers in the same entry so cooldown and last-action state
+survive restarts.
+
 Do not require the user to edit YAML for normal operation.
 
 ## Core vs Integration Boundary
 
 - Core engine: scoring and recommendation decisions.
 - Integration layer: Home Assistant entities, storage, UI, and scheduling.
-

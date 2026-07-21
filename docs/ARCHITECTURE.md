@@ -39,8 +39,12 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   - quiet hours / do-not-disturb controls
   - notification target or delivery state
 - Stores room configuration and thresholds in the integration config entry.
+- Stores runtime markers in the integration config entry so cooldown and
+  last-action state survive restarts.
 - Keeps all user-editable entity references and comfort settings in the
   config entry, surfaced through the UI.
+- Validates room definitions and numeric limits in the config flow and options
+  flow before data is saved.
 
 ### 3. HACS Packaging
 
@@ -60,6 +64,7 @@ The user should be able to:
 - configure notification frequency
 - configure quiet hours and do-not-disturb windows, such as night silence
 - temporarily block notifications without disabling the whole integration
+- inspect detailed debug attributes on the recommendation sensors
 
 ## Recommended Entity Model
 
