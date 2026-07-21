@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.selector import DeviceSelector, EntitySelector
+from homeassistant.helpers.selector import (
+    DeviceSelector,
+    EntitySelector,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .const import (
     CONF_COOLDOWN_MINUTES,
@@ -77,11 +84,11 @@ def build_global_schema(defaults: Mapping[str, object]) -> vol.Schema:
             vol.Required(
                 CONF_QUIET_HOURS_START,
                 default=defaults.get(CONF_QUIET_HOURS_START, DEFAULT_QUIET_HOURS_START),
-            ): vol.All(cv.string, vol.Match(r"^\d{2}:\d{2}(:\d{2})?$")),
+            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
             vol.Required(
                 CONF_QUIET_HOURS_END,
                 default=defaults.get(CONF_QUIET_HOURS_END, DEFAULT_QUIET_HOURS_END),
-            ): vol.All(cv.string, vol.Match(r"^\d{2}:\d{2}(:\d{2})?$")),
+            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
             vol.Required(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
@@ -136,6 +143,8 @@ def normalize_global_config(user_input: Mapping[str, object]) -> dict[str, objec
     """Normalize global flow data for storage."""
 
     data = dict(user_input)
+    data[CONF_QUIET_HOURS_START] = _normalize_time_string(data[CONF_QUIET_HOURS_START])
+    data[CONF_QUIET_HOURS_END] = _normalize_time_string(data[CONF_QUIET_HOURS_END])
     for key in (
         CONF_WIND_SPEED_ENTITY_ID,
         CONF_MASTER_CONTROL_ENTITY_ID,
@@ -164,3 +173,10 @@ def split_config_data(data: Mapping[str, object]) -> tuple[dict[str, object], li
     }
     rooms = [dict(room) for room in data.get(CONF_ROOMS, [])]
     return global_data, rooms
+
+
+def _normalize_time_string(value: object) -> str:
+    text = str(value).strip()
+    if len(text.split(":")) == 2:
+        return datetime.strptime(text, "%H:%M").strftime("%H:%M:%S")
+    return datetime.strptime(text, "%H:%M:%S").strftime("%H:%M:%S")
