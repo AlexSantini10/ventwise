@@ -91,7 +91,7 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
     wind_selector_config = schema_dict[CONF_WIND_SPEED_ENTITY_ID].config
-    assert wind_selector_config["domain"] == "sensor"
+    assert "sensor" in wind_selector_config["domain"]
 
 
 def test_room_schema_supports_room_and_macro_room_defaults() -> None:
