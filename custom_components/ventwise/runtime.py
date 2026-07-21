@@ -262,9 +262,11 @@ def build_room_profiles(
         state_getter,
         "humidity",
     )
-    if outdoor_temp is None or outdoor_humidity is None:
+    if outdoor_temp is None:
         outdoor = None
     else:
+        if outdoor_humidity is None:
+            outdoor_humidity = 50.0
         wind_speed = _outdoor_value(
             config.outdoor_weather_entity_id,
             config.wind_speed_entity_id,
