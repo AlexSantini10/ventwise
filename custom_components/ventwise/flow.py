@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import datetime
+from dataclasses import dataclass
 
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
@@ -53,6 +54,14 @@ from .const import (
     MAX_ROOM_WEIGHT,
     MIN_ROOM_WEIGHT,
 )
+
+
+@dataclass(slots=True)
+class ConfigValidationError(ValueError):
+    """Validation error tied to a specific config field."""
+
+    field: str
+    message: str = "invalid_input"
 
 
 def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
@@ -194,9 +203,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     """Normalize minimal setup data."""
 
     data = dict(user_input)
+    data[CONF_OUTDOOR_WEATHER_ENTITY_ID] = _normalize_required_entity_id(
+        data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID), CONF_OUTDOOR_WEATHER_ENTITY_ID, "weather"
+    )
     _normalize_optional_entities(
         data,
-        CONF_OUTDOOR_WEATHER_ENTITY_ID,
         CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
         CONF_NOTIFICATION_DEVICE_ID,
     )
@@ -207,8 +218,32 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     """Normalize advanced flow data for storage."""
 
     data = dict(user_input)
-    data[CONF_QUIET_HOURS_START] = _normalize_time_string(data[CONF_QUIET_HOURS_START])
-    data[CONF_QUIET_HOURS_END] = _normalize_time_string(data[CONF_QUIET_HOURS_END])
+    data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(
+        data.get(CONF_TARGET_TEMPERATURE_C),
+        CONF_TARGET_TEMPERATURE_C,
+        10.0,
+        30.0,
+    )
+    data[CONF_SOFT_OUTDOOR_THRESHOLD_C] = _normalize_float(
+        data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C),
+        CONF_SOFT_OUTDOOR_THRESHOLD_C,
+        -10.0,
+        40.0,
+    )
+    data[CONF_COOLDOWN_MINUTES] = _normalize_int(
+        data.get(CONF_COOLDOWN_MINUTES),
+        CONF_COOLDOWN_MINUTES,
+        0,
+        24 * 60,
+    )
+    data[CONF_STABILITY_MINUTES] = _normalize_int(
+        data.get(CONF_STABILITY_MINUTES),
+        CONF_STABILITY_MINUTES,
+        0,
+        24 * 60,
+    )
+    data[CONF_QUIET_HOURS_START] = _normalize_time_string(data[CONF_QUIET_HOURS_START], CONF_QUIET_HOURS_START)
+    data[CONF_QUIET_HOURS_END] = _normalize_time_string(data[CONF_QUIET_HOURS_END], CONF_QUIET_HOURS_END)
     _normalize_optional_entities(
         data,
         CONF_QUIET_HOURS_START_ENTITY_ID,
@@ -218,6 +253,19 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         CONF_WIND_SPEED_ENTITY_ID,
         CONF_MASTER_CONTROL_ENTITY_ID,
     )
+    _normalize_optional_entity_ids(
+        data,
+        CONF_QUIET_HOURS_START_ENTITY_ID,
+        CONF_QUIET_HOURS_END_ENTITY_ID,
+        CONF_MASTER_CONTROL_ENTITY_ID,
+    )
+    _normalize_optional_entity_ids(
+        data,
+        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+        CONF_WIND_SPEED_ENTITY_ID,
+        domain="sensor",
+    )
     return data
 
 
@@ -225,14 +273,32 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     """Normalize room flow data for storage."""
 
     data = dict(user_input)
-    data[CONF_ROOM_KIND] = room_kind
+    data[CONF_ROOM_KIND] = _normalize_room_kind(room_kind)
     data[CONF_ROOM_NAME] = str(data[CONF_ROOM_NAME]).strip()
+    if not data[CONF_ROOM_NAME]:
+        raise ConfigValidationError(CONF_ROOM_NAME)
+    data[CONF_ROOM_WEIGHT] = _normalize_float(
+        data.get(CONF_ROOM_WEIGHT),
+        CONF_ROOM_WEIGHT,
+        MIN_ROOM_WEIGHT,
+        MAX_ROOM_WEIGHT,
+    )
     _normalize_optional_entities(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
         CONF_ROOM_PAUSE_ENTITY_ID,
+    )
+    data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
+        data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
+        CONF_ROOM_TEMPERATURE_ENTITY_ID,
+        "sensor",
+    )
+    _normalize_optional_entity_ids(
+        data,
+        CONF_ROOM_HUMIDITY_ENTITY_ID,
+        domain="sensor",
     )
     return data
 
@@ -259,8 +325,71 @@ def _normalize_optional_entities(data: dict[str, object], *keys: str) -> None:
         data[key] = text or None
 
 
-def _normalize_time_string(value: object) -> str:
+def _normalize_optional_entity_ids(
+    data: dict[str, object],
+    *keys: str,
+    domain: str | None = None,
+) -> None:
+    for key in keys:
+        value = data.get(key)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if not text:
+            data[key] = None
+            continue
+        data[key] = _normalize_required_entity_id(text, key, domain)
+
+
+def _normalize_int(value: object, field: str, minimum: int, maximum: int) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigValidationError(field) from exc
+    if number < minimum or number > maximum:
+        raise ConfigValidationError(field)
+    return number
+
+
+def _normalize_float(value: object, field: str, minimum: float, maximum: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigValidationError(field) from exc
+    if number < minimum or number > maximum:
+        raise ConfigValidationError(field)
+    return number
+
+
+def _normalize_required_entity_id(value: object, field: str, domain: str | None = None) -> str:
+    if value is None:
+        raise ConfigValidationError(field)
+    text = str(value).strip()
+    if not text:
+        raise ConfigValidationError(field)
+    if "." not in text or text.startswith(".") or text.endswith("."):
+        raise ConfigValidationError(field)
+    entity_domain = text.split(".", 1)[0]
+    if domain is not None and entity_domain != domain:
+        raise ConfigValidationError(field)
+    return text
+
+
+def _normalize_room_kind(value: object) -> str:
+    text = str(value).strip()
+    if text not in {"room", "macro_room"}:
+        raise ConfigValidationError(CONF_ROOM_KIND)
+    return text
+
+
+def _normalize_time_string(value: object, field: str) -> str:
     text = str(value).strip()
     if len(text.split(":")) == 2:
-        return datetime.strptime(text, "%H:%M").strftime("%H:%M:%S")
-    return datetime.strptime(text, "%H:%M:%S").strftime("%H:%M:%S")
+        try:
+            return datetime.strptime(text, "%H:%M").strftime("%H:%M:%S")
+        except ValueError as exc:
+            raise ConfigValidationError(field) from exc
+    try:
+        return datetime.strptime(text, "%H:%M:%S").strftime("%H:%M:%S")
+    except ValueError as exc:
+        raise ConfigValidationError(field) from exc

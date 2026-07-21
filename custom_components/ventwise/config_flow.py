@@ -8,7 +8,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 
 from .const import DOMAIN, NAME
-from .flow import build_config_schema, normalize_basic_config
+from .flow import ConfigValidationError, build_config_schema, normalize_basic_config
 
 
 class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -27,6 +27,8 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 self._setup_data = normalize_basic_config(user_input)
                 return self.async_create_entry(title=NAME, data={}, options=self._setup_data)
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
 

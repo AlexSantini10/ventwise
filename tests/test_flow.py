@@ -33,6 +33,7 @@ from custom_components.ventwise.const import (
     CONF_WIND_SPEED_ENTITY_ID,
 )
 from custom_components.ventwise.flow import (
+    ConfigValidationError,
     build_advanced_options_schema,
     build_basic_options_schema,
     build_config_schema,
@@ -126,6 +127,20 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     assert data[CONF_NOTIFICATION_DEVICE_ID] is None
 
 
+def test_normalize_basic_config_rejects_missing_weather_source() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_basic_config({})
+
+    assert exc_info.value.field == CONF_OUTDOOR_WEATHER_ENTITY_ID
+
+
+def test_normalize_basic_config_rejects_invalid_weather_domain() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_basic_config({CONF_OUTDOOR_WEATHER_ENTITY_ID: "sensor.home"})
+
+    assert exc_info.value.field == CONF_OUTDOOR_WEATHER_ENTITY_ID
+
+
 def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
     """Advanced settings should accept short times and trim optional entities."""
 
@@ -148,6 +163,34 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
     assert data[CONF_QUIET_HOURS_END_ENTITY_ID] is None
     assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] == "sensor.outdoor_temp"
     assert data[CONF_WIND_SPEED_ENTITY_ID] == "sensor.wind"
+
+
+def test_normalize_advanced_config_rejects_invalid_time_format() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_advanced_config(
+            {
+                CONF_QUIET_HOURS_START: "25:00",
+                CONF_QUIET_HOURS_END: "07:00",
+            }
+        )
+
+    assert exc_info.value.field == CONF_QUIET_HOURS_START
+
+
+def test_normalize_advanced_config_rejects_out_of_range_numeric_values() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_advanced_config(
+            {
+                CONF_QUIET_HOURS_START: "22:00",
+                CONF_QUIET_HOURS_END: "07:00",
+                CONF_TARGET_TEMPERATURE_C: 5.0,
+                CONF_SOFT_OUTDOOR_THRESHOLD_C: 22.0,
+                CONF_COOLDOWN_MINUTES: 60,
+                CONF_STABILITY_MINUTES: 10,
+            }
+        )
+
+    assert exc_info.value.field == CONF_TARGET_TEMPERATURE_C
 
 
 def test_normalize_room_config_sets_kind_and_trims_names() -> None:
@@ -173,6 +216,47 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
     assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
     assert data[CONF_ROOM_STOP_ENTITY_ID] is None
     assert data[CONF_ROOM_PAUSE_ENTITY_ID] == "input_boolean.room_pause"
+
+
+def test_normalize_room_config_rejects_invalid_room_kind() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_room_config(
+            {
+                CONF_ROOM_NAME: "Bedroom",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+            },
+            "invalid",
+        )
+
+    assert exc_info.value.field == CONF_ROOM_KIND
+
+
+def test_normalize_room_config_rejects_invalid_temperature_entity() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_room_config(
+            {
+                CONF_ROOM_NAME: "Bedroom",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "switch.bedroom_temp",
+                CONF_ROOM_WEIGHT: 1.0,
+            },
+            "room",
+        )
+
+    assert exc_info.value.field == CONF_ROOM_TEMPERATURE_ENTITY_ID
+
+
+def test_normalize_room_config_rejects_invalid_weight() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_room_config(
+            {
+                CONF_ROOM_NAME: "Bedroom",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                CONF_ROOM_WEIGHT: 0.01,
+            },
+            "room",
+        )
+
+    assert exc_info.value.field == CONF_ROOM_WEIGHT
 
 
 def test_split_config_data_separates_rooms_from_global_settings() -> None:
