@@ -36,18 +36,13 @@ the core engine and the Home Assistant runtime layer.
 - integration tests for configuration handling
 - Home Assistant behavior tests for entity updates, if needed later
 - regression tests for room management and config validation
-- compatibility tests for saved config entry data
 - coverage checks on the reusable core and the HA runtime helpers
 
-## Supported Home Assistant Versions
+## Supported Home Assistant Version
 
-VentWise currently treats the current stable Home Assistant release and the
-previous stable release as the supported compatibility window.
+VentWise currently tests the latest stable Home Assistant release only.
 
-CI runs the config flow tests against both releases so selector and schema
-changes are caught early.
-
-The Home Assistant job uses Python 3.14.2 so the selected releases can be
+The Home Assistant job uses Python 3.14.2 so the selected release can be
 installed in CI.
 
 ## Recommended Test Matrix
