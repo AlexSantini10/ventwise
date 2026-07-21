@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "temperature-comfort-recommender"
-version = "0.1.0"
 description = "Reusable comfort scoring core for Home Assistant window recommendations"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,6 +22,10 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
 ]
 dependencies = []
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "custom_components.temperature_comfort_recommender._version.VERSION"}
 
 [project.optional-dependencies]
 dev = [
