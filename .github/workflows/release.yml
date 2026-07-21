@@ -46,10 +46,10 @@ jobs:
       - name: Build release package
         shell: pwsh
         run: |
-          ./scripts/build_release_package.ps1 -OutputPath dist/temperature_comfort_recommender.zip
+          ./scripts/build_release_package.ps1 -OutputPath "dist/temperature_comfort_recommender-${{ github.ref_name }}.zip"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" dist/temperature_comfort_recommender.zip --generate-notes
+          gh release create "${{ github.ref_name }}" "dist/temperature_comfort_recommender-${{ github.ref_name }}.zip" --title "Temperature Comfort Recommender ${{ github.ref_name }}" --generate-notes
