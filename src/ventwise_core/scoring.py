@@ -161,7 +161,22 @@ class ComfortRecommender:
     def _base_direction_score(self, delta_c: float, outdoor: ComfortObservation) -> float:
         score = self._clamp(delta_c / self._config.score_scale_c)
         if outdoor.wind_speed_m_s is not None:
-            score = self._clamp(score + (outdoor.wind_speed_m_s * self._config.wind_bonus_per_m_s))
+            if outdoor.wind_speed_m_s <= self._config.wind_open_preference_threshold_m_s:
+                score = self._clamp(
+                    score
+                    + (
+                        outdoor.wind_speed_m_s
+                        * self._config.wind_open_preference_per_m_s
+                    )
+                )
+            else:
+                score = self._clamp(
+                    score
+                    - (
+                        (outdoor.wind_speed_m_s - self._config.wind_open_preference_threshold_m_s)
+                        * self._config.wind_open_penalty_per_m_s
+                    )
+                )
         return score
 
     def _neutral_score(self, delta_c: float) -> float:

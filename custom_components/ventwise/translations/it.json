@@ -4,54 +4,12 @@
     "step": {
       "user": {
         "title": "Configura VentWise",
-        "description": "Scegli i sensori delle stanze e le impostazioni di comfort. Potrai modificarli in seguito dalle impostazioni dell'integrazione.",
+        "description": "Scegli la sorgente meteo per iniziare. Il resto potrai rifinirlo in seguito.",
         "data": {
-          "target_temperature_c": "Temperatura interna obiettivo",
-          "soft_outdoor_threshold_c": "Soglia di comfort esterna",
-          "minimum_score": "Punteggio minimo della raccomandazione",
-          "cooldown_minutes": "Periodo di pausa (minuti)",
-          "stability_minutes": "Periodo di stabilità (minuti)",
-          "quiet_hours_enabled": "Sospendi durante le ore di silenzio",
-          "quiet_hours_start": "Inizio ore di silenzio",
-          "quiet_hours_end": "Fine ore di silenzio",
-          "outdoor_temperature_entity_id": "Sensore temperatura esterna",
-          "outdoor_humidity_entity_id": "Sensore umidità esterna",
-          "wind_speed_entity_id": "Sensore velocità del vento esterno",
-          "master_control_entity_id": "Entità di controllo principale",
-          "notification_device_id": "Dispositivo di notifica",
-          "room_count": "Numero di stanze"
+          "outdoor_weather_entity_id": "Sorgente meteo"
         },
         "data_description": {
-          "target_temperature_c": "La temperatura di comfort che VentWise deve cercare di mantenere all'interno.",
-          "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
-          "minimum_score": "VentWise suggerisce la ventilazione solo quando il punteggio raggiunge questo valore.",
-          "cooldown_minutes": "Quanto tempo VentWise attende prima di inviare di nuovo lo stesso suggerimento.",
-          "stability_minutes": "Per quanto tempo un suggerimento deve restare invariato prima di essere inviato.",
-          "quiet_hours_enabled": "Ferma i suggerimenti quando le ore di silenzio sono attive.",
-          "quiet_hours_start": "Usa un orario come 22:00 o 22:00:00.",
-          "quiet_hours_end": "Usa un orario come 07:00 o 07:00:00.",
-          "outdoor_temperature_entity_id": "Scegli il sensore della temperatura esterna.",
-          "outdoor_humidity_entity_id": "Scegli il sensore dell'umidità esterna.",
-          "wind_speed_entity_id": "Facoltativo. Scegli un sensore della velocità del vento se lo hai.",
-          "master_control_entity_id": "Facoltativo. Scegli l'interruttore o l'helper da usare come controllo principale.",
-          "notification_device_id": "Facoltativo. Scegli il dispositivo che riceverà le notifiche.",
-          "room_count": "Quante stanze vuoi configurare."
-        }
-      },
-      "room": {
-        "title": "Stanza {current_room} di {room_count}",
-        "description": "Configura una stanza alla volta.",
-        "data": {
-          "name": "Nome stanza",
-          "temperature_entity_id": "Sensore temperatura interna",
-          "humidity_entity_id": "Sensore umidità interna",
-          "weight": "Peso stanza"
-        },
-        "data_description": {
-          "name": "Un nome facile da riconoscere, come Camera o Studio.",
-          "temperature_entity_id": "Scegli il sensore della temperatura della stanza.",
-          "humidity_entity_id": "Scegli il sensore dell'umidità della stanza.",
-          "weight": "Usa un peso maggiore per le stanze più importanti."
+          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise deve usare per prima."
         }
       }
     },
@@ -63,54 +21,122 @@
     "step": {
       "init": {
         "title": "Modifica VentWise",
-        "description": "Aggiorna le impostazioni condivise e il numero di stanze.",
+        "description": "Scegli cosa vuoi modificare.",
+        "menu_options": {
+          "basic": "Impostazioni base",
+          "advanced": "Impostazioni avanzate",
+          "rooms": "Stanze"
+        },
+        "menu_option_descriptions": {
+          "basic": "Sorgente meteo, pausa ore di silenzio e notifiche.",
+          "advanced": "Valori di taratura e override delle entità.",
+          "rooms": "Aggiungi stanze e macro-stanze."
+        }
+      },
+      "basic": {
+        "title": "Impostazioni base",
+        "description": "Tieni qui i controlli semplici.",
+        "data": {
+          "outdoor_weather_entity_id": "Sorgente meteo",
+          "quiet_hours_enabled": "Sospendi durante le ore di silenzio",
+          "quiet_hours_pause_entity_id": "Entità di pausa ore di silenzio",
+          "notification_device_id": "Dispositivo di notifica"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Seleziona l'entità meteo che VentWise deve usare per prima.",
+          "quiet_hours_enabled": "Attiva una pausa quando le ore di silenzio sono attive.",
+          "quiet_hours_pause_entity_id": "Facoltativo. Seleziona un helper o sensore che può sospendere le raccomandazioni.",
+          "notification_device_id": "Facoltativo. Seleziona il dispositivo che riceverà le notifiche."
+        }
+      },
+      "advanced": {
+        "title": "Impostazioni avanzate",
+        "description": "Rifinisci i valori più tecnici.",
         "data": {
           "target_temperature_c": "Temperatura interna obiettivo",
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
-          "minimum_score": "Punteggio minimo della raccomandazione",
           "cooldown_minutes": "Periodo di pausa (minuti)",
           "stability_minutes": "Periodo di stabilità (minuti)",
-          "quiet_hours_enabled": "Sospendi durante le ore di silenzio",
           "quiet_hours_start": "Inizio ore di silenzio",
           "quiet_hours_end": "Fine ore di silenzio",
+          "quiet_hours_start_entity_id": "Entità inizio ore di silenzio",
+          "quiet_hours_end_entity_id": "Entità fine ore di silenzio",
           "outdoor_temperature_entity_id": "Sensore temperatura esterna",
           "outdoor_humidity_entity_id": "Sensore umidità esterna",
           "wind_speed_entity_id": "Sensore velocità del vento esterno",
-          "master_control_entity_id": "Entità di controllo principale",
-          "notification_device_id": "Dispositivo di notifica",
-          "room_count": "Numero di stanze"
+          "master_control_entity_id": "Entità di controllo principale"
         },
         "data_description": {
           "target_temperature_c": "La temperatura di comfort che VentWise deve cercare di mantenere all'interno.",
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
-          "minimum_score": "VentWise suggerisce la ventilazione solo quando il punteggio raggiunge questo valore.",
           "cooldown_minutes": "Quanto tempo VentWise attende prima di inviare di nuovo lo stesso suggerimento.",
           "stability_minutes": "Per quanto tempo un suggerimento deve restare invariato prima di essere inviato.",
-          "quiet_hours_enabled": "Ferma i suggerimenti quando le ore di silenzio sono attive.",
           "quiet_hours_start": "Usa un orario come 22:00 o 22:00:00.",
           "quiet_hours_end": "Usa un orario come 07:00 o 07:00:00.",
-          "outdoor_temperature_entity_id": "Scegli il sensore della temperatura esterna.",
-          "outdoor_humidity_entity_id": "Scegli il sensore dell'umidità esterna.",
-          "wind_speed_entity_id": "Facoltativo. Scegli un sensore della velocità del vento se lo hai.",
-          "master_control_entity_id": "Facoltativo. Scegli l'interruttore o l'helper da usare come controllo principale.",
-          "notification_device_id": "Facoltativo. Scegli il dispositivo che riceverà le notifiche.",
-          "room_count": "Quante stanze vuoi configurare."
+          "quiet_hours_start_entity_id": "Facoltativo. Seleziona un'entità tempo da cui leggere l'inizio della pausa.",
+          "quiet_hours_end_entity_id": "Facoltativo. Seleziona un'entità tempo da cui leggere la fine della pausa.",
+          "outdoor_temperature_entity_id": "Facoltativo. Sovrascrive la temperatura letta dalla sorgente meteo.",
+          "outdoor_humidity_entity_id": "Facoltativo. Sovrascrive l'umidità letta dalla sorgente meteo.",
+          "wind_speed_entity_id": "Facoltativo. Sovrascrive la velocità del vento letta dalla sorgente meteo.",
+          "master_control_entity_id": "Facoltativo. Seleziona l'interruttore o l'helper da usare come controllo principale."
         }
       },
-      "room": {
-        "title": "Stanza {current_room} di {room_count}",
-        "description": "Modifica una stanza alla volta.",
+      "rooms": {
+        "title": "Stanze",
+        "description": "Aggiungi stanze o macro-stanze una alla volta.",
+        "menu_options": {
+          "add_room": "Aggiungi stanza",
+          "add_macro_room": "Aggiungi macro-stanza",
+          "finish": "Fine"
+        },
+        "menu_option_descriptions": {
+          "add_room": "Crea una stanza normale.",
+          "add_macro_room": "Crea un'area più grande che si comporta come una stanza.",
+          "finish": "Salva l'elenco attuale delle stanze."
+        }
+      },
+      "add_room": {
+        "title": "Aggiungi stanza",
+        "description": "Crea una stanza normale.",
         "data": {
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
-          "weight": "Peso stanza"
+          "weight": "Peso stanza",
+          "start_entity_id": "Entità di avvio",
+          "stop_entity_id": "Entità di stop",
+          "pause_entity_id": "Entità di pausa"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
-          "temperature_entity_id": "Scegli il sensore della temperatura della stanza.",
-          "humidity_entity_id": "Scegli il sensore dell'umidità della stanza.",
-          "weight": "Usa un peso maggiore per le stanze più importanti."
+          "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
+          "weight": "Usa un peso maggiore per le stanze più importanti.",
+          "start_entity_id": "Facoltativo. Seleziona un'automazione o un helper per avviare la logica della stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona un'automazione o un helper per fermare la logica della stanza.",
+          "pause_entity_id": "Facoltativo. Seleziona un helper che possa sospendere questa stanza."
+        }
+      },
+      "add_macro_room": {
+        "title": "Aggiungi macro-stanza",
+        "description": "Crea un'area più grande che si comporta come una stanza.",
+        "data": {
+          "name": "Nome macro-stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "weight": "Peso stanza",
+          "start_entity_id": "Entità di avvio",
+          "stop_entity_id": "Entità di stop",
+          "pause_entity_id": "Entità di pausa"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
+          "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
+          "weight": "Usa un peso maggiore per le aree più importanti.",
+          "start_entity_id": "Facoltativo. Seleziona un'automazione o un helper per avviare la logica dell'area.",
+          "stop_entity_id": "Facoltativo. Seleziona un'automazione o un helper per fermare la logica dell'area.",
+          "pause_entity_id": "Facoltativo. Seleziona un helper che possa sospendere questa area."
         }
       }
     },

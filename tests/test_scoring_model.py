@@ -74,6 +74,25 @@ def test_recommender_applies_soft_outdoor_threshold_to_open_actions() -> None:
     assert warm_result.score < cool_result.score
 
 
+def test_recommender_penalizes_strong_wind_for_open_actions() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        name="Camera",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
+    )
+    calm_outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0, wind_speed_m_s=1.0)
+    windy_outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0, wind_speed_m_s=20.0)
+
+    calm_result = recommender.evaluate([room], calm_outdoor)
+    windy_result = recommender.evaluate([room], windy_outdoor)
+
+    assert calm_result.action == RecommendationAction.OPEN
+    assert windy_result.action != RecommendationAction.OPEN
+    assert windy_result.score < calm_result.score
+
+
 def test_recommender_blocks_until_stable() -> None:
     recommender = ComfortRecommender(
         ScoringConfig(minimum_stability_seconds=600, minimum_score=0.0)

@@ -28,6 +28,7 @@ from .runtime import (
     build_room_profiles,
     build_scoring_config,
     is_quiet_hours_active,
+    state_to_bool,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -119,11 +120,28 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._last_action_started_at = now
 
         stable_for_seconds = int((now - self._last_action_started_at).total_seconds())
+        quiet_hours_start = self._config.quiet_hours_start
+        quiet_hours_end = self._config.quiet_hours_end
+        if self._config.quiet_hours_start_entity_id:
+            quiet_hours_start = _state_to_time_string(
+                self.hass.states.get(self._config.quiet_hours_start_entity_id),
+                quiet_hours_start,
+            )
+        if self._config.quiet_hours_end_entity_id:
+            quiet_hours_end = _state_to_time_string(
+                self.hass.states.get(self._config.quiet_hours_end_entity_id),
+                quiet_hours_end,
+            )
         quiet_hours_active = self._config.quiet_hours_enabled and is_quiet_hours_active(
             now,
-            self._config.quiet_hours_start,
-            self._config.quiet_hours_end,
+            quiet_hours_start,
+            quiet_hours_end,
         )
+        if self._config.quiet_hours_pause_entity_id:
+            quiet_hours_active = quiet_hours_active or (
+                state_to_bool(self.hass.states.get(self._config.quiet_hours_pause_entity_id))
+                is True
+            )
         cooldown_active = self._last_notification_signature == signature and (
             now - self._last_notification_at
         ) < timedelta(minutes=self._config.cooldown_minutes)
@@ -171,3 +189,19 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
         return (summary.action.value, summary.best_room or "")
+
+
+def _state_to_time_string(state: Any | None, fallback: str) -> str:
+    """Read a time-like entity state and normalize it for quiet hours."""
+
+    raw_state = getattr(state, "state", None)
+    if raw_state is None:
+        return fallback
+    text = str(raw_state).strip()
+    if not text:
+        return fallback
+    if " " in text:
+        text = text.split(" ", maxsplit=1)[-1]
+    if len(text.split(":")) == 2:
+        return f"{text}:00"
+    return text

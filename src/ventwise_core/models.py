@@ -60,7 +60,9 @@ class ScoringConfig:
     neutral_band_c: float = 0.4
     score_scale_c: float = 8.0
     humidity_weight: float = 0.04
-    wind_bonus_per_m_s: float = 0.03
+    wind_open_preference_threshold_m_s: float = 4.0
+    wind_open_preference_per_m_s: float = 0.02
+    wind_open_penalty_per_m_s: float = 0.05
     soft_threshold_penalty: float = 0.7
     season_mode: SeasonMode = SeasonMode.AUTO
     open_bias: float = 0.0

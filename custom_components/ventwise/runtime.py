@@ -20,14 +20,22 @@ from .const import (
     CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_MINIMUM_SCORE,
     CONF_NOTIFICATION_DEVICE_ID,
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_QUIET_HOURS_END_ENTITY_ID,
+    CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
+    CONF_QUIET_HOURS_START_ENTITY_ID,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
+    CONF_ROOM_KIND,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
+    CONF_ROOM_PAUSE_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_START_ENTITY_ID,
+    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_WEIGHT,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
@@ -52,14 +60,19 @@ class RoomConfig:
 
     name: str
     temperature_entity_id: str
-    humidity_entity_id: str
+    kind: str = "room"
+    humidity_entity_id: str | None = None
     weight: float = DEFAULT_ROOM_WEIGHT
+    start_entity_id: str | None = None
+    stop_entity_id: str | None = None
+    pause_entity_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class IntegrationConfig:
     """Normalised configuration for the integration runtime."""
 
+    outdoor_weather_entity_id: str | None = None
     target_temperature_c: float = DEFAULT_TARGET_TEMPERATURE_C
     soft_outdoor_threshold_c: float = DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
     minimum_score: float = DEFAULT_MINIMUM_SCORE
@@ -68,6 +81,9 @@ class IntegrationConfig:
     quiet_hours_enabled: bool = True
     quiet_hours_start: str = DEFAULT_QUIET_HOURS_START
     quiet_hours_end: str = DEFAULT_QUIET_HOURS_END
+    quiet_hours_start_entity_id: str | None = None
+    quiet_hours_end_entity_id: str | None = None
+    quiet_hours_pause_entity_id: str | None = None
     enabled: bool = True
     outdoor_temperature_entity_id: str = ""
     outdoor_humidity_entity_id: str = ""
@@ -95,14 +111,19 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
 
     rooms = tuple(
         RoomConfig(
+            kind=str(room.get(CONF_ROOM_KIND, "room")),
             name=str(room[CONF_ROOM_NAME]),
             temperature_entity_id=str(room[CONF_ROOM_TEMPERATURE_ENTITY_ID]),
-            humidity_entity_id=str(room[CONF_ROOM_HUMIDITY_ENTITY_ID]),
+            humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
             weight=float(room.get(CONF_ROOM_WEIGHT, DEFAULT_ROOM_WEIGHT)),
+            start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
+            stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
+            pause_entity_id=_string_or_none(room.get(CONF_ROOM_PAUSE_ENTITY_ID)),
         )
         for room in data.get(CONF_ROOMS, [])
     )
     return IntegrationConfig(
+        outdoor_weather_entity_id=_string_or_none(data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)),
         target_temperature_c=float(data.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)),
         soft_outdoor_threshold_c=float(
             data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
@@ -113,6 +134,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         quiet_hours_enabled=bool(data.get(CONF_QUIET_HOURS_ENABLED, True)),
         quiet_hours_start=str(data.get(CONF_QUIET_HOURS_START, DEFAULT_QUIET_HOURS_START)),
         quiet_hours_end=str(data.get(CONF_QUIET_HOURS_END, DEFAULT_QUIET_HOURS_END)),
+        quiet_hours_start_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_START_ENTITY_ID)),
+        quiet_hours_end_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_END_ENTITY_ID)),
+        quiet_hours_pause_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_PAUSE_ENTITY_ID)),
         enabled=bool(data.get(CONF_ENABLED, True)),
         outdoor_temperature_entity_id=str(data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID, "")),
         outdoor_humidity_entity_id=str(data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID, "")),
@@ -177,12 +201,27 @@ def build_room_profiles(
 ) -> tuple[list[RoomProfile], ComfortObservation | None]:
     """Build room profiles and the outdoor observation from Home Assistant state."""
 
-    outdoor_temp = state_to_float(state_getter(config.outdoor_temperature_entity_id))
-    outdoor_humidity = state_to_float(state_getter(config.outdoor_humidity_entity_id))
+    outdoor_temp = _outdoor_value(
+        config.outdoor_weather_entity_id,
+        config.outdoor_temperature_entity_id,
+        state_getter,
+        "temperature",
+    )
+    outdoor_humidity = _outdoor_value(
+        config.outdoor_weather_entity_id,
+        config.outdoor_humidity_entity_id,
+        state_getter,
+        "humidity",
+    )
     if outdoor_temp is None or outdoor_humidity is None:
         outdoor = None
     else:
-        wind_speed = state_to_float(state_getter(config.wind_speed_entity_id)) if config.wind_speed_entity_id else None
+        wind_speed = _outdoor_value(
+            config.outdoor_weather_entity_id,
+            config.wind_speed_entity_id,
+            state_getter,
+            "wind_speed",
+        )
         outdoor = ComfortObservation(
             temperature_c=outdoor_temp,
             humidity_percent=outdoor_humidity,
@@ -191,10 +230,16 @@ def build_room_profiles(
 
     rooms: list[RoomProfile] = []
     for room in config.rooms:
+        if room.pause_entity_id:
+            room_state = state_getter(room.pause_entity_id)
+            if state_to_bool(room_state) is True:
+                continue
         temperature = state_to_float(state_getter(room.temperature_entity_id))
-        humidity = state_to_float(state_getter(room.humidity_entity_id))
-        if temperature is None or humidity is None:
+        humidity = state_to_float(state_getter(room.humidity_entity_id)) if room.humidity_entity_id else None
+        if temperature is None:
             continue
+        if humidity is None:
+            humidity = 50.0
         rooms.append(
             RoomProfile(
                 name=room.name,
@@ -214,6 +259,29 @@ def _string_or_none(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _outdoor_value(
+    weather_entity_id: str | None,
+    override_entity_id: str | None,
+    state_getter: Callable[[str], Any],
+    attribute_name: str,
+) -> float | None:
+    if override_entity_id:
+        return state_to_float(state_getter(override_entity_id))
+    if not weather_entity_id:
+        return None
+    state = state_getter(weather_entity_id)
+    if state is None:
+        return None
+    attributes = getattr(state, "attributes", {}) or {}
+    value = attributes.get(attribute_name)
+    if value is None:
+        return state_to_float(state)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _parse_time(value: str) -> time:

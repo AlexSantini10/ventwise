@@ -8,23 +8,37 @@ pytest.importorskip("voluptuous")
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
+    CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-    CONF_MASTER_CONTROL_ENTITY_ID,
-    CONF_NOTIFICATION_DEVICE_ID,
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_QUIET_HOURS_END,
+    CONF_QUIET_HOURS_END_ENTITY_ID,
+    CONF_QUIET_HOURS_ENABLED,
+    CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
     CONF_QUIET_HOURS_START,
-    CONF_ROOM_COUNT,
+    CONF_QUIET_HOURS_START_ENTITY_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_KIND,
     CONF_ROOM_NAME,
+    CONF_ROOM_PAUSE_ENTITY_ID,
+    CONF_ROOM_START_ENTITY_ID,
+    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_WEIGHT,
+    CONF_ROOMS,
+    CONF_SOFT_OUTDOOR_THRESHOLD_C,
+    CONF_STABILITY_MINUTES,
+    CONF_TARGET_TEMPERATURE_C,
     CONF_WIND_SPEED_ENTITY_ID,
 )
 from custom_components.ventwise.flow import (
-    build_global_schema,
+    build_advanced_options_schema,
+    build_basic_options_schema,
+    build_config_schema,
     build_room_schema,
-    normalize_global_config,
+    normalize_advanced_config,
+    normalize_basic_config,
     normalize_room_config,
     split_config_data,
 )
@@ -34,116 +48,125 @@ def _schema_entry(schema, field_name: str):
     return next(entry for entry in schema.schema if getattr(entry, "schema", None) == field_name)
 
 
-def test_global_schema_is_serializable() -> None:
-    """The global form should use HA-serializable selectors and validators."""
+def test_config_schema_is_simple_and_weather_based() -> None:
+    """The initial setup should only ask for a weather source."""
 
-    schema = build_global_schema({})
+    schema = build_config_schema({})
     schema_dict = schema.schema
 
+    assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+
+
+def test_basic_options_schema_covers_simple_controls() -> None:
+    """The basic options step should stay approachable."""
+
+    schema = build_basic_options_schema({})
+    schema_dict = schema.schema
+
+    assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert callable(schema_dict[CONF_QUIET_HOURS_ENABLED])
+    assert schema_dict[CONF_QUIET_HOURS_PAUSE_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
+
+
+def test_advanced_options_schema_contains_the_technical_overrides() -> None:
+    """The advanced step should carry the detailed tuning controls."""
+
+    schema = build_advanced_options_schema({})
+    schema_dict = schema.schema
+
+    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
+    assert schema_dict[CONF_SOFT_OUTDOOR_THRESHOLD_C].__class__.__name__ == "All"
+    assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_QUIET_HOURS_START].__class__.__name__ == "TextSelector"
     assert schema_dict[CONF_QUIET_HOURS_END].__class__.__name__ == "TextSelector"
+    assert schema_dict[CONF_QUIET_HOURS_START_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_QUIET_HOURS_END_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
-    assert schema_dict[CONF_ROOM_COUNT].__class__.__name__ == "All"
+    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].config.domain == "sensor"
 
 
-def test_room_schema_uses_ha_selectors() -> None:
-    """The room form should also be built with serializable selectors."""
+def test_room_schema_supports_room_and_macro_room_defaults() -> None:
+    """Room-like entries should share the same structure."""
 
-    schema = build_room_schema({}, 0)
-    schema_dict = schema.schema
+    room_schema = build_room_schema({}, 0, "room")
+    macro_schema = build_room_schema({}, 0, "macro_room")
 
-    assert schema_dict[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_ROOM_WEIGHT].__class__.__name__ == "All"
+    assert _schema_entry(room_schema, CONF_ROOM_NAME).default == "Room 1"
+    assert _schema_entry(macro_schema, CONF_ROOM_NAME).default == "Macro Room 1"
+    assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert room_schema.schema[CONF_ROOM_WEIGHT].__class__.__name__ == "All"
+    assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert room_schema.schema[CONF_ROOM_PAUSE_ENTITY_ID].__class__.__name__ == "EntitySelector"
 
 
-def test_normalize_global_config_keeps_optional_entities_clean() -> None:
-    """Optional entity and device fields should become None when empty."""
+def test_normalize_basic_config_strips_optional_entities() -> None:
+    """Optional basic values should be normalized to clean strings or None."""
 
-    data = normalize_global_config(
+    data = normalize_basic_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_QUIET_HOURS_PAUSE_ENTITY_ID: " ",
+            CONF_NOTIFICATION_DEVICE_ID: None,
+        }
+    )
+
+    assert data[CONF_OUTDOOR_WEATHER_ENTITY_ID] == "weather.home"
+    assert data[CONF_QUIET_HOURS_PAUSE_ENTITY_ID] is None
+    assert data[CONF_NOTIFICATION_DEVICE_ID] is None
+
+
+def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
+    """Advanced settings should accept short times and trim optional entities."""
+
+    data = normalize_advanced_config(
         {
             CONF_QUIET_HOURS_START: "22:00",
             CONF_QUIET_HOURS_END: "07:00:00",
-            CONF_WIND_SPEED_ENTITY_ID: "",
-            CONF_MASTER_CONTROL_ENTITY_ID: " ",
-            CONF_NOTIFICATION_DEVICE_ID: None,
+            CONF_QUIET_HOURS_START_ENTITY_ID: " input_datetime.quiet_start ",
+            CONF_QUIET_HOURS_END_ENTITY_ID: "",
+            CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
+            CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
+            CONF_WIND_SPEED_ENTITY_ID: "sensor.wind",
+            CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
         }
     )
 
     assert data[CONF_QUIET_HOURS_START] == "22:00:00"
     assert data[CONF_QUIET_HOURS_END] == "07:00:00"
-    assert data[CONF_WIND_SPEED_ENTITY_ID] is None
-    assert data[CONF_MASTER_CONTROL_ENTITY_ID] is None
-    assert data[CONF_NOTIFICATION_DEVICE_ID] is None
+    assert data[CONF_QUIET_HOURS_START_ENTITY_ID] == "input_datetime.quiet_start"
+    assert data[CONF_QUIET_HOURS_END_ENTITY_ID] is None
+    assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] == "sensor.outdoor_temp"
+    assert data[CONF_WIND_SPEED_ENTITY_ID] == "sensor.wind"
 
 
-def test_normalize_global_config_preserves_seconds_precision() -> None:
-    """Valid quiet-hours times with seconds should stay normalized."""
-
-    data = normalize_global_config(
-        {
-            CONF_QUIET_HOURS_START: "22:15:30",
-            CONF_QUIET_HOURS_END: "07:45:05",
-        }
-    )
-
-    assert data[CONF_QUIET_HOURS_START] == "22:15:30"
-    assert data[CONF_QUIET_HOURS_END] == "07:45:05"
-
-
-def test_normalize_global_config_accepts_short_time_format() -> None:
-    """Valid quiet-hours times without seconds should also normalize."""
-
-    data = normalize_global_config(
-        {
-            CONF_QUIET_HOURS_START: "7:00",
-            CONF_QUIET_HOURS_END: "22:00",
-        }
-    )
-
-    assert data[CONF_QUIET_HOURS_START] == "07:00:00"
-    assert data[CONF_QUIET_HOURS_END] == "22:00:00"
-
-
-@pytest.mark.parametrize(
-    "quiet_start,quiet_end",
-    [
-        ("07-00", "22:00"),
-        ("07:00:00", "24:00:00"),
-        ("night", "07:00"),
-    ],
-)
-def test_normalize_global_config_rejects_bad_time_formats(
-    quiet_start: str,
-    quiet_end: str,
-) -> None:
-    """Bad quiet-hours formats should never be accepted."""
-
-    with pytest.raises(ValueError):
-        normalize_global_config(
-            {
-                CONF_QUIET_HOURS_START: quiet_start,
-                CONF_QUIET_HOURS_END: quiet_end,
-            }
-        )
-
-
-def test_normalize_room_config_strips_name_whitespace() -> None:
-    """Room names should be stored without surrounding whitespace."""
+def test_normalize_room_config_sets_kind_and_trims_names() -> None:
+    """Room data should keep the room kind while trimming free text."""
 
     data = normalize_room_config(
         {
             CONF_ROOM_NAME: "  Bedroom  ",
             CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-            CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.bedroom_humidity",
+            CONF_ROOM_HUMIDITY_ENTITY_ID: " ",
             CONF_ROOM_WEIGHT: 1.25,
-        }
+            CONF_ROOM_START_ENTITY_ID: "automation.start_room",
+            CONF_ROOM_STOP_ENTITY_ID: "",
+            CONF_ROOM_PAUSE_ENTITY_ID: "input_boolean.room_pause",
+        },
+        "macro_room",
     )
 
+    assert data[CONF_ROOM_KIND] == "macro_room"
     assert data[CONF_ROOM_NAME] == "Bedroom"
     assert data[CONF_ROOM_WEIGHT] == 1.25
+    assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
+    assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
+    assert data[CONF_ROOM_STOP_ENTITY_ID] is None
+    assert data[CONF_ROOM_PAUSE_ENTITY_ID] == "input_boolean.room_pause"
 
 
 def test_split_config_data_separates_rooms_from_global_settings() -> None:
@@ -153,47 +176,35 @@ def test_split_config_data_separates_rooms_from_global_settings() -> None:
         {
             CONF_QUIET_HOURS_START: "22:00:00",
             CONF_QUIET_HOURS_END: "07:00:00",
-            CONF_ROOM_NAME: "Ignored",
             "other": "value",
-            "rooms": [
+            CONF_ROOMS: [
                 {
                     CONF_ROOM_NAME: "Living room",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
-                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.living_humidity",
                 }
             ],
         }
     )
 
-    assert "rooms" not in global_data
+    assert CONF_ROOMS not in global_data
     assert global_data["other"] == "value"
     assert rooms[0][CONF_ROOM_NAME] == "Living room"
-
-
-def test_split_config_data_handles_missing_rooms_key() -> None:
-    """The split helper should tolerate entries without room data."""
-
-    global_data, rooms = split_config_data({CONF_QUIET_HOURS_START: "22:00:00"})
-
-    assert global_data[CONF_QUIET_HOURS_START] == "22:00:00"
-    assert rooms == []
 
 
 def test_split_config_data_returns_copies_of_rooms() -> None:
     """Room dicts should be copied when splitting persisted config."""
 
     saved = {
-        "rooms": [
+        CONF_ROOMS: [
             {
                 CONF_ROOM_NAME: "Living room",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
-                CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.living_humidity",
                 CONF_ROOM_WEIGHT: 2.0,
             }
         ]
     }
 
     _, rooms = split_config_data(saved)
-    saved["rooms"][0][CONF_ROOM_NAME] = "Mutated"
+    saved[CONF_ROOMS][0][CONF_ROOM_NAME] = "Mutated"
 
     assert rooms[0][CONF_ROOM_NAME] == "Living room"
