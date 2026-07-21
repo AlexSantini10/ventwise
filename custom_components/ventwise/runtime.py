@@ -305,6 +305,41 @@ def build_room_profiles(
     return rooms, outdoor
 
 
+def build_debug_attributes(
+    config: IntegrationConfig,
+    snapshot: RuntimeSnapshot,
+) -> dict[str, Any]:
+    """Build user-friendly debug attributes for VentWise entities."""
+
+    summary = snapshot.summary
+    room_details = [
+        _room_debug_attributes(room, recommendation)
+        for room, recommendation in zip(config.rooms, summary.room_recommendations)
+    ]
+    best_room_details = next(
+        (details for details in room_details if details["room_name"] == summary.best_room),
+        None,
+    )
+    return {
+        "summary_action": summary.action.value,
+        "summary_score": summary.score,
+        "summary_reason": summary.reason,
+        "summary_best_room": summary.best_room,
+        "summary_blocked_by": summary.blocked_by,
+        "notification_allowed": snapshot.notification_allowed,
+        "quiet_hours_active": snapshot.quiet_hours_active,
+        "cooldown_active": snapshot.cooldown_active,
+        "stable_for_seconds": snapshot.stable_for_seconds,
+        "target_temperature_c": config.target_temperature_c,
+        "soft_outdoor_threshold_c": config.soft_outdoor_threshold_c,
+        "minimum_score": config.minimum_score,
+        "stability_minutes": config.stability_minutes,
+        "cooldown_minutes": config.cooldown_minutes,
+        "room_recommendations": room_details,
+        "best_room_recommendation": best_room_details,
+    }
+
+
 def _string_or_none(value: Any) -> str | None:
     if value is None:
         return None
@@ -362,3 +397,18 @@ def _dump_datetime(value: datetime | None) -> str | None:
     if value is None:
         return None
     return value.isoformat()
+
+
+def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation) -> dict[str, Any]:
+    return {
+        "room_name": room.name,
+        "kind": room.kind,
+        "weight": room.weight,
+        "action": recommendation.action.value,
+        "score": recommendation.score,
+        "reason": recommendation.reason,
+        "indoor_perceived_c": recommendation.indoor_perceived_c,
+        "outdoor_perceived_c": recommendation.outdoor_perceived_c,
+        "open_score": recommendation.open_score,
+        "close_score": recommendation.close_score,
+    }

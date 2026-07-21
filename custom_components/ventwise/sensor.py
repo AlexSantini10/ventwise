@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity
+from .runtime import build_debug_attributes
 
 
 async def async_setup_entry(
@@ -43,18 +42,7 @@ class RecommendationStateSensor(VentWiseEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
-        snapshot = self.coordinator.data
-        summary = snapshot.summary
-        return {
-            "score": summary.score,
-            "reason": summary.reason,
-            "best_room": summary.best_room,
-            "blocked_by": summary.blocked_by,
-            "notification_allowed": snapshot.notification_allowed,
-            "quiet_hours_active": snapshot.quiet_hours_active,
-            "cooldown_active": snapshot.cooldown_active,
-            "stable_for_seconds": snapshot.stable_for_seconds,
-        }
+        return build_debug_attributes(self.coordinator.config, self.coordinator.data)
 
 
 class RecommendationScoreSensor(VentWiseEntity, SensorEntity):
@@ -69,6 +57,10 @@ class RecommendationScoreSensor(VentWiseEntity, SensorEntity):
     def native_value(self) -> float:
         return self.coordinator.data.summary.score
 
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        return build_debug_attributes(self.coordinator.config, self.coordinator.data)
+
 
 class RecommendationReasonSensor(VentWiseEntity, SensorEntity):
     """Human-readable recommendation reason."""
@@ -82,3 +74,6 @@ class RecommendationReasonSensor(VentWiseEntity, SensorEntity):
     def native_value(self) -> str:
         return self.coordinator.data.summary.reason
 
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        return build_debug_attributes(self.coordinator.config, self.coordinator.data)
