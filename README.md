@@ -77,6 +77,7 @@ From Home Assistant, you should be able to:
 - [Home Assistant integration](docs/home-assistant-integration.md)
 - [Testing](docs/testing.md)
 - [Development workflow](docs/development.md)
+- [Contributing](CONTRIBUTING.md)
 - [HACS packaging](docs/hacs-packaging.md)
 - [License and disclaimer](docs/NOTICE.md)
 
