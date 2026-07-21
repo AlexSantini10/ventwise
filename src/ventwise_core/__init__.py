@@ -1,25 +1,3 @@
-"""Reusable comfort recommendation core."""
+"""Compatibility wrapper for the shared VentWise core."""
 
-from .models import (
-    ComfortObservation,
-    RecommendationAction,
-    RecommendationContext,
-    RecommendationSummary,
-    RoomObservation,
-    RoomProfile,
-    SeasonMode,
-    ScoringConfig,
-)
-from .scoring import ComfortRecommender
-
-__all__ = [
-    "ComfortObservation",
-    "ComfortRecommender",
-    "RecommendationAction",
-    "RecommendationContext",
-    "RecommendationSummary",
-    "RoomObservation",
-    "RoomProfile",
-    "SeasonMode",
-    "ScoringConfig",
-]
+from custom_components.ventwise.ventwise_core import *  # noqa: F403

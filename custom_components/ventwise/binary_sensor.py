@@ -6,7 +6,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from ventwise_core import RecommendationAction
+from .ventwise_core import RecommendationAction
 
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity

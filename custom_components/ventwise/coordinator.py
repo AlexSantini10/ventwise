@@ -14,12 +14,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from ventwise_core import (
+from .ventwise_core import (
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
 )
-from ventwise_core import ComfortRecommender
+from .ventwise_core import ComfortRecommender
 
 from .runtime import (
     IntegrationConfig,
