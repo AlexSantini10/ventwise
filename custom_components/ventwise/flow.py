@@ -151,7 +151,11 @@ def normalize_global_config(user_input: Mapping[str, object]) -> dict[str, objec
         CONF_NOTIFICATION_DEVICE_ID,
     ):
         value = data.get(key)
-        data[key] = value or None
+        if value is None:
+            data[key] = None
+            continue
+        text = str(value).strip()
+        data[key] = text or None
     return data
 
 
