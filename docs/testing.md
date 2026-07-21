@@ -39,6 +39,14 @@ the core engine and the Home Assistant runtime layer.
 - compatibility tests for saved config entry data
 - coverage checks on the reusable core and the HA runtime helpers
 
+## Supported Home Assistant Versions
+
+VentWise currently treats the current stable Home Assistant release and the
+previous stable release as the supported compatibility window.
+
+CI runs the config flow tests against both releases so selector and schema
+changes are caught early.
+
 ## Recommended Test Matrix
 
 - inside hotter, outside cooler
