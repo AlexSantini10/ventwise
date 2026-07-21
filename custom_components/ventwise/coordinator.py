@@ -24,9 +24,12 @@ from ventwise_core import ComfortRecommender
 from .runtime import (
     IntegrationConfig,
     RuntimeSnapshot,
+    RuntimeState,
     build_integration_config,
     build_room_profiles,
     build_scoring_config,
+    dump_runtime_state,
+    load_runtime_state,
     is_quiet_hours_active,
     state_to_bool,
 )
@@ -46,10 +49,13 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._config_entry = config_entry
         self._config = build_integration_config(config_entry_data)
         self._recommender = ComfortRecommender(build_scoring_config(self._config))
-        self._last_action_signature: tuple[str, str] | None = None
-        self._last_action_started_at = dt_util.utcnow()
-        self._last_notification_at = dt_util.utcnow() - timedelta(days=1)
-        self._last_notification_signature: tuple[str, str] | None = None
+        self._runtime_state = self._load_runtime_state()
+        self._last_action_signature = self._runtime_state.last_action_signature
+        self._last_action_started_at = self._runtime_state.last_action_started_at or dt_util.utcnow()
+        self._last_notification_at = self._runtime_state.last_notification_at or (
+            dt_util.utcnow() - timedelta(days=1)
+        )
+        self._last_notification_signature = self._runtime_state.last_notification_signature
         super().__init__(
             hass,
             logger=_LOGGER,
@@ -168,6 +174,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._last_notification_signature = signature
             self._last_notification_at = now
 
+        self._persist_runtime_state()
+
         return RuntimeSnapshot(
             summary=summary,
             notification_allowed=notification_allowed,
@@ -189,6 +197,27 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
         return (summary.action.value, summary.best_room or "")
+
+    def _load_runtime_state(self) -> RuntimeState:
+        return load_runtime_state({**self._config_entry.data, **self._config_entry.options})
+
+    def _persist_runtime_state(self) -> None:
+        runtime_state = RuntimeState(
+            last_action_signature=self._last_action_signature,
+            last_action_started_at=self._last_action_started_at,
+            last_notification_signature=self._last_notification_signature,
+            last_notification_at=self._last_notification_at,
+        )
+        if runtime_state == self._runtime_state:
+            return
+        self._runtime_state = runtime_state
+        self.hass.config_entries.async_update_entry(
+            self._config_entry,
+            options={
+                **self._config_entry.options,
+                **dump_runtime_state(runtime_state),
+            },
+        )
 
 
 def _state_to_time_string(state: Any | None, fallback: str) -> str:

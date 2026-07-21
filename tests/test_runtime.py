@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from datetime import datetime
+from datetime import datetime, timezone
 
 from custom_components.ventwise.const import (
     CONF_COOLDOWN_MINUTES,
@@ -25,9 +25,18 @@ from custom_components.ventwise.const import (
 from custom_components.ventwise.runtime import (
     build_integration_config,
     build_room_profiles,
+    dump_runtime_state,
     is_quiet_hours_active,
+    load_runtime_state,
     state_to_bool,
     state_to_float,
+)
+from custom_components.ventwise.const import (
+    CONF_RUNTIME_STATE,
+    CONF_RUNTIME_LAST_ACTION_SIGNATURE,
+    CONF_RUNTIME_LAST_ACTION_STARTED_AT,
+    CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
+    CONF_RUNTIME_LAST_NOTIFICATION_AT,
 )
 
 
@@ -111,3 +120,26 @@ def test_build_room_profiles_skips_missing_sensor_values() -> None:
 
     assert outdoor is None
     assert rooms == []
+
+
+def test_runtime_state_round_trips_through_storage() -> None:
+    started_at = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    notification_at = datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)
+    stored = dump_runtime_state(
+        load_runtime_state(
+            {
+                CONF_RUNTIME_STATE: {
+                    CONF_RUNTIME_LAST_ACTION_SIGNATURE: ["open", "Camera"],
+                    CONF_RUNTIME_LAST_ACTION_STARTED_AT: started_at.isoformat(),
+                    CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE: ["open", "Camera"],
+                    CONF_RUNTIME_LAST_NOTIFICATION_AT: notification_at.isoformat(),
+                }
+            }
+        )
+    )
+
+    runtime_state = stored[CONF_RUNTIME_STATE]
+    assert runtime_state[CONF_RUNTIME_LAST_ACTION_SIGNATURE] == ["open", "Camera"]
+    assert runtime_state[CONF_RUNTIME_LAST_ACTION_STARTED_AT] == started_at.isoformat()
+    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE] == ["open", "Camera"]
+    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_AT] == notification_at.isoformat()
