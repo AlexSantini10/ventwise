@@ -47,6 +47,9 @@ previous stable release as the supported compatibility window.
 CI runs the config flow tests against both releases so selector and schema
 changes are caught early.
 
+The Home Assistant job uses Python 3.14.2 so the selected releases can be
+installed in CI.
+
 ## Recommended Test Matrix
 
 - inside hotter, outside cooler
