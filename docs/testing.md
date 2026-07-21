@@ -12,6 +12,8 @@ the core engine and the Home Assistant runtime layer.
 - open recommendation when outside is clearly more comfortable
 - close recommendation when inside is already better
 - no recommendation when the advantage is marginal
+- room management keeps the saved configuration consistent
+- config flow rejects invalid entity domains and out-of-range values
 
 ### Seasonal behavior
 
@@ -26,12 +28,15 @@ the core engine and the Home Assistant runtime layer.
 - cooldown works
 - quiet hours block notifications correctly
 - short-lived spikes do not trigger alerts
+- persisted runtime markers survive a restart
 
 ## Test Types
 
 - pure Python unit tests for scoring
 - integration tests for configuration handling
 - Home Assistant behavior tests for entity updates, if needed later
+- regression tests for room management and config validation
+- compatibility tests for saved config entry data
 - coverage checks on the reusable core and the HA runtime helpers
 
 ## Recommended Test Matrix
@@ -43,6 +48,8 @@ the core engine and the Home Assistant runtime layer.
 - neutral conditions near the target
 - multi-room evaluation with different room weights
 - quiet hours and cooldown gate the recommendation
+- persisted state is reloaded after restart
+- debug attributes expose summary and per-room details
 
 ## Local Workflow
 
@@ -58,4 +65,3 @@ coverage report
 - add a focused regression test for every new scoring rule
 - prefer parametrized tests for scenario matrices
 - keep runtime helper tests small and deterministic
-

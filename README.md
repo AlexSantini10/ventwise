@@ -8,7 +8,8 @@
 
 VentWise helps you decide when opening or closing windows is likely to improve
 indoor comfort. It evaluates temperature, humidity, wind, and your comfort
-target, then exposes a clear recommendation back to Home Assistant.
+target, then exposes a clear recommendation back to Home Assistant. Runtime
+state is stored in the integration config entry so it survives restarts.
 
 ## GitHub metadata
 
@@ -37,21 +38,27 @@ If you want the repository settings to match the project scope, use:
 
 - Comfort-based recommendation engine
 - Multi-room support
+- Room management from the Home Assistant UI
 - Summer and winter behavior
 - Quiet hours and cooldowns
+- Persisted runtime state across restarts
+- Strong config flow validation
 - UI-first configuration in Home Assistant
+- Rich debug attributes on the recommendation sensors
 - HACS-ready distribution model
 
 ## Planned experience
 
 From Home Assistant, you should be able to:
 
-- define rooms
+- add, edit, and remove rooms
 - choose the sensors for each room
 - set your ideal comfort temperature
 - configure notification cooldowns
 - add quiet hours or temporary notification blocks
 - enable or disable the recommender quickly
+- keep notification and action state after a restart
+- inspect detailed debug data from the sensors
 
 ## Project structure
 
