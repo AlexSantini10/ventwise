@@ -83,16 +83,40 @@
       },
       "rooms": {
         "title": "Rooms",
-        "description": "Add rooms or macro-rooms one by one.",
+        "description": "Add, edit, or remove rooms and macro-rooms.",
         "menu_options": {
           "add_room": "Add room",
           "add_macro_room": "Add macro-room",
+          "edit_room": "Edit room",
+          "remove_room": "Remove room",
           "finish": "Done"
         },
         "menu_option_descriptions": {
           "add_room": "Create a standard room.",
           "add_macro_room": "Create a larger group that behaves like a room.",
+          "edit_room": "Pick an existing room and update its sensors or settings.",
+          "remove_room": "Pick an existing room and delete it from the list.",
           "finish": "Save the current list of rooms."
+        }
+      },
+      "edit_room_select": {
+        "title": "Edit room",
+        "description": "Choose the room you want to update.",
+        "data": {
+          "room_selection": "Room"
+        },
+        "data_description": {
+          "room_selection": "Select one of the rooms already saved in VentWise."
+        }
+      },
+      "remove_room_select": {
+        "title": "Remove room",
+        "description": "Choose the room you want to delete.",
+        "data": {
+          "room_selection": "Room"
+        },
+        "data_description": {
+          "room_selection": "Select one of the rooms already saved in VentWise."
         }
       },
       "add_room": {
@@ -117,9 +141,53 @@
           "pause_entity_id": "Optional. Pick a helper that can suspend this room."
         }
       },
+      "edit_room_form": {
+        "title": "Edit room",
+        "description": "Update the selected standard room.",
+        "data": {
+          "name": "Room name",
+          "temperature_entity_id": "Indoor temperature sensor",
+          "humidity_entity_id": "Indoor humidity sensor",
+          "weight": "Room weight",
+          "start_entity_id": "Start entity",
+          "stop_entity_id": "Stop entity",
+          "pause_entity_id": "Pause entity"
+        },
+        "data_description": {
+          "name": "A friendly name for this room, like Bedroom or Study.",
+          "temperature_entity_id": "Pick the room temperature sensor.",
+          "humidity_entity_id": "Optional. Pick the room humidity sensor.",
+          "weight": "Use a higher weight for rooms that matter more.",
+          "start_entity_id": "Optional. Pick an automation or helper to start the room logic.",
+          "stop_entity_id": "Optional. Pick an automation or helper to stop the room logic.",
+          "pause_entity_id": "Optional. Pick a helper that can suspend this room."
+        }
+      },
       "add_macro_room": {
         "title": "Add macro-room",
         "description": "Create a larger group that behaves like a room.",
+        "data": {
+          "name": "Macro-room name",
+          "temperature_entity_id": "Indoor temperature sensor",
+          "humidity_entity_id": "Indoor humidity sensor",
+          "weight": "Room weight",
+          "start_entity_id": "Start entity",
+          "stop_entity_id": "Stop entity",
+          "pause_entity_id": "Pause entity"
+        },
+        "data_description": {
+          "name": "A friendly name for this larger area, like Upstairs or Living area.",
+          "temperature_entity_id": "Pick the main temperature sensor for this area.",
+          "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
+          "weight": "Use a higher weight for areas that matter more.",
+          "start_entity_id": "Optional. Pick an automation or helper to start the area logic.",
+          "stop_entity_id": "Optional. Pick an automation or helper to stop the area logic.",
+          "pause_entity_id": "Optional. Pick a helper that can suspend this area."
+        }
+      },
+      "edit_macro_room_form": {
+        "title": "Edit macro-room",
+        "description": "Update the selected larger area.",
         "data": {
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
