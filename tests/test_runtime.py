@@ -11,6 +11,7 @@ from custom_components.ventwise.const import (
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
@@ -119,6 +120,67 @@ def test_build_room_profiles_skips_missing_sensor_values() -> None:
     rooms, outdoor = build_room_profiles(config, {}.get)
 
     assert outdoor is None
+    assert rooms == []
+
+
+def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_missing() -> None:
+    config = build_integration_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_WEIGHT: 1.0,
+                }
+            ],
+        }
+    )
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="25.0"),
+    }
+
+    rooms, outdoor = build_room_profiles(config, fake_states.get)
+
+    assert outdoor is not None
+    assert outdoor.temperature_c == 20.0
+    assert outdoor.humidity_percent == 50.0
+    assert outdoor.wind_speed_m_s is None
+    assert len(rooms) == 1
+
+
+def test_build_room_profiles_skips_unknown_room_temperature() -> None:
+    config = build_integration_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                    CONF_ROOM_WEIGHT: 1.0,
+                }
+            ],
+        }
+    )
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 55.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="unknown"),
+        "sensor.room_humidity": SimpleNamespace(state="unavailable"),
+    }
+
+    rooms, outdoor = build_room_profiles(config, fake_states.get)
+
+    assert outdoor is not None
     assert rooms == []
 
 
