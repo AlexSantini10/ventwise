@@ -22,9 +22,11 @@ from custom_components.ventwise.const import (
     CONF_ROOM_WEIGHT,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
 from custom_components.ventwise.runtime import (
     build_integration_config,
+    build_debug_attributes,
     build_room_profiles,
     dump_runtime_state,
     is_quiet_hours_active,
@@ -38,6 +40,14 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+)
+from custom_components.ventwise.runtime import RuntimeSnapshot
+from ventwise_core import (
+    ComfortObservation,
+    ComfortRecommender,
+    RecommendationContext,
+    RoomObservation,
+    RoomProfile,
 )
 
 
@@ -210,6 +220,58 @@ def test_build_room_profiles_skips_unknown_room_temperature() -> None:
 
     assert outdoor is not None
     assert rooms == []
+
+
+def test_build_debug_attributes_includes_summary_and_room_details() -> None:
+    config = build_integration_config(
+        {
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_SOFT_OUTDOOR_THRESHOLD_C: 22.0,
+            CONF_COOLDOWN_MINUTES: 60,
+            CONF_STABILITY_MINUTES: 10,
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                    CONF_ROOM_WEIGHT: 1.5,
+                }
+            ],
+        }
+    )
+    recommender = ComfortRecommender()
+    room_profiles = [
+        RoomProfile(
+            name="Camera",
+            indoor=RoomObservation(temperature_c=26.0, humidity_percent=60.0),
+            weight=1.5,
+        )
+    ]
+    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
+    summary = recommender.evaluate(
+        room_profiles,
+        outdoor,
+        RecommendationContext(stable_for_seconds=900),
+    )
+    snapshot = RuntimeSnapshot(
+        summary=summary,
+        notification_allowed=True,
+        quiet_hours_active=False,
+        cooldown_active=False,
+        enabled=True,
+        stable_for_seconds=900,
+        last_updated=datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc),
+    )
+
+    attributes = build_debug_attributes(config, snapshot)
+
+    assert attributes["summary_action"] == summary.action.value
+    assert attributes["summary_best_room"] == "Camera"
+    assert attributes["notification_allowed"] is True
+    assert attributes["room_recommendations"][0]["room_name"] == "Camera"
+    assert attributes["room_recommendations"][0]["weight"] == 1.5
+    assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0
+    assert attributes["best_room_recommendation"]["room_name"] == "Camera"
 
 
 def test_runtime_state_round_trips_through_storage() -> None:
