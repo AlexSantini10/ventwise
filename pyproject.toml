@@ -25,7 +25,7 @@ dependencies = []
 dynamic = ["version"]
 
 [tool.setuptools.dynamic]
-version = {attr = "custom_components.temperature_comfort_recommender._version.VERSION"}
+version = {attr = "temperature_comfort_recommender_core._version.VERSION"}
 
 [project.optional-dependencies]
 dev = [
