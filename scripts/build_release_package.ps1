@@ -16,13 +16,21 @@ if (Test-Path -LiteralPath $OutputPath) {
   Remove-Item -LiteralPath $OutputPath -Force
 }
 
+$integrationDir = Join-Path $root "custom_components\ventwise"
 $items = @(
-  (Join-Path $root "custom_components\ventwise"),
+  Get-ChildItem -LiteralPath $integrationDir -Force |
+    Where-Object {
+      $_.Name -ne ".gitkeep" -and
+      $_.Name -ne "__pycache__" -and
+      $_.Extension -ne ".pyc"
+    } |
+    ForEach-Object { $_.FullName }
+)
+$items += @(
   (Join-Path $root "README.md"),
   (Join-Path $root "LICENSE"),
   (Join-Path $root "NOTICE"),
-  (Join-Path $root "hacs.json"),
-  (Join-Path $root "brand")
-) | Where-Object { Test-Path -LiteralPath $_ }
+  (Join-Path $root "hacs.json")
+)
 
 Compress-Archive -Path $items -DestinationPath $OutputPath -CompressionLevel Optimal
