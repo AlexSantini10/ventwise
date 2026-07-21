@@ -56,27 +56,3 @@ jobs:
         uses: "hacs/action@main"
         with:
           category: integration
-
-  package:
-    name: Build Home Assistant package
-    runs-on: ubuntu-latest
-    needs:
-      - tests
-      - hassfest
-      - hacs
-    if: github.event_name == 'push'
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Build release package
-        shell: pwsh
-        run: |
-          ./scripts/build_release_package.ps1 -OutputPath dist/temperature_comfort_recommender.zip
-
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: temperature-comfort-recommender-package
-          path: dist/temperature_comfort_recommender.zip
-          if-no-files-found: error
