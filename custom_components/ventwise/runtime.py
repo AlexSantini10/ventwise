@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, time
 from typing import Any, Callable, Mapping
 
-from temperature_comfort_recommender_core import (
+from ventwise_core import (
     ComfortObservation,
     RecommendationSummary,
     RoomObservation,
@@ -43,7 +43,7 @@ from .const import (
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
 )
-from temperature_comfort_recommender_core import ComfortRecommender
+from ventwise_core import ComfortRecommender
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,5 +1,5 @@
 {
-  "domain": "temperature_comfort_recommender",
+  "domain": "ventwise",
   "name": "VentWise",
   "codeowners": [
     "@AlexSantini10"
@@ -10,5 +10,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/AlexSantini10/ventwise/issues",
   "requirements": [],
-  "version": "0.1.1"
+  "version": "0.1.2"
 }

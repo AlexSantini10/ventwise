@@ -17,7 +17,7 @@ from .flow import (
 )
 
 
-class TemperatureComfortRecommenderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for the integration."""
 
     VERSION = 1
@@ -83,6 +83,6 @@ class TemperatureComfortRecommenderConfigFlow(config_entries.ConfigFlow, domain=
     ) -> config_entries.OptionsFlow:
         """Return the options flow handler."""
 
-        from .options_flow import TemperatureComfortRecommenderOptionsFlowHandler
+        from .options_flow import VentWiseOptionsFlowHandler
 
-        return TemperatureComfortRecommenderOptionsFlowHandler(config_entry)
+        return VentWiseOptionsFlowHandler(config_entry)

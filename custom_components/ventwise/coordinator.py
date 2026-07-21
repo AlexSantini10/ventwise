@@ -14,12 +14,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from temperature_comfort_recommender_core import (
+from ventwise_core import (
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
 )
-from temperature_comfort_recommender_core import ComfortRecommender
+from ventwise_core import ComfortRecommender
 
 from .runtime import (
     IntegrationConfig,
@@ -33,8 +33,8 @@ from .runtime import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class TemperatureComfortRecommenderCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
-    """Coordinate state across all temperature comfort entities."""
+class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
+    """Coordinate state across all VentWise entities."""
 
     def __init__(
         self,

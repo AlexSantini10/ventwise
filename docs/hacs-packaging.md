@@ -17,7 +17,7 @@ custom integration.
 
 ## Suggested Repository Shape
 
-- `custom_components/temperature_comfort_recommender/`
+- `custom_components/ventwise/`
 - `src/`
 - `tests/`
 - `examples/`
@@ -37,4 +37,3 @@ custom integration.
 - The final public name should remain readable and user-friendly.
 - the repository root should stay clean and reproducible for releases
 - release artifacts should be produced automatically for installation in Home Assistant
-

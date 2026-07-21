@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from datetime import datetime
 
-from custom_components.temperature_comfort_recommender.const import (
+from custom_components.ventwise.const import (
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
@@ -22,7 +22,7 @@ from custom_components.temperature_comfort_recommender.const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
 )
-from custom_components.temperature_comfort_recommender.runtime import (
+from custom_components.ventwise.runtime import (
     build_integration_config,
     build_room_profiles,
     is_quiet_hours_active,

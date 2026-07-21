@@ -6,17 +6,17 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER, NAME
-from .coordinator import TemperatureComfortRecommenderCoordinator
+from .coordinator import VentWiseCoordinator
 
 
-class TemperatureComfortEntity(CoordinatorEntity[TemperatureComfortRecommenderCoordinator]):
-    """Base entity for the temperature comfort recommender."""
+class VentWiseEntity(CoordinatorEntity[VentWiseCoordinator]):
+    """Base entity for VentWise."""
 
     _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: TemperatureComfortRecommenderCoordinator,
+        coordinator: VentWiseCoordinator,
         entity_suffix: str,
         friendly_name: str,
     ) -> None:

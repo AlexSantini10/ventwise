@@ -1,4 +1,4 @@
-"""Core data models for temperature comfort recommendations."""
+"""Core data models for VentWise recommendations."""
 
 from __future__ import annotations
 

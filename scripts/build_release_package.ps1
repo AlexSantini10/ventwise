@@ -17,7 +17,7 @@ if (Test-Path -LiteralPath $OutputPath) {
 }
 
 $items = @(
-  (Join-Path $root "custom_components\temperature_comfort_recommender"),
+  (Join-Path $root "custom_components\ventwise"),
   (Join-Path $root "README.md"),
   (Join-Path $root "LICENSE"),
   (Join-Path $root "NOTICE"),

@@ -27,7 +27,7 @@ jobs:
         id: version
         shell: bash
         run: |
-          version=$(python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/temperature_comfort_recommender/manifest.json').read_text())['version'])")
+          version=$(python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/ventwise/manifest.json').read_text())['version'])")
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
@@ -61,7 +61,7 @@ jobs:
         if: steps.release_check.outputs.exists != 'true'
         shell: pwsh
         run: |
-          ./scripts/build_release_package.ps1 -OutputPath dist/temperature_comfort_recommender.zip
+          ./scripts/build_release_package.ps1 -OutputPath dist/ventwise.zip
 
       - name: Create GitHub Release
         if: steps.release_check.outputs.exists != 'true'
@@ -69,4 +69,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "${{ steps.version.outputs.tag }}" dist/temperature_comfort_recommender.zip --target "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}" --title "VentWise v${{ steps.version.outputs.version }}" --generate-notes --latest
+          gh release create "${{ steps.version.outputs.tag }}" dist/ventwise.zip --target "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}" --title "VentWise v${{ steps.version.outputs.version }}" --generate-notes --latest

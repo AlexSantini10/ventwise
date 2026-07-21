@@ -6,8 +6,8 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .coordinator import TemperatureComfortRecommenderCoordinator
-from .entity import TemperatureComfortEntity
+from .coordinator import VentWiseCoordinator
+from .entity import VentWiseEntity
 
 
 async def async_setup_entry(
@@ -21,12 +21,12 @@ async def async_setup_entry(
     async_add_entities([MasterEnableSwitch(coordinator)])
 
 
-class MasterEnableSwitch(TemperatureComfortEntity, SwitchEntity):
+class MasterEnableSwitch(VentWiseEntity, SwitchEntity):
     """Master enable switch for the integration."""
 
     _attr_icon = "mdi:toggle-switch"
 
-    def __init__(self, coordinator: TemperatureComfortRecommenderCoordinator) -> None:
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(coordinator, "master_enable", "Master enable")
 
     @property

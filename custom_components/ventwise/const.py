@@ -1,6 +1,6 @@
 """Constants for VentWise."""
 
-DOMAIN = "temperature_comfort_recommender"
+DOMAIN = "ventwise"
 NAME = "VentWise"
 MANUFACTURER = "VentWise"
 

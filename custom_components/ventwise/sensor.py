@@ -8,8 +8,8 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 
-from .coordinator import TemperatureComfortRecommenderCoordinator
-from .entity import TemperatureComfortEntity
+from .coordinator import VentWiseCoordinator
+from .entity import VentWiseEntity
 
 
 async def async_setup_entry(
@@ -29,12 +29,12 @@ async def async_setup_entry(
     )
 
 
-class RecommendationStateSensor(TemperatureComfortEntity, SensorEntity):
+class RecommendationStateSensor(VentWiseEntity, SensorEntity):
     """Current recommendation as a sensor."""
 
     _attr_icon = "mdi:window-open-variant"
 
-    def __init__(self, coordinator: TemperatureComfortRecommenderCoordinator) -> None:
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(coordinator, "recommendation", "Recommendation")
 
     @property
@@ -57,12 +57,12 @@ class RecommendationStateSensor(TemperatureComfortEntity, SensorEntity):
         }
 
 
-class RecommendationScoreSensor(TemperatureComfortEntity, SensorEntity):
+class RecommendationScoreSensor(VentWiseEntity, SensorEntity):
     """Numeric recommendation score."""
 
     _attr_icon = "mdi:chart-line"
 
-    def __init__(self, coordinator: TemperatureComfortRecommenderCoordinator) -> None:
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(coordinator, "score", "Score")
 
     @property
@@ -70,12 +70,12 @@ class RecommendationScoreSensor(TemperatureComfortEntity, SensorEntity):
         return self.coordinator.data.summary.score
 
 
-class RecommendationReasonSensor(TemperatureComfortEntity, SensorEntity):
+class RecommendationReasonSensor(VentWiseEntity, SensorEntity):
     """Human-readable recommendation reason."""
 
     _attr_icon = "mdi:text-box-outline"
 
-    def __init__(self, coordinator: TemperatureComfortRecommenderCoordinator) -> None:
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(coordinator, "reason", "Reason")
 
     @property

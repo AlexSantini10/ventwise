@@ -78,7 +78,7 @@ The user should be able to:
 ## Current Repo Mapping
 
 - `src/`: core engine experiments and reusable logic.
-- `custom_components/temperature_comfort_recommender/`: future Home Assistant integration code.
+- `custom_components/ventwise/`: future Home Assistant integration code.
 - `tests/`: scoring and behavior tests.
 - `examples/`: sample configurations and scenarios.
 - `docs/`: design and usage notes.

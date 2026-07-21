@@ -3,8 +3,8 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "temperature-comfort-recommender"
-description = "Reusable comfort scoring core for Home Assistant window recommendations"
+name = "ventwise"
+description = "Reusable VentWise core for Home Assistant window recommendations"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -25,7 +25,7 @@ dependencies = []
 dynamic = ["version"]
 
 [tool.setuptools.dynamic]
-version = {attr = "temperature_comfort_recommender_core._version.VERSION"}
+version = {attr = "ventwise_core._version.VERSION"}
 
 [project.optional-dependencies]
 dev = [
@@ -50,7 +50,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
-source = ["temperature_comfort_recommender_core", "custom_components.temperature_comfort_recommender"]
+source = ["ventwise_core", "custom_components.ventwise"]
 omit = [
   "tests/*",
 ]

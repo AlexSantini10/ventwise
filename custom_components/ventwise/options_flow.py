@@ -16,7 +16,7 @@ from .flow import (
 )
 
 
-class TemperatureComfortRecommenderOptionsFlowHandler(config_entries.OptionsFlow):
+class VentWiseOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for the integration."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:

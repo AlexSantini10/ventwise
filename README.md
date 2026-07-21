@@ -55,7 +55,7 @@ From Home Assistant, you should be able to:
 
 - `docs/`: development and design documentation
 - `src/`: reusable Python comfort engine
-- `custom_components/temperature_comfort_recommender/`: Home Assistant
+- `custom_components/ventwise/`: Home Assistant
   custom integration
 - `tests/`: scoring and behavior tests
 - `examples/`: sample configurations and scenarios

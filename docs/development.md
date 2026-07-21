@@ -26,7 +26,7 @@ coverage report
 ## Repository Layout
 
 - `src/` for the reusable scoring core
-- `custom_components/temperature_comfort_recommender/` for the Home Assistant integration
+- `custom_components/ventwise/` for the Home Assistant integration
 - `tests/` for unit and runtime coverage
 - `docs/` for architecture and packaging notes
 

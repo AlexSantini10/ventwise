@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def _read_manifest_version() -> str:
-    manifest_path = Path(__file__).resolve().parents[2] / "custom_components" / "temperature_comfort_recommender" / "manifest.json"
+    manifest_path = Path(__file__).resolve().parents[2] / "custom_components" / "ventwise" / "manifest.json"
     return json.loads(manifest_path.read_text(encoding="utf-8"))["version"]
 
 

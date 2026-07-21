@@ -12,7 +12,7 @@ try:  # Home Assistant is not installed in the unit-test environment.
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
-    from .coordinator import TemperatureComfortRecommenderCoordinator
+    from .coordinator import VentWiseCoordinator
 
     PLATFORMS: list[Platform] = [
         Platform.BINARY_SENSOR,
@@ -23,7 +23,7 @@ try:  # Home Assistant is not installed in the unit-test environment.
 except ModuleNotFoundError:  # pragma: no cover - test-time fallback
     ConfigEntry = Any  # type: ignore[assignment]
     HomeAssistant = Any  # type: ignore[assignment]
-    TemperatureComfortRecommenderCoordinator = Any  # type: ignore[assignment]
+    VentWiseCoordinator = Any  # type: ignore[assignment]
     PLATFORMS: list[Any] = []
     HA_AVAILABLE = False
 
@@ -32,7 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - test-time fallback
 class IntegrationRuntimeData:
     """Runtime storage for the integration."""
 
-    coordinator: TemperatureComfortRecommenderCoordinator
+    coordinator: VentWiseCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -41,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not HA_AVAILABLE:  # pragma: no cover - safety net for local imports
         return True
 
-    coordinator = TemperatureComfortRecommenderCoordinator(
+    coordinator = VentWiseCoordinator(
         hass,
         entry,
         {**entry.data, **entry.options},

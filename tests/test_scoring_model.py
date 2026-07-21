@@ -1,6 +1,6 @@
 """Tests for the comfort scoring core."""
 
-from temperature_comfort_recommender_core import (
+from ventwise_core import (
     ComfortObservation,
     ComfortRecommender,
     RecommendationAction,
