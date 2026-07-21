@@ -33,17 +33,34 @@ class _FakeConfigEntries:
         self.reloaded.append(entry_id)
 
 
+class _FakeConfigEntry:
+    def __init__(
+        self,
+        *,
+        entry_id: str,
+        data: dict[str, object],
+        options: dict[str, object],
+    ) -> None:
+        self.entry_id = entry_id
+        self.data = data
+        self.options = options
+        self.domain = "ventwise"
+        self.title = "VentWise"
+        self._unload_callbacks: list[object] = []
+
+    def async_on_unload(self, callback) -> None:
+        self._unload_callbacks.append(callback)
+
+
 def _make_coordinator(options: dict[str, object] | None = None):
     hass = SimpleNamespace(
         config_entries=_FakeConfigEntries(),
         states=SimpleNamespace(get=lambda *_: None),
     )
-    entry = SimpleNamespace(
+    entry = _FakeConfigEntry(
         entry_id="abc123",
         data={},
         options=options or {},
-        domain="ventwise",
-        title="VentWise",
     )
     coordinator = VentWiseCoordinator(hass, entry, {**entry.data, **entry.options})
     return coordinator, hass, entry
