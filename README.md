@@ -8,9 +8,6 @@ VentWise helps you decide when opening or closing windows is likely to improve
 indoor comfort. It evaluates temperature, humidity, wind, and your comfort
 target, then exposes a clear recommendation back to Home Assistant.
 
-This project is a native Home Assistant custom integration, not an AppDaemon
-app.
-
 ## GitHub metadata
 
 If you want the repository settings to match the project scope, use:
