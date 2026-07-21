@@ -4,8 +4,6 @@
 
 [![Latest release](https://img.shields.io/github/v/release/AlexSantini10/ventwise?display_name=tag)](https://github.com/AlexSantini10/ventwise/releases/latest)
 
-[![VentWise icon](brand/icon.png)](brand/icon.png)
-
 **A Home Assistant custom integration for comfort-based window recommendations, built for HACS.**
 
 VentWise helps you decide when opening or closing windows is likely to improve
