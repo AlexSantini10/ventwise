@@ -74,6 +74,36 @@ def test_normalize_global_config_keeps_optional_entities_clean() -> None:
     assert data[CONF_NOTIFICATION_DEVICE_ID] is None
 
 
+def test_normalize_global_config_preserves_seconds_precision() -> None:
+    """Valid quiet-hours times with seconds should stay normalized."""
+
+    data = normalize_global_config(
+        {
+            CONF_QUIET_HOURS_START: "22:15:30",
+            CONF_QUIET_HOURS_END: "07:45:05",
+        }
+    )
+
+    assert data[CONF_QUIET_HOURS_START] == "22:15:30"
+    assert data[CONF_QUIET_HOURS_END] == "07:45:05"
+
+
+def test_normalize_global_config_rejects_invalid_time_values() -> None:
+    """Invalid quiet-hours inputs should fail before storage."""
+
+    try:
+        normalize_global_config(
+            {
+                CONF_QUIET_HOURS_START: "25:00",
+                CONF_QUIET_HOURS_END: "07:00",
+            }
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Expected invalid quiet-hours time to raise ValueError")
+
+
 def test_normalize_room_config_strips_name_whitespace() -> None:
     """Room names should be stored without surrounding whitespace."""
 
@@ -112,3 +142,12 @@ def test_split_config_data_separates_rooms_from_global_settings() -> None:
     assert "rooms" not in global_data
     assert global_data["other"] == "value"
     assert rooms[0][CONF_ROOM_NAME] == "Living room"
+
+
+def test_split_config_data_handles_missing_rooms_key() -> None:
+    """The split helper should tolerate entries without room data."""
+
+    global_data, rooms = split_config_data({CONF_QUIET_HOURS_START: "22:00:00"})
+
+    assert global_data[CONF_QUIET_HOURS_START] == "22:00:00"
+    assert rooms == []
