@@ -58,6 +58,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._last_notification_signature = self._runtime_state.last_notification_signature
         super().__init__(
             hass,
+            config_entry=config_entry,
             logger=_LOGGER,
             name="VentWise",
             update_interval=timedelta(minutes=1),

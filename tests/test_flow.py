@@ -9,6 +9,7 @@ pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
     CONF_NOTIFICATION_DEVICE_ID,
+    CONF_COOLDOWN_MINUTES,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
@@ -146,6 +147,10 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
 
     data = normalize_advanced_config(
         {
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
+            CONF_COOLDOWN_MINUTES: 60,
+            CONF_STABILITY_MINUTES: 10,
             CONF_QUIET_HOURS_START: "22:00",
             CONF_QUIET_HOURS_END: "07:00:00",
             CONF_QUIET_HOURS_START_ENTITY_ID: " input_datetime.quiet_start ",
@@ -169,6 +174,10 @@ def test_normalize_advanced_config_rejects_invalid_time_format() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
         normalize_advanced_config(
             {
+                CONF_TARGET_TEMPERATURE_C: 22.0,
+                CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
+                CONF_COOLDOWN_MINUTES: 60,
+                CONF_STABILITY_MINUTES: 10,
                 CONF_QUIET_HOURS_START: "25:00",
                 CONF_QUIET_HOURS_END: "07:00",
             }
