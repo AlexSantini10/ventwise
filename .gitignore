@@ -12,3 +12,4 @@ build/
 .venv*/
 *.egg-info/
 *.log
+AGENTS.md
