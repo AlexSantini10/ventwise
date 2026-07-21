@@ -1,6 +1,6 @@
 {
   "domain": "temperature_comfort_recommender",
-  "name": "Temperature Comfort Recommender",
+  "name": "VentWise",
   "codeowners": [
     "@AlexSantini10"
   ],

@@ -1,4 +1,4 @@
-"""Temperature Comfort Recommender integration."""
+"""VentWise integration."""
 
 from __future__ import annotations
 

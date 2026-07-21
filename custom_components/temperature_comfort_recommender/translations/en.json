@@ -1,9 +1,9 @@
 {
-  "title": "Temperature Comfort Recommender",
+  "title": "VentWise",
   "config": {
     "step": {
       "user": {
-        "title": "Set up Temperature Comfort Recommender",
+        "title": "Set up VentWise",
         "description": "Choose the shared sensors and comfort thresholds."
       },
       "room": {
@@ -18,7 +18,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Adjust Temperature Comfort Recommender",
+        "title": "Adjust VentWise",
         "description": "Update shared settings and the number of rooms."
       },
       "room": {

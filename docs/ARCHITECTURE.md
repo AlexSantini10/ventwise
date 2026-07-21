@@ -1,4 +1,4 @@
-# Temperature Comfort Recommender Architecture
+# VentWise Architecture
 
 ## Purpose
 

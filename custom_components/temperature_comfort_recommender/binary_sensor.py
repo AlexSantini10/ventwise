@@ -1,4 +1,4 @@
-"""Binary sensor platform for Temperature Comfort Recommender."""
+"""Binary sensor platform for VentWise."""
 
 from __future__ import annotations
 

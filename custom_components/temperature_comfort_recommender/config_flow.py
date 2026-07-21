@@ -1,4 +1,4 @@
-"""Config flow for Temperature Comfort Recommender."""
+"""Config flow for VentWise."""
 
 from __future__ import annotations
 

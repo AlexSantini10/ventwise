@@ -1,4 +1,4 @@
-"""Sensor platform for Temperature Comfort Recommender."""
+"""Sensor platform for VentWise."""
 
 from __future__ import annotations
 

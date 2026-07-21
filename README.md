@@ -1,11 +1,10 @@
-# Temperature Comfort Recommender
+# VentWise
 
 **A Home Assistant custom integration for comfort-based window recommendations, built for HACS.**
 
-Temperature Comfort Recommender helps you decide when opening or closing
-windows is likely to improve indoor comfort. It evaluates temperature,
-humidity, wind, and your comfort target, then exposes a clear recommendation
-back to Home Assistant.
+VentWise helps you decide when opening or closing windows is likely to improve
+indoor comfort. It evaluates temperature, humidity, wind, and your comfort
+target, then exposes a clear recommendation back to Home Assistant.
 
 This project is a native Home Assistant custom integration, not an AppDaemon
 app.
@@ -14,7 +13,7 @@ app.
 
 If you want the repository settings to match the project scope, use:
 
-- Description: `Home Assistant custom integration for comfort-based window recommendations`
+  - Description: `VentWise - Home Assistant custom integration for comfort-based window recommendations`
 - Topics:
   - `home-assistant`
   - `hacs`
@@ -22,6 +21,7 @@ If you want the repository settings to match the project scope, use:
   - `home-automation`
   - `comfort`
   - `climate`
+  - `ventwise`
 
 ## Why this project exists
 

@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up Temperature Comfort Recommender",
+        "title": "Set up VentWise",
         "description": "Choose the shared sensors and comfort thresholds.",
         "data": {
           "target_temperature_c": "Target comfort temperature (C)",
@@ -39,7 +39,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Adjust Temperature Comfort Recommender",
+        "title": "Adjust VentWise",
         "description": "Update shared settings and the number of rooms.",
         "data": {
           "target_temperature_c": "Target comfort temperature (C)",

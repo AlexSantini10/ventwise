@@ -1,7 +1,7 @@
-"""Constants for Temperature Comfort Recommender."""
+"""Constants for VentWise."""
 
 DOMAIN = "temperature_comfort_recommender"
-NAME = "Temperature Comfort Recommender"
+NAME = "VentWise"
 MANUFACTURER = "VentWise"
 
 DEFAULT_TARGET_TEMPERATURE_C = 22.0

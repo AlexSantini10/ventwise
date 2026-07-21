@@ -52,7 +52,7 @@ class TemperatureComfortRecommenderCoordinator(DataUpdateCoordinator[RuntimeSnap
         super().__init__(
             hass,
             logger=_LOGGER,
-            name="Temperature Comfort Recommender",
+            name="VentWise",
             update_interval=timedelta(minutes=1),
         )
 
