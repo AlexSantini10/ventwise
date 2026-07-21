@@ -10,6 +10,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import (
     DeviceSelector,
     EntitySelector,
+    EntitySelectorConfig,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -92,15 +93,15 @@ def build_global_schema(defaults: Mapping[str, object]) -> vol.Schema:
             vol.Required(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
-            ): EntitySelector(),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Required(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
-            ): EntitySelector(),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Optional(
                 CONF_WIND_SPEED_ENTITY_ID,
                 default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
-            ): EntitySelector(),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Optional(
                 CONF_MASTER_CONTROL_ENTITY_ID,
                 default=defaults.get(CONF_MASTER_CONTROL_ENTITY_ID) or None,
@@ -126,11 +127,11 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int) -> vol.S
             vol.Required(
                 CONF_ROOM_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
-            ): EntitySelector(),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Required(
                 CONF_ROOM_HUMIDITY_ENTITY_ID,
                 default=defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
-            ): EntitySelector(),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Required(
                 CONF_ROOM_WEIGHT,
                 default=defaults.get(CONF_ROOM_WEIGHT, DEFAULT_ROOM_WEIGHT),

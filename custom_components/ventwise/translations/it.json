@@ -1,0 +1,121 @@
+{
+  "title": "VentWise",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura VentWise",
+        "description": "Scegli i sensori delle stanze e le impostazioni di comfort. Potrai modificarli in seguito dalle impostazioni dell'integrazione.",
+        "data": {
+          "target_temperature_c": "Temperatura interna obiettivo",
+          "soft_outdoor_threshold_c": "Soglia di comfort esterna",
+          "minimum_score": "Punteggio minimo della raccomandazione",
+          "cooldown_minutes": "Periodo di pausa (minuti)",
+          "stability_minutes": "Periodo di stabilità (minuti)",
+          "quiet_hours_enabled": "Sospendi durante le ore di silenzio",
+          "quiet_hours_start": "Inizio ore di silenzio",
+          "quiet_hours_end": "Fine ore di silenzio",
+          "outdoor_temperature_entity_id": "Sensore temperatura esterna",
+          "outdoor_humidity_entity_id": "Sensore umidità esterna",
+          "wind_speed_entity_id": "Sensore velocità del vento esterno",
+          "master_control_entity_id": "Entità di controllo principale",
+          "notification_device_id": "Dispositivo di notifica",
+          "room_count": "Numero di stanze"
+        },
+        "data_description": {
+          "target_temperature_c": "La temperatura di comfort che VentWise deve cercare di mantenere all'interno.",
+          "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
+          "minimum_score": "VentWise suggerisce la ventilazione solo quando il punteggio raggiunge questo valore.",
+          "cooldown_minutes": "Quanto tempo VentWise attende prima di inviare di nuovo lo stesso suggerimento.",
+          "stability_minutes": "Per quanto tempo un suggerimento deve restare invariato prima di essere inviato.",
+          "quiet_hours_enabled": "Ferma i suggerimenti quando le ore di silenzio sono attive.",
+          "quiet_hours_start": "Usa un orario come 22:00 o 22:00:00.",
+          "quiet_hours_end": "Usa un orario come 07:00 o 07:00:00.",
+          "outdoor_temperature_entity_id": "Scegli il sensore della temperatura esterna.",
+          "outdoor_humidity_entity_id": "Scegli il sensore dell'umidità esterna.",
+          "wind_speed_entity_id": "Facoltativo. Scegli un sensore della velocità del vento se lo hai.",
+          "master_control_entity_id": "Facoltativo. Scegli l'interruttore o l'helper da usare come controllo principale.",
+          "notification_device_id": "Facoltativo. Scegli il dispositivo che riceverà le notifiche.",
+          "room_count": "Quante stanze vuoi configurare."
+        }
+      },
+      "room": {
+        "title": "Stanza {current_room} di {room_count}",
+        "description": "Configura una stanza alla volta.",
+        "data": {
+          "name": "Nome stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "weight": "Peso stanza"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Camera o Studio.",
+          "temperature_entity_id": "Scegli il sensore della temperatura della stanza.",
+          "humidity_entity_id": "Scegli il sensore dell'umidità della stanza.",
+          "weight": "Usa un peso maggiore per le stanze più importanti."
+        }
+      }
+    },
+    "error": {
+      "invalid_input": "Uno o più valori non sono validi."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifica VentWise",
+        "description": "Aggiorna le impostazioni condivise e il numero di stanze.",
+        "data": {
+          "target_temperature_c": "Temperatura interna obiettivo",
+          "soft_outdoor_threshold_c": "Soglia di comfort esterna",
+          "minimum_score": "Punteggio minimo della raccomandazione",
+          "cooldown_minutes": "Periodo di pausa (minuti)",
+          "stability_minutes": "Periodo di stabilità (minuti)",
+          "quiet_hours_enabled": "Sospendi durante le ore di silenzio",
+          "quiet_hours_start": "Inizio ore di silenzio",
+          "quiet_hours_end": "Fine ore di silenzio",
+          "outdoor_temperature_entity_id": "Sensore temperatura esterna",
+          "outdoor_humidity_entity_id": "Sensore umidità esterna",
+          "wind_speed_entity_id": "Sensore velocità del vento esterno",
+          "master_control_entity_id": "Entità di controllo principale",
+          "notification_device_id": "Dispositivo di notifica",
+          "room_count": "Numero di stanze"
+        },
+        "data_description": {
+          "target_temperature_c": "La temperatura di comfort che VentWise deve cercare di mantenere all'interno.",
+          "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
+          "minimum_score": "VentWise suggerisce la ventilazione solo quando il punteggio raggiunge questo valore.",
+          "cooldown_minutes": "Quanto tempo VentWise attende prima di inviare di nuovo lo stesso suggerimento.",
+          "stability_minutes": "Per quanto tempo un suggerimento deve restare invariato prima di essere inviato.",
+          "quiet_hours_enabled": "Ferma i suggerimenti quando le ore di silenzio sono attive.",
+          "quiet_hours_start": "Usa un orario come 22:00 o 22:00:00.",
+          "quiet_hours_end": "Usa un orario come 07:00 o 07:00:00.",
+          "outdoor_temperature_entity_id": "Scegli il sensore della temperatura esterna.",
+          "outdoor_humidity_entity_id": "Scegli il sensore dell'umidità esterna.",
+          "wind_speed_entity_id": "Facoltativo. Scegli un sensore della velocità del vento se lo hai.",
+          "master_control_entity_id": "Facoltativo. Scegli l'interruttore o l'helper da usare come controllo principale.",
+          "notification_device_id": "Facoltativo. Scegli il dispositivo che riceverà le notifiche.",
+          "room_count": "Quante stanze vuoi configurare."
+        }
+      },
+      "room": {
+        "title": "Stanza {current_room} di {room_count}",
+        "description": "Modifica una stanza alla volta.",
+        "data": {
+          "name": "Nome stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "weight": "Peso stanza"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Camera o Studio.",
+          "temperature_entity_id": "Scegli il sensore della temperatura della stanza.",
+          "humidity_entity_id": "Scegli il sensore dell'umidità della stanza.",
+          "weight": "Usa un peso maggiore per le stanze più importanti."
+        }
+      }
+    },
+    "error": {
+      "invalid_input": "Uno o più valori non sono validi."
+    }
+  }
+}
