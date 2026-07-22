@@ -74,6 +74,18 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
             vol.Required(
+                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+                default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Required(
+                CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+                default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Required(
+                CONF_WIND_SPEED_ENTITY_ID,
+                default=defaults.get(CONF_WIND_SPEED_ENTITY_ID),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Required(
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
             ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
@@ -90,6 +102,18 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
+            vol.Required(
+                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+                default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Required(
+                CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+                default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Required(
+                CONF_WIND_SPEED_ENTITY_ID,
+                default=defaults.get(CONF_WIND_SPEED_ENTITY_ID),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Required(
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
@@ -210,6 +234,15 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     data[CONF_OUTDOOR_WEATHER_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID), CONF_OUTDOOR_WEATHER_ENTITY_ID, "weather"
     )
+    data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
+        data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID), CONF_OUTDOOR_TEMPERATURE_ENTITY_ID, "sensor"
+    )
+    data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] = _normalize_required_entity_id(
+        data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID), CONF_OUTDOOR_HUMIDITY_ENTITY_ID, "sensor"
+    )
+    data[CONF_WIND_SPEED_ENTITY_ID] = _normalize_required_entity_id(
+        data.get(CONF_WIND_SPEED_ENTITY_ID), CONF_WIND_SPEED_ENTITY_ID, "sensor"
+    )
     data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(
         data.get(CONF_TARGET_TEMPERATURE_C),
         CONF_TARGET_TEMPERATURE_C,
@@ -252,9 +285,6 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         data,
         CONF_QUIET_HOURS_START_ENTITY_ID,
         CONF_QUIET_HOURS_END_ENTITY_ID,
-        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-        CONF_WIND_SPEED_ENTITY_ID,
         CONF_MASTER_CONTROL_ENTITY_ID,
     )
     _normalize_optional_entity_ids(
@@ -262,13 +292,6 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         CONF_QUIET_HOURS_START_ENTITY_ID,
         CONF_QUIET_HOURS_END_ENTITY_ID,
         CONF_MASTER_CONTROL_ENTITY_ID,
-    )
-    _normalize_optional_entity_ids(
-        data,
-        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-        CONF_WIND_SPEED_ENTITY_ID,
-        domain="sensor",
     )
     return data
 

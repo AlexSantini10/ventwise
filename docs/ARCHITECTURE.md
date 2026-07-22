@@ -43,6 +43,9 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   last-action state survive restarts.
 - Keeps all user-editable entity references and comfort settings in the
   config entry, surfaced through the UI.
+- Collects the weather source plus dedicated outdoor temperature, humidity,
+  and wind sensors during setup so the runtime has the minimum context it
+  needs.
 - Validates room definitions and numeric limits in the config flow and options
   flow before data is saved.
 
