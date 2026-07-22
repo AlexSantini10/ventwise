@@ -422,9 +422,12 @@ def _normalize_optional_entities(data: dict[str, object], *keys: str) -> None:
 def _optional_selector_field(
     field: str, selector: object, suggested_value: object | None
 ) -> dict[object, object]:
+    optional_selector = vol.Any(None, selector)
     if suggested_value is None:
-        return {vol.Optional(field): selector}
-    return {vol.Optional(field, description={"suggested_value": suggested_value}): selector}
+        return {vol.Optional(field): optional_selector}
+    return {
+        vol.Optional(field, description={"suggested_value": suggested_value}): optional_selector
+    }
 
 
 def _normalize_optional_entity_ids(
