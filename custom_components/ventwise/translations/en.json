@@ -4,12 +4,14 @@
     "step": {
       "user": {
         "title": "Set up VentWise",
-        "description": "Pick the weather source to get started. You can fine-tune the rest later.",
+        "description": "Pick the weather source and comfort temperature to get started. You can fine-tune the rest later.",
         "data": {
-          "outdoor_weather_entity_id": "Weather source"
+          "outdoor_weather_entity_id": "Weather source",
+          "target_temperature_c": "Comfort temperature"
         },
         "data_description": {
-          "outdoor_weather_entity_id": "Select the standard Home Assistant weather entity VentWise should use first."
+          "outdoor_weather_entity_id": "Select the standard Home Assistant weather entity VentWise should use first.",
+          "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for."
         }
       }
     },
@@ -28,7 +30,7 @@
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
-          "basic": "Weather source, quiet-hours pause, and notifications.",
+          "basic": "Weather source, comfort temperature, quiet-hours pause, and notifications.",
           "advanced": "Tuning values and entity overrides.",
           "rooms": "Add rooms and macro-rooms."
         }
@@ -38,12 +40,14 @@
         "description": "Keep the simple controls here.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
+          "target_temperature_c": "Comfort temperature",
           "quiet_hours_enabled": "Pause during quiet hours",
           "quiet_hours_pause_entity_id": "Quiet-hours pause entity",
           "notification_device_id": "Notification device"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Select the weather entity VentWise should use first.",
+          "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
           "quiet_hours_enabled": "Turn on a pause while quiet hours are active.",
           "quiet_hours_pause_entity_id": "Optional. Pick a helper or sensor that can suspend recommendations.",
           "notification_device_id": "Optional. Pick the device that should receive notifications."
@@ -53,7 +57,6 @@
         "title": "Advanced settings",
         "description": "Fine-tune the more technical values.",
         "data": {
-          "target_temperature_c": "Indoor target temperature",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Cooldown period (minutes)",
           "stability_minutes": "Stability period (minutes)",
@@ -67,7 +70,6 @@
           "master_control_entity_id": "Master control entity"
         },
         "data_description": {
-          "target_temperature_c": "The comfort temperature VentWise should aim for indoors.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending the same suggestion again.",
           "stability_minutes": "How long a suggestion must remain unchanged before it can be sent.",
