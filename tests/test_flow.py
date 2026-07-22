@@ -31,6 +31,7 @@ from custom_components.ventwise.const import (
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_WIND_SPEED_ENTITY_ID,
 )
 from custom_components.ventwise.flow import (
@@ -62,6 +63,9 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
 
 
@@ -72,6 +76,9 @@ def test_basic_options_schema_covers_simple_controls() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
     assert callable(schema_dict[CONF_QUIET_HOURS_ENABLED])
     assert schema_dict[CONF_QUIET_HOURS_PAUSE_ENTITY_ID].__class__.__name__ == "EntitySelector"
@@ -90,11 +97,7 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert schema_dict[CONF_QUIET_HOURS_END].__class__.__name__ == "TextSelector"
     assert schema_dict[CONF_QUIET_HOURS_START_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_QUIET_HOURS_END_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    wind_selector_config = schema_dict[CONF_WIND_SPEED_ENTITY_ID].config
-    assert "sensor" in wind_selector_config["domain"]
+    assert schema_dict[CONF_MASTER_CONTROL_ENTITY_ID].__class__.__name__ == "EntitySelector"
 
 
 def test_room_schema_supports_room_and_macro_room_defaults() -> None:
@@ -119,6 +122,9 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     data = normalize_basic_config(
         {
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
+            CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
+            CONF_WIND_SPEED_ENTITY_ID: "sensor.wind_speed",
             CONF_TARGET_TEMPERATURE_C: "22.5",
             CONF_QUIET_HOURS_PAUSE_ENTITY_ID: " ",
             CONF_NOTIFICATION_DEVICE_ID: None,
@@ -126,6 +132,9 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     )
 
     assert data[CONF_OUTDOOR_WEATHER_ENTITY_ID] == "weather.home"
+    assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] == "sensor.outdoor_temp"
+    assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] == "sensor.outdoor_humidity"
+    assert data[CONF_WIND_SPEED_ENTITY_ID] == "sensor.wind_speed"
     assert data[CONF_TARGET_TEMPERATURE_C] == 22.5
     assert data[CONF_QUIET_HOURS_PAUSE_ENTITY_ID] is None
     assert data[CONF_NOTIFICATION_DEVICE_ID] is None
@@ -143,6 +152,9 @@ def test_normalize_basic_config_rejects_invalid_weather_domain() -> None:
         normalize_basic_config(
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "sensor.home",
+                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
+                CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
+                CONF_WIND_SPEED_ENTITY_ID: "sensor.wind_speed",
                 CONF_TARGET_TEMPERATURE_C: 22.0,
             }
         )
@@ -150,11 +162,29 @@ def test_normalize_basic_config_rejects_invalid_weather_domain() -> None:
     assert exc_info.value.field == CONF_OUTDOOR_WEATHER_ENTITY_ID
 
 
+def test_normalize_basic_config_rejects_invalid_outdoor_sensor_domain() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_basic_config(
+            {
+                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "binary_sensor.outdoor_temp",
+                CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
+                CONF_WIND_SPEED_ENTITY_ID: "sensor.wind_speed",
+                CONF_TARGET_TEMPERATURE_C: 22.0,
+            }
+        )
+
+    assert exc_info.value.field == CONF_OUTDOOR_TEMPERATURE_ENTITY_ID
+
+
 def test_normalize_basic_config_rejects_invalid_target_temperature() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
         normalize_basic_config(
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
+                CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
+                CONF_WIND_SPEED_ENTITY_ID: "sensor.wind_speed",
                 CONF_TARGET_TEMPERATURE_C: 5.0,
             }
         )
@@ -174,9 +204,7 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
             CONF_QUIET_HOURS_END: "07:00:00",
             CONF_QUIET_HOURS_START_ENTITY_ID: " input_datetime.quiet_start ",
             CONF_QUIET_HOURS_END_ENTITY_ID: "",
-            CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
-            CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
-            CONF_WIND_SPEED_ENTITY_ID: "sensor.wind",
+            CONF_MASTER_CONTROL_ENTITY_ID: " input_boolean.master ",
         }
     )
 
@@ -184,8 +212,7 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
     assert data[CONF_QUIET_HOURS_END] == "07:00:00"
     assert data[CONF_QUIET_HOURS_START_ENTITY_ID] == "input_datetime.quiet_start"
     assert data[CONF_QUIET_HOURS_END_ENTITY_ID] is None
-    assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] == "sensor.outdoor_temp"
-    assert data[CONF_WIND_SPEED_ENTITY_ID] == "sensor.wind"
+    assert data[CONF_MASTER_CONTROL_ENTITY_ID] == "input_boolean.master"
 
 
 def test_normalize_advanced_config_rejects_invalid_time_format() -> None:

@@ -4,13 +4,19 @@
     "step": {
       "user": {
         "title": "Set up VentWise",
-        "description": "Pick the weather source and comfort temperature to get started. You can fine-tune the rest later.",
+        "description": "Pick the weather source, outdoor temperature, humidity, and wind sensors, then set the comfort temperature.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
+          "outdoor_temperature_entity_id": "Outdoor temperature sensor",
+          "outdoor_humidity_entity_id": "Outdoor humidity sensor",
+          "wind_speed_entity_id": "Outdoor wind speed sensor",
           "target_temperature_c": "Comfort temperature"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Select the standard Home Assistant weather entity VentWise should use first.",
+          "outdoor_temperature_entity_id": "Select the dedicated outdoor temperature sensor VentWise should read.",
+          "outdoor_humidity_entity_id": "Select the dedicated outdoor humidity sensor VentWise should read.",
+          "wind_speed_entity_id": "Select the dedicated outdoor wind speed sensor VentWise should read.",
           "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for."
         }
       }
@@ -30,7 +36,7 @@
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
-          "basic": "Weather source, comfort temperature, quiet-hours pause, and notifications.",
+          "basic": "Weather source, outdoor sensors, comfort temperature, quiet-hours pause, and notifications.",
           "advanced": "Tuning values and entity overrides.",
           "rooms": "Add rooms and macro-rooms."
         }
@@ -40,6 +46,9 @@
         "description": "Keep the simple controls here.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
+          "outdoor_temperature_entity_id": "Outdoor temperature sensor",
+          "outdoor_humidity_entity_id": "Outdoor humidity sensor",
+          "wind_speed_entity_id": "Outdoor wind speed sensor",
           "target_temperature_c": "Comfort temperature",
           "quiet_hours_enabled": "Pause during quiet hours",
           "quiet_hours_pause_entity_id": "Quiet-hours pause entity",
@@ -47,6 +56,9 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Select the weather entity VentWise should use first.",
+          "outdoor_temperature_entity_id": "Select the dedicated outdoor temperature sensor VentWise should read.",
+          "outdoor_humidity_entity_id": "Select the dedicated outdoor humidity sensor VentWise should read.",
+          "wind_speed_entity_id": "Select the dedicated outdoor wind speed sensor VentWise should read.",
           "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
           "quiet_hours_enabled": "Turn on a pause while quiet hours are active.",
           "quiet_hours_pause_entity_id": "Optional. Pick a helper or sensor that can suspend recommendations.",
@@ -64,9 +76,6 @@
           "quiet_hours_end": "Quiet hours end",
           "quiet_hours_start_entity_id": "Quiet hours start entity",
           "quiet_hours_end_entity_id": "Quiet hours end entity",
-          "outdoor_temperature_entity_id": "Outdoor temperature sensor",
-          "outdoor_humidity_entity_id": "Outdoor humidity sensor",
-          "wind_speed_entity_id": "Outdoor wind speed sensor",
           "master_control_entity_id": "Master control entity"
         },
         "data_description": {
@@ -77,9 +86,6 @@
           "quiet_hours_end": "Use a time like 07:00 or 07:00:00.",
           "quiet_hours_start_entity_id": "Optional. Pick a time entity to read the quiet-hours start from.",
           "quiet_hours_end_entity_id": "Optional. Pick a time entity to read the quiet-hours end from.",
-          "outdoor_temperature_entity_id": "Optional. Override the temperature from the weather entity.",
-          "outdoor_humidity_entity_id": "Optional. Override the humidity from the weather entity.",
-          "wind_speed_entity_id": "Optional. Override the wind speed from the weather entity.",
           "master_control_entity_id": "Optional. Pick the switch or helper you want to use as the master control."
         }
       },

@@ -10,9 +10,10 @@ through HACS.
 The UI should allow the user to:
 
 - add, edit, and remove rooms
+- choose the weather source plus dedicated outdoor temperature, humidity, and wind sensors
+- set the ideal comfort temperature
 - select temperature and humidity sensors per room
 - define notification targets and the devices that should receive them
-- define the ideal comfort temperature
 - configure all entity references used by the integration
 - set notification cooldown
 - define quiet hours and do-not-disturb windows
