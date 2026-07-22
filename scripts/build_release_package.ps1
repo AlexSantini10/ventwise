@@ -1,11 +1,12 @@
 param(
   [Parameter(Mandatory = $true)]
-  [string]$OutputPath
+  [string]$OutputPath,
+  [string]$SourcePath = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 )
 
 $ErrorActionPreference = "Stop"
 
-$root = Resolve-Path (Join-Path $PSScriptRoot "..")
+$root = (Resolve-Path $SourcePath).Path
 $outputDir = Split-Path -Parent $OutputPath
 
 if (-not (Test-Path -LiteralPath $outputDir)) {

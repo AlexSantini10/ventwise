@@ -1,35 +1,69 @@
-name: Release
+name: Experimental Release
 
 on:
   workflow_run:
     workflows: ["CI"]
     branches:
-      - main
+      - test
+      - "test/**"
+      - "test-*"
     types:
       - completed
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Publish GitHub Release
+    name: Publish experimental GitHub Release
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success' || (github.event_name == 'workflow_dispatch' && github.ref_name == 'main')
+    if: github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
-      - name: Read version from manifest
+      - name: Read base version from manifest
         id: version
         shell: bash
         run: |
-          version=$(python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/ventwise/manifest.json').read_text())['version'])")
+          base_version=$(python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/ventwise/manifest.json').read_text())['version'])")
+          beta_number=$(git rev-list --count HEAD)
+          version="${base_version}b${beta_number}"
+          echo "base_version=$base_version" >> "$GITHUB_OUTPUT"
+          echo "beta_number=$beta_number" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare experimental package source
+        shell: bash
+        env:
+          EXPERIMENTAL_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          build_root="$(mktemp -d)"
+          export BUILD_ROOT="$build_root"
+          python - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          source_root = Path(".").resolve()
+          build_root = Path(os.environ["BUILD_ROOT"])
+
+          def ignore(_directory: str, names: list[str]) -> set[str]:
+              ignored = {".git", ".pytest_cache", "dist", ".venv", "__pycache__"}
+              return {name for name in names if name in ignored or name.endswith(".pyc")}
+
+          shutil.copytree(source_root, build_root, dirs_exist_ok=True, ignore=ignore)
+          manifest_path = Path(os.environ["BUILD_ROOT"]) / "custom_components" / "ventwise" / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest["version"] = os.environ["EXPERIMENTAL_VERSION"]
+          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
+          echo "BUILD_ROOT=$build_root" >> "$GITHUB_ENV"
 
       - name: Check whether the release already exists
         id: release_check
@@ -57,11 +91,11 @@ jobs:
         if: steps.release_check.outputs.exists != 'true'
         run: python -m pip install -e .[dev]
 
-      - name: Build release package
+      - name: Build experimental release package
         if: steps.release_check.outputs.exists != 'true'
         shell: pwsh
         run: |
-          ./scripts/build_release_package.ps1 -OutputPath dist/ventwise.zip
+          ./scripts/build_release_package.ps1 -SourcePath "$env:BUILD_ROOT" -OutputPath dist/ventwise-experimental.zip
 
       - name: Verify package structure
         if: steps.release_check.outputs.exists != 'true'
@@ -71,7 +105,7 @@ jobs:
           import pathlib
           import zipfile
 
-          zip_path = pathlib.Path("dist/ventwise.zip")
+          zip_path = pathlib.Path("dist/ventwise-experimental.zip")
           repo_root = pathlib.Path(".")
           integration_dir = repo_root / "custom_components" / "ventwise"
 
@@ -102,10 +136,10 @@ jobs:
               raise SystemExit(f"package contains unexpected entries: {extra}")
           PY
 
-      - name: Create GitHub Release
+      - name: Create GitHub prerelease
         if: steps.release_check.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "${{ steps.version.outputs.tag }}" dist/ventwise.zip --target "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}" --title "VentWise v${{ steps.version.outputs.version }}" --generate-notes --latest
+          gh release create "${{ steps.version.outputs.tag }}" dist/ventwise-experimental.zip --target "${{ github.event.workflow_run.head_sha }}" --title "VentWise v${{ steps.version.outputs.version }} (experimental)" --generate-notes --prerelease

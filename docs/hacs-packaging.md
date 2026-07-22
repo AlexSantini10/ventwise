@@ -29,6 +29,9 @@ custom integration.
 - Keep the integration stable before publishing.
 - Add clear install steps for HACS users.
 - Avoid requiring manual YAML edits for standard setup.
+- Publish stable releases from `main` only.
+- Publish experimental prereleases from the `test` branch family with a `vX.Y.ZbN` tag.
+- Keep prereleases marked as GitHub prereleases so HACS can hide them unless the prerelease switch is enabled.
 
 ## Publication Notes
 

@@ -33,6 +33,7 @@ coverage report
 ## CI / Release
 
 - pushes to `main` run unit tests, HACS validation, Hassfest, and package build
+- pushes to `test` branches run the same checks and can publish prerelease artifacts
 - tag pushes matching `v*` rerun validation, build the package, and create the GitHub Release
 - release checks reuse the same packaging script as CI
 
@@ -47,4 +48,5 @@ coverage report
 
 - the core package should remain versioned through `pyproject.toml`
 - HACS publication continues to use the integration manifest version
+- experimental builds use prerelease tags derived from the manifest version and a numeric `b` suffix
 - release automation is handled by GitHub Actions

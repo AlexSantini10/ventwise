@@ -44,6 +44,10 @@ VentWise helps users decide when opening or closing windows is likely to improve
 
 [Open VentWise in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=AlexSantini10&repository=ventwise&category=integration)
 
+Stable releases are published from `main` and remain the default latest version in HACS.
+Experimental builds are published as GitHub prereleases from the `test` branch family.
+To see those builds in HACS, enable prerelease updates for the repository.
+
 ### Manual install
 
 <!-- Placeholder: add the final manual-install instructions or release artifact badge here. -->
