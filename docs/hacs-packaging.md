@@ -30,7 +30,7 @@ custom integration.
 - Add clear install steps for HACS users.
 - Avoid requiring manual YAML edits for standard setup.
 - Publish stable releases from `main` only.
-- Publish experimental prereleases from the `test` branch family with a `vX.Y.ZbN` tag.
+- Publish experimental prereleases from the `test` branch family with a zero-padded `vX.Y.Zb000000N`-style tag.
 - Keep prereleases marked as GitHub prereleases so HACS can hide them unless the prerelease switch is enabled.
 
 ## Publication Notes

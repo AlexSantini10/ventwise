@@ -46,6 +46,7 @@ VentWise helps users decide when opening or closing windows is likely to improve
 
 Stable releases are published from `main` and remain the default latest version in HACS.
 Experimental builds are published as GitHub prereleases from the `test` branch family.
+Their tags use a zero-padded beta suffix like `v0.2.2b0000007` so prereleases stay ordered correctly.
 To see those builds in HACS, enable prerelease updates for the repository.
 Experimental builds are for testing only.
 
