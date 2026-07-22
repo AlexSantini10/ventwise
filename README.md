@@ -1,40 +1,25 @@
 # VentWise
 
-[![VentWise banner](brand/banner.png)](brand/banner.png)
+<p align="center">
+  <img src="brand/banner.png" alt="VentWise banner" width="960" />
+</p>
 
-[![Latest release](https://img.shields.io/github/v/release/AlexSantini10/ventwise?display_name=tag)](https://github.com/AlexSantini10/ventwise/releases/latest)
+<p align="center">
+  <a href="https://github.com/AlexSantini10/ventwise/releases/latest">
+    <img src="https://img.shields.io/github/v/release/AlexSantini10/ventwise?display_name=tag&style=for-the-badge" alt="Latest release" />
+  </a>
+  <a href="https://hacs.xyz/">
+    <img src="https://img.shields.io/badge/HACS-Compatible-orange.svg?logo=HomeAssistantCommunityStore&logoColor=white&style=for-the-badge" alt="HACS compatible" />
+  </a>
+  <img src="https://img.shields.io/github/downloads/AlexSantini10/ventwise/total?label=Downloads&style=for-the-badge" alt="Downloads" />
+  <img src="https://img.shields.io/github/stars/AlexSantini10/ventwise?label=Stars&color=darkgoldenrod&style=for-the-badge" alt="Stars" />
+</p>
 
-**A Home Assistant custom integration for comfort-based window recommendations, built for HACS.**
+**A Home Assistant custom integration for comfort-based window recommendations.**
 
-VentWise helps you decide when opening or closing windows is likely to improve
-indoor comfort. It evaluates temperature, humidity, wind, and your comfort
-target, then exposes a clear recommendation back to Home Assistant. Runtime
-state is stored in the integration config entry so it survives restarts.
+VentWise helps users decide when opening or closing windows is likely to improve indoor comfort. It evaluates temperature, humidity, wind, and the configured comfort target, then exposes a clear recommendation back to Home Assistant.
 
-## GitHub metadata
-
-If you want the repository settings to match the project scope, use:
-
-  - Description: `VentWise - Home Assistant custom integration for comfort-based window recommendations`
-- Topics:
-  - `home-assistant`
-  - `hacs`
-  - `custom-integration`
-  - `home-automation`
-  - `comfort`
-  - `climate`
-  - `ventwise`
-
-## Why this project exists
-
-- Reduce guesswork around when to open or close windows.
-- Work across multiple rooms, not just a single sensor pair.
-- Keep recommendations useful, quiet, and configurable from the Home Assistant
-  UI.
-- Provide a clean path to a Home Assistant custom integration distributed via
-  HACS.
-
-## Key features
+## At a glance
 
 - Comfort-based recommendation engine
 - Multi-room support
@@ -42,32 +27,28 @@ If you want the repository settings to match the project scope, use:
 - Summer and winter behavior
 - Quiet hours and cooldowns
 - Persisted runtime state across restarts
-- Strong config flow validation
-- UI-first configuration in Home Assistant
-- Rich debug attributes on the recommendation sensors
-- HACS-ready distribution model
+- HACS-ready packaging
 
-## Planned experience
+## Why VentWise
 
-From Home Assistant, you should be able to:
+- Reduce guesswork around when to open or close windows.
+- Keep recommendations useful, quiet, and configurable from the Home Assistant UI.
+- Support a clean HACS-first experience on both GitHub and Home Assistant.
+- Make comfort rules understandable instead of hidden in automation logic.
 
-- add, edit, and remove rooms
-- choose the sensors for each room
-- set your ideal comfort temperature
-- configure notification cooldowns
-- add quiet hours or temporary notification blocks
-- enable or disable the recommender quickly
-- keep notification and action state after a restart
-- inspect detailed debug data from the sensors
+## Installation
 
-## Project structure
+### Via HACS
 
-- `docs/`: development and design documentation
-- `src/`: reusable Python comfort engine
-- `custom_components/ventwise/`: Home Assistant
-  custom integration
-- `tests/`: scoring and behavior tests
-- `examples/`: sample configurations and scenarios
+<!-- Placeholder: add the final HACS install badge/button here once the packaging and release flow are finalized. -->
+
+[Open VentWise in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=AlexSantini10&repository=ventwise&category=integration)
+
+### Manual install
+
+<!-- Placeholder: add the final manual-install instructions or release artifact badge here. -->
+
+Coming soon.
 
 ## Documentation
 
@@ -77,18 +58,30 @@ From Home Assistant, you should be able to:
 - [Home Assistant integration](docs/home-assistant-integration.md)
 - [Testing](docs/testing.md)
 - [Development workflow](docs/development.md)
-- [Contributing](CONTRIBUTING.md)
 - [HACS packaging](docs/hacs-packaging.md)
-- [License and disclaimer](docs/NOTICE.md)
+- [Contributing](CONTRIBUTING.md)
+
+## TODO
+
+- [ ] Improve HACS presentation and repository branding ([#16](https://github.com/AlexSantini10/ventwise/issues/16))
+- [ ] Publish release automation and default catalog readiness ([#10](https://github.com/AlexSantini10/ventwise/issues/10))
+
+## Project structure
+
+- `docs/`: development and design documentation
+- `src/`: reusable Python comfort engine
+- `custom_components/ventwise/`: Home Assistant custom integration
+- `tests/`: scoring and behavior tests
+- `brand/`: repo banner and icon assets
 
 ## Development
 
-- install the project in editable mode with the `dev` extra
-- run `pytest` for the local test suite
-- keep repository hygiene rules in `.gitignore`
-- keep the backlog in GitHub issues rather than duplicating it in the repo
-- CI validates HACS and Hassfest before releases
-- release workflows publish an installable Home Assistant zip artifact
+- Install the project in editable mode with the `dev` extra.
+- Run `pytest` for the local test suite.
+- Keep repository hygiene rules in `.gitignore`.
+- Keep the backlog in GitHub issues rather than duplicating it in the repo.
+- CI validates HACS and Hassfest before releases.
+- Release workflows publish an installable Home Assistant zip artifact.
 
 ## License
 
