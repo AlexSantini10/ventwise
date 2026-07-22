@@ -47,6 +47,7 @@ VentWise helps users decide when opening or closing windows is likely to improve
 Stable releases are published from `main` and remain the default latest version in HACS.
 Experimental builds are published as GitHub prereleases from the `test` branch family.
 To see those builds in HACS, enable prerelease updates for the repository.
+Experimental builds are for testing only.
 
 ### Manual install
 
