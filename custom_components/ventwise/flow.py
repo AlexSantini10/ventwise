@@ -80,10 +80,11 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
             ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
-            vol.Optional(
+            **_optional_selector_field(
                 CONF_NOTIFICATION_DEVICE_ID,
-                default=defaults.get(CONF_NOTIFICATION_DEVICE_ID) or None,
-            ): DeviceSelector(),
+                DeviceSelector(),
+                defaults.get(CONF_NOTIFICATION_DEVICE_ID),
+            ),
         }
     )
 
@@ -93,18 +94,21 @@ def build_setup_overrides_schema(defaults: Mapping[str, object]) -> vol.Schema:
 
     return vol.Schema(
         {
-            vol.Optional(
+            **_optional_selector_field(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_WIND_SPEED_ENTITY_ID,
-                default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_WIND_SPEED_ENTITY_ID),
+            ),
         }
     )
 
@@ -118,18 +122,21 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
-            vol.Optional(
+            **_optional_selector_field(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_WIND_SPEED_ENTITY_ID,
-                default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_WIND_SPEED_ENTITY_ID),
+            ),
             vol.Required(
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
@@ -177,30 +184,36 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_QUIET_HOURS_END,
                 default=defaults.get(CONF_QUIET_HOURS_END, DEFAULT_QUIET_HOURS_END),
             ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
-            vol.Optional(
+            **_optional_selector_field(
                 CONF_QUIET_HOURS_START_ENTITY_ID,
-                default=defaults.get(CONF_QUIET_HOURS_START_ENTITY_ID) or None,
-            ): EntitySelector(),
-            vol.Optional(
+                EntitySelector(),
+                defaults.get(CONF_QUIET_HOURS_START_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_QUIET_HOURS_END_ENTITY_ID,
-                default=defaults.get(CONF_QUIET_HOURS_END_ENTITY_ID) or None,
-            ): EntitySelector(),
-            vol.Optional(
+                EntitySelector(),
+                defaults.get(CONF_QUIET_HOURS_END_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-                default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_WIND_SPEED_ENTITY_ID,
-                default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_WIND_SPEED_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_MASTER_CONTROL_ENTITY_ID,
-                default=defaults.get(CONF_MASTER_CONTROL_ENTITY_ID) or None,
-            ): EntitySelector(),
+                EntitySelector(),
+                defaults.get(CONF_MASTER_CONTROL_ENTITY_ID),
+            ),
         }
     )
 
@@ -219,26 +232,30 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
                 CONF_ROOM_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            vol.Optional(
+            **_optional_selector_field(
                 CONF_ROOM_HUMIDITY_ENTITY_ID,
-                default=defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
+            ),
             vol.Optional(
                 CONF_ROOM_WEIGHT,
                 default=defaults.get(CONF_ROOM_WEIGHT, DEFAULT_ROOM_WEIGHT),
             ): vol.All(vol.Coerce(float), vol.Range(min=MIN_ROOM_WEIGHT, max=MAX_ROOM_WEIGHT)),
-            vol.Optional(
+            **_optional_selector_field(
                 CONF_ROOM_START_ENTITY_ID,
-                default=defaults.get(CONF_ROOM_START_ENTITY_ID) or None,
-            ): EntitySelector(),
-            vol.Optional(
+                EntitySelector(),
+                defaults.get(CONF_ROOM_START_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_ROOM_STOP_ENTITY_ID,
-                default=defaults.get(CONF_ROOM_STOP_ENTITY_ID) or None,
-            ): EntitySelector(),
-            vol.Optional(
+                EntitySelector(),
+                defaults.get(CONF_ROOM_STOP_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_ROOM_PAUSE_ENTITY_ID,
-                default=defaults.get(CONF_ROOM_PAUSE_ENTITY_ID) or None,
-            ): EntitySelector(),
+                EntitySelector(),
+                defaults.get(CONF_ROOM_PAUSE_ENTITY_ID),
+            ),
         }
     )
 
@@ -400,6 +417,14 @@ def _normalize_optional_entities(data: dict[str, object], *keys: str) -> None:
             continue
         text = str(value).strip()
         data[key] = text or None
+
+
+def _optional_selector_field(
+    field: str, selector: object, suggested_value: object | None
+) -> dict[object, object]:
+    if suggested_value is None:
+        return {vol.Optional(field): selector}
+    return {vol.Optional(field, description={"suggested_value": suggested_value}): selector}
 
 
 def _normalize_optional_entity_ids(
