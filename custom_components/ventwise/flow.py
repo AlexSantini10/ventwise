@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import datetime
 from dataclasses import dataclass
+from typing import Sequence
 
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
@@ -55,6 +56,8 @@ from .const import (
     MIN_ROOM_WEIGHT,
 )
 
+NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
+
 
 @dataclass(slots=True)
 class ConfigValidationError(ValueError):
@@ -77,6 +80,10 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
             ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
+            vol.Optional(
+                CONF_NOTIFICATION_DEVICE_ID,
+                default=defaults.get(CONF_NOTIFICATION_DEVICE_ID) or None,
+            ): DeviceSelector(),
         }
     )
 
@@ -89,15 +96,15 @@ def build_setup_overrides_schema(defaults: Mapping[str, object]) -> vol.Schema:
             vol.Optional(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_WIND_SPEED_ENTITY_ID,
                 default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
         }
     )
 
@@ -114,15 +121,15 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
             vol.Optional(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_WIND_SPEED_ENTITY_ID,
                 default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Required(
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
@@ -181,15 +188,15 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
             vol.Optional(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_WIND_SPEED_ENTITY_ID,
                 default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_MASTER_CONTROL_ENTITY_ID,
                 default=defaults.get(CONF_MASTER_CONTROL_ENTITY_ID) or None,
@@ -211,11 +218,11 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
             vol.Required(
                 CONF_ROOM_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_ROOM_HUMIDITY_ENTITY_ID,
                 default=defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID) or None,
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
             vol.Optional(
                 CONF_ROOM_WEIGHT,
                 default=defaults.get(CONF_ROOM_WEIGHT, DEFAULT_ROOM_WEIGHT),
@@ -262,7 +269,7 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
         CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
         CONF_WIND_SPEED_ENTITY_ID,
-        domain="sensor",
+        domains=NUMERIC_ENTITY_DOMAINS,
     )
     return data
 
@@ -282,7 +289,7 @@ def normalize_setup_overrides_config(user_input: Mapping[str, object]) -> dict[s
         CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
         CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
         CONF_WIND_SPEED_ENTITY_ID,
-        domain="sensor",
+        domains=NUMERIC_ENTITY_DOMAINS,
     )
     return data
 
@@ -311,6 +318,19 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     )
     data[CONF_QUIET_HOURS_START] = _normalize_time_string(data[CONF_QUIET_HOURS_START], CONF_QUIET_HOURS_START)
     data[CONF_QUIET_HOURS_END] = _normalize_time_string(data[CONF_QUIET_HOURS_END], CONF_QUIET_HOURS_END)
+    _normalize_optional_entities(
+        data,
+        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+        CONF_WIND_SPEED_ENTITY_ID,
+    )
+    _normalize_optional_entity_ids(
+        data,
+        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+        CONF_WIND_SPEED_ENTITY_ID,
+        domains=NUMERIC_ENTITY_DOMAINS,
+    )
     _normalize_optional_entities(
         data,
         CONF_QUIET_HOURS_START_ENTITY_ID,
@@ -350,12 +370,12 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
-        "sensor",
+        domains=NUMERIC_ENTITY_DOMAINS,
     )
     _normalize_optional_entity_ids(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
-        domain="sensor",
+        domains=NUMERIC_ENTITY_DOMAINS,
     )
     return data
 
@@ -386,6 +406,7 @@ def _normalize_optional_entity_ids(
     data: dict[str, object],
     *keys: str,
     domain: str | None = None,
+    domains: Sequence[str] | None = None,
 ) -> None:
     for key in keys:
         value = data.get(key)
@@ -395,7 +416,7 @@ def _normalize_optional_entity_ids(
         if not text:
             data[key] = None
             continue
-        data[key] = _normalize_required_entity_id(text, key, domain)
+        data[key] = _normalize_required_entity_id(text, key, domain, domains)
 
 
 def _normalize_int(value: object, field: str, minimum: int, maximum: int) -> int:
@@ -418,7 +439,12 @@ def _normalize_float(value: object, field: str, minimum: float, maximum: float) 
     return number
 
 
-def _normalize_required_entity_id(value: object, field: str, domain: str | None = None) -> str:
+def _normalize_required_entity_id(
+    value: object,
+    field: str,
+    domain: str | None = None,
+    domains: Sequence[str] | None = None,
+) -> str:
     if value is None:
         raise ConfigValidationError(field)
     text = str(value).strip()
@@ -428,6 +454,8 @@ def _normalize_required_entity_id(value: object, field: str, domain: str | None 
         raise ConfigValidationError(field)
     entity_domain = text.split(".", 1)[0]
     if domain is not None and entity_domain != domain:
+        raise ConfigValidationError(field)
+    if domains is not None and entity_domain not in domains:
         raise ConfigValidationError(field)
     return text
 
