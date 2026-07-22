@@ -21,7 +21,7 @@ Thanks for helping with VentWise.
   - `Goal`
   - `Scope`
   - `Acceptance`
-- Tag the issue and assign it to `@AlexSantini10`.
+- Tag the issue.
 - Do not duplicate issues that already cover the same work.
 
 ## Branches
