@@ -145,10 +145,11 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_QUIET_HOURS_ENABLED,
                 default=defaults.get(CONF_QUIET_HOURS_ENABLED, True),
             ): cv.boolean,
-            vol.Optional(
+            **_optional_selector_field(
                 CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
-                default=defaults.get(CONF_QUIET_HOURS_PAUSE_ENTITY_ID) or None,
-            ): EntitySelector(),
+                EntitySelector(),
+                defaults.get(CONF_QUIET_HOURS_PAUSE_ENTITY_ID),
+            ),
             vol.Optional(
                 CONF_NOTIFICATION_DEVICE_ID,
                 default=defaults.get(CONF_NOTIFICATION_DEVICE_ID) or None,
