@@ -21,6 +21,7 @@ The UI should allow the user to:
 - enable or disable the whole integration
 - keep runtime state after a restart
 - fall back to the standard weather forecast when optional outdoor sensors are not configured
+- create rooms during the initial setup flow
 
 Supported forecast sources are the standard Home Assistant `weather` entities that VentWise can read. If a different forecast source should be supported, it should be requested as a GitHub issue.
 

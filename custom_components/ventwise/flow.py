@@ -73,6 +73,19 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
+            vol.Required(
+                CONF_TARGET_TEMPERATURE_C,
+                default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
+            ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
+        }
+    )
+
+
+def build_setup_overrides_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the optional outdoor override schema for first-time setup."""
+
+    return vol.Schema(
+        {
             vol.Optional(
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) or None,
@@ -85,10 +98,6 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_WIND_SPEED_ENTITY_ID,
                 default=defaults.get(CONF_WIND_SPEED_ENTITY_ID) or None,
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-            vol.Required(
-                CONF_TARGET_TEMPERATURE_C,
-                default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
-            ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
         }
     )
 
@@ -247,6 +256,26 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         CONF_WIND_SPEED_ENTITY_ID,
         CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
         CONF_NOTIFICATION_DEVICE_ID,
+    )
+    _normalize_optional_entity_ids(
+        data,
+        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+        CONF_WIND_SPEED_ENTITY_ID,
+        domain="sensor",
+    )
+    return data
+
+
+def normalize_setup_overrides_config(user_input: Mapping[str, object]) -> dict[str, object]:
+    """Normalize optional outdoor overrides collected during setup."""
+
+    data = dict(user_input)
+    _normalize_optional_entities(
+        data,
+        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+        CONF_WIND_SPEED_ENTITY_ID,
     )
     _normalize_optional_entity_ids(
         data,

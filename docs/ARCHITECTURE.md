@@ -30,6 +30,8 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 - Exposes a `config flow` to create the integration.
 - Exposes an `options flow` to edit the configuration later.
+- The config flow collects weather and comfort temperature first, then offers
+  optional outdoor overrides and an initial room manager.
 - Creates a single visible device for the recommender.
 - Creates entities for:
   - current recommendation

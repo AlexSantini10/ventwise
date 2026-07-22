@@ -40,9 +40,11 @@ from custom_components.ventwise.flow import (
     build_basic_options_schema,
     build_config_schema,
     build_room_schema,
+    build_setup_overrides_schema,
     normalize_advanced_config,
     normalize_basic_config,
     normalize_room_config,
+    normalize_setup_overrides_config,
     split_config_data,
 )
 
@@ -63,10 +65,18 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
+
+
+def test_setup_overrides_schema_is_optional_and_sensor_based() -> None:
+    """The override step should be optional and focused on sensor entities."""
+
+    schema = build_setup_overrides_schema({})
+    schema_dict = schema.schema
+
     assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
 
 
 def test_basic_options_schema_covers_simple_controls() -> None:
@@ -151,6 +161,14 @@ def test_normalize_basic_config_allows_missing_outdoor_overrides() -> None:
     assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] is None
     assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] is None
     assert data[CONF_WIND_SPEED_ENTITY_ID] is None
+
+
+def test_normalize_setup_overrides_config_allows_all_values_missing() -> None:
+    data = normalize_setup_overrides_config({})
+
+    assert data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) is None
+    assert data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID) is None
+    assert data.get(CONF_WIND_SPEED_ENTITY_ID) is None
 
 
 def test_normalize_basic_config_rejects_missing_weather_source() -> None:
