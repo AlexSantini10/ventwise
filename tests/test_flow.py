@@ -66,7 +66,7 @@ def test_config_schema_is_simple_and_weather_based() -> None:
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
-    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
+    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "Any"
 
 
 def test_setup_overrides_schema_is_optional_and_numeric_entity_based() -> None:
@@ -75,9 +75,9 @@ def test_setup_overrides_schema_is_optional_and_numeric_entity_based() -> None:
     schema = build_setup_overrides_schema({})
     schema_dict = schema.schema
 
-    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "Any"
 
 
 def test_basic_options_schema_covers_simple_controls() -> None:
@@ -87,13 +87,13 @@ def test_basic_options_schema_covers_simple_controls() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_OUTDOOR_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "Any"
     assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
     assert callable(schema_dict[CONF_QUIET_HOURS_ENABLED])
-    assert schema_dict[CONF_QUIET_HOURS_PAUSE_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
+    assert schema_dict[CONF_QUIET_HOURS_PAUSE_ENTITY_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "Any"
 
 
 def test_advanced_options_schema_contains_the_technical_overrides() -> None:
@@ -106,9 +106,9 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_QUIET_HOURS_START].__class__.__name__ == "TextSelector"
     assert schema_dict[CONF_QUIET_HOURS_END].__class__.__name__ == "TextSelector"
-    assert schema_dict[CONF_QUIET_HOURS_START_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_QUIET_HOURS_END_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_MASTER_CONTROL_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_QUIET_HOURS_START_ENTITY_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_QUIET_HOURS_END_ENTITY_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_MASTER_CONTROL_ENTITY_ID].__class__.__name__ == "Any"
 
 
 def test_room_schema_supports_room_and_macro_room_defaults() -> None:
@@ -120,11 +120,11 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == "Room 1"
     assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_WEIGHT].__class__.__name__ == "All"
-    assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert room_schema.schema[CONF_ROOM_PAUSE_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
+    assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
+    assert room_schema.schema[CONF_ROOM_PAUSE_ENTITY_ID].__class__.__name__ == "Any"
 
 
 def test_normalize_basic_config_strips_optional_entities() -> None:
