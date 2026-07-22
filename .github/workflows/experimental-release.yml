@@ -1,14 +1,11 @@
 name: Experimental Release
 
 on:
-  workflow_run:
-    workflows: ["CI"]
+  push:
     branches:
       - test
       - "test/**"
       - "test-*"
-    types:
-      - completed
 
 permissions:
   contents: write
@@ -17,12 +14,11 @@ jobs:
   release:
     name: Publish experimental GitHub Release
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Read base version from manifest
@@ -142,4 +138,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "${{ steps.version.outputs.tag }}" dist/ventwise-experimental.zip --target "${{ github.event.workflow_run.head_sha }}" --title "VentWise v${{ steps.version.outputs.version }} (experimental)" --generate-notes --prerelease
+          gh release create "${{ steps.version.outputs.tag }}" dist/ventwise-experimental.zip --target "${{ github.sha }}" --title "VentWise v${{ steps.version.outputs.version }} (experimental)" --generate-notes --prerelease
