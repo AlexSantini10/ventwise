@@ -43,9 +43,12 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   last-action state survive restarts.
 - Keeps all user-editable entity references and comfort settings in the
   config entry, surfaced through the UI.
-- Collects the weather source plus dedicated outdoor temperature, humidity,
-  and wind sensors during setup so the runtime has the minimum context it
-  needs.
+- Collects the weather source during setup and allows optional dedicated
+  outdoor temperature, humidity, and wind overrides.
+- Falls back to the standard weather forecast when override sensors are not
+  provided.
+- Treats new forecast integrations as GitHub issues so the supported source
+  list stays explicit.
 - Validates room definitions and numeric limits in the config flow and options
   flow before data is saved.
 

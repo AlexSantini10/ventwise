@@ -140,6 +140,19 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     assert data[CONF_NOTIFICATION_DEVICE_ID] is None
 
 
+def test_normalize_basic_config_allows_missing_outdoor_overrides() -> None:
+    data = normalize_basic_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+        }
+    )
+
+    assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] is None
+    assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] is None
+    assert data[CONF_WIND_SPEED_ENTITY_ID] is None
+
+
 def test_normalize_basic_config_rejects_missing_weather_source() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
         normalize_basic_config({})
@@ -152,9 +165,6 @@ def test_normalize_basic_config_rejects_invalid_weather_domain() -> None:
         normalize_basic_config(
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "sensor.home",
-                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
-                CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
-                CONF_WIND_SPEED_ENTITY_ID: "sensor.wind_speed",
                 CONF_TARGET_TEMPERATURE_C: 22.0,
             }
         )
@@ -168,8 +178,6 @@ def test_normalize_basic_config_rejects_invalid_outdoor_sensor_domain() -> None:
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "binary_sensor.outdoor_temp",
-                CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
-                CONF_WIND_SPEED_ENTITY_ID: "sensor.wind_speed",
                 CONF_TARGET_TEMPERATURE_C: 22.0,
             }
         )
@@ -184,7 +192,6 @@ def test_normalize_basic_config_rejects_invalid_target_temperature() -> None:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
                 CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
-                CONF_WIND_SPEED_ENTITY_ID: "sensor.wind_speed",
                 CONF_TARGET_TEMPERATURE_C: 5.0,
             }
         )

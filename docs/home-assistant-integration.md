@@ -10,7 +10,7 @@ through HACS.
 The UI should allow the user to:
 
 - add, edit, and remove rooms
-- choose the weather source plus dedicated outdoor temperature, humidity, and wind sensors
+- choose the weather source plus optional outdoor temperature, humidity, and wind sensors
 - set the ideal comfort temperature
 - select temperature and humidity sensors per room
 - define notification targets and the devices that should receive them
@@ -20,6 +20,9 @@ The UI should allow the user to:
 - temporarily disable notifications without disabling the whole integration
 - enable or disable the whole integration
 - keep runtime state after a restart
+- fall back to the standard weather forecast when optional outdoor sensors are not configured
+
+Supported forecast sources are the standard Home Assistant `weather` entities that VentWise can read. If a different forecast source should be supported, it should be requested as a GitHub issue.
 
 ## Implementation Pattern
 

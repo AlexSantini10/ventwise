@@ -4,19 +4,19 @@
     "step": {
       "user": {
         "title": "Set up VentWise",
-        "description": "Pick the weather source, outdoor temperature, humidity, and wind sensors, then set the comfort temperature.",
+        "description": "Pick the weather source first. Outdoor temperature, humidity, and wind sensors are optional overrides, and VentWise will fall back to the standard forecast data when they are missing.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "outdoor_temperature_entity_id": "Outdoor temperature sensor",
-          "outdoor_humidity_entity_id": "Outdoor humidity sensor",
-          "wind_speed_entity_id": "Outdoor wind speed sensor",
+          "outdoor_temperature_entity_id": "Optional outdoor temperature sensor",
+          "outdoor_humidity_entity_id": "Optional outdoor humidity sensor",
+          "wind_speed_entity_id": "Optional outdoor wind speed sensor",
           "target_temperature_c": "Comfort temperature"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Select the standard Home Assistant weather entity VentWise should use first.",
-          "outdoor_temperature_entity_id": "Select the dedicated outdoor temperature sensor VentWise should read.",
-          "outdoor_humidity_entity_id": "Select the dedicated outdoor humidity sensor VentWise should read.",
-          "wind_speed_entity_id": "Select the dedicated outdoor wind speed sensor VentWise should read.",
+          "outdoor_temperature_entity_id": "Optional. Override the outdoor temperature from the weather entity when needed.",
+          "outdoor_humidity_entity_id": "Optional. Override the outdoor humidity from the weather entity when needed.",
+          "wind_speed_entity_id": "Optional. Override the outdoor wind speed from the weather entity when needed.",
           "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for."
         }
       }
@@ -36,8 +36,8 @@
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
-          "basic": "Weather source, outdoor sensors, comfort temperature, quiet-hours pause, and notifications.",
-          "advanced": "Tuning values and entity overrides.",
+          "basic": "Weather source, optional outdoor sensors, comfort temperature, quiet-hours pause, and notifications.",
+          "advanced": "Tuning values, supported forecast data, and entity overrides.",
           "rooms": "Add rooms and macro-rooms."
         }
       },
@@ -46,9 +46,9 @@
         "description": "Keep the simple controls here.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "outdoor_temperature_entity_id": "Outdoor temperature sensor",
-          "outdoor_humidity_entity_id": "Outdoor humidity sensor",
-          "wind_speed_entity_id": "Outdoor wind speed sensor",
+          "outdoor_temperature_entity_id": "Optional outdoor temperature sensor",
+          "outdoor_humidity_entity_id": "Optional outdoor humidity sensor",
+          "wind_speed_entity_id": "Optional outdoor wind speed sensor",
           "target_temperature_c": "Comfort temperature",
           "quiet_hours_enabled": "Pause during quiet hours",
           "quiet_hours_pause_entity_id": "Quiet-hours pause entity",
@@ -56,9 +56,9 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Select the weather entity VentWise should use first.",
-          "outdoor_temperature_entity_id": "Select the dedicated outdoor temperature sensor VentWise should read.",
-          "outdoor_humidity_entity_id": "Select the dedicated outdoor humidity sensor VentWise should read.",
-          "wind_speed_entity_id": "Select the dedicated outdoor wind speed sensor VentWise should read.",
+          "outdoor_temperature_entity_id": "Optional. Override the outdoor temperature from the weather entity when needed.",
+          "outdoor_humidity_entity_id": "Optional. Override the outdoor humidity from the weather entity when needed.",
+          "wind_speed_entity_id": "Optional. Override the outdoor wind speed from the weather entity when needed.",
           "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
           "quiet_hours_enabled": "Turn on a pause while quiet hours are active.",
           "quiet_hours_pause_entity_id": "Optional. Pick a helper or sensor that can suspend recommendations.",
@@ -67,7 +67,7 @@
       },
       "advanced": {
         "title": "Advanced settings",
-        "description": "Fine-tune the more technical values.",
+        "description": "Fine-tune the more technical values. Supported forecast source: a standard Home Assistant weather entity. If you want VentWise to support another forecast source, open a GitHub issue.",
         "data": {
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Cooldown period (minutes)",

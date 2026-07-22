@@ -187,8 +187,8 @@ def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> 
 
     assert outdoor is not None
     assert outdoor.temperature_c == 21.5
-    assert outdoor.humidity_percent == 21.5
-    assert outdoor.wind_speed_m_s == 21.5
+    assert outdoor.humidity_percent == 50.0
+    assert outdoor.wind_speed_m_s is None
     assert rooms[0].name == "Camera"
 
 

@@ -261,6 +261,7 @@ def build_room_profiles(
         config.outdoor_humidity_entity_id,
         state_getter,
         "humidity",
+        allow_state_fallback=False,
     )
     if outdoor_temp is None:
         outdoor = None
@@ -272,6 +273,7 @@ def build_room_profiles(
             config.wind_speed_entity_id,
             state_getter,
             "wind_speed",
+            allow_state_fallback=False,
         )
         outdoor = ComfortObservation(
             temperature_c=outdoor_temp,
@@ -352,6 +354,8 @@ def _outdoor_value(
     override_entity_id: str | None,
     state_getter: Callable[[str], Any],
     attribute_name: str,
+    *,
+    allow_state_fallback: bool = True,
 ) -> float | None:
     if override_entity_id:
         return state_to_float(state_getter(override_entity_id))
@@ -363,6 +367,8 @@ def _outdoor_value(
     attributes = getattr(state, "attributes", {}) or {}
     value = attributes.get(attribute_name)
     if value is None:
+        if not allow_state_fallback:
+            return None
         return state_to_float(state)
     try:
         return float(value)
