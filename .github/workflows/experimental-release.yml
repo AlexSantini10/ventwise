@@ -1,4 +1,5 @@
 name: Experimental Release
+run-name: Experimental release on ${{ github.event.workflow_run.head_branch }} @ ${{ github.event.workflow_run.head_sha }}
 
 on:
   workflow_run:
