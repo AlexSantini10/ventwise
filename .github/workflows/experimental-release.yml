@@ -95,7 +95,7 @@ jobs:
         if: steps.release_check.outputs.exists != 'true'
         shell: pwsh
         run: |
-          ./scripts/build_release_package.ps1 -SourcePath "$env:BUILD_ROOT" -OutputPath dist/ventwise-experimental.zip
+          ./scripts/build_release_package.ps1 -SourcePath "$env:BUILD_ROOT" -OutputPath dist/ventwise.zip
 
       - name: Verify package structure
         if: steps.release_check.outputs.exists != 'true'
@@ -105,7 +105,7 @@ jobs:
           import pathlib
           import zipfile
 
-          zip_path = pathlib.Path("dist/ventwise-experimental.zip")
+          zip_path = pathlib.Path("dist/ventwise.zip")
           repo_root = pathlib.Path(".")
           integration_dir = repo_root / "custom_components" / "ventwise"
 
@@ -142,4 +142,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "${{ steps.version.outputs.tag }}" dist/ventwise-experimental.zip --target "${{ github.event.workflow_run.head_sha }}" --title "VentWise v${{ steps.version.outputs.version }} (experimental)" --generate-notes --prerelease
+          gh release create "${{ steps.version.outputs.tag }}" dist/ventwise.zip --target "${{ github.event.workflow_run.head_sha }}" --title "VentWise v${{ steps.version.outputs.version }} (experimental)" --generate-notes --prerelease
