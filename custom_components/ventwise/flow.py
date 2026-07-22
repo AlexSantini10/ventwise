@@ -73,6 +73,10 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
+            vol.Required(
+                CONF_TARGET_TEMPERATURE_C,
+                default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
+            ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
         }
     )
 
@@ -86,6 +90,10 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
+            vol.Required(
+                CONF_TARGET_TEMPERATURE_C,
+                default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
+            ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
             vol.Required(
                 CONF_QUIET_HOURS_ENABLED,
                 default=defaults.get(CONF_QUIET_HOURS_ENABLED, True),
@@ -107,10 +115,6 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
 
     return vol.Schema(
         {
-            vol.Required(
-                CONF_TARGET_TEMPERATURE_C,
-                default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
-            ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
             vol.Required(
                 CONF_SOFT_OUTDOOR_THRESHOLD_C,
                 default=defaults.get(
@@ -206,6 +210,12 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     data[CONF_OUTDOOR_WEATHER_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID), CONF_OUTDOOR_WEATHER_ENTITY_ID, "weather"
     )
+    data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(
+        data.get(CONF_TARGET_TEMPERATURE_C),
+        CONF_TARGET_TEMPERATURE_C,
+        10.0,
+        30.0,
+    )
     _normalize_optional_entities(
         data,
         CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
@@ -218,12 +228,6 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     """Normalize advanced flow data for storage."""
 
     data = dict(user_input)
-    data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(
-        data.get(CONF_TARGET_TEMPERATURE_C),
-        CONF_TARGET_TEMPERATURE_C,
-        10.0,
-        30.0,
-    )
     data[CONF_SOFT_OUTDOOR_THRESHOLD_C] = _normalize_float(
         data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C),
         CONF_SOFT_OUTDOOR_THRESHOLD_C,

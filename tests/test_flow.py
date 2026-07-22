@@ -56,12 +56,13 @@ def _schema_default(entry):
 
 
 def test_config_schema_is_simple_and_weather_based() -> None:
-    """The initial setup should only ask for a weather source."""
+    """The initial setup should ask for weather and comfort temperature."""
 
     schema = build_config_schema({})
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
 
 
 def test_basic_options_schema_covers_simple_controls() -> None:
@@ -71,6 +72,7 @@ def test_basic_options_schema_covers_simple_controls() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
     assert callable(schema_dict[CONF_QUIET_HOURS_ENABLED])
     assert schema_dict[CONF_QUIET_HOURS_PAUSE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
@@ -82,7 +84,6 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     schema = build_advanced_options_schema({})
     schema_dict = schema.schema
 
-    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
     assert schema_dict[CONF_SOFT_OUTDOOR_THRESHOLD_C].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_QUIET_HOURS_START].__class__.__name__ == "TextSelector"
@@ -118,12 +119,14 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     data = normalize_basic_config(
         {
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_TARGET_TEMPERATURE_C: "22.5",
             CONF_QUIET_HOURS_PAUSE_ENTITY_ID: " ",
             CONF_NOTIFICATION_DEVICE_ID: None,
         }
     )
 
     assert data[CONF_OUTDOOR_WEATHER_ENTITY_ID] == "weather.home"
+    assert data[CONF_TARGET_TEMPERATURE_C] == 22.5
     assert data[CONF_QUIET_HOURS_PAUSE_ENTITY_ID] is None
     assert data[CONF_NOTIFICATION_DEVICE_ID] is None
 
@@ -137,9 +140,26 @@ def test_normalize_basic_config_rejects_missing_weather_source() -> None:
 
 def test_normalize_basic_config_rejects_invalid_weather_domain() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
-        normalize_basic_config({CONF_OUTDOOR_WEATHER_ENTITY_ID: "sensor.home"})
+        normalize_basic_config(
+            {
+                CONF_OUTDOOR_WEATHER_ENTITY_ID: "sensor.home",
+                CONF_TARGET_TEMPERATURE_C: 22.0,
+            }
+        )
 
     assert exc_info.value.field == CONF_OUTDOOR_WEATHER_ENTITY_ID
+
+
+def test_normalize_basic_config_rejects_invalid_target_temperature() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_basic_config(
+            {
+                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+                CONF_TARGET_TEMPERATURE_C: 5.0,
+            }
+        )
+
+    assert exc_info.value.field == CONF_TARGET_TEMPERATURE_C
 
 
 def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
@@ -147,7 +167,6 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
 
     data = normalize_advanced_config(
         {
-            CONF_TARGET_TEMPERATURE_C: 22.0,
             CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
             CONF_COOLDOWN_MINUTES: 60,
             CONF_STABILITY_MINUTES: 10,
@@ -158,7 +177,6 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
             CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
             CONF_WIND_SPEED_ENTITY_ID: "sensor.wind",
-            CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
         }
     )
 
@@ -174,7 +192,6 @@ def test_normalize_advanced_config_rejects_invalid_time_format() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
         normalize_advanced_config(
             {
-                CONF_TARGET_TEMPERATURE_C: 22.0,
                 CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
                 CONF_COOLDOWN_MINUTES: 60,
                 CONF_STABILITY_MINUTES: 10,
@@ -192,14 +209,13 @@ def test_normalize_advanced_config_rejects_out_of_range_numeric_values() -> None
             {
                 CONF_QUIET_HOURS_START: "22:00",
                 CONF_QUIET_HOURS_END: "07:00",
-                CONF_TARGET_TEMPERATURE_C: 5.0,
-                CONF_SOFT_OUTDOOR_THRESHOLD_C: 22.0,
+                CONF_SOFT_OUTDOOR_THRESHOLD_C: 60.0,
                 CONF_COOLDOWN_MINUTES: 60,
                 CONF_STABILITY_MINUTES: 10,
             }
         )
 
-    assert exc_info.value.field == CONF_TARGET_TEMPERATURE_C
+    assert exc_info.value.field == CONF_SOFT_OUTDOOR_THRESHOLD_C
 
 
 def test_normalize_room_config_sets_kind_and_trims_names() -> None:

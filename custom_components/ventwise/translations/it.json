@@ -4,12 +4,14 @@
     "step": {
       "user": {
         "title": "Configura VentWise",
-        "description": "Scegli la sorgente meteo per iniziare. Il resto potrai rifinirlo in seguito.",
+        "description": "Scegli la sorgente meteo e la temperatura di comfort per iniziare. Il resto potrai rifinirlo in seguito.",
         "data": {
-          "outdoor_weather_entity_id": "Sorgente meteo"
+          "outdoor_weather_entity_id": "Sorgente meteo",
+          "target_temperature_c": "Temperatura di comfort"
         },
         "data_description": {
-          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise deve usare per prima."
+          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise deve usare per prima.",
+          "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere."
         }
       }
     },
@@ -28,7 +30,7 @@
           "rooms": "Stanze"
         },
         "menu_option_descriptions": {
-          "basic": "Sorgente meteo, pausa ore di silenzio e notifiche.",
+          "basic": "Sorgente meteo, temperatura di comfort, pausa ore di silenzio e notifiche.",
           "advanced": "Valori di taratura e override delle entità.",
           "rooms": "Aggiungi stanze e macro-stanze."
         }
@@ -38,12 +40,14 @@
         "description": "Tieni qui i controlli semplici.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
+          "target_temperature_c": "Temperatura di comfort",
           "quiet_hours_enabled": "Sospendi durante le ore di silenzio",
           "quiet_hours_pause_entity_id": "Entità di pausa ore di silenzio",
           "notification_device_id": "Dispositivo di notifica"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Seleziona l'entità meteo che VentWise deve usare per prima.",
+          "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
           "quiet_hours_enabled": "Attiva una pausa quando le ore di silenzio sono attive.",
           "quiet_hours_pause_entity_id": "Facoltativo. Seleziona un helper o sensore che può sospendere le raccomandazioni.",
           "notification_device_id": "Facoltativo. Seleziona il dispositivo che riceverà le notifiche."
@@ -53,7 +57,6 @@
         "title": "Impostazioni avanzate",
         "description": "Rifinisci i valori più tecnici.",
         "data": {
-          "target_temperature_c": "Temperatura interna obiettivo",
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
           "cooldown_minutes": "Periodo di pausa (minuti)",
           "stability_minutes": "Periodo di stabilità (minuti)",
@@ -67,7 +70,6 @@
           "master_control_entity_id": "Entità di controllo principale"
         },
         "data_description": {
-          "target_temperature_c": "La temperatura di comfort che VentWise deve cercare di mantenere all'interno.",
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
           "cooldown_minutes": "Quanto tempo VentWise attende prima di inviare di nuovo lo stesso suggerimento.",
           "stability_minutes": "Per quanto tempo un suggerimento deve restare invariato prima di essere inviato.",
