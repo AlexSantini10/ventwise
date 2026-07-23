@@ -100,7 +100,7 @@ class IntegrationConfig:
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
     master_control_entity_id: str | None = None
-    notification_device_id: str | None = None
+    notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
 
@@ -173,7 +173,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
         master_control_entity_id=_string_or_none(data.get(CONF_MASTER_CONTROL_ENTITY_ID)),
-        notification_device_id=_string_or_none(data.get(CONF_NOTIFICATION_DEVICE_ID)),
+        notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
 
@@ -364,6 +364,23 @@ def _string_or_none(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _string_list(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        text = value.strip()
+        return (text,) if text else ()
+    if isinstance(value, (list, tuple, set)):
+        items = []
+        for item in value:
+            text = str(item).strip()
+            if text:
+                items.append(text)
+        return tuple(items)
+    text = str(value).strip()
+    return (text,) if text else ()
 
 
 def _outdoor_value(

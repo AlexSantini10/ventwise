@@ -79,7 +79,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
             CONF_ENABLED: True,
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
             CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
-            CONF_NOTIFICATION_DEVICE_ID: "device-123",
+            CONF_NOTIFICATION_DEVICE_ID: ["device-123", "device-456"],
             CONF_ROOMS: [
                 {
                     CONF_ROOM_NAME: "Camera",
@@ -91,7 +91,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
     )
 
     assert config.enabled is True
-    assert config.notification_device_id == "device-123"
+    assert config.notification_device_ids == ("device-123", "device-456")
     assert config.rooms[0].name == "Camera"
 
     fake_states = {

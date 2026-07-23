@@ -10,15 +10,14 @@ from homeassistant import config_entries
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
-    CONF_OUTDOOR_HUMIDITY_SOURCE,
-    CONF_OUTDOOR_TEMPERATURE_SOURCE,
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
     CONF_ROOMS,
-    CONF_WIND_SPEED_SOURCE,
     NAME,
-    OUTDOOR_SOURCE_OVERRIDE,
+    CONF_WIND_SPEED_OVERRIDE,
 )
 from .flow import (
     ConfigValidationError,
@@ -103,7 +102,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         )
 
     async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):
-        """Edit outdoor source preferences and overrides."""
+        """Edit outdoor override preferences."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -124,7 +123,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         )
 
     async def async_step_outdoor_overrides(self, user_input: dict[str, Any] | None = None):
-        """Edit the outdoor override entities for selected sources."""
+        """Edit the manual outdoor measurements."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -316,13 +315,11 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return data
 
     def _has_outdoor_overrides(self) -> bool:
-        """Return whether any outdoor value is configured as an override."""
-
         return any(
-            self._current_config.get(source_field) == OUTDOOR_SOURCE_OVERRIDE
-            for source_field in (
-                CONF_OUTDOOR_TEMPERATURE_SOURCE,
-                CONF_OUTDOOR_HUMIDITY_SOURCE,
-                CONF_WIND_SPEED_SOURCE,
+            bool(self._current_config.get(override_field))
+            for override_field in (
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+                CONF_WIND_SPEED_OVERRIDE,
             )
         )

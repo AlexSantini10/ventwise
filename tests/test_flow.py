@@ -11,8 +11,10 @@ from custom_components.ventwise.const import (
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_COOLDOWN_MINUTES,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_QUIET_HOURS_END,
@@ -34,6 +36,7 @@ from custom_components.ventwise.const import (
     CONF_TARGET_TEMPERATURE_C,
     CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
@@ -51,7 +54,6 @@ from custom_components.ventwise.flow import (
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
-    normalize_setup_overrides_config,
     split_config_data,
 )
 
@@ -76,32 +78,37 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "Any"
 
 
-def test_setup_overrides_schema_is_source_selector_based() -> None:
-    """The outdoor step should ask for a source per measurement."""
+def test_setup_overrides_schema_is_checkbox_based() -> None:
+    """The outdoor step should ask only for override checkboxes."""
 
     schema = build_outdoor_source_schema({})
     schema_dict = schema.schema
 
-    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_SOURCE].__class__.__name__ == "SelectSelector"
-    assert schema_dict[CONF_OUTDOOR_HUMIDITY_SOURCE].__class__.__name__ == "SelectSelector"
-    assert schema_dict[CONF_WIND_SPEED_SOURCE].__class__.__name__ == "SelectSelector"
+    assert callable(schema_dict[CONF_OUTDOOR_TEMPERATURE_OVERRIDE])
+    assert callable(schema_dict[CONF_OUTDOOR_HUMIDITY_OVERRIDE])
+    assert callable(schema_dict[CONF_WIND_SPEED_OVERRIDE])
+    assert CONF_OUTDOOR_TEMPERATURE_ENTITY_ID not in schema_dict
+    assert CONF_OUTDOOR_HUMIDITY_ENTITY_ID not in schema_dict
+    assert CONF_WIND_SPEED_ENTITY_ID not in schema_dict
 
 
-def test_outdoor_override_schema_only_exposes_selected_entities() -> None:
-    """Only the measurements marked as overrides should ask for entities."""
+def test_outdoor_override_schema_only_shows_enabled_manual_fields() -> None:
+    """The conditional step should only show entities for enabled overrides."""
 
     schema = build_outdoor_override_schema(
         {
-            CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
-            CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
-            CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+            CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
+            CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "input_number.outdoor_temp",
+            CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+            CONF_WIND_SPEED_OVERRIDE: True,
+            CONF_WIND_SPEED_ENTITY_ID: "input_number.wind_speed",
         }
     )
     schema_dict = schema.schema
 
-    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID].__class__.__name__ == "Any"
     assert CONF_OUTDOOR_HUMIDITY_ENTITY_ID not in schema_dict
-    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert schema_dict[CONF_WIND_SPEED_ENTITY_ID].__class__.__name__ == "Any"
 
 
 def test_basic_options_schema_covers_simple_controls() -> None:
@@ -158,61 +165,82 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
             CONF_TARGET_TEMPERATURE_C: "22.5",
             CONF_QUIET_HOURS_PAUSE_ENTITY_ID: " ",
-            CONF_NOTIFICATION_DEVICE_ID: None,
+            CONF_NOTIFICATION_DEVICE_ID: [" device-1 ", "device-2", ""],
         }
     )
 
     assert data[CONF_OUTDOOR_WEATHER_ENTITY_ID] == "weather.home"
     assert data[CONF_TARGET_TEMPERATURE_C] == 22.5
     assert data[CONF_QUIET_HOURS_PAUSE_ENTITY_ID] is None
-    assert data[CONF_NOTIFICATION_DEVICE_ID] is None
+    assert data[CONF_NOTIFICATION_DEVICE_ID] == ["device-1", "device-2"]
 
 
 def test_normalize_outdoor_source_config_defaults_and_clears_overrides() -> None:
     data = normalize_outdoor_source_config(
         {
-            CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
-            CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
-            CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+            CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
+            CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+            CONF_WIND_SPEED_OVERRIDE: True,
         }
     )
 
+    assert data[CONF_OUTDOOR_TEMPERATURE_OVERRIDE] is True
     assert data[CONF_OUTDOOR_TEMPERATURE_SOURCE] == OUTDOOR_SOURCE_OVERRIDE
+    assert data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID) is None
+    assert data[CONF_OUTDOOR_HUMIDITY_OVERRIDE] is False
     assert data[CONF_OUTDOOR_HUMIDITY_SOURCE] == OUTDOOR_SOURCE_FORECAST
-    assert data[CONF_WIND_SPEED_SOURCE] == OUTDOOR_SOURCE_OVERRIDE
     assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] is None
+    assert data[CONF_WIND_SPEED_OVERRIDE] is True
+    assert data[CONF_WIND_SPEED_SOURCE] == OUTDOOR_SOURCE_OVERRIDE
+    assert data.get(CONF_WIND_SPEED_ENTITY_ID) is None
 
 
-def test_normalize_outdoor_override_config_accepts_input_number_entities() -> None:
+def test_normalize_outdoor_override_config_rejects_invalid_override_entity_domain() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_outdoor_override_config(
+            {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
+                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "binary_sensor.outdoor_temp",
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+                CONF_WIND_SPEED_OVERRIDE: False,
+            },
+            {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
+                CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+                CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
+                CONF_WIND_SPEED_OVERRIDE: False,
+                CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_FORECAST,
+            },
+        )
+
+    assert exc_info.value.field == CONF_OUTDOOR_TEMPERATURE_ENTITY_ID
+
+
+def test_normalize_outdoor_override_config_accepts_numeric_entities() -> None:
     data = normalize_outdoor_override_config(
         {
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "input_number.outdoor_temp",
             CONF_WIND_SPEED_ENTITY_ID: "input_number.wind_speed",
         },
         {
+            CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
             CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+            CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
             CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
+            CONF_WIND_SPEED_OVERRIDE: True,
             CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
         },
     )
 
-    assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] == "input_number.outdoor_temp"
-    assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] is None
-    assert data[CONF_WIND_SPEED_ENTITY_ID] == "input_number.wind_speed"
-
-
-def test_normalize_setup_overrides_config_accepts_sources() -> None:
-    data = normalize_setup_overrides_config(
-        {
-            CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
-            CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
-            CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
-        }
-    )
-
+    assert data[CONF_OUTDOOR_TEMPERATURE_OVERRIDE] is True
     assert data[CONF_OUTDOOR_TEMPERATURE_SOURCE] == OUTDOOR_SOURCE_OVERRIDE
-    assert data[CONF_OUTDOOR_HUMIDITY_SOURCE] == OUTDOOR_SOURCE_FORECAST
+    assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] == "input_number.outdoor_temp"
+    assert data[CONF_OUTDOOR_HUMIDITY_OVERRIDE] is False
+    assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] is None
+    assert data[CONF_WIND_SPEED_OVERRIDE] is True
     assert data[CONF_WIND_SPEED_SOURCE] == OUTDOOR_SOURCE_OVERRIDE
+    assert data[CONF_WIND_SPEED_ENTITY_ID] == "input_number.wind_speed"
 
 
 def test_normalize_basic_config_rejects_missing_weather_source() -> None:
@@ -238,12 +266,17 @@ def test_normalize_outdoor_override_config_rejects_invalid_outdoor_sensor_domain
     with pytest.raises(ConfigValidationError) as exc_info:
         normalize_outdoor_override_config(
             {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "binary_sensor.outdoor_temp",
-            }
-            ,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+                CONF_WIND_SPEED_OVERRIDE: False,
+            },
             {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
                 CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
                 CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
+                CONF_WIND_SPEED_OVERRIDE: False,
                 CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_FORECAST,
             },
         )
@@ -255,13 +288,19 @@ def test_normalize_outdoor_override_config_rejects_non_numeric_outdoor_entity() 
     with pytest.raises(ConfigValidationError) as exc_info:
         normalize_outdoor_override_config(
             {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "light.outdoor_temp",
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+                CONF_WIND_SPEED_OVERRIDE: False,
             },
             {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
                 CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
                 CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
+                CONF_WIND_SPEED_OVERRIDE: False,
                 CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_FORECAST,
-            }
+            },
         )
 
     assert exc_info.value.field == CONF_OUTDOOR_TEMPERATURE_ENTITY_ID

@@ -11,16 +11,15 @@ from homeassistant.core import callback
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
-    CONF_OUTDOOR_HUMIDITY_SOURCE,
-    CONF_OUTDOOR_TEMPERATURE_SOURCE,
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
     CONF_ROOMS,
-    CONF_WIND_SPEED_SOURCE,
     DOMAIN,
     NAME,
-    OUTDOOR_SOURCE_OVERRIDE,
+    CONF_WIND_SPEED_OVERRIDE,
 )
 from .flow import (
     ConfigValidationError,
@@ -72,7 +71,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):
-        """Collect the outdoor source preferences."""
+        """Collect the outdoor override preferences."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -90,13 +89,10 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="outdoor",
             data_schema=build_outdoor_source_schema(self._current_config),
             errors=errors,
-            description_placeholders={
-                "weather_source": str(self._current_config.get("outdoor_weather_entity_id", "")),
-            },
         )
 
     async def async_step_outdoor_overrides(self, user_input: dict[str, Any] | None = None):
-        """Collect the outdoor override entities for selected sources."""
+        """Collect the manual outdoor measurements."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -114,9 +110,6 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="outdoor_overrides",
             data_schema=build_outdoor_override_schema(self._current_config),
             errors=errors,
-            description_placeholders={
-                "weather_source": str(self._current_config.get("outdoor_weather_entity_id", "")),
-            },
         )
 
     async def async_step_rooms(self, user_input: dict[str, Any] | None = None):
@@ -292,17 +285,14 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return data
 
     def _has_outdoor_overrides(self) -> bool:
-        """Return whether any outdoor source is configured as an override."""
-
         return any(
-            self._current_config.get(source_field) == OUTDOOR_SOURCE_OVERRIDE
-            for source_field in (
-                CONF_OUTDOOR_TEMPERATURE_SOURCE,
-                CONF_OUTDOOR_HUMIDITY_SOURCE,
-                CONF_WIND_SPEED_SOURCE,
+            bool(self._current_config.get(override_field))
+            for override_field in (
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+                CONF_WIND_SPEED_OVERRIDE,
             )
         )
-
 
     @staticmethod
     @callback

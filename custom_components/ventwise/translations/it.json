@@ -3,21 +3,163 @@
   "config": {
     "step": {
       "user": {
-        "title": "Configura VentWise",
-        "description": "Scegli prima la sorgente meteo. I sensori esterni di temperatura, umidità e vento sono override facoltativi, e VentWise userà i dati forecast standard se mancano.",
+        "title": "Configurazione iniziale",
+        "description": "Scegli la sorgente forecast, imposta la temperatura di comfort e, se vuoi, seleziona uno o più dispositivi di notifica.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
-          "outdoor_temperature_entity_id": "Sensore temperatura esterna opzionale",
-          "outdoor_humidity_entity_id": "Sensore umidità esterna opzionale",
-          "wind_speed_entity_id": "Sensore velocità del vento esterno opzionale",
-          "target_temperature_c": "Temperatura di comfort"
+          "target_temperature_c": "Temperatura di comfort",
+          "notification_device_id": "Dispositivi di notifica"
         },
         "data_description": {
-          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise deve usare per prima.",
-          "outdoor_temperature_entity_id": "Facoltativo. Sovrascrive la temperatura esterna letta dalla sorgente meteo quando serve.",
-          "outdoor_humidity_entity_id": "Facoltativo. Sovrascrive l'umidità esterna letta dalla sorgente meteo quando serve.",
-          "wind_speed_entity_id": "Facoltativo. Sovrascrive la velocità del vento esterna letta dalla sorgente meteo quando serve.",
-          "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere."
+          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
+          "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
+          "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise."
+        }
+      },
+      "outdoor": {
+        "title": "Dati esterni",
+        "description": "Usa le checkbox per decidere quali dati esterni arrivano da entità di Home Assistant invece che dal forecast.",
+        "data": {
+          "outdoor_temperature_override": "Sovrascrivi temperatura esterna",
+          "outdoor_humidity_override": "Sovrascrivi umidità esterna",
+          "wind_speed_override": "Sovrascrivi velocità del vento esterna"
+        },
+        "data_description": {
+          "outdoor_temperature_override": "Attiva questa opzione per inserire un'entità numerica della temperatura invece di usare il forecast.",
+          "outdoor_humidity_override": "Attiva questa opzione per inserire un'entità numerica dell'umidità invece di usare il forecast.",
+          "wind_speed_override": "Attiva questa opzione per inserire un'entità numerica della velocità del vento invece di usare il forecast."
+        }
+      },
+      "outdoor_overrides": {
+        "title": "Override esterni",
+        "description": "Inserisci le entità numeriche solo per i valori che hai attivato come override.",
+        "data": {
+          "outdoor_temperature_entity_id": "Override temperatura esterna",
+          "outdoor_humidity_entity_id": "Override umidità esterna",
+          "wind_speed_entity_id": "Override velocità del vento esterna"
+        },
+        "data_description": {
+          "outdoor_temperature_entity_id": "Obbligatorio solo quando la temperatura è impostata su override.",
+          "outdoor_humidity_entity_id": "Obbligatorio solo quando l'umidità è impostata su override.",
+          "wind_speed_entity_id": "Obbligatorio solo quando la velocità del vento è impostata su override."
+        }
+      },
+      "rooms": {
+        "title": "Stanze",
+        "description": "Aggiungi, modifica o rimuovi stanze e macro-stanze per gli spazi che condividono la stessa aria.",
+        "menu_options": {
+          "add_room": "Aggiungi stanza",
+          "add_macro_room": "Aggiungi macro-stanza",
+          "edit_room": "Modifica stanza",
+          "remove_room": "Rimuovi stanza",
+          "finish": "Fine"
+        },
+        "menu_option_descriptions": {
+          "add_room": "Crea una stanza per uno spazio singolo.",
+          "add_macro_room": "Crea un'area raggruppata per spazi che condividono le stesse finestre.",
+          "edit_room": "Aggiorna una stanza o un'area raggruppata esistente.",
+          "remove_room": "Elimina una stanza o un'area raggruppata esistente.",
+          "finish": "Salta le stanze per ora e salva la configurazione."
+        }
+      },
+      "edit_room_select": {
+        "title": "Modifica stanza",
+        "description": "Scegli la stanza che vuoi aggiornare.",
+        "data": {
+          "room_selection": "Stanza"
+        },
+        "data_description": {
+          "room_selection": "Seleziona una delle stanze già salvate in VentWise."
+        }
+      },
+      "remove_room_select": {
+        "title": "Rimuovi stanza",
+        "description": "Scegli la stanza che vuoi eliminare.",
+        "data": {
+          "room_selection": "Stanza"
+        },
+        "data_description": {
+          "room_selection": "Seleziona una delle stanze già salvate in VentWise."
+        }
+      },
+      "add_room": {
+        "title": "Aggiungi stanza",
+        "description": "Crea una stanza normale con le proprie finestre.",
+        "data": {
+          "name": "Nome stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Camera o Studio.",
+          "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
+        }
+      },
+      "edit_room_form": {
+        "title": "Modifica stanza",
+        "description": "Aggiorna la stanza selezionata.",
+        "data": {
+          "name": "Nome stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Camera o Studio.",
+          "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
+        }
+      },
+      "add_macro_room": {
+        "title": "Aggiungi macro-stanza",
+        "description": "Crea un'area più grande che si comporta come una stanza.",
+        "data": {
+          "name": "Nome macro-stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
+          "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
+        }
+      },
+      "edit_macro_room_form": {
+        "title": "Modifica macro-stanza",
+        "description": "Aggiorna l'area selezionata.",
+        "data": {
+          "name": "Nome macro-stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
+          "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
         }
       }
     },
@@ -32,42 +174,66 @@
         "description": "Scegli cosa vuoi modificare.",
         "menu_options": {
           "basic": "Impostazioni base",
+          "outdoor": "Dati esterni",
           "advanced": "Impostazioni avanzate",
           "rooms": "Stanze"
         },
         "menu_option_descriptions": {
-          "basic": "Sorgente meteo, sensori esterni opzionali, temperatura di comfort, pausa ore di silenzio e notifiche.",
-          "advanced": "Valori di taratura, dati forecast supportati e override delle entità.",
+          "basic": "Sorgente meteo, temperatura di comfort, ore di silenzio e notifiche per uno o più dispositivi.",
+          "outdoor": "Scegli forecast o override per ogni dato esterno con le checkbox.",
+          "advanced": "Valori di taratura e helper opzionali per ore di silenzio o controllo principale.",
           "rooms": "Aggiungi stanze e macro-stanze."
         }
       },
       "basic": {
         "title": "Impostazioni base",
-        "description": "Tieni qui i controlli semplici.",
+        "description": "Tieni qui i controlli quotidiani.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
-          "outdoor_temperature_entity_id": "Sensore temperatura esterna opzionale",
-          "outdoor_humidity_entity_id": "Sensore umidità esterna opzionale",
-          "wind_speed_entity_id": "Sensore velocità del vento esterno opzionale",
           "target_temperature_c": "Temperatura di comfort",
-          "quiet_hours_enabled": "Sospendi durante le ore di silenzio",
+          "quiet_hours_enabled": "Pausa durante le ore di silenzio",
           "quiet_hours_pause_entity_id": "Entità di pausa ore di silenzio",
-          "notification_device_id": "Dispositivo di notifica"
+          "notification_device_id": "Dispositivi di notifica"
         },
         "data_description": {
-          "outdoor_weather_entity_id": "Seleziona l'entità meteo che VentWise deve usare per prima.",
-          "outdoor_temperature_entity_id": "Facoltativo. Sovrascrive la temperatura esterna letta dalla sorgente meteo quando serve.",
-          "outdoor_humidity_entity_id": "Facoltativo. Sovrascrive l'umidità esterna letta dalla sorgente meteo quando serve.",
-          "wind_speed_entity_id": "Facoltativo. Sovrascrive la velocità del vento esterna letta dalla sorgente meteo quando serve.",
+          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
           "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
           "quiet_hours_enabled": "Attiva una pausa quando le ore di silenzio sono attive.",
-          "quiet_hours_pause_entity_id": "Facoltativo. Seleziona un helper o sensore che può sospendere le raccomandazioni.",
-          "notification_device_id": "Facoltativo. Seleziona il dispositivo che riceverà le notifiche."
+          "quiet_hours_pause_entity_id": "Facoltativo. Seleziona un helper o un sensore che può sospendere le raccomandazioni.",
+          "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche."
+        }
+      },
+      "outdoor": {
+        "title": "Dati esterni",
+        "description": "Usa le checkbox per decidere quali dati esterni arrivano da entità di Home Assistant invece che dal forecast.",
+        "data": {
+          "outdoor_temperature_override": "Sovrascrivi temperatura esterna",
+          "outdoor_humidity_override": "Sovrascrivi umidità esterna",
+          "wind_speed_override": "Sovrascrivi velocità del vento esterna"
+        },
+        "data_description": {
+          "outdoor_temperature_override": "Attiva questa opzione per inserire un'entità numerica della temperatura invece di usare il forecast.",
+          "outdoor_humidity_override": "Attiva questa opzione per inserire un'entità numerica dell'umidità invece di usare il forecast.",
+          "wind_speed_override": "Attiva questa opzione per inserire un'entità numerica della velocità del vento invece di usare il forecast."
+        }
+      },
+      "outdoor_overrides": {
+        "title": "Override esterni",
+        "description": "Inserisci le entità numeriche solo per i valori che hai attivato come override.",
+        "data": {
+          "outdoor_temperature_entity_id": "Override temperatura esterna",
+          "outdoor_humidity_entity_id": "Override umidità esterna",
+          "wind_speed_entity_id": "Override velocità del vento esterna"
+        },
+        "data_description": {
+          "outdoor_temperature_entity_id": "Obbligatorio solo quando la temperatura è impostata su override.",
+          "outdoor_humidity_entity_id": "Obbligatorio solo quando l'umidità è impostata su override.",
+          "wind_speed_entity_id": "Obbligatorio solo quando la velocità del vento è impostata su override."
         }
       },
       "advanced": {
         "title": "Impostazioni avanzate",
-        "description": "Rifinisci i valori più tecnici. Sorgente forecast supportata: una normale entità meteo di Home Assistant. Se vuoi che VentWise supporti un altro forecast, apri una issue su GitHub.",
+        "description": "Rifinisci i valori tecnici e gli helper opzionali.",
         "data": {
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
           "cooldown_minutes": "Periodo di pausa (minuti)",
@@ -80,7 +246,7 @@
         },
         "data_description": {
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
-          "cooldown_minutes": "Quanto tempo VentWise attende prima di inviare di nuovo lo stesso suggerimento.",
+          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo lo stesso suggerimento.",
           "stability_minutes": "Per quanto tempo un suggerimento deve restare invariato prima di essere inviato.",
           "quiet_hours_start": "Usa un orario come 22:00 o 22:00:00.",
           "quiet_hours_end": "Usa un orario come 07:00 o 07:00:00.",
@@ -91,16 +257,40 @@
       },
       "rooms": {
         "title": "Stanze",
-        "description": "Aggiungi stanze o macro-stanze una alla volta.",
+        "description": "Aggiungi, modifica o rimuovi stanze e macro-stanze per gli spazi che condividono la stessa aria.",
         "menu_options": {
           "add_room": "Aggiungi stanza",
           "add_macro_room": "Aggiungi macro-stanza",
+          "edit_room": "Modifica stanza",
+          "remove_room": "Rimuovi stanza",
           "finish": "Fine"
         },
         "menu_option_descriptions": {
-          "add_room": "Crea una stanza normale.",
-          "add_macro_room": "Crea un'area più grande che si comporta come una stanza.",
-          "finish": "Salva l'elenco attuale delle stanze."
+          "add_room": "Crea una stanza per uno spazio singolo.",
+          "add_macro_room": "Crea un'area raggruppata per spazi che condividono le stesse finestre.",
+          "edit_room": "Aggiorna una stanza o un'area raggruppata esistente.",
+          "remove_room": "Elimina una stanza o un'area raggruppata esistente.",
+          "finish": "Salta le stanze per ora e salva la configurazione."
+        }
+      },
+      "edit_room_select": {
+        "title": "Modifica stanza",
+        "description": "Scegli la stanza che vuoi aggiornare.",
+        "data": {
+          "room_selection": "Stanza"
+        },
+        "data_description": {
+          "room_selection": "Seleziona una delle stanze già salvate in VentWise."
+        }
+      },
+      "remove_room_select": {
+        "title": "Rimuovi stanza",
+        "description": "Scegli la stanza che vuoi eliminare.",
+        "data": {
+          "room_selection": "Stanza"
+        },
+        "data_description": {
+          "room_selection": "Seleziona una delle stanze già salvate in VentWise."
         }
       },
       "add_room": {
@@ -123,9 +313,49 @@
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
         }
       },
+      "edit_room_form": {
+        "title": "Modifica stanza",
+        "description": "Aggiorna la stanza selezionata.",
+        "data": {
+          "name": "Nome stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Camera o Studio.",
+          "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
+        }
+      },
       "add_macro_room": {
         "title": "Aggiungi macro-stanza",
         "description": "Crea un'area più grande che si comporta come una stanza.",
+        "data": {
+          "name": "Nome macro-stanza",
+          "temperature_entity_id": "Sensore temperatura interna",
+          "humidity_entity_id": "Sensore umidità interna",
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
+        },
+        "data_description": {
+          "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
+          "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
+          "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
+        }
+      },
+      "edit_macro_room_form": {
+        "title": "Modifica macro-stanza",
+        "description": "Aggiorna l'area selezionata.",
         "data": {
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
