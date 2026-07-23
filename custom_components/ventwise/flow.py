@@ -22,6 +22,7 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_COOLDOWN_MINUTES,
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -35,7 +36,9 @@ from .const import (
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
@@ -49,6 +52,7 @@ from .const import (
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
@@ -99,6 +103,12 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
             ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
+            vol.Required(
+                CONF_AUTO_COMFORT_TEMPERATURE,
+                default=defaults.get(
+                    CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE
+                ),
+            ): cv.boolean,
             vol.Required(
                 CONF_TARGET_HUMIDITY_PERCENT,
                 default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0),
@@ -193,6 +203,12 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
+                CONF_AUTO_COMFORT_TEMPERATURE,
+                default=defaults.get(
+                    CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE
+                ),
+            ): cv.boolean,
+            vol.Required(
                 CONF_SOFT_OUTDOOR_THRESHOLD_C,
                 default=defaults.get(
                     CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
@@ -229,10 +245,26 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
             ),
+            vol.Required(
+                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+                default=_default_room_override_enabled(
+                    defaults,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+                ),
+            ): cv.boolean,
             **_optional_numeric_field(
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
                 defaults.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C),
             ),
+            vol.Required(
+                CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+                default=_default_room_override_enabled(
+                    defaults,
+                    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+                    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+                ),
+            ): cv.boolean,
             **_optional_numeric_field(
                 CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
                 defaults.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE),
@@ -267,6 +299,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
             10.0,
             30.0,
         )
+    data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(
+        data.get(CONF_AUTO_COMFORT_TEMPERATURE),
+        CONF_AUTO_COMFORT_TEMPERATURE,
+        default=DEFAULT_AUTO_COMFORT_TEMPERATURE,
+    )
     if CONF_TARGET_HUMIDITY_PERCENT in data:
         data[CONF_TARGET_HUMIDITY_PERCENT] = _normalize_float(
             data.get(CONF_TARGET_HUMIDITY_PERCENT),
@@ -330,6 +367,11 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     """Normalize advanced flow data for storage."""
 
     data = dict(user_input)
+    data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(
+        data.get(CONF_AUTO_COMFORT_TEMPERATURE),
+        CONF_AUTO_COMFORT_TEMPERATURE,
+        default=DEFAULT_AUTO_COMFORT_TEMPERATURE,
+    )
     data[CONF_SOFT_OUTDOOR_THRESHOLD_C] = _normalize_float(
         data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C),
         CONF_SOFT_OUTDOOR_THRESHOLD_C,
@@ -386,6 +428,24 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
+    data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED] = _normalize_bool(
+        data.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED),
+        CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+        default=_default_room_override_enabled(
+            data,
+            CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+            CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+        ),
+    )
+    data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED] = _normalize_bool(
+        data.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED),
+        CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+        default=_default_room_override_enabled(
+            data,
+            CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+            CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+        ),
+    )
     data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C] = _normalize_optional_float(
         data.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C),
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
@@ -398,6 +458,10 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         20.0,
         80.0,
     )
+    if data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED] and data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C] is None:
+        raise ConfigValidationError(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
+    if data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED] and data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE] is None:
+        raise ConfigValidationError(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
     _normalize_optional_entity_ids(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
@@ -513,6 +577,18 @@ def _default_outdoor_override(
         return source == OUTDOOR_SOURCE_OVERRIDE
     entity = defaults.get(entity_field)
     return entity is not None and str(entity).strip() != ""
+
+
+def _default_room_override_enabled(
+    defaults: Mapping[str, object],
+    enabled_field: str,
+    value_field: str,
+) -> bool:
+    enabled = defaults.get(enabled_field)
+    if isinstance(enabled, bool):
+        return enabled
+    value = defaults.get(value_field)
+    return value is not None and str(value).strip() != ""
 
 
 def _normalize_outdoor_override(value: object, field: str) -> bool:

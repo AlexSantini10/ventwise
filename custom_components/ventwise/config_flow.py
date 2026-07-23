@@ -180,6 +180,34 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="edit_room_form" if room_kind == "room" else "edit_macro_room_form",
         )
 
+    async def async_step_edit_room_form(self, user_input: dict[str, Any] | None = None):
+        """Submit edits for a standard room during setup."""
+
+        if self._selected_room_index is None or self._selected_room_index >= len(self._rooms):
+            return self.async_abort(reason="invalid_step")
+        selected_room = self._rooms[self._selected_room_index]
+        return await self._handle_room_step(
+            str(selected_room.get(CONF_ROOM_KIND, "room")),
+            user_input,
+            room_index=self._selected_room_index,
+            default_room=selected_room,
+            step_id="edit_room_form",
+        )
+
+    async def async_step_edit_macro_room_form(self, user_input: dict[str, Any] | None = None):
+        """Submit edits for a macro-room during setup."""
+
+        if self._selected_room_index is None or self._selected_room_index >= len(self._rooms):
+            return self.async_abort(reason="invalid_step")
+        selected_room = self._rooms[self._selected_room_index]
+        return await self._handle_room_step(
+            str(selected_room.get(CONF_ROOM_KIND, "macro_room")),
+            user_input,
+            room_index=self._selected_room_index,
+            default_room=selected_room,
+            step_id="edit_macro_room_form",
+        )
+
     async def async_step_remove_room(self, user_input: dict[str, Any] | None = None):
         """Pick a room to remove during setup."""
 

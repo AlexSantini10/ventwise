@@ -16,6 +16,7 @@ from .ventwise_core import (
 )
 
 from .const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_MINIMUM_SCORE,
@@ -34,7 +35,9 @@ from .const import (
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
@@ -52,6 +55,7 @@ from .const import (
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
     DEFAULT_QUIET_HOURS_START,
@@ -73,7 +77,9 @@ class RoomConfig:
     temperature_entity_id: str
     kind: str = "room"
     enabled: bool = True
+    target_temperature_c_override_enabled: bool = False
     target_temperature_c_override: float | None = None
+    target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
     start_entity_id: str | None = None
@@ -86,6 +92,7 @@ class IntegrationConfig:
 
     outdoor_weather_entity_id: str | None = None
     target_temperature_c: float = DEFAULT_TARGET_TEMPERATURE_C
+    auto_comfort_temperature_enabled: bool = DEFAULT_AUTO_COMFORT_TEMPERATURE
     target_humidity_percent: float = 50.0
     soft_outdoor_threshold_c: float = DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
     minimum_score: float = DEFAULT_MINIMUM_SCORE
@@ -113,6 +120,7 @@ class RuntimeSnapshot:
     summary: RecommendationSummary
     weather_condition: str | None
     target_perceived_c: float | None
+    suggested_comfort_temperature_c: float | None
     outdoor_perceived_c: float | None
     active_indoor_perceived_c: float | None
     outdoor_temperature_c: float | None
@@ -146,8 +154,22 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             name=str(room[CONF_ROOM_NAME]),
             temperature_entity_id=str(room[CONF_ROOM_TEMPERATURE_ENTITY_ID]),
             enabled=bool(room.get(CONF_ROOM_ENABLED, True)),
+            target_temperature_c_override_enabled=bool(
+                room.get(
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+                    room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C) is not None
+                    and str(room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)).strip() != "",
+                )
+            ),
             target_temperature_c_override=_float_or_none(
                 room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
+            ),
+            target_humidity_percent_override_enabled=bool(
+                room.get(
+                    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+                    room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE) is not None
+                    and str(room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)).strip() != "",
+                )
             ),
             target_humidity_percent_override=_float_or_none(
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
@@ -161,6 +183,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     return IntegrationConfig(
         outdoor_weather_entity_id=_string_or_none(data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)),
         target_temperature_c=float(data.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)),
+        auto_comfort_temperature_enabled=bool(
+            data.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)
+        ),
         target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)),
         soft_outdoor_threshold_c=float(
             data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
@@ -339,7 +364,9 @@ def build_room_profiles(
                 ),
                 kind=room.kind,
                 enabled=room.enabled,
+                target_temperature_c_override_enabled=room.target_temperature_c_override_enabled,
                 target_temperature_c_override=room.target_temperature_c_override,
+                target_humidity_percent_override_enabled=room.target_humidity_percent_override_enabled,
                 target_humidity_percent_override=room.target_humidity_percent_override,
             )
         )
@@ -368,8 +395,10 @@ def build_debug_attributes(
         "summary_reason": summary.reason,
         "summary_best_room": summary.best_room,
         "summary_blocked_by": summary.blocked_by,
+        "summary_suggested_comfort_temperature_c": summary.suggested_comfort_temperature_c,
         "weather_condition": snapshot.weather_condition,
         "target_perceived_c": snapshot.target_perceived_c,
+        "suggested_comfort_temperature_c": snapshot.suggested_comfort_temperature_c,
         "outdoor_perceived_c": snapshot.outdoor_perceived_c,
         "active_indoor_perceived_c": snapshot.active_indoor_perceived_c,
         "notification_enabled": config.notification_enabled,
@@ -381,6 +410,7 @@ def build_debug_attributes(
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "target_temperature_c": config.target_temperature_c,
+        "auto_comfort_temperature_enabled": config.auto_comfort_temperature_enabled,
         "target_humidity_percent": config.target_humidity_percent,
         "soft_outdoor_threshold_c": config.soft_outdoor_threshold_c,
         "minimum_score": config.minimum_score,
@@ -521,6 +551,7 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "reason": recommendation.reason,
         "indoor_perceived_c": recommendation.indoor_perceived_c,
         "outdoor_perceived_c": recommendation.outdoor_perceived_c,
+        "suggested_comfort_temperature_c": recommendation.suggested_comfort_temperature_c,
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
     }
@@ -553,5 +584,16 @@ def find_room_recommendation(
             if recommendation.room_id == room.room_id:
                 return recommendation
         if recommendation.room_id is None and recommendation.room_name == room.name:
-            return recommendation
+                return recommendation
     return None
+
+
+def room_target_temperature_c(
+    room: RoomConfig,
+    config: IntegrationConfig,
+) -> float:
+    """Return the effective comfort temperature for a room."""
+
+    if room.target_temperature_c_override_enabled and room.target_temperature_c_override is not None:
+        return room.target_temperature_c_override
+    return config.target_temperature_c

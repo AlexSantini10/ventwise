@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+from math import fsum
+from dataclasses import replace
 from collections.abc import Callable
 from datetime import datetime, time, timedelta
 from typing import Any
@@ -35,8 +37,13 @@ from .runtime import (
     is_quiet_hours_active,
 )
 from .const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOMS,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
@@ -110,10 +117,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     action=RecommendationAction.NONE,
                     score=0.0,
                     reason="The integration is disabled.",
+                    suggested_comfort_temperature_c=None,
                     blocked_by="disabled",
                 ),
                 weather_condition=None,
                 target_perceived_c=None,
+                suggested_comfort_temperature_c=None,
                 outdoor_perceived_c=None,
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=None,
@@ -130,12 +139,13 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         rooms, outdoor = build_room_profiles(self._config, self.hass.states.get)
-        if outdoor is None or not rooms:
+        if outdoor is None:
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
                     score=0.0,
                     reason="Outdoor or room sensor data is not available yet.",
+                    suggested_comfort_temperature_c=None,
                     blocked_by="unavailable",
                 ),
                 weather_condition=_weather_condition(
@@ -143,11 +153,44 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     self.hass.states.get,
                 ),
                 target_perceived_c=None,
+                suggested_comfort_temperature_c=None,
                 outdoor_perceived_c=None,
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=None,
                 outdoor_humidity_percent=None,
                 wind_speed_m_s=None,
+                notification_allowed=False,
+                quiet_hours_active=False,
+                cooldown_active=False,
+                enabled=True,
+                stable_for_seconds=0,
+                last_updated=dt_util.utcnow(),
+            )
+            self._refresh_time_listener(snapshot.last_updated, snapshot)
+            return snapshot
+
+        if not rooms:
+            snapshot = RuntimeSnapshot(
+                summary=RecommendationSummary(
+                    action=RecommendationAction.NONE,
+                    score=0.0,
+                    reason="No enabled rooms configured.",
+                ),
+                weather_condition=_weather_condition(
+                    self._config.outdoor_weather_entity_id,
+                    self.hass.states.get,
+                ),
+                target_perceived_c=self._config.target_temperature_c,
+                suggested_comfort_temperature_c=None,
+                outdoor_perceived_c=outdoor.temperature_c
+                + (
+                    (outdoor.humidity_percent - self._config.target_humidity_percent)
+                    * self._recommender.config.humidity_weight
+                ),
+                active_indoor_perceived_c=None,
+                outdoor_temperature_c=outdoor.temperature_c,
+                outdoor_humidity_percent=outdoor.humidity_percent,
+                wind_speed_m_s=outdoor.wind_speed_m_s,
                 notification_allowed=False,
                 quiet_hours_active=False,
                 cooldown_active=False,
@@ -168,6 +211,27 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 stable_for_seconds=10**6,
             ),
         )
+        effective_target_temperature_c = self._config.target_temperature_c
+        if self._config.auto_comfort_temperature_enabled:
+            suggested_target = _suggested_comfort_temperature(
+                self._config.target_temperature_c,
+                summary,
+            )
+            if suggested_target is not None:
+                effective_target_temperature_c = suggested_target
+                auto_config = replace(
+                    self._config,
+                    target_temperature_c=effective_target_temperature_c,
+                )
+                summary = ComfortRecommender(build_scoring_config(auto_config)).evaluate(
+                    rooms=rooms,
+                    outdoor=outdoor,
+                    context=RecommendationContext(
+                        quiet_hours_active=False,
+                        cooldown_active=False,
+                        stable_for_seconds=10**6,
+                    ),
+                )
         signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -196,19 +260,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._last_notification_signature = signature
             self._last_notification_at = now
 
-        target_perceived_c = self._config.target_temperature_c
+        target_perceived_c = effective_target_temperature_c
         outdoor_perceived_c = outdoor.temperature_c + (
             (outdoor.humidity_percent - self._config.target_humidity_percent)
             * self._recommender.config.humidity_weight
         )
-        active_indoor_perceived_c = next(
-            (
-                recommendation.indoor_perceived_c
-                for recommendation in summary.room_recommendations
-                if recommendation.room_name == summary.best_room
-            ),
-            None,
-        )
+        active_indoor_perceived_c = _average_room_indoor_perceived_temperature(summary)
 
         snapshot = RuntimeSnapshot(
             summary=summary,
@@ -217,6 +274,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 self.hass.states.get,
             ),
             target_perceived_c=target_perceived_c,
+            suggested_comfort_temperature_c=summary.suggested_comfort_temperature_c,
             outdoor_perceived_c=outdoor_perceived_c,
             active_indoor_perceived_c=active_indoor_perceived_c,
             outdoor_temperature_c=outdoor.temperature_c,
@@ -263,6 +321,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._update_entry_options({CONF_TARGET_TEMPERATURE_C: temperature_c})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
+    async def async_set_auto_comfort_temperature_enabled(self, enabled: bool) -> None:
+        """Persist the automatic comfort temperature flag in config entry options."""
+
+        self._update_entry_options({CONF_AUTO_COMFORT_TEMPERATURE: enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
     async def async_set_target_humidity(self, humidity_percent: float) -> None:
         """Persist the global comfort humidity in config entry options."""
 
@@ -284,13 +348,47 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     async def async_set_room_enabled(self, room_key: str, enabled: bool) -> None:
         """Persist the enabled flag for one room."""
 
-        options = dict(self._config_entry.options)
-        rooms = [dict(room) for room in options.get(CONF_ROOMS, [])]
-        for room in rooms:
-            if self._room_matches(room, room_key):
-                room[CONF_ROOM_ENABLED] = enabled
-                break
-        self._update_entry_options({CONF_ROOMS: rooms})
+        self._update_room(room_key, {CONF_ROOM_ENABLED: enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_room_target_temperature_override_enabled(
+        self,
+        room_key: str,
+        enabled: bool,
+    ) -> None:
+        """Persist the temperature override enable flag for one room."""
+
+        self._update_room(room_key, {CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_room_target_temperature_override(
+        self,
+        room_key: str,
+        temperature_c: float,
+    ) -> None:
+        """Persist the room comfort temperature override."""
+
+        self._update_room(room_key, {CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: temperature_c})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_room_target_humidity_override_enabled(
+        self,
+        room_key: str,
+        enabled: bool,
+    ) -> None:
+        """Persist the humidity override enable flag for one room."""
+
+        self._update_room(room_key, {CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_room_target_humidity_override(
+        self,
+        room_key: str,
+        humidity_percent: float,
+    ) -> None:
+        """Persist the room comfort humidity override."""
+
+        self._update_room(room_key, {CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE: humidity_percent})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
@@ -428,6 +526,15 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             options={**self._config_entry.options, **updates},
         )
 
+    def _update_room(self, room_key: str, updates: dict[str, Any]) -> None:
+        options = dict(self._config_entry.options)
+        rooms = [dict(room) for room in options.get(CONF_ROOMS, [])]
+        for room in rooms:
+            if self._room_matches(room, room_key):
+                room.update(updates)
+                break
+        self._update_entry_options({CONF_ROOMS: rooms})
+
     @staticmethod
     def _room_matches(room: dict[str, Any], room_key: str) -> bool:
         room_id = room.get(CONF_ROOM_ID)
@@ -478,3 +585,31 @@ def _weather_condition(
         return None
     text = str(raw_state).strip()
     return text or None
+
+
+def _suggested_comfort_temperature(
+    target_temperature_c: float,
+    summary: RecommendationSummary,
+) -> float | None:
+    if not summary.best_room:
+        return None
+    best_room = next(
+        (recommendation for recommendation in summary.room_recommendations if recommendation.room_name == summary.best_room),
+        None,
+    )
+    if best_room is None:
+        return None
+    balance_point = (best_room.indoor_perceived_c + best_room.outdoor_perceived_c) / 2.0
+    suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
+    return round(max(10.0, min(30.0, suggestion)), 1)
+
+
+def _average_room_indoor_perceived_temperature(
+    summary: RecommendationSummary,
+) -> float | None:
+    """Return the mean perceived indoor temperature across available rooms."""
+
+    values = [recommendation.indoor_perceived_c for recommendation in summary.room_recommendations]
+    if not values:
+        return None
+    return fsum(values) / len(values)

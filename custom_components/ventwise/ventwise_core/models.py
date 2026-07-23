@@ -40,7 +40,9 @@ class RoomProfile:
     kind: str = "room"
     room_id: str | None = None
     enabled: bool = True
+    target_temperature_c_override_enabled: bool = False
     target_temperature_c_override: float | None = None
+    target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
 
 
@@ -95,6 +97,7 @@ class RoomRecommendation:
     target_perceived_c: float
     indoor_perceived_c: float
     outdoor_perceived_c: float
+    suggested_comfort_temperature_c: float
     room_id: str | None = None
     open_score: float = 0.0
     close_score: float = 0.0
@@ -107,6 +110,7 @@ class RecommendationSummary:
     action: RecommendationAction
     score: float
     reason: str
+    suggested_comfort_temperature_c: float | None = None
     room_recommendations: Tuple[RoomRecommendation, ...] = field(default_factory=tuple)
     blocked_by: str | None = None
     best_room: str | None = None

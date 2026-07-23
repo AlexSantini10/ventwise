@@ -1,6 +1,7 @@
 """Tests for the comfort scoring core."""
 
 import logging
+import pytest
 
 from ventwise_core import (
     ComfortObservation,
@@ -28,6 +29,23 @@ def test_recommender_prefers_open_when_outside_is_more_comfortable() -> None:
     assert result.action == RecommendationAction.OPEN
     assert result.score > 0
     assert result.best_room == "Camera"
+
+
+def test_recommender_exposes_suggested_comfort_temperature() -> None:
+    recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0))
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=29.0, humidity_percent=50.0),
+    )
+    outdoor = ComfortObservation(temperature_c=28.0, humidity_percent=50.0)
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.suggested_comfort_temperature_c == pytest.approx(23.625)
+    assert result.room_recommendations[0].suggested_comfort_temperature_c == pytest.approx(
+        23.625
+    )
 
 
 def test_recommender_opens_when_outside_is_only_one_degree_closer_to_target() -> None:
@@ -280,6 +298,7 @@ def test_recommender_honors_room_humidity_override() -> None:
         room_id="room-1",
         name="Camera",
         indoor=RoomObservation(temperature_c=24.0, humidity_percent=80.0),
+        target_humidity_percent_override_enabled=True,
         target_humidity_percent_override=80.0,
     )
 
@@ -289,6 +308,25 @@ def test_recommender_honors_room_humidity_override() -> None:
     assert baseline_result.action == RecommendationAction.OPEN
     assert humid_result.action == RecommendationAction.CLOSE
     assert humid_result.room_recommendations[0].target_perceived_c == 22.0
+
+
+def test_recommender_ignores_disabled_room_overrides() -> None:
+    recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0, minimum_score=0.0))
+    outdoor = ComfortObservation(temperature_c=21.0, humidity_percent=20.0)
+
+    disabled_room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=24.0, humidity_percent=80.0),
+        target_temperature_c_override_enabled=False,
+        target_temperature_c_override=24.0,
+        target_humidity_percent_override_enabled=False,
+        target_humidity_percent_override=80.0,
+    )
+
+    result = recommender.evaluate([disabled_room], outdoor)
+
+    assert result.action == RecommendationAction.OPEN
 
 
 def test_recommender_penalizes_absurd_targets() -> None:
@@ -338,7 +376,7 @@ def test_recommender_emits_diagnostic_debug_logs(caplog) -> None:
     )
     outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
 
-    with caplog.at_level(logging.DEBUG, logger="custom_components.ventwise.ventwise_core.scoring"):
+    with caplog.at_level(logging.DEBUG):
         result = recommender.evaluate([room], outdoor)
 
     assert result.action == RecommendationAction.OPEN

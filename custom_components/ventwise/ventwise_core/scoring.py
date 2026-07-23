@@ -31,6 +31,18 @@ def perceived_temperature(
     return temperature_c + ((humidity_percent - target_humidity_percent) * humidity_weight)
 
 
+def suggested_comfort_temperature(
+    target_temperature_c: float,
+    indoor_perceived_c: float,
+    outdoor_perceived_c: float,
+) -> float:
+    """Estimate a comfort temperature suggestion from the current conditions."""
+
+    balance_point = (indoor_perceived_c + outdoor_perceived_c) / 2.0
+    suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
+    return _clamp_temperature(suggestion)
+
+
 class ComfortRecommender:
     """Evaluate room comfort and recommend opening or closing windows."""
 
@@ -57,12 +69,14 @@ class ComfortRecommender:
 
         target_temperature = (
             room.target_temperature_c_override
-            if room.target_temperature_c_override is not None
+            if room.target_temperature_c_override_enabled
+            and room.target_temperature_c_override is not None
             else self._config.target_temperature_c
         )
         target_humidity = (
             room.target_humidity_percent_override
-            if room.target_humidity_percent_override is not None
+            if room.target_humidity_percent_override_enabled
+            and room.target_humidity_percent_override is not None
             else self._config.target_humidity_percent
         )
         indoor_perceived = perceived_temperature(
@@ -82,6 +96,11 @@ class ComfortRecommender:
             target_humidity,
             target_humidity,
             self._config.humidity_weight,
+        )
+        suggested_temperature = suggested_comfort_temperature(
+            target_perceived,
+            indoor_perceived,
+            outdoor_perceived,
         )
         inside_delta = abs(indoor_perceived - target_perceived)
         outside_delta = abs(outdoor_perceived - target_perceived)
@@ -111,6 +130,7 @@ class ComfortRecommender:
                 target_perceived_c=target_perceived,
                 indoor_perceived_c=indoor_perceived,
                 outdoor_perceived_c=outdoor_perceived,
+                suggested_comfort_temperature_c=suggested_temperature,
                 open_score=0.0,
                 close_score=close_score,
             )
@@ -178,6 +198,7 @@ class ComfortRecommender:
             target_perceived_c=target_perceived,
             indoor_perceived_c=indoor_perceived,
             outdoor_perceived_c=outdoor_perceived,
+            suggested_comfort_temperature_c=suggested_temperature,
             open_score=open_score,
             close_score=close_score,
         )
@@ -200,6 +221,7 @@ class ComfortRecommender:
                 action=RecommendationAction.NONE,
                 score=0.0,
                 reason="Quiet hours are active.",
+                suggested_comfort_temperature_c=None,
                 blocked_by="quiet_hours",
             )
         if context.cooldown_active:
@@ -211,6 +233,7 @@ class ComfortRecommender:
                 action=RecommendationAction.NONE,
                 score=0.0,
                 reason="Notification cooldown is active.",
+                suggested_comfort_temperature_c=None,
                 blocked_by="cooldown",
             )
         if context.stable_for_seconds < self._config.minimum_stability_seconds:
@@ -227,6 +250,7 @@ class ComfortRecommender:
                     "Recommendation has not been stable long enough "
                     f"({context.stable_for_seconds}s < {self._config.minimum_stability_seconds}s)."
                 ),
+                suggested_comfort_temperature_c=None,
                 blocked_by="stability",
             )
 
@@ -243,6 +267,7 @@ class ComfortRecommender:
                 action=RecommendationAction.NONE,
                 score=0.0,
                 reason="No enabled rooms configured.",
+                suggested_comfort_temperature_c=None,
             )
 
         best_room = max(room_recommendations, key=lambda recommendation: recommendation.score)
@@ -268,6 +293,7 @@ class ComfortRecommender:
                 action=RecommendationAction.NONE,
                 score=weighted_score,
                 reason="The strongest room signal is too small to notify.",
+                suggested_comfort_temperature_c=best_room.suggested_comfort_temperature_c,
                 room_recommendations=room_recommendations,
                 best_room=best_room.room_name,
             )
@@ -282,6 +308,7 @@ class ComfortRecommender:
             action=best_room.action,
             score=weighted_score,
             reason=best_room.reason,
+            suggested_comfort_temperature_c=best_room.suggested_comfort_temperature_c,
             room_recommendations=room_recommendations,
             best_room=best_room.room_name,
         )
@@ -352,6 +379,10 @@ class ComfortRecommender:
     @staticmethod
     def _clamp(value: float) -> float:
         return max(0.0, min(1.0, value))
+
+
+def _clamp_temperature(value: float) -> float:
+    return max(10.0, min(30.0, value))
 
 
 def _weather_requires_close(weather_condition: str | None) -> bool:
