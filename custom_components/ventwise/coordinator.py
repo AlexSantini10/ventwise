@@ -36,6 +36,11 @@ from .runtime import (
     load_runtime_state,
     is_quiet_hours_active,
 )
+from .notification import (
+    async_send_notification,
+    build_notification_payload,
+    notification_entity_ids_for_device_ids,
+)
 from .const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
@@ -139,6 +144,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         rooms, outdoor = build_room_profiles(self._config, self.hass.states.get)
+        notification_entity_ids = notification_entity_ids_for_device_ids(
+            self.hass,
+            self._config.notification_device_ids,
+        )
         if outdoor is None:
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
@@ -249,6 +258,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         notification_allowed = (
             self._config.notification_enabled
+            and bool(notification_entity_ids)
             and summary.action != RecommendationAction.NONE
             and summary.score >= self._config.minimum_score
             and not quiet_hours_active
@@ -257,8 +267,16 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         )
 
         if notification_allowed and self._last_notification_signature != signature:
-            self._last_notification_signature = signature
-            self._last_notification_at = now
+            title, message = build_notification_payload(summary)
+            delivered = await async_send_notification(
+                self.hass,
+                notification_entity_ids,
+                title=title,
+                message=message,
+            )
+            if delivered:
+                self._last_notification_signature = signature
+                self._last_notification_at = now
 
         target_perceived_c = effective_target_temperature_c
         outdoor_perceived_c = outdoor.temperature_c + (

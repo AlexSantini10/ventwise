@@ -124,11 +124,11 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_STABILITY_MINUTES,
                 default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES),
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
-            **_optional_selector_field(
+            vol.Required(
                 CONF_NOTIFICATION_DEVICE_ID,
-                DeviceSelector(DeviceSelectorConfig(multiple=True)),
-                _normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID)),
-            ),
+                default=_normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID))
+                or [],
+            ): DeviceSelector(DeviceSelectorConfig(multiple=True)),
         }
     )
 
@@ -195,11 +195,11 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
-            **_optional_selector_field(
+            vol.Required(
                 CONF_NOTIFICATION_DEVICE_ID,
-                DeviceSelector(DeviceSelectorConfig(multiple=True)),
-                _normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID)),
-            ),
+                default=_normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID))
+                or [],
+            ): DeviceSelector(DeviceSelectorConfig(multiple=True)),
         }
     )
 
@@ -330,9 +330,12 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
             0,
             24 * 60,
         )
-    data[CONF_NOTIFICATION_DEVICE_ID] = _normalize_notification_device_ids(
+    notification_device_ids = _normalize_notification_device_ids(
         data.get(CONF_NOTIFICATION_DEVICE_ID)
     )
+    if not notification_device_ids:
+        raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID)
+    data[CONF_NOTIFICATION_DEVICE_ID] = notification_device_ids
     return data
 
 

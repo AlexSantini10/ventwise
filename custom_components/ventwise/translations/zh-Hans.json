@@ -17,7 +17,7 @@
           "target_temperature_c": "设置你在家时感觉舒适的室内温度。",
           "target_humidity_percent": "设置你在家时感觉舒适的室内湿度。",
           "stability_minutes": "VentWise 在采取行动前，建议需要保持相同多久。如果不确定，就保留默认值。",
-          "notification_device_id": "可选。选择一个或多个接收 VentWise 通知的设备。"
+          "notification_device_id": "选择一个或多个接收 VentWise 通知的设备。"
         }
       },
       "outdoor": {
@@ -220,7 +220,7 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
-          "notification_device_id": "可选。选择一个或多个接收通知的设备。"
+          "notification_device_id": "选择一个或多个接收通知的设备。"
         }
       },
       "advanced": {
