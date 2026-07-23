@@ -145,9 +145,13 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         rooms, outdoor = build_room_profiles(self._config, self.hass.states.get)
-        notification_entity_ids = notification_entity_ids_for_device_ids(
-            self.hass,
-            self._config.notification_device_ids,
+        notification_entity_ids = (
+            notification_entity_ids_for_device_ids(
+                self.hass,
+                self._config.notification_device_ids,
+            )
+            if self._config.notification_device_ids
+            else ()
         )
         if outdoor is None:
             snapshot = RuntimeSnapshot(
