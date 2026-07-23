@@ -50,6 +50,7 @@ class ComfortObservation:
     temperature_c: float
     humidity_percent: float
     wind_speed_m_s: float | None = None
+    weather_condition: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +58,7 @@ class ScoringConfig:
     """Tunable scoring parameters."""
 
     target_temperature_c: float = 22.0
+    target_humidity_percent: float = 50.0
     soft_outdoor_threshold_c: float = 22.0
     minimum_score: float = 0.35
     minimum_stability_seconds: int = 0

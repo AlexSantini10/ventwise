@@ -21,14 +21,13 @@ from .const import (
     CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_MINIMUM_SCORE,
     CONF_NOTIFICATION_DEVICE_ID,
+    CONF_NOTIFICATION_ENABLED,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
-    CONF_QUIET_HOURS_END_ENTITY_ID,
     CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
-    CONF_QUIET_HOURS_START_ENTITY_ID,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
@@ -50,6 +49,7 @@ from .const import (
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
+    CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_SOURCE,
@@ -88,6 +88,7 @@ class IntegrationConfig:
 
     outdoor_weather_entity_id: str | None = None
     target_temperature_c: float = DEFAULT_TARGET_TEMPERATURE_C
+    target_humidity_percent: float = 50.0
     soft_outdoor_threshold_c: float = DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
     minimum_score: float = DEFAULT_MINIMUM_SCORE
     cooldown_minutes: int = DEFAULT_COOLDOWN_MINUTES
@@ -95,8 +96,6 @@ class IntegrationConfig:
     quiet_hours_enabled: bool = True
     quiet_hours_start: str = DEFAULT_QUIET_HOURS_START
     quiet_hours_end: str = DEFAULT_QUIET_HOURS_END
-    quiet_hours_start_entity_id: str | None = None
-    quiet_hours_end_entity_id: str | None = None
     quiet_hours_pause_entity_id: str | None = None
     enabled: bool = True
     outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
@@ -106,6 +105,7 @@ class IntegrationConfig:
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
     master_control_entity_id: str | None = None
+    notification_enabled: bool = True
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -115,6 +115,7 @@ class RuntimeSnapshot:
     """Result of a coordinator refresh."""
 
     summary: RecommendationSummary
+    weather_condition: str | None
     outdoor_temperature_c: float | None
     outdoor_humidity_percent: float | None
     wind_speed_m_s: float | None
@@ -159,6 +160,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     return IntegrationConfig(
         outdoor_weather_entity_id=_string_or_none(data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)),
         target_temperature_c=float(data.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)),
+        target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)),
         soft_outdoor_threshold_c=float(
             data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
         ),
@@ -168,8 +170,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         quiet_hours_enabled=bool(data.get(CONF_QUIET_HOURS_ENABLED, True)),
         quiet_hours_start=str(data.get(CONF_QUIET_HOURS_START, DEFAULT_QUIET_HOURS_START)),
         quiet_hours_end=str(data.get(CONF_QUIET_HOURS_END, DEFAULT_QUIET_HOURS_END)),
-        quiet_hours_start_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_START_ENTITY_ID)),
-        quiet_hours_end_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_END_ENTITY_ID)),
         quiet_hours_pause_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_PAUSE_ENTITY_ID)),
         enabled=bool(data.get(CONF_ENABLED, True)),
         outdoor_temperature_source=_outdoor_source(
@@ -187,6 +187,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
         master_control_entity_id=_string_or_none(data.get(CONF_MASTER_CONTROL_ENTITY_ID)),
+        notification_enabled=bool(data.get(CONF_NOTIFICATION_ENABLED, True)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -197,6 +198,7 @@ def build_scoring_config(config: IntegrationConfig) -> ScoringConfig:
 
     return ScoringConfig(
         target_temperature_c=config.target_temperature_c,
+        target_humidity_percent=config.target_humidity_percent,
         soft_outdoor_threshold_c=config.soft_outdoor_threshold_c,
         minimum_score=config.minimum_score,
         minimum_stability_seconds=config.stability_minutes * 60,
@@ -299,6 +301,10 @@ def build_room_profiles(
     else:
         if outdoor_humidity is None:
             outdoor_humidity = 50.0
+        weather_condition = _weather_condition(
+            config.outdoor_weather_entity_id,
+            state_getter,
+        )
         wind_speed = _outdoor_value(
             config.wind_speed_source,
             config.outdoor_weather_entity_id,
@@ -311,6 +317,7 @@ def build_room_profiles(
             temperature_c=outdoor_temp,
             humidity_percent=outdoor_humidity,
             wind_speed_m_s=wind_speed,
+            weather_condition=weather_condition,
         )
 
     rooms: list[RoomProfile] = []
@@ -363,6 +370,8 @@ def build_debug_attributes(
         "summary_reason": summary.reason,
         "summary_best_room": summary.best_room,
         "summary_blocked_by": summary.blocked_by,
+        "weather_condition": snapshot.weather_condition,
+        "notification_enabled": config.notification_enabled,
         "notification_allowed": snapshot.notification_allowed,
         "quiet_hours_active": snapshot.quiet_hours_active,
         "cooldown_active": snapshot.cooldown_active,
@@ -371,10 +380,12 @@ def build_debug_attributes(
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "target_temperature_c": config.target_temperature_c,
+        "target_humidity_percent": config.target_humidity_percent,
         "soft_outdoor_threshold_c": config.soft_outdoor_threshold_c,
         "minimum_score": config.minimum_score,
         "stability_minutes": config.stability_minutes,
         "cooldown_minutes": config.cooldown_minutes,
+        "quiet_hours_enabled": config.quiet_hours_enabled,
         "room_recommendations": room_details,
         "best_room_recommendation": best_room_details,
     }
@@ -495,6 +506,22 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
     }
+
+
+def _weather_condition(
+    weather_entity_id: str | None,
+    state_getter: Callable[[str], Any],
+) -> str | None:
+    if not weather_entity_id:
+        return None
+    state = state_getter(weather_entity_id)
+    if state is None:
+        return None
+    raw_state = getattr(state, "state", None)
+    if raw_state is None:
+        return None
+    text = str(raw_state).strip()
+    return text or None
 
 
 def find_room_recommendation(

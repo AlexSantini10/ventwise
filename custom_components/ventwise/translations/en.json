@@ -4,15 +4,17 @@
     "step": {
       "user": {
         "title": "Initial setup",
-        "description": "Choose the forecast source, set comfort temperature, and optionally pick one or more notification devices.",
+        "description": "Choose the forecast source, set comfort temperature and humidity, and optionally pick one or more notification devices.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
+          "target_humidity_percent": "Comfort humidity",
           "notification_device_id": "Notification devices"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
           "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
+          "target_humidity_percent": "Set the indoor comfort humidity VentWise should aim for.",
           "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications."
         }
       },
@@ -195,9 +197,9 @@
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
-          "basic": "Weather source, comfort temperature, quiet hours, and notifications for one or more devices.",
+          "basic": "Weather source, quiet-hours pause, and notifications for one or more devices.",
           "outdoor": "Choose forecast or override per outdoor measurement with checkboxes.",
-          "advanced": "Tuning values and quiet-hours or master control helpers.",
+          "advanced": "Technical tuning values.",
           "rooms": "Add rooms and macro-rooms."
         }
       },
@@ -220,15 +222,11 @@
         "description": "Keep the everyday settings here.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "target_temperature_c": "Comfort temperature",
-          "quiet_hours_enabled": "Pause during quiet hours",
           "quiet_hours_pause_entity_id": "Quiet-hours pause entity",
           "notification_device_id": "Notification devices"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
-          "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
-          "quiet_hours_enabled": "Turn on a pause while quiet hours are active.",
           "quiet_hours_pause_entity_id": "Optional. Pick a helper or sensor that can suspend recommendations.",
           "notification_device_id": "Optional. Pick one or more devices that should receive notifications."
         }
@@ -238,23 +236,11 @@
         "description": "Fine-tune the technical values and optional helper entities.",
         "data": {
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
-          "cooldown_minutes": "Cooldown period (minutes)",
-          "stability_minutes": "Stability period (minutes)",
-          "quiet_hours_start": "Quiet hours start",
-          "quiet_hours_end": "Quiet hours end",
-          "quiet_hours_start_entity_id": "Quiet hours start entity",
-          "quiet_hours_end_entity_id": "Quiet hours end entity",
-          "master_control_entity_id": "Master control entity"
+          "cooldown_minutes": "Cooldown period (minutes)"
         },
         "data_description": {
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
-          "cooldown_minutes": "How long VentWise waits before sending the same suggestion again.",
-          "stability_minutes": "How long a suggestion must remain unchanged before it can be sent.",
-          "quiet_hours_start": "Use a time like 22:00 or 22:00:00.",
-          "quiet_hours_end": "Use a time like 07:00 or 07:00:00.",
-          "quiet_hours_start_entity_id": "Optional. Pick a time entity to read the quiet-hours start from.",
-          "quiet_hours_end_entity_id": "Optional. Pick a time entity to read the quiet-hours end from.",
-          "master_control_entity_id": "Optional. Pick the switch or helper you want to use as the master control."
+          "cooldown_minutes": "How long VentWise waits before sending the same notification again."
         }
       },
       "rooms": {

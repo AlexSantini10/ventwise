@@ -4,15 +4,17 @@
     "step": {
       "user": {
         "title": "Configurazione iniziale",
-        "description": "Scegli la sorgente forecast, imposta la temperatura di comfort e, se vuoi, seleziona uno o più dispositivi di notifica.",
+        "description": "Scegli la sorgente forecast, imposta la temperatura e l'umidità di comfort e, se vuoi, seleziona uno o più dispositivi di notifica.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
           "target_temperature_c": "Temperatura di comfort",
+          "target_humidity_percent": "Umidità di comfort",
           "notification_device_id": "Dispositivi di notifica"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
           "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
+          "target_humidity_percent": "Imposta l'umidità di comfort interna che VentWise deve cercare di raggiungere.",
           "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise."
         }
       },
@@ -195,9 +197,9 @@
           "rooms": "Stanze"
         },
         "menu_option_descriptions": {
-          "basic": "Sorgente meteo, temperatura di comfort, ore di silenzio e notifiche per uno o più dispositivi.",
+          "basic": "Sorgente meteo, pausa durante le ore di silenzio e notifiche per uno o più dispositivi.",
           "outdoor": "Scegli forecast o override per ogni dato esterno con le checkbox.",
-          "advanced": "Valori di taratura e helper opzionali per ore di silenzio o controllo principale.",
+          "advanced": "Valori tecnici di taratura.",
           "rooms": "Aggiungi stanze e macro-stanze."
         }
       },
@@ -206,15 +208,11 @@
         "description": "Tieni qui i controlli quotidiani.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
-          "target_temperature_c": "Temperatura di comfort",
-          "quiet_hours_enabled": "Pausa durante le ore di silenzio",
           "quiet_hours_pause_entity_id": "Entità di pausa ore di silenzio",
           "notification_device_id": "Dispositivi di notifica"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
-          "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
-          "quiet_hours_enabled": "Attiva una pausa quando le ore di silenzio sono attive.",
           "quiet_hours_pause_entity_id": "Facoltativo. Seleziona un helper o un sensore che può sospendere le raccomandazioni.",
           "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche."
         }
@@ -249,26 +247,14 @@
       },
       "advanced": {
         "title": "Impostazioni avanzate",
-        "description": "Rifinisci i valori tecnici e gli helper opzionali.",
+        "description": "Rifinisci i valori tecnici.",
         "data": {
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
-          "cooldown_minutes": "Periodo di pausa (minuti)",
-          "stability_minutes": "Periodo di stabilità (minuti)",
-          "quiet_hours_start": "Inizio ore di silenzio",
-          "quiet_hours_end": "Fine ore di silenzio",
-          "quiet_hours_start_entity_id": "Entità inizio ore di silenzio",
-          "quiet_hours_end_entity_id": "Entità fine ore di silenzio",
-          "master_control_entity_id": "Entità di controllo principale"
+          "cooldown_minutes": "Periodo di pausa (minuti)"
         },
         "data_description": {
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
-          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo lo stesso suggerimento.",
-          "stability_minutes": "Per quanto tempo un suggerimento deve restare invariato prima di essere inviato.",
-          "quiet_hours_start": "Usa un orario come 22:00 o 22:00:00.",
-          "quiet_hours_end": "Usa un orario come 07:00 o 07:00:00.",
-          "quiet_hours_start_entity_id": "Facoltativo. Seleziona un'entità tempo da cui leggere l'inizio della pausa.",
-          "quiet_hours_end_entity_id": "Facoltativo. Seleziona un'entità tempo da cui leggere la fine della pausa.",
-          "master_control_entity_id": "Facoltativo. Seleziona l'interruttore o l'helper da usare come controllo principale."
+          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo la stessa notifica."
         }
       },
       "rooms": {

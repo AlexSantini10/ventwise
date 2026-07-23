@@ -50,8 +50,25 @@ class ComfortRecommender:
         outdoor_perceived = self._perceived_temperature(outdoor)
         inside_delta = abs(indoor_perceived - target_temperature)
         outside_delta = abs(outdoor_perceived - target_temperature)
-        delta = inside_delta - outside_delta
 
+        if _weather_requires_close(outdoor.weather_condition):
+            close_score = self._clamp(max(self._config.minimum_score, 0.75))
+            reason = (
+                f"{room.name}: weather condition {outdoor.weather_condition} suggests closing windows."
+            )
+            return RoomRecommendation(
+                room_id=room.room_id,
+                room_name=room.name,
+                action=RecommendationAction.CLOSE,
+                score=close_score,
+                reason=reason,
+                indoor_perceived_c=indoor_perceived,
+                outdoor_perceived_c=outdoor_perceived,
+                open_score=0.0,
+                close_score=close_score,
+            )
+
+        delta = inside_delta - outside_delta
         open_score = self._base_direction_score(inside_delta - outside_delta, outdoor)
         close_score = self._base_direction_score(outside_delta - inside_delta, outdoor)
         open_score, close_score = self._apply_season_bias(open_score, close_score)
@@ -136,7 +153,10 @@ class ComfortRecommender:
 
         best_room = max(room_recommendations, key=lambda recommendation: recommendation.score)
         weighted_score = best_room.score
-        if best_room.action == RecommendationAction.OPEN and outdoor.temperature_c > self._config.soft_outdoor_threshold_c:
+        if (
+            best_room.action == RecommendationAction.OPEN
+            and outdoor.temperature_c > self._config.soft_outdoor_threshold_c
+        ):
             weighted_score *= self._config.soft_threshold_penalty
 
         weighted_score = self._clamp(weighted_score)
@@ -157,7 +177,10 @@ class ComfortRecommender:
         )
 
     def _perceived_temperature(self, observation: ComfortObservation | RoomObservation) -> float:
-        humidity_adjustment = (observation.humidity_percent - 50.0) * self._config.humidity_weight
+        target_humidity = self._config.target_humidity_percent
+        humidity_adjustment = (
+            observation.humidity_percent - target_humidity
+        ) * self._config.humidity_weight
         return observation.temperature_c + humidity_adjustment
 
     def _base_direction_score(self, delta_c: float, outdoor: ComfortObservation) -> float:
@@ -166,16 +189,16 @@ class ComfortRecommender:
             if outdoor.wind_speed_m_s <= self._config.wind_open_preference_threshold_m_s:
                 score = self._clamp(
                     score
-                    + (
-                        outdoor.wind_speed_m_s
-                        * self._config.wind_open_preference_per_m_s
-                    )
+                    + (outdoor.wind_speed_m_s * self._config.wind_open_preference_per_m_s)
                 )
             else:
                 score = self._clamp(
                     score
                     - (
-                        (outdoor.wind_speed_m_s - self._config.wind_open_preference_threshold_m_s)
+                        (
+                            outdoor.wind_speed_m_s
+                            - self._config.wind_open_preference_threshold_m_s
+                        )
                         * self._config.wind_open_penalty_per_m_s
                     )
                 )
@@ -221,3 +244,10 @@ class ComfortRecommender:
     @staticmethod
     def _clamp(value: float) -> float:
         return max(0.0, min(1.0, value))
+
+
+def _weather_requires_close(weather_condition: str | None) -> bool:
+    if weather_condition is None:
+        return False
+    lowered = weather_condition.strip().lower()
+    return any(token in lowered for token in ("thunder", "lightning", "storm", "hail"))

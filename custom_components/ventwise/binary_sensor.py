@@ -23,6 +23,7 @@ async def async_setup_entry(
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
     entities: list[BinarySensorEntity] = [
         RecommendationActiveBinarySensor(coordinator),
+        NotificationAllowedBinarySensor(coordinator),
         QuietHoursBinarySensor(coordinator),
         CooldownBinarySensor(coordinator),
     ]
@@ -42,7 +43,21 @@ class RecommendationActiveBinarySensor(VentWiseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         snapshot = self.coordinator.data
-        return snapshot.summary.action != RecommendationAction.NONE and snapshot.notification_allowed
+        return snapshot.enabled and snapshot.summary.action != RecommendationAction.NONE
+
+
+class NotificationAllowedBinarySensor(VentWiseEntity, BinarySensorEntity):
+    """Whether VentWise is allowed to send a notification now."""
+
+    _attr_icon = "mdi:bell-check"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "notification_allowed", "Notification allowed")
+
+    @property
+    def is_on(self) -> bool:
+        snapshot = self.coordinator.data
+        return snapshot.enabled and snapshot.notification_allowed
 
 
 class QuietHoursBinarySensor(VentWiseEntity, BinarySensorEntity):

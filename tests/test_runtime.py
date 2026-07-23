@@ -246,6 +246,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     )
     snapshot = RuntimeSnapshot(
         summary=summary,
+        weather_condition="sunny",
         outdoor_temperature_c=20.0,
         outdoor_humidity_percent=45.0,
         wind_speed_m_s=None,
@@ -261,6 +262,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
 
     assert attributes["summary_action"] == summary.action.value
     assert attributes["summary_best_room"] == "Camera"
+    assert attributes["weather_condition"] == "sunny"
     assert attributes["notification_allowed"] is True
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0

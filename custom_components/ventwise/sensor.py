@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity, VentWiseRoomEntity
-from .runtime import RoomConfig, build_debug_attributes, find_room_recommendation
+from .runtime import RoomConfig, build_debug_attributes, find_room_recommendation, state_to_float
 from .ventwise_core import RecommendationAction
 
 
@@ -24,6 +24,7 @@ async def async_setup_entry(
         RecommendationStateSensor(coordinator),
         RecommendationScoreSensor(coordinator),
         RecommendationReasonSensor(coordinator),
+        WeatherConditionSensor(coordinator),
         OutdoorTemperatureSensor(coordinator),
         OutdoorHumiditySensor(coordinator),
         WindSpeedSensor(coordinator),
@@ -34,6 +35,9 @@ async def async_setup_entry(
                 RoomRecommendationStateSensor(coordinator, room),
                 RoomRecommendationScoreSensor(coordinator, room),
                 RoomRecommendationReasonSensor(coordinator, room),
+                RoomWeatherConditionSensor(coordinator, room),
+                RoomIndoorTemperatureSensor(coordinator, room),
+                RoomIndoorHumiditySensor(coordinator, room),
                 RoomOutdoorTemperatureSensor(coordinator, room),
                 RoomOutdoorHumiditySensor(coordinator, room),
                 RoomWindSpeedSensor(coordinator, room),
@@ -91,6 +95,29 @@ class RecommendationReasonSensor(VentWiseEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, object]:
         return build_debug_attributes(self.coordinator.config, self.coordinator.data)
+
+
+class WeatherConditionSensor(VentWiseEntity, SensorEntity):
+    """Current weather condition from the configured weather entity."""
+
+    _attr_icon = "mdi:weather-partly-cloudy"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "weather_condition", "Weather condition")
+
+    @property
+    def native_value(self) -> str | None:
+        weather_entity_id = self.coordinator.config.outdoor_weather_entity_id
+        if not weather_entity_id:
+            return None
+        state = self.hass.states.get(weather_entity_id)
+        if state is None:
+            return None
+        raw_state = getattr(state, "state", None)
+        if raw_state is None:
+            return None
+        text = str(raw_state).strip()
+        return text or None
 
 
 class OutdoorTemperatureSensor(VentWiseEntity, SensorEntity):
@@ -181,6 +208,59 @@ class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
         if recommendation is None:
             return self.coordinator.data.summary.reason
         return recommendation.reason
+
+
+class RoomWeatherConditionSensor(VentWiseRoomEntity, SensorEntity):
+    """Current weather condition shown on a room device."""
+
+    _attr_icon = "mdi:weather-partly-cloudy"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "weather_condition", f"{room.name} weather condition")
+
+    @property
+    def native_value(self) -> str | None:
+        weather_entity_id = self.coordinator.config.outdoor_weather_entity_id
+        if not weather_entity_id:
+            return None
+        state = self.hass.states.get(weather_entity_id)
+        if state is None:
+            return None
+        raw_state = getattr(state, "state", None)
+        if raw_state is None:
+            return None
+        text = str(raw_state).strip()
+        return text or None
+
+
+class RoomIndoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+    """Current indoor temperature for a single room."""
+
+    _attr_icon = "mdi:home-thermometer"
+    _attr_native_unit_of_measurement = "°C"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "indoor_temperature", f"{room.name} indoor temperature")
+
+    @property
+    def native_value(self) -> float | None:
+        return state_to_float(self.hass.states.get(self.room.temperature_entity_id))
+
+
+class RoomIndoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
+    """Current indoor humidity for a single room."""
+
+    _attr_icon = "mdi:water-percent"
+    _attr_native_unit_of_measurement = "%"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "indoor_humidity", f"{room.name} indoor humidity")
+
+    @property
+    def native_value(self) -> float | None:
+        if not self.room.humidity_entity_id:
+            return None
+        return state_to_float(self.hass.states.get(self.room.humidity_entity_id))
 
 
 class RoomOutdoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):

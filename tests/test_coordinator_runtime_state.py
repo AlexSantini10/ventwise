@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -11,11 +11,19 @@ pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
     CONF_ENABLED,
+    CONF_NOTIFICATION_ENABLED,
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_RUNTIME_STATE,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_ROOMS,
+    CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_NAME,
+    CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_TARGET_TEMPERATURE_C,
+    CONF_STABILITY_MINUTES,
 )
 from custom_components.ventwise.coordinator import VentWiseCoordinator
 
@@ -131,3 +139,51 @@ def test_coordinator_ignores_corrupted_runtime_state_payload() -> None:
     assert coordinator._last_action_started_at is not None
     assert coordinator._last_notification_signature == ("open", "Camera")
     assert coordinator._last_notification_at is not None
+
+
+@pytest.mark.asyncio
+async def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="28.0"),
+        "sensor.room_humidity": SimpleNamespace(state="55.0"),
+    }
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_NOTIFICATION_ENABLED: True,
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_STABILITY_MINUTES: 10,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                }
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+    coordinator._last_action_signature = ("open", "Camera")
+    coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
+    coordinator._last_notification_signature = ("open", "Camera")
+    coordinator._last_notification_at = fixed_now - timedelta(minutes=1)
+
+    snapshot = await coordinator._async_update_data()
+
+    assert snapshot.summary.action.value == "open"
+    assert snapshot.notification_allowed is False
+    assert snapshot.cooldown_active is True
+    assert snapshot.weather_condition == "sunny"

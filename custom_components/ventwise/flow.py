@@ -31,12 +31,7 @@ from .const import (
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
-    CONF_QUIET_HOURS_END,
-    CONF_QUIET_HOURS_END_ENTITY_ID,
-    CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
-    CONF_QUIET_HOURS_START,
-    CONF_QUIET_HOURS_START_ENTITY_ID,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
@@ -50,6 +45,7 @@ from .const import (
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
+    CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_OVERRIDE,
@@ -107,6 +103,10 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
             ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
+            vol.Required(
+                CONF_TARGET_HUMIDITY_PERCENT,
+                default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0),
+            ): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
             **_optional_selector_field(
                 CONF_NOTIFICATION_DEVICE_ID,
                 DeviceSelector(DeviceSelectorConfig(multiple=True)),
@@ -178,14 +178,6 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
-            vol.Required(
-                CONF_TARGET_TEMPERATURE_C,
-                default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
-            ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
-            vol.Required(
-                CONF_QUIET_HOURS_ENABLED,
-                default=defaults.get(CONF_QUIET_HOURS_ENABLED, True),
-            ): cv.boolean,
             **_optional_selector_field(
                 CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
                 EntitySelector(),
@@ -215,33 +207,6 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_COOLDOWN_MINUTES,
                 default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
-            vol.Required(
-                CONF_STABILITY_MINUTES,
-                default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES),
-            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
-            vol.Required(
-                CONF_QUIET_HOURS_START,
-                default=defaults.get(CONF_QUIET_HOURS_START, DEFAULT_QUIET_HOURS_START),
-            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
-            vol.Required(
-                CONF_QUIET_HOURS_END,
-                default=defaults.get(CONF_QUIET_HOURS_END, DEFAULT_QUIET_HOURS_END),
-            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
-            **_optional_selector_field(
-                CONF_QUIET_HOURS_START_ENTITY_ID,
-                EntitySelector(),
-                defaults.get(CONF_QUIET_HOURS_START_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_QUIET_HOURS_END_ENTITY_ID,
-                EntitySelector(),
-                defaults.get(CONF_QUIET_HOURS_END_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_MASTER_CONTROL_ENTITY_ID,
-                EntitySelector(),
-                defaults.get(CONF_MASTER_CONTROL_ENTITY_ID),
-            ),
         }
     )
 
@@ -299,12 +264,20 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     data[CONF_OUTDOOR_WEATHER_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID), CONF_OUTDOOR_WEATHER_ENTITY_ID, "weather"
     )
-    data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(
-        data.get(CONF_TARGET_TEMPERATURE_C),
-        CONF_TARGET_TEMPERATURE_C,
-        10.0,
-        30.0,
-    )
+    if CONF_TARGET_TEMPERATURE_C in data:
+        data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(
+            data.get(CONF_TARGET_TEMPERATURE_C),
+            CONF_TARGET_TEMPERATURE_C,
+            10.0,
+            30.0,
+        )
+    if CONF_TARGET_HUMIDITY_PERCENT in data:
+        data[CONF_TARGET_HUMIDITY_PERCENT] = _normalize_float(
+            data.get(CONF_TARGET_HUMIDITY_PERCENT),
+            CONF_TARGET_HUMIDITY_PERCENT,
+            20.0,
+            80.0,
+        )
     _normalize_optional_entities(
         data,
         CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
@@ -370,14 +343,6 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         0,
         24 * 60,
     )
-    data[CONF_STABILITY_MINUTES] = _normalize_int(
-        data.get(CONF_STABILITY_MINUTES),
-        CONF_STABILITY_MINUTES,
-        0,
-        24 * 60,
-    )
-    data[CONF_QUIET_HOURS_START] = _normalize_time_string(data[CONF_QUIET_HOURS_START], CONF_QUIET_HOURS_START)
-    data[CONF_QUIET_HOURS_END] = _normalize_time_string(data[CONF_QUIET_HOURS_END], CONF_QUIET_HOURS_END)
     _normalize_optional_entities(
         data,
         CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
@@ -391,16 +356,19 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         CONF_WIND_SPEED_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
+    if CONF_STABILITY_MINUTES in data:
+        data[CONF_STABILITY_MINUTES] = _normalize_int(
+            data.get(CONF_STABILITY_MINUTES),
+            CONF_STABILITY_MINUTES,
+            0,
+            24 * 60,
+        )
     _normalize_optional_entities(
         data,
-        CONF_QUIET_HOURS_START_ENTITY_ID,
-        CONF_QUIET_HOURS_END_ENTITY_ID,
         CONF_MASTER_CONTROL_ENTITY_ID,
     )
     _normalize_optional_entity_ids(
         data,
-        CONF_QUIET_HOURS_START_ENTITY_ID,
-        CONF_QUIET_HOURS_END_ENTITY_ID,
         CONF_MASTER_CONTROL_ENTITY_ID,
     )
     return data
