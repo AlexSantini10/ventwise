@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Sequence
 
 from .models import (
@@ -15,6 +16,8 @@ from .models import (
     SeasonMode,
     ScoringConfig,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def perceived_temperature(
@@ -88,6 +91,17 @@ class ComfortRecommender:
             reason = (
                 f"{room.name}: weather condition {outdoor.weather_condition} suggests closing windows."
             )
+            _LOGGER.debug(
+                "Recommendation decision for room %s: action=%s score=%.2f reason=%s "
+                "target_perceived=%.2f indoor_perceived=%.2f outdoor_perceived=%.2f",
+                room.name,
+                RecommendationAction.CLOSE.value,
+                close_score,
+                reason,
+                target_perceived,
+                indoor_perceived,
+                outdoor_perceived,
+            )
             return RoomRecommendation(
                 room_id=room.room_id,
                 room_name=room.name,
@@ -138,6 +152,22 @@ class ComfortRecommender:
             open_score,
             close_score,
         )
+        _LOGGER.debug(
+            "Recommendation decision for room %s: action=%s score=%.2f reason=%s "
+            "target_perceived=%.2f indoor_perceived=%.2f outdoor_perceived=%.2f "
+            "open_score=%.2f close_score=%.2f inside_delta=%.2f outside_delta=%.2f",
+            room.name,
+            action.value,
+            score,
+            reason,
+            target_perceived,
+            indoor_perceived,
+            outdoor_perceived,
+            open_score,
+            close_score,
+            inside_delta,
+            outside_delta,
+        )
 
         return RoomRecommendation(
             room_id=room.room_id,
@@ -162,6 +192,10 @@ class ComfortRecommender:
 
         context = context or RecommendationContext()
         if context.quiet_hours_active:
+            _LOGGER.debug(
+                "Recommendation summary blocked: quiet hours active, action=%s score=0.00",
+                RecommendationAction.NONE.value,
+            )
             return RecommendationSummary(
                 action=RecommendationAction.NONE,
                 score=0.0,
@@ -169,6 +203,10 @@ class ComfortRecommender:
                 blocked_by="quiet_hours",
             )
         if context.cooldown_active:
+            _LOGGER.debug(
+                "Recommendation summary blocked: cooldown active, action=%s score=0.00",
+                RecommendationAction.NONE.value,
+            )
             return RecommendationSummary(
                 action=RecommendationAction.NONE,
                 score=0.0,
@@ -176,6 +214,12 @@ class ComfortRecommender:
                 blocked_by="cooldown",
             )
         if context.stable_for_seconds < self._config.minimum_stability_seconds:
+            _LOGGER.debug(
+                "Recommendation summary blocked: stability=%ss below threshold=%ss, action=%s score=0.00",
+                context.stable_for_seconds,
+                self._config.minimum_stability_seconds,
+                RecommendationAction.NONE.value,
+            )
             return RecommendationSummary(
                 action=RecommendationAction.NONE,
                 score=0.0,
@@ -191,6 +235,10 @@ class ComfortRecommender:
             self.evaluate_room(room=room, outdoor=outdoor) for room in active_rooms
         )
         if not room_recommendations:
+            _LOGGER.debug(
+                "Recommendation summary blocked: no enabled rooms configured, action=%s score=0.00",
+                RecommendationAction.NONE.value,
+            )
             return RecommendationSummary(
                 action=RecommendationAction.NONE,
                 score=0.0,
@@ -207,6 +255,15 @@ class ComfortRecommender:
 
         weighted_score = self._clamp(weighted_score)
         if weighted_score < self._config.minimum_score or best_room.action == RecommendationAction.NONE:
+            _LOGGER.debug(
+                "Recommendation summary suppressed: best_room=%s action=%s score=%.2f minimum_score=%.2f "
+                "reason=%s",
+                best_room.room_name,
+                best_room.action.value,
+                weighted_score,
+                self._config.minimum_score,
+                "The strongest room signal is too small to notify.",
+            )
             return RecommendationSummary(
                 action=RecommendationAction.NONE,
                 score=weighted_score,
@@ -214,6 +271,13 @@ class ComfortRecommender:
                 room_recommendations=room_recommendations,
                 best_room=best_room.room_name,
             )
+        _LOGGER.debug(
+            "Recommendation summary decision: action=%s score=%.2f best_room=%s reason=%s",
+            best_room.action.value,
+            weighted_score,
+            best_room.room_name,
+            best_room.reason,
+        )
         return RecommendationSummary(
             action=best_room.action,
             score=weighted_score,

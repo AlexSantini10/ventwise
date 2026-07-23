@@ -1,5 +1,7 @@
 """Tests for the comfort scoring core."""
 
+import logging
+
 from ventwise_core import (
     ComfortObservation,
     ComfortRecommender,
@@ -323,3 +325,22 @@ def test_recommender_skips_disabled_rooms() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.reason == "No enabled rooms configured."
+
+
+def test_recommender_emits_diagnostic_debug_logs(caplog) -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
+    )
+    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
+
+    with caplog.at_level(logging.DEBUG, logger="custom_components.ventwise.ventwise_core.scoring"):
+        result = recommender.evaluate([room], outdoor)
+
+    assert result.action == RecommendationAction.OPEN
+    assert any("Recommendation decision for room Camera" in message for message in caplog.messages)
+    assert any("Recommendation summary decision" in message for message in caplog.messages)
