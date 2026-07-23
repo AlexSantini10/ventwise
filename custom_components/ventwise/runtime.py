@@ -18,7 +18,6 @@ from .ventwise_core import (
 from .const import (
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
-    CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_MINIMUM_SCORE,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_NOTIFICATION_ENABLED,
@@ -27,16 +26,14 @@ from .const import (
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
-    CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
     CONF_QUIET_HOURS_ENABLED,
-    CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
     CONF_ROOM_KIND,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
-    CONF_ROOM_PAUSE_ENTITY_ID,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
@@ -76,10 +73,10 @@ class RoomConfig:
     kind: str = "room"
     enabled: bool = True
     target_temperature_c_override: float | None = None
+    target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
-    pause_entity_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,7 +93,6 @@ class IntegrationConfig:
     quiet_hours_enabled: bool = True
     quiet_hours_start: str = DEFAULT_QUIET_HOURS_START
     quiet_hours_end: str = DEFAULT_QUIET_HOURS_END
-    quiet_hours_pause_entity_id: str | None = None
     enabled: bool = True
     outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_temperature_entity_id: str | None = None
@@ -104,7 +100,6 @@ class IntegrationConfig:
     outdoor_humidity_entity_id: str | None = None
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
-    master_control_entity_id: str | None = None
     notification_enabled: bool = True
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
@@ -116,6 +111,9 @@ class RuntimeSnapshot:
 
     summary: RecommendationSummary
     weather_condition: str | None
+    target_perceived_c: float | None
+    outdoor_perceived_c: float | None
+    active_indoor_perceived_c: float | None
     outdoor_temperature_c: float | None
     outdoor_humidity_percent: float | None
     wind_speed_m_s: float | None
@@ -150,10 +148,12 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             target_temperature_c_override=_float_or_none(
                 room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
             ),
+            target_humidity_percent_override=_float_or_none(
+                room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
+            ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
-            pause_entity_id=_string_or_none(room.get(CONF_ROOM_PAUSE_ENTITY_ID)),
         )
         for room in data.get(CONF_ROOMS, [])
     )
@@ -170,7 +170,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         quiet_hours_enabled=bool(data.get(CONF_QUIET_HOURS_ENABLED, True)),
         quiet_hours_start=str(data.get(CONF_QUIET_HOURS_START, DEFAULT_QUIET_HOURS_START)),
         quiet_hours_end=str(data.get(CONF_QUIET_HOURS_END, DEFAULT_QUIET_HOURS_END)),
-        quiet_hours_pause_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_PAUSE_ENTITY_ID)),
         enabled=bool(data.get(CONF_ENABLED, True)),
         outdoor_temperature_source=_outdoor_source(
             data,
@@ -186,7 +185,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         outdoor_humidity_entity_id=_string_or_none(data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID)),
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
-        master_control_entity_id=_string_or_none(data.get(CONF_MASTER_CONTROL_ENTITY_ID)),
         notification_enabled=bool(data.get(CONF_NOTIFICATION_ENABLED, True)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
@@ -339,6 +337,7 @@ def build_room_profiles(
                 kind=room.kind,
                 enabled=room.enabled,
                 target_temperature_c_override=room.target_temperature_c_override,
+                target_humidity_percent_override=room.target_humidity_percent_override,
             )
         )
 
@@ -367,6 +366,9 @@ def build_debug_attributes(
         "summary_best_room": summary.best_room,
         "summary_blocked_by": summary.blocked_by,
         "weather_condition": snapshot.weather_condition,
+        "target_perceived_c": snapshot.target_perceived_c,
+        "outdoor_perceived_c": snapshot.outdoor_perceived_c,
+        "active_indoor_perceived_c": snapshot.active_indoor_perceived_c,
         "notification_enabled": config.notification_enabled,
         "notification_allowed": snapshot.notification_allowed,
         "quiet_hours_active": snapshot.quiet_hours_active,
