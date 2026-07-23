@@ -49,7 +49,6 @@ The first version can be simple:
 - comfort delta from target temperature
 - humidity penalty
 - wind modifier
-- final score as a weighted sum
+- final score from the combined comfort signals
 
-The exact weights can be tuned after real-world testing.
-
+The exact tuning can be adjusted after real-world testing.

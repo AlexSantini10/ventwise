@@ -37,7 +37,6 @@ class RoomProfile:
 
     name: str
     indoor: RoomObservation
-    weight: float = 1.0
     kind: str = "room"
 
 

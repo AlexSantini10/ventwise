@@ -30,6 +30,9 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 - Exposes a `config flow` to create the integration.
 - Exposes an `options flow` to edit the configuration later.
+- The config flow collects weather and comfort temperature first, then lets
+  the user choose forecast or override per outdoor metric before the initial
+  room manager.
 - Creates a single visible device for the recommender.
 - Creates entities for:
   - current recommendation
@@ -43,9 +46,16 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   last-action state survive restarts.
 - Keeps all user-editable entity references and comfort settings in the
   config entry, surfaced through the UI.
-- Collects the weather source plus dedicated outdoor temperature, humidity,
-  and wind sensors during setup so the runtime has the minimum context it
-  needs.
+- Collects the weather source during setup and lets each outdoor metric
+  choose between the forecast value and a numeric override.
+- Lets each room optionally link automations for `open`, `close`, and
+  `pause`, so VentWise can trigger them when it asks to open or close a room.
+- Lets the user skip room creation entirely during initial setup.
+- Falls back to the standard weather forecast whenever a metric is left on
+  forecast.
+- Treats the standard Home Assistant weather entity as the only supported
+  forecast source for now, and routes new forecast integrations through GitHub
+  issues so the supported source list stays explicit.
 - Validates room definitions and numeric limits in the config flow and options
   flow before data is saved.
 
