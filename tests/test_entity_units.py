@@ -48,7 +48,7 @@ def test_celsius_sensor_units_are_consistent() -> None:
     coordinator = _coordinator()
     room = _room()
 
-    assert UNIT_CELSIUS == "degC"
+    assert UNIT_CELSIUS == "°C"
     assert PerceivedIndoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
     assert PerceivedOutdoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
     assert PerceivedComfortTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
