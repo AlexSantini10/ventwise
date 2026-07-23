@@ -18,9 +18,7 @@ from custom_components.ventwise.const import (
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_QUIET_HOURS_END,
-    CONF_QUIET_HOURS_END_ENTITY_ID,
     CONF_QUIET_HOURS_START,
-    CONF_QUIET_HOURS_START_ENTITY_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
@@ -34,7 +32,6 @@ from custom_components.ventwise.const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
-    CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
@@ -134,9 +131,6 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert CONF_STABILITY_MINUTES not in schema_dict
     assert CONF_QUIET_HOURS_START not in schema_dict
     assert CONF_QUIET_HOURS_END not in schema_dict
-    assert CONF_QUIET_HOURS_START_ENTITY_ID not in schema_dict
-    assert CONF_QUIET_HOURS_END_ENTITY_ID not in schema_dict
-    assert CONF_MASTER_CONTROL_ENTITY_ID not in schema_dict
 
 
 def test_room_schema_supports_room_and_macro_room_defaults() -> None:
@@ -336,7 +330,6 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "input_number.outdoor_temp",
             CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
             CONF_WIND_SPEED_ENTITY_ID: "input_number.wind_speed",
-            CONF_MASTER_CONTROL_ENTITY_ID: " input_boolean.master ",
         }
     )
 
@@ -344,7 +337,6 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
     assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] == "sensor.outdoor_humidity"
     assert data[CONF_WIND_SPEED_ENTITY_ID] == "input_number.wind_speed"
     assert CONF_STABILITY_MINUTES not in data
-    assert data[CONF_MASTER_CONTROL_ENTITY_ID] == "input_boolean.master"
 
 
 def test_normalize_advanced_config_rejects_out_of_range_numeric_values() -> None:
