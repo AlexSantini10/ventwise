@@ -21,6 +21,7 @@ async def async_setup_entry(
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
     entities: list[SwitchEntity] = [
         MasterEnableSwitch(coordinator),
+        AutomaticComfortTemperatureSwitch(coordinator),
         QuietHoursEnableSwitch(coordinator),
         NotificationEnableSwitch(coordinator),
     ]
@@ -66,6 +67,26 @@ class NotificationEnableSwitch(VentWiseEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_notification_enabled(False)
+
+
+class AutomaticComfortTemperatureSwitch(VentWiseEntity, SwitchEntity):
+    """Enable or disable automatic comfort temperature."""
+
+    _attr_icon = "mdi:thermostat-auto"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "auto_comfort_temperature", "Automatic comfort temperature")
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.config.auto_comfort_temperature_enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_auto_comfort_temperature_enabled(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_auto_comfort_temperature_enabled(False)
 
 
 class QuietHoursEnableSwitch(VentWiseEntity, SwitchEntity):

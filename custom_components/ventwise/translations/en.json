@@ -8,6 +8,7 @@
         "data": {
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Indoor comfort temperature",
+          "auto_comfort_temperature": "Automatic comfort temperature",
           "target_humidity_percent": "Indoor comfort humidity",
           "stability_minutes": "Stability window (minutes)",
           "notification_device_id": "Notification devices"
@@ -15,6 +16,7 @@
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
           "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
+          "auto_comfort_temperature": "Let VentWise adjust the effective comfort target automatically from the current room and outdoor balance.",
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
           "stability_minutes": "How long the recommendation should stay the same before VentWise acts. If you are not sure, leave the default value.",
           "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications."
@@ -227,10 +229,12 @@
         "title": "Comfort settings",
         "description": "Fine-tune the comfort values used by VentWise.",
         "data": {
+          "auto_comfort_temperature": "Automatic comfort temperature",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Notification cooldown (minutes)"
         },
         "data_description": {
+          "auto_comfort_temperature": "Turn this on to let VentWise derive the active comfort target from the current recommendation.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending the same notification again."
         }

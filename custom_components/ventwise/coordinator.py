@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from collections.abc import Callable
 from datetime import datetime, time, timedelta
 from typing import Any
@@ -35,6 +36,7 @@ from .runtime import (
     is_quiet_hours_active,
 )
 from .const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOMS,
@@ -168,6 +170,27 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 stable_for_seconds=10**6,
             ),
         )
+        effective_target_temperature_c = self._config.target_temperature_c
+        if self._config.auto_comfort_temperature_enabled:
+            suggested_target = _suggested_comfort_temperature(
+                self._config.target_temperature_c,
+                summary,
+            )
+            if suggested_target is not None:
+                effective_target_temperature_c = suggested_target
+                auto_config = replace(
+                    self._config,
+                    target_temperature_c=effective_target_temperature_c,
+                )
+                summary = ComfortRecommender(build_scoring_config(auto_config)).evaluate(
+                    rooms=rooms,
+                    outdoor=outdoor,
+                    context=RecommendationContext(
+                        quiet_hours_active=False,
+                        cooldown_active=False,
+                        stable_for_seconds=10**6,
+                    ),
+                )
         signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -196,7 +219,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._last_notification_signature = signature
             self._last_notification_at = now
 
-        target_perceived_c = self._config.target_temperature_c
+        target_perceived_c = effective_target_temperature_c
         outdoor_perceived_c = outdoor.temperature_c + (
             (outdoor.humidity_percent - self._config.target_humidity_percent)
             * self._recommender.config.humidity_weight
@@ -261,6 +284,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the global comfort temperature in config entry options."""
 
         self._update_entry_options({CONF_TARGET_TEMPERATURE_C: temperature_c})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_auto_comfort_temperature_enabled(self, enabled: bool) -> None:
+        """Persist the automatic comfort temperature flag in config entry options."""
+
+        self._update_entry_options({CONF_AUTO_COMFORT_TEMPERATURE: enabled})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
     async def async_set_target_humidity(self, humidity_percent: float) -> None:
@@ -478,3 +507,20 @@ def _weather_condition(
         return None
     text = str(raw_state).strip()
     return text or None
+
+
+def _suggested_comfort_temperature(
+    target_temperature_c: float,
+    summary: RecommendationSummary,
+) -> float | None:
+    if not summary.best_room:
+        return None
+    best_room = next(
+        (recommendation for recommendation in summary.room_recommendations if recommendation.room_name == summary.best_room),
+        None,
+    )
+    if best_room is None:
+        return None
+    balance_point = (best_room.indoor_perceived_c + best_room.outdoor_perceived_c) / 2.0
+    suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
+    return round(max(10.0, min(30.0, suggestion)), 1)

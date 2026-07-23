@@ -16,6 +16,7 @@ from .ventwise_core import (
 )
 
 from .const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_MINIMUM_SCORE,
@@ -52,6 +53,7 @@ from .const import (
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
     DEFAULT_QUIET_HOURS_START,
@@ -86,6 +88,7 @@ class IntegrationConfig:
 
     outdoor_weather_entity_id: str | None = None
     target_temperature_c: float = DEFAULT_TARGET_TEMPERATURE_C
+    auto_comfort_temperature_enabled: bool = DEFAULT_AUTO_COMFORT_TEMPERATURE
     target_humidity_percent: float = 50.0
     soft_outdoor_threshold_c: float = DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
     minimum_score: float = DEFAULT_MINIMUM_SCORE
@@ -161,6 +164,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     return IntegrationConfig(
         outdoor_weather_entity_id=_string_or_none(data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)),
         target_temperature_c=float(data.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)),
+        auto_comfort_temperature_enabled=bool(
+            data.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)
+        ),
         target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)),
         soft_outdoor_threshold_c=float(
             data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
@@ -381,6 +387,7 @@ def build_debug_attributes(
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "target_temperature_c": config.target_temperature_c,
+        "auto_comfort_temperature_enabled": config.auto_comfort_temperature_enabled,
         "target_humidity_percent": config.target_humidity_percent,
         "soft_outdoor_threshold_c": config.soft_outdoor_threshold_c,
         "minimum_score": config.minimum_score,

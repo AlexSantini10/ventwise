@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from datetime import datetime, time, timezone
 
 from custom_components.ventwise.const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
@@ -71,6 +72,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
     config = build_integration_config(
         {
             CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_AUTO_COMFORT_TEMPERATURE: True,
             CONF_COOLDOWN_MINUTES: 60,
             CONF_STABILITY_MINUTES: 10,
             CONF_QUIET_HOURS_ENABLED: True,
@@ -91,6 +93,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
     )
 
     assert config.enabled is True
+    assert config.auto_comfort_temperature_enabled is True
     assert config.notification_device_ids == ("device-123", "device-456")
     assert config.rooms[0].name == "Camera"
 
@@ -289,6 +292,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     assert attributes["summary_best_room"] == "Camera"
     assert attributes["weather_condition"] == "sunny"
     assert attributes["target_perceived_c"] == 22.0
+    assert attributes["auto_comfort_temperature_enabled"] is False
     assert attributes["outdoor_perceived_c"] == 20.0
     assert attributes["active_indoor_perceived_c"] == 23.2
     assert attributes["notification_allowed"] is True

@@ -8,13 +8,16 @@
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
           "target_temperature_c": "Temperatura di comfort interna",
+          "auto_comfort_temperature": "Temperatura di comfort automatica",
           "target_humidity_percent": "Umidità di comfort interna",
           "stability_minutes": "Finestra di stabilità (minuti)",
           "notification_device_id": "Dispositivi da notificare"
         },
         "data_description": {
+          "auto_comfort_temperature": "Attiva questa opzione per far derivare a VentWise il target di comfort attivo dalla raccomandazione corrente.",
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
           "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
+          "auto_comfort_temperature": "Lascia che VentWise regoli automaticamente il target di comfort effettivo in base all'equilibrio tra stanza e esterno.",
           "target_humidity_percent": "Imposta l'umidità di comfort interna che VentWise deve cercare di raggiungere.",
           "stability_minutes": "Per quanto tempo il suggerimento deve restare uguale prima che VentWise agisca. Se non sei sicuro, lascia il valore predefinito.",
           "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise."
@@ -241,6 +244,7 @@
         "title": "Impostazioni comfort",
         "description": "Rifinisci i valori di comfort usati da VentWise.",
         "data": {
+          "auto_comfort_temperature": "Temperatura di comfort automatica",
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
           "cooldown_minutes": "Pausa notifiche (minuti)"
         },

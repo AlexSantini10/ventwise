@@ -22,6 +22,7 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_COOLDOWN_MINUTES,
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -49,6 +50,7 @@ from .const import (
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
@@ -99,6 +101,12 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
             ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
+            vol.Required(
+                CONF_AUTO_COMFORT_TEMPERATURE,
+                default=defaults.get(
+                    CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE
+                ),
+            ): cv.boolean,
             vol.Required(
                 CONF_TARGET_HUMIDITY_PERCENT,
                 default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0),
@@ -193,6 +201,12 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
+                CONF_AUTO_COMFORT_TEMPERATURE,
+                default=defaults.get(
+                    CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE
+                ),
+            ): cv.boolean,
+            vol.Required(
                 CONF_SOFT_OUTDOOR_THRESHOLD_C,
                 default=defaults.get(
                     CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
@@ -267,6 +281,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
             10.0,
             30.0,
         )
+    data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(
+        data.get(CONF_AUTO_COMFORT_TEMPERATURE),
+        CONF_AUTO_COMFORT_TEMPERATURE,
+        default=DEFAULT_AUTO_COMFORT_TEMPERATURE,
+    )
     if CONF_TARGET_HUMIDITY_PERCENT in data:
         data[CONF_TARGET_HUMIDITY_PERCENT] = _normalize_float(
             data.get(CONF_TARGET_HUMIDITY_PERCENT),
@@ -330,6 +349,11 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     """Normalize advanced flow data for storage."""
 
     data = dict(user_input)
+    data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(
+        data.get(CONF_AUTO_COMFORT_TEMPERATURE),
+        CONF_AUTO_COMFORT_TEMPERATURE,
+        default=DEFAULT_AUTO_COMFORT_TEMPERATURE,
+    )
     data[CONF_SOFT_OUTDOOR_THRESHOLD_C] = _normalize_float(
         data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C),
         CONF_SOFT_OUTDOOR_THRESHOLD_C,

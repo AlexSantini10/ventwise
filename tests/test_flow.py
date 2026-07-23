@@ -10,6 +10,7 @@ pytest.importorskip("homeassistant")
 from custom_components.ventwise.const import (
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_COOLDOWN_MINUTES,
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
@@ -73,6 +74,7 @@ def test_config_schema_is_simple_and_weather_based() -> None:
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
+    assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "Any"
@@ -127,6 +129,7 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     schema = build_advanced_options_schema({})
     schema_dict = schema.schema
 
+    assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
     assert schema_dict[CONF_SOFT_OUTDOOR_THRESHOLD_C].__class__.__name__ == "All"
     assert schema_dict[CONF_COOLDOWN_MINUTES].__class__.__name__ == "All"
     assert CONF_STABILITY_MINUTES not in schema_dict
@@ -165,6 +168,7 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
         {
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
             CONF_TARGET_TEMPERATURE_C: "22.5",
+            CONF_AUTO_COMFORT_TEMPERATURE: True,
             CONF_TARGET_HUMIDITY_PERCENT: "48",
             CONF_STABILITY_MINUTES: "15",
             CONF_NOTIFICATION_DEVICE_ID: [" device-1 ", "device-2", ""],
@@ -173,6 +177,7 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
 
     assert data[CONF_OUTDOOR_WEATHER_ENTITY_ID] == "weather.home"
     assert data[CONF_TARGET_TEMPERATURE_C] == 22.5
+    assert data[CONF_AUTO_COMFORT_TEMPERATURE] is True
     assert data[CONF_TARGET_HUMIDITY_PERCENT] == 48.0
     assert data[CONF_STABILITY_MINUTES] == 15
     assert data[CONF_NOTIFICATION_DEVICE_ID] == ["device-1", "device-2"]
@@ -328,6 +333,7 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
         {
             CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
             CONF_COOLDOWN_MINUTES: 60,
+            CONF_AUTO_COMFORT_TEMPERATURE: True,
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "input_number.outdoor_temp",
             CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
             CONF_WIND_SPEED_ENTITY_ID: "input_number.wind_speed",
@@ -337,6 +343,7 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
     assert data[CONF_OUTDOOR_TEMPERATURE_ENTITY_ID] == "input_number.outdoor_temp"
     assert data[CONF_OUTDOOR_HUMIDITY_ENTITY_ID] == "sensor.outdoor_humidity"
     assert data[CONF_WIND_SPEED_ENTITY_ID] == "input_number.wind_speed"
+    assert data[CONF_AUTO_COMFORT_TEMPERATURE] is True
     assert CONF_STABILITY_MINUTES not in data
 
 
