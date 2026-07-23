@@ -181,6 +181,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     self.hass.states.get,
                 ),
                 target_perceived_c=self._config.target_temperature_c,
+                suggested_comfort_temperature_c=None,
                 outdoor_perceived_c=outdoor.temperature_c
                 + (
                     (outdoor.humidity_percent - self._config.target_humidity_percent)
