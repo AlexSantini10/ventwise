@@ -4,17 +4,19 @@
     "step": {
       "user": {
         "title": "Initial setup",
-        "description": "Choose the forecast source, set comfort temperature and humidity, and optionally pick one or more notification devices.",
+        "description": "Choose the forecast source, set comfort temperature, humidity, and stability time, and optionally pick one or more notification devices.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
           "target_humidity_percent": "Comfort humidity",
+          "stability_minutes": "Stability time (minutes)",
           "notification_device_id": "Notification devices"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
           "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
           "target_humidity_percent": "Set the indoor comfort humidity VentWise should aim for.",
+          "stability_minutes": "How long the recommendation should stay the same before VentWise acts. If you are not sure, leave the default value.",
           "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications."
         }
       },
