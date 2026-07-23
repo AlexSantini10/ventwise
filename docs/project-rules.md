@@ -19,6 +19,10 @@ the implementation decisions agreed during development.
 - Every user-facing field must have a short explanation when the meaning is not
   obvious.
 - Every user-facing string must be translated.
+- Keep `en.json` complete and treat it as the fallback source of truth for all
+  locales.
+- If a locale file or a specific key is missing, Home Assistant must fall back
+  to English automatically.
 - When a UI element is added, it must be added once, with one clear source of
   truth.
 - Do not keep legacy UI residues after replacing a setting or flow.
@@ -129,6 +133,7 @@ Use this checklist before merging any change:
 - [ ] The user-facing wording is human-readable.
 - [ ] Every new UI field has a short description if needed.
 - [ ] Every new UI string has translations.
+- [ ] `en.json` stays complete and all locale files fall back to English.
 - [ ] No old UI residue remains in the flow or entity labels.
 - [ ] There is one clear source of truth for every setting.
 - [ ] The UI stays consistent with the product model.
