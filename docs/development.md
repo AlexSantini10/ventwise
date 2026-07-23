@@ -41,6 +41,7 @@ coverage report
 
 - keep the reusable core independent from Home Assistant APIs
 - keep user-facing configuration in the integration UI
+- keep the project rules documented in `docs/project-rules.md`
 - keep release and packaging concerns documented here rather than in ad hoc notes
 - keep the backlog in GitHub issues
 

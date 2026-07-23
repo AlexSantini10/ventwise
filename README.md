@@ -62,6 +62,7 @@ Coming soon.
 - [Domain model](docs/domain-model.md)
 - [Scoring model](docs/scoring-model.md)
 - [Home Assistant integration](docs/home-assistant-integration.md)
+- [Project rules](docs/project-rules.md)
 - [Testing](docs/testing.md)
 - [Development workflow](docs/development.md)
 - [HACS packaging](docs/hacs-packaging.md)
