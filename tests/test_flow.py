@@ -79,7 +79,7 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
-    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
 
 
 def test_setup_overrides_schema_is_checkbox_based() -> None:
@@ -122,7 +122,7 @@ def test_basic_options_schema_covers_simple_controls() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "Any"
+    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
 
 
 def test_advanced_options_schema_contains_the_technical_overrides() -> None:
@@ -190,7 +190,7 @@ def test_room_selection_label_localizes_room_kind() -> None:
 
 
 def test_normalize_basic_config_strips_optional_entities() -> None:
-    """Optional basic values should be normalized to clean strings or None."""
+    """Basic values should be normalized to clean strings or IDs."""
 
     data = normalize_basic_config(
         {
@@ -209,6 +209,19 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     assert data[CONF_TARGET_HUMIDITY_PERCENT] == 48.0
     assert data[CONF_STABILITY_MINUTES] == 15
     assert data[CONF_NOTIFICATION_DEVICE_ID] == ["device-1", "device-2"]
+
+
+def test_normalize_basic_config_rejects_missing_notification_devices() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_basic_config(
+            {
+                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+                CONF_TARGET_TEMPERATURE_C: 22.0,
+                CONF_NOTIFICATION_DEVICE_ID: [],
+            }
+        )
+
+    assert exc_info.value.field == CONF_NOTIFICATION_DEVICE_ID
 
 
 def test_normalize_outdoor_source_config_defaults_and_clears_overrides() -> None:

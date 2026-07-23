@@ -12,7 +12,7 @@ The UI should allow the user to:
 - add, edit, and remove rooms
 - choose the supported forecast source
 - set the ideal comfort temperature
-- optionally choose a notification target during the initial setup
+- choose one or more notification targets during the initial setup
 - choose forecast or override independently for outdoor temperature, humidity,
   and wind speed
 - select temperature and humidity sensors per room

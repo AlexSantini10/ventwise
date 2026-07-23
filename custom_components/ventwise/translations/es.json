@@ -17,7 +17,7 @@
           "target_temperature_c": "Define la temperatura interior que te resulta cómoda cuando estás en casa.",
           "target_humidity_percent": "Define la humedad interior que te resulta cómoda cuando estás en casa.",
           "stability_minutes": "Cuánto tiempo debe mantenerse igual la recomendación antes de que VentWise actúe. Si no estás seguro, deja el valor predeterminado.",
-          "notification_device_id": "Opcional. Elige uno o más dispositivos que recibirán las notificaciones de VentWise."
+          "notification_device_id": "Elige uno o más dispositivos que recibirán las notificaciones de VentWise."
         }
       },
       "outdoor": {
@@ -220,7 +220,7 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
-          "notification_device_id": "Opcional. Elige uno o más dispositivos que recibirán notificaciones."
+          "notification_device_id": "Elige uno o más dispositivos que recibirán notificaciones."
         }
       },
       "advanced": {
