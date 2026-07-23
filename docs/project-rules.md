@@ -120,6 +120,62 @@ the implementation decisions agreed during development.
 - If a new product decision is made in chat or an issue, record it here once it
   becomes a stable rule.
 
+## Operational Checklist
+
+Use this checklist before merging any change:
+
+- [ ] The change is tracked by a GitHub issue, or it is a direct follow-up to
+      an existing issue.
+- [ ] The user-facing wording is human-readable.
+- [ ] Every new UI field has a short description if needed.
+- [ ] Every new UI string has translations.
+- [ ] No old UI residue remains in the flow or entity labels.
+- [ ] There is one clear source of truth for every setting.
+- [ ] The UI stays consistent with the product model.
+- [ ] Optional fields stay optional.
+- [ ] Global settings and room overrides are the only intentional duplicate
+      control path.
+- [ ] The setup flow remains short and understandable.
+- [ ] The flow only asks for entities or helpers when they are actually needed.
+- [ ] Outdoor manual overrides use checkboxes to unlock the numeric selectors.
+- [ ] Room and macro-room settings remain separate from global settings.
+- [ ] Entity names are descriptive for non-technical users.
+- [ ] Global and room entities are exposed in the expected device structure.
+- [ ] The data flow is event-driven wherever possible.
+- [ ] Only stability, cooldown, and quiet-hours checks may rely on time-based
+      refreshes.
+- [ ] Recommendations are based on perceived temperature, not raw temperature
+      alone.
+- [ ] Humidity is considered in the recommendation model.
+- [ ] The recommendation only returns `open` or `close` when the gain is
+      meaningful.
+- [ ] If the gain is small, the result is `none`.
+- [ ] Notification cooldown affects notifications only.
+- [ ] Master enable disables the whole integration.
+- [ ] Notification enable only controls notification delivery.
+- [ ] Quiet hours block notification delivery, not the entire scoring engine.
+- [ ] Every new scoring rule has a regression test.
+- [ ] Every bug fix that changes behavior has a regression test.
+- [ ] Tests still reflect the current runtime API.
+- [ ] The repo tree stays clean after the change.
+- [ ] Release-related changes update the manifest-driven versioning flow.
+
+## PR / Merge Checklist
+
+Before opening or merging a PR:
+
+- [ ] `git status` is clean except for the intended change.
+- [ ] The relevant unit tests pass locally.
+- [ ] The relevant integration or runtime tests pass locally when available.
+- [ ] `py_compile` or equivalent syntax checks pass for touched Python files.
+- [ ] The docs that describe the changed behavior are updated.
+- [ ] The issue list is updated if the change closes or splits work.
+- [ ] Any obsolete branch, step, constant, or translation has been removed.
+- [ ] The commit message is Conventional Commits style.
+- [ ] The change has been reviewed for readable UI text and translations.
+- [ ] The change has been reviewed for event-driven behavior and storage
+      consistency.
+
 ## Related Sources
 
 - `docs/ARCHITECTURE.md`
