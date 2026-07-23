@@ -63,6 +63,8 @@ the implementation decisions agreed during development.
 - Avoid periodic polling unless a small time-based refresh is required.
 - Time-based refreshes are allowed for gates such as stability windows,
   cooldowns, and quiet hours.
+- Do not introduce fixed polling loops for internal state propagation when an
+  entity change or config change can trigger a refresh instead.
 
 ## Recommendation Rules
 
