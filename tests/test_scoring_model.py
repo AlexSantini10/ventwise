@@ -151,6 +151,81 @@ def test_recommender_penalizes_strong_wind_for_open_actions() -> None:
     assert windy_result.score < calm_result.score
 
 
+def test_recommender_blocks_open_for_severe_weather() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
+    )
+    stormy_outdoor = ComfortObservation(
+        temperature_c=20.0,
+        humidity_percent=45.0,
+        weather_condition="thunderstorm",
+    )
+
+    result = recommender.evaluate([room], stormy_outdoor)
+
+    assert result.action == RecommendationAction.CLOSE
+    assert "weather condition thunderstorm" in result.reason
+
+
+def test_recommender_reduces_open_for_rainy_weather() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
+    )
+    clear_outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
+    rainy_outdoor = ComfortObservation(
+        temperature_c=20.0,
+        humidity_percent=45.0,
+        weather_condition="rain",
+    )
+
+    clear_result = recommender.evaluate([room], clear_outdoor)
+    rainy_result = recommender.evaluate([room], rainy_outdoor)
+
+    assert clear_result.action == RecommendationAction.OPEN
+    assert rainy_result.score < clear_result.score
+    assert "weather condition rain" in rainy_result.reason
+
+
+def test_recommender_accounts_for_wind_gusts() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
+    )
+    calm_outdoor = ComfortObservation(
+        temperature_c=20.0,
+        humidity_percent=45.0,
+        wind_speed_m_s=3.0,
+        wind_gust_m_s=3.0,
+    )
+    gusty_outdoor = ComfortObservation(
+        temperature_c=20.0,
+        humidity_percent=45.0,
+        wind_speed_m_s=3.0,
+        wind_gust_m_s=16.0,
+    )
+
+    calm_result = recommender.evaluate([room], calm_outdoor)
+    gusty_result = recommender.evaluate([room], gusty_outdoor)
+
+    assert calm_result.action == RecommendationAction.OPEN
+    assert gusty_result.action != RecommendationAction.OPEN
+    assert "gust 16.0m/s" in gusty_result.reason
+
+
 def test_recommender_returns_none_when_both_direction_scores_collapse_to_zero() -> None:
     recommender = ComfortRecommender(
         ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
