@@ -76,7 +76,7 @@ def test_build_notification_payload_uses_requested_language() -> None:
                 room_name="Salotto",
                 indoor_perceived_c=27.2,
                 target_perceived_c=22.0,
-                outdoor_perceived_c=23.5,
+                outdoor_perceived_c=23.8,
             ),
         ),
     )
@@ -84,7 +84,7 @@ def test_build_notification_payload_uses_requested_language() -> None:
     title, message = build_notification_payload(summary, language="it-IT")
 
     assert title == "VentWise"
-    assert message == "Salotto: apri le finestre. Dentro fa troppo caldo: 5.2°C sopra il comfort."
+    assert message == "Salotto: apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
 
 
 def test_async_send_notification_updates_home_assistant_persistent_notification() -> None:
@@ -102,6 +102,7 @@ def test_async_send_notification_updates_home_assistant_persistent_notification(
 
     assert result is True
     assert hass.services.calls[0][:2] == ("notify", "send_message")
+    assert hass.services.calls[0][2]["message"] == "Camera: open windows."
     assert hass.services.calls[1][:2] == ("persistent_notification", "create")
     assert hass.services.calls[1][2]["notification_id"] == "ventwise_last_notification_delivery"
     assert hass.services.calls[1][2]["title"] == "Notifica VentWise consegnata"
