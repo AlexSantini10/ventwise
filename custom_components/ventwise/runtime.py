@@ -322,10 +322,6 @@ def build_room_profiles(
 
     rooms: list[RoomProfile] = []
     for room in config.rooms:
-        if room.pause_entity_id:
-            room_state = state_getter(room.pause_entity_id)
-            if state_to_bool(room_state) is True:
-                continue
         temperature = state_to_float(state_getter(room.temperature_entity_id))
         humidity = state_to_float(state_getter(room.humidity_entity_id)) if room.humidity_entity_id else None
         if temperature is None:

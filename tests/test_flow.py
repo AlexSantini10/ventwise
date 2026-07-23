@@ -25,7 +25,6 @@ from custom_components.ventwise.const import (
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
-    CONF_ROOM_PAUSE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
@@ -119,7 +118,6 @@ def test_basic_options_schema_covers_simple_controls() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_QUIET_HOURS_PAUSE_ENTITY_ID].__class__.__name__ == "Any"
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "Any"
 
 
@@ -151,7 +149,6 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
-    assert room_schema.schema[CONF_ROOM_PAUSE_ENTITY_ID].__class__.__name__ == "Any"
 
 
 def test_normalize_basic_config_strips_optional_entities() -> None:
@@ -358,13 +355,12 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
 
     data = normalize_room_config(
         {
-            CONF_ROOM_NAME: "  Bedroom  ",
-            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-            CONF_ROOM_HUMIDITY_ENTITY_ID: " ",
-            CONF_ROOM_START_ENTITY_ID: "automation.start_room",
-            CONF_ROOM_STOP_ENTITY_ID: "",
-            CONF_ROOM_PAUSE_ENTITY_ID: "automation.room_pause",
-        },
+                CONF_ROOM_NAME: "  Bedroom  ",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                CONF_ROOM_HUMIDITY_ENTITY_ID: " ",
+                CONF_ROOM_START_ENTITY_ID: "automation.start_room",
+                CONF_ROOM_STOP_ENTITY_ID: "",
+            },
         "macro_room",
     )
 
@@ -373,7 +369,6 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
     assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
     assert data[CONF_ROOM_STOP_ENTITY_ID] is None
-    assert data[CONF_ROOM_PAUSE_ENTITY_ID] == "automation.room_pause"
 
 
 def test_normalize_room_config_rejects_invalid_room_kind() -> None:

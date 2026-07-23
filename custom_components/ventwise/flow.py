@@ -37,7 +37,6 @@ from .const import (
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
-    CONF_ROOM_PAUSE_ENTITY_ID,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
@@ -179,11 +178,6 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
             **_optional_selector_field(
-                CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
-                EntitySelector(),
-                defaults.get(CONF_QUIET_HOURS_PAUSE_ENTITY_ID),
-            ),
-            **_optional_selector_field(
                 CONF_NOTIFICATION_DEVICE_ID,
                 DeviceSelector(DeviceSelectorConfig(multiple=True)),
                 _normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID)),
@@ -247,11 +241,6 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
                 CONF_ROOM_STOP_ENTITY_ID,
                 EntitySelector(EntitySelectorConfig(domain="automation")),
                 defaults.get(CONF_ROOM_STOP_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_ROOM_PAUSE_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain="automation")),
-                defaults.get(CONF_ROOM_PAUSE_ENTITY_ID),
             ),
         }
     )
@@ -389,7 +378,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_HUMIDITY_ENTITY_ID,
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
-        CONF_ROOM_PAUSE_ENTITY_ID,
     )
     data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
@@ -411,7 +399,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data,
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
-        CONF_ROOM_PAUSE_ENTITY_ID,
         domain="automation",
     )
     return data

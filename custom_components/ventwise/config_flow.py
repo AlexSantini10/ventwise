@@ -177,7 +177,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
             room_index=self._selected_room_index,
             default_room=selected_room,
-            step_id="edit_room_details",
+            step_id="edit_room_form" if room_kind == "room" else "edit_macro_room_form",
         )
 
     async def async_step_remove_room(self, user_input: dict[str, Any] | None = None):
@@ -242,7 +242,8 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         default_room = default_room or {}
         self._room_index = room_index if room_index is not None else len(self._rooms)
         return self.async_show_form(
-            step_id=step_id or ("add_room" if room_kind == "room" else "add_macro_room"),
+            step_id=step_id
+            or ("add_room" if room_kind == "room" else "add_macro_room"),
             data_schema=build_room_schema(default_room, self._room_index, room_kind),
             errors=errors,
             description_placeholders={

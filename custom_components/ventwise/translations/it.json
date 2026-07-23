@@ -93,8 +93,8 @@
           "temperature_entity_id": "Sensore temperatura interna",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
@@ -103,8 +103,8 @@
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
         }
       },
@@ -117,8 +117,8 @@
           "temperature_entity_id": "Sensore temperatura interna",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
@@ -127,8 +127,8 @@
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
         }
       },
@@ -141,8 +141,8 @@
           "temperature_entity_id": "Sensore temperatura interna",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
@@ -151,8 +151,8 @@
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
         }
       },
@@ -165,8 +165,8 @@
           "temperature_entity_id": "Sensore temperatura interna",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
@@ -175,8 +175,8 @@
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
         }
       }
@@ -193,13 +193,13 @@
         "menu_options": {
           "basic": "Impostazioni base",
           "outdoor": "Dati esterni",
-          "advanced": "Impostazioni avanzate",
+          "advanced": "Impostazioni comfort",
           "rooms": "Stanze"
         },
         "menu_option_descriptions": {
-          "basic": "Sorgente meteo, pausa durante le ore di silenzio e notifiche per uno o più dispositivi.",
+          "basic": "Sorgente meteo e notifiche per uno o più dispositivi.",
           "outdoor": "Scegli forecast o override per ogni dato esterno con le checkbox.",
-          "advanced": "Valori tecnici di taratura.",
+          "advanced": "Valori di comfort e taratura.",
           "rooms": "Aggiungi stanze e macro-stanze."
         }
       },
@@ -208,12 +208,10 @@
         "description": "Tieni qui i controlli quotidiani.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
-          "quiet_hours_pause_entity_id": "Entità di pausa ore di silenzio",
           "notification_device_id": "Dispositivi di notifica"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
-          "quiet_hours_pause_entity_id": "Facoltativo. Seleziona un helper o un sensore che può sospendere le raccomandazioni.",
           "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche."
         }
       },
@@ -246,8 +244,8 @@
         }
       },
       "advanced": {
-        "title": "Impostazioni avanzate",
-        "description": "Rifinisci i valori tecnici.",
+        "title": "Impostazioni comfort",
+        "description": "Rifinisci i valori di comfort usati da VentWise.",
         "data": {
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
           "cooldown_minutes": "Periodo di pausa (minuti)"
@@ -302,16 +300,16 @@
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
         }
       },
@@ -322,16 +320,16 @@
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
         }
       },
@@ -342,16 +340,16 @@
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
         }
       },
@@ -362,16 +360,16 @@
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
-          "start_entity_id": "Automazione di apertura",
-          "stop_entity_id": "Automazione di chiusura",
+          "start_entity_id": "Automazione apertura finestre",
+          "stop_entity_id": "Automazione chiusura finestre",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
           "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
         }
       }
