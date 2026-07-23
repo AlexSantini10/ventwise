@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from collections.abc import Callable
+from datetime import datetime, time, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_point_in_time, async_track_state_change_event
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
@@ -31,8 +33,20 @@ from .runtime import (
     dump_runtime_state,
     load_runtime_state,
     is_quiet_hours_active,
-    state_to_bool,
 )
+from .const import (
+    CONF_ROOM_ENABLED,
+    CONF_ROOM_ID,
+    CONF_ROOMS,
+    CONF_QUIET_HOURS_ENABLED,
+    CONF_QUIET_HOURS_END,
+    CONF_QUIET_HOURS_START,
+    CONF_STABILITY_MINUTES,
+    CONF_TARGET_HUMIDITY_PERCENT,
+    CONF_TARGET_TEMPERATURE_C,
+    OUTDOOR_SOURCE_OVERRIDE,
+)
+from .const import CONF_NOTIFICATION_ENABLED
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,12 +70,16 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             dt_util.utcnow() - timedelta(days=1)
         )
         self._last_notification_signature = self._runtime_state.last_notification_signature
+        self._state_listener_unsubs: list[Callable[[], None]] = []
+        self._time_listener_unsubs: list[Callable[[], None]] = []
+        self._listeners_initialized = False
+        config_entry.async_on_unload(self._async_remove_listeners)
         super().__init__(
             hass,
             config_entry=config_entry,
             logger=_LOGGER,
             name="VentWise",
-            update_interval=timedelta(minutes=1),
+            update_interval=None,
         )
 
     @property
@@ -69,6 +87,14 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Return the normalized integration config."""
 
         return self._config
+
+    async def async_config_entry_first_refresh(self) -> None:
+        """Refresh initial data and start event listeners."""
+
+        await super().async_config_entry_first_refresh()
+        self._refresh_state_listeners()
+        self._listeners_initialized = True
+        self._refresh_time_listener(self.data.last_updated, self.data)
 
     async def _async_update_data(self) -> RuntimeSnapshot:
         """Refresh recommendation state from Home Assistant entity states."""
@@ -79,13 +105,20 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._recommender = ComfortRecommender(build_scoring_config(self._config))
 
         if not self._config.enabled:
-            return RuntimeSnapshot(
+            snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
                     score=0.0,
                     reason="The integration is disabled.",
                     blocked_by="disabled",
                 ),
+                weather_condition=None,
+                target_perceived_c=None,
+                outdoor_perceived_c=None,
+                active_indoor_perceived_c=None,
+                outdoor_temperature_c=None,
+                outdoor_humidity_percent=None,
+                wind_speed_m_s=None,
                 notification_allowed=False,
                 quiet_hours_active=False,
                 cooldown_active=False,
@@ -93,16 +126,28 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 stable_for_seconds=0,
                 last_updated=dt_util.utcnow(),
             )
+            self._refresh_time_listener(snapshot.last_updated, snapshot)
+            return snapshot
 
         rooms, outdoor = build_room_profiles(self._config, self.hass.states.get)
         if outdoor is None or not rooms:
-            return RuntimeSnapshot(
+            snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
                     score=0.0,
                     reason="Outdoor or room sensor data is not available yet.",
                     blocked_by="unavailable",
                 ),
+                weather_condition=_weather_condition(
+                    self._config.outdoor_weather_entity_id,
+                    self.hass.states.get,
+                ),
+                target_perceived_c=None,
+                outdoor_perceived_c=None,
+                active_indoor_perceived_c=None,
+                outdoor_temperature_c=None,
+                outdoor_humidity_percent=None,
+                wind_speed_m_s=None,
                 notification_allowed=False,
                 quiet_hours_active=False,
                 cooldown_active=False,
@@ -110,9 +155,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 stable_for_seconds=0,
                 last_updated=dt_util.utcnow(),
             )
+            self._refresh_time_listener(snapshot.last_updated, snapshot)
+            return snapshot
 
         now = dt_util.now()
-        raw_summary = self._recommender.evaluate(
+        summary = self._recommender.evaluate(
             rooms=rooms,
             outdoor=outdoor,
             context=RecommendationContext(
@@ -121,50 +168,24 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 stable_for_seconds=10**6,
             ),
         )
-        signature = self._signature(raw_summary)
+        signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
             self._last_action_started_at = now
 
         stable_for_seconds = int((now - self._last_action_started_at).total_seconds())
-        quiet_hours_start = self._config.quiet_hours_start
-        quiet_hours_end = self._config.quiet_hours_end
-        if self._config.quiet_hours_start_entity_id:
-            quiet_hours_start = _state_to_time_string(
-                self.hass.states.get(self._config.quiet_hours_start_entity_id),
-                quiet_hours_start,
-            )
-        if self._config.quiet_hours_end_entity_id:
-            quiet_hours_end = _state_to_time_string(
-                self.hass.states.get(self._config.quiet_hours_end_entity_id),
-                quiet_hours_end,
-            )
         quiet_hours_active = self._config.quiet_hours_enabled and is_quiet_hours_active(
             now,
-            quiet_hours_start,
-            quiet_hours_end,
+            self._config.quiet_hours_start,
+            self._config.quiet_hours_end,
         )
-        if self._config.quiet_hours_pause_entity_id:
-            quiet_hours_active = quiet_hours_active or (
-                state_to_bool(self.hass.states.get(self._config.quiet_hours_pause_entity_id))
-                is True
-            )
         cooldown_active = self._last_notification_signature == signature and (
             now - self._last_notification_at
         ) < timedelta(minutes=self._config.cooldown_minutes)
 
-        summary = self._recommender.evaluate(
-            rooms=rooms,
-            outdoor=outdoor,
-            context=RecommendationContext(
-                quiet_hours_active=quiet_hours_active,
-                cooldown_active=cooldown_active,
-                stable_for_seconds=stable_for_seconds,
-            ),
-        )
-
         notification_allowed = (
-            summary.action != RecommendationAction.NONE
+            self._config.notification_enabled
+            and summary.action != RecommendationAction.NONE
             and summary.score >= self._config.minimum_score
             and not quiet_hours_active
             and not cooldown_active
@@ -175,10 +196,32 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._last_notification_signature = signature
             self._last_notification_at = now
 
-        self._persist_runtime_state()
+        target_perceived_c = self._config.target_temperature_c
+        outdoor_perceived_c = outdoor.temperature_c + (
+            (outdoor.humidity_percent - self._config.target_humidity_percent)
+            * self._recommender.config.humidity_weight
+        )
+        active_indoor_perceived_c = next(
+            (
+                recommendation.indoor_perceived_c
+                for recommendation in summary.room_recommendations
+                if recommendation.room_name == summary.best_room
+            ),
+            None,
+        )
 
-        return RuntimeSnapshot(
+        snapshot = RuntimeSnapshot(
             summary=summary,
+            weather_condition=_weather_condition(
+                self._config.outdoor_weather_entity_id,
+                self.hass.states.get,
+            ),
+            target_perceived_c=target_perceived_c,
+            outdoor_perceived_c=outdoor_perceived_c,
+            active_indoor_perceived_c=active_indoor_perceived_c,
+            outdoor_temperature_c=outdoor.temperature_c,
+            outdoor_humidity_percent=outdoor.humidity_percent,
+            wind_speed_m_s=outdoor.wind_speed_m_s,
             notification_allowed=notification_allowed,
             quiet_hours_active=quiet_hours_active,
             cooldown_active=cooldown_active,
@@ -186,14 +229,68 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             stable_for_seconds=stable_for_seconds,
             last_updated=now,
         )
+        self._persist_runtime_state()
+        self._refresh_time_listener(now, snapshot)
+        return snapshot
 
     async def async_set_enabled(self, enabled: bool) -> None:
         """Persist the master enable flag in config entry options."""
 
-        self.hass.config_entries.async_update_entry(
-            self._config_entry,
-            options={**self._config_entry.options, "enabled": enabled},
-        )
+        self._update_entry_options({"enabled": enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_notification_enabled(self, enabled: bool) -> None:
+        """Persist the notification enable flag in config entry options."""
+
+        self._update_entry_options({CONF_NOTIFICATION_ENABLED: enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_quiet_hours_enabled(self, enabled: bool) -> None:
+        """Persist the quiet-hours enable flag in config entry options."""
+
+        self._update_entry_options({CONF_QUIET_HOURS_ENABLED: enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_stability_minutes(self, minutes: int) -> None:
+        """Persist the global stability window in config entry options."""
+
+        self._update_entry_options({CONF_STABILITY_MINUTES: minutes})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_target_temperature(self, temperature_c: float) -> None:
+        """Persist the global comfort temperature in config entry options."""
+
+        self._update_entry_options({CONF_TARGET_TEMPERATURE_C: temperature_c})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_target_humidity(self, humidity_percent: float) -> None:
+        """Persist the global comfort humidity in config entry options."""
+
+        self._update_entry_options({CONF_TARGET_HUMIDITY_PERCENT: humidity_percent})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_quiet_hours_start(self, value: str) -> None:
+        """Persist the global quiet-hours start time in config entry options."""
+
+        self._update_entry_options({CONF_QUIET_HOURS_START: value})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_quiet_hours_end(self, value: str) -> None:
+        """Persist the global quiet-hours end time in config entry options."""
+
+        self._update_entry_options({CONF_QUIET_HOURS_END: value})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_room_enabled(self, room_key: str, enabled: bool) -> None:
+        """Persist the enabled flag for one room."""
+
+        options = dict(self._config_entry.options)
+        rooms = [dict(room) for room in options.get(CONF_ROOMS, [])]
+        for room in rooms:
+            if self._room_matches(room, room_key):
+                room[CONF_ROOM_ENABLED] = enabled
+                break
+        self._update_entry_options({CONF_ROOMS: rooms})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
@@ -201,6 +298,111 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
     def _load_runtime_state(self) -> RuntimeState:
         return load_runtime_state({**self._config_entry.data, **self._config_entry.options})
+
+    def _refresh_state_listeners(self) -> None:
+        for unsub in self._state_listener_unsubs:
+            unsub()
+        self._state_listener_unsubs = []
+        entity_ids = self._watched_entity_ids()
+        if not entity_ids:
+            return
+        self._state_listener_unsubs.append(
+            async_track_state_change_event(
+                self.hass,
+                entity_ids,
+                self._async_source_state_changed,
+            )
+        )
+
+    def _refresh_time_listener(self, now: datetime, snapshot: RuntimeSnapshot) -> None:
+        for unsub in self._time_listener_unsubs:
+            unsub()
+        self._time_listener_unsubs = []
+
+        if not self._listeners_initialized:
+            return
+
+        next_refresh = self._next_time_refresh(now, snapshot)
+        if next_refresh is None:
+            return
+
+        self._time_listener_unsubs.append(
+            async_track_point_in_time(
+                self.hass,
+                self._async_time_refresh,
+                next_refresh,
+            )
+        )
+
+    def _next_time_refresh(self, now: datetime, snapshot: RuntimeSnapshot) -> datetime | None:
+        candidates: list[datetime] = []
+        stability_seconds = self._config.stability_minutes * 60
+        if snapshot.stable_for_seconds < stability_seconds:
+            target = self._last_action_started_at + timedelta(seconds=stability_seconds)
+            if target > now:
+                candidates.append(target)
+        if snapshot.cooldown_active:
+            target = self._last_notification_at + timedelta(minutes=self._config.cooldown_minutes)
+            if target > now:
+                candidates.append(target)
+        if self._config.quiet_hours_enabled:
+            quiet_hours_target = _next_quiet_hours_transition(
+                now,
+                self._config.quiet_hours_start,
+                self._config.quiet_hours_end,
+            )
+            if quiet_hours_target is not None:
+                candidates.append(quiet_hours_target)
+        if not candidates:
+            return None
+        return min(candidates)
+
+    @callback
+    def _async_source_state_changed(self, event: Any) -> None:
+        """Refresh when one of the watched source entities changes."""
+
+        self.hass.async_create_task(self.async_request_refresh())
+
+    @callback
+    def _async_time_refresh(self, now: datetime) -> None:
+        """Refresh when a time-based gate may have changed."""
+
+        self.hass.async_create_task(self.async_request_refresh())
+
+    def _watched_entity_ids(self) -> list[str]:
+        entity_ids: set[str] = set()
+        if self._config.outdoor_weather_entity_id:
+            entity_ids.add(self._config.outdoor_weather_entity_id)
+        if (
+            self._config.outdoor_temperature_source == OUTDOOR_SOURCE_OVERRIDE
+            and self._config.outdoor_temperature_entity_id
+        ):
+            entity_ids.add(self._config.outdoor_temperature_entity_id)
+        if (
+            self._config.outdoor_humidity_source == OUTDOOR_SOURCE_OVERRIDE
+            and self._config.outdoor_humidity_entity_id
+        ):
+            entity_ids.add(self._config.outdoor_humidity_entity_id)
+        if (
+            self._config.wind_speed_source == OUTDOOR_SOURCE_OVERRIDE
+            and self._config.wind_speed_entity_id
+        ):
+            entity_ids.add(self._config.wind_speed_entity_id)
+        for room in self._config.rooms:
+            entity_ids.add(room.temperature_entity_id)
+            if room.humidity_entity_id:
+                entity_ids.add(room.humidity_entity_id)
+        return sorted(entity_ids)
+
+    def _async_remove_listeners(self) -> None:
+        """Remove all event listeners registered by the coordinator."""
+
+        for unsub in self._state_listener_unsubs:
+            unsub()
+        self._state_listener_unsubs = []
+        for unsub in self._time_listener_unsubs:
+            unsub()
+        self._time_listener_unsubs = []
 
     def _persist_runtime_state(self) -> None:
         runtime_state = RuntimeState(
@@ -220,18 +422,59 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             },
         )
 
+    def _update_entry_options(self, updates: dict[str, Any]) -> None:
+        self.hass.config_entries.async_update_entry(
+            self._config_entry,
+            options={**self._config_entry.options, **updates},
+        )
 
-def _state_to_time_string(state: Any | None, fallback: str) -> str:
-    """Read a time-like entity state and normalize it for quiet hours."""
+    @staticmethod
+    def _room_matches(room: dict[str, Any], room_key: str) -> bool:
+        room_id = room.get(CONF_ROOM_ID)
+        if room_id is not None and str(room_id) == room_key:
+            return True
+        return str(room.get("name", "")).strip() == room_key
 
+
+def _next_quiet_hours_transition(
+    now: datetime,
+    start_value: str,
+    end_value: str,
+) -> datetime | None:
+    start_time = _parse_time(start_value)
+    end_time = _parse_time(end_value)
+    today = now.date()
+    start_today = datetime.combine(today, start_time, tzinfo=now.tzinfo)
+    end_today = datetime.combine(today, end_time, tzinfo=now.tzinfo)
+    if is_quiet_hours_active(now, start_value, end_value):
+        if start_time <= end_time:
+            return end_today if end_today > now else end_today + timedelta(days=1)
+        if now.time() < end_time:
+            return end_today
+        return end_today + timedelta(days=1)
+    if start_time <= end_time:
+        return start_today if start_today > now else start_today + timedelta(days=1)
+    return start_today if start_today > now else start_today + timedelta(days=1)
+
+
+def _parse_time(value: str) -> time:
+    parts = str(value).strip().split(":")
+    if len(parts) == 2:
+        parts.append("00")
+    return datetime.strptime(":".join(parts), "%H:%M:%S").time()
+
+
+def _weather_condition(
+    weather_entity_id: str | None,
+    state_getter: Any,
+) -> str | None:
+    if not weather_entity_id:
+        return None
+    state = state_getter(weather_entity_id)
+    if state is None:
+        return None
     raw_state = getattr(state, "state", None)
     if raw_state is None:
-        return fallback
+        return None
     text = str(raw_state).strip()
-    if not text:
-        return fallback
-    if " " in text:
-        text = text.split(" ", maxsplit=1)[-1]
-    if len(text.split(":")) == 2:
-        return f"{text}:00"
-    return text
+    return text or None

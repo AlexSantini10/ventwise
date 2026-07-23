@@ -10,7 +10,7 @@ from .models import (
     SeasonMode,
     ScoringConfig,
 )
-from .scoring import ComfortRecommender
+from .scoring import ComfortRecommender, perceived_temperature
 
 __all__ = [
     "ComfortObservation",
@@ -22,4 +22,5 @@ __all__ = [
     "RoomProfile",
     "SeasonMode",
     "ScoringConfig",
+    "perceived_temperature",
 ]

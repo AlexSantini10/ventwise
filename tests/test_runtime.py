@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 
 from custom_components.ventwise.const import (
     CONF_COOLDOWN_MINUTES,
@@ -79,7 +79,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
             CONF_ENABLED: True,
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
             CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
-            CONF_NOTIFICATION_DEVICE_ID: "device-123",
+            CONF_NOTIFICATION_DEVICE_ID: ["device-123", "device-456"],
             CONF_ROOMS: [
                 {
                     CONF_ROOM_NAME: "Camera",
@@ -91,7 +91,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
     )
 
     assert config.enabled is True
-    assert config.notification_device_id == "device-123"
+    assert config.notification_device_ids == ("device-123", "device-456")
     assert config.rooms[0].name == "Camera"
 
     fake_states = {
@@ -107,6 +107,28 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert outdoor.temperature_c == 20.0
     assert len(rooms) == 1
     assert rooms[0].name == "Camera"
+
+
+def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
+    config = build_integration_config(
+        {
+            CONF_QUIET_HOURS_START: None,
+            CONF_QUIET_HOURS_END: "",
+        }
+    )
+
+    assert config.quiet_hours_start == "22:00:00"
+    assert config.quiet_hours_end == "07:00:00"
+
+    config = build_integration_config(
+        {
+            CONF_QUIET_HOURS_START: time(23, 30),
+            CONF_QUIET_HOURS_END: time(6, 15),
+        }
+    )
+
+    assert config.quiet_hours_start == "23:30:00"
+    assert config.quiet_hours_end == "06:15:00"
 
 
 def test_build_room_profiles_skips_missing_sensor_values() -> None:
@@ -246,6 +268,13 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     )
     snapshot = RuntimeSnapshot(
         summary=summary,
+        weather_condition="sunny",
+        target_perceived_c=22.0,
+        outdoor_perceived_c=20.0,
+        active_indoor_perceived_c=23.2,
+        outdoor_temperature_c=20.0,
+        outdoor_humidity_percent=45.0,
+        wind_speed_m_s=None,
         notification_allowed=True,
         quiet_hours_active=False,
         cooldown_active=False,
@@ -258,6 +287,10 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
 
     assert attributes["summary_action"] == summary.action.value
     assert attributes["summary_best_room"] == "Camera"
+    assert attributes["weather_condition"] == "sunny"
+    assert attributes["target_perceived_c"] == 22.0
+    assert attributes["outdoor_perceived_c"] == 20.0
+    assert attributes["active_indoor_perceived_c"] == 23.2
     assert attributes["notification_allowed"] is True
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0

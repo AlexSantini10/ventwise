@@ -5,9 +5,10 @@ from __future__ import annotations
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 
 from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity
+from .entity import VentWiseEntity, VentWiseRoomEntity
 
 
 async def async_setup_entry(
@@ -18,16 +19,23 @@ async def async_setup_entry(
     """Set up switch entities from a config entry."""
 
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
-    async_add_entities([MasterEnableSwitch(coordinator)])
+    entities: list[SwitchEntity] = [
+        MasterEnableSwitch(coordinator),
+        QuietHoursEnableSwitch(coordinator),
+        NotificationEnableSwitch(coordinator),
+    ]
+    entities.extend(RoomEnableSwitch(coordinator, room) for room in coordinator.config.rooms)
+    async_add_entities(entities)
 
 
 class MasterEnableSwitch(VentWiseEntity, SwitchEntity):
     """Master enable switch for the integration."""
 
     _attr_icon = "mdi:toggle-switch"
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "master_enable", "Master enable")
+        super().__init__(coordinator, "master_enable", "VentWise enabled")
 
     @property
     def is_on(self) -> bool:
@@ -39,3 +47,62 @@ class MasterEnableSwitch(VentWiseEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_enabled(False)
 
+
+class NotificationEnableSwitch(VentWiseEntity, SwitchEntity):
+    """Enable or disable notifications only."""
+
+    _attr_icon = "mdi:bell-switch"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "notification_enable", "Send notifications")
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.config.notification_enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_notification_enabled(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_notification_enabled(False)
+
+
+class QuietHoursEnableSwitch(VentWiseEntity, SwitchEntity):
+    """Enable or disable quiet hours globally."""
+
+    _attr_icon = "mdi:bell-sleep"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "quiet_hours_enable", "Use quiet hours")
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.config.quiet_hours_enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_quiet_hours_enabled(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_quiet_hours_enabled(False)
+
+
+class RoomEnableSwitch(VentWiseRoomEntity, SwitchEntity):
+    """Enable or disable a single room."""
+
+    _attr_icon = "mdi:home-switch"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(coordinator, room, "enabled", f"Include {room.name}")
+
+    @property
+    def is_on(self) -> bool:
+        return self.room.enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_enabled(self.room.room_id or self.room.name, True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_enabled(self.room.room_id or self.room.name, False)

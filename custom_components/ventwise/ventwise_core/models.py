@@ -38,6 +38,10 @@ class RoomProfile:
     name: str
     indoor: RoomObservation
     kind: str = "room"
+    room_id: str | None = None
+    enabled: bool = True
+    target_temperature_c_override: float | None = None
+    target_humidity_percent_override: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +51,7 @@ class ComfortObservation:
     temperature_c: float
     humidity_percent: float
     wind_speed_m_s: float | None = None
+    weather_condition: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,11 +59,12 @@ class ScoringConfig:
     """Tunable scoring parameters."""
 
     target_temperature_c: float = 22.0
+    target_humidity_percent: float = 50.0
     soft_outdoor_threshold_c: float = 22.0
     minimum_score: float = 0.35
     minimum_stability_seconds: int = 0
-    neutral_band_c: float = 0.4
-    score_scale_c: float = 8.0
+    decision_threshold_c: float = 1.0
+    score_scale_c: float = 1.8
     humidity_weight: float = 0.04
     wind_open_preference_threshold_m_s: float = 4.0
     wind_open_preference_per_m_s: float = 0.02
@@ -86,8 +92,10 @@ class RoomRecommendation:
     action: RecommendationAction
     score: float
     reason: str
+    target_perceived_c: float
     indoor_perceived_c: float
     outdoor_perceived_c: float
+    room_id: str | None = None
     open_score: float = 0.0
     close_score: float = 0.0
 

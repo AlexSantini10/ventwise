@@ -105,7 +105,6 @@ def test_edit_room_replaces_the_selected_room() -> None:
                 "weight": 1.5,
                 "start_entity_id": None,
                 "stop_entity_id": None,
-                "pause_entity_id": None,
             }
         )
     )
