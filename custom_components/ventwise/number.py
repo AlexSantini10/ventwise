@@ -7,7 +7,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
-from .const import CONF_STABILITY_MINUTES, CONF_TARGET_HUMIDITY_PERCENT, CONF_TARGET_TEMPERATURE_C
+from .const import (
+    CONF_STABILITY_MINUTES,
+    CONF_TARGET_HUMIDITY_PERCENT,
+    CONF_TARGET_TEMPERATURE_C,
+    UNIT_CELSIUS,
+)
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity, VentWiseRoomEntity
 
@@ -44,7 +49,7 @@ class ComfortTemperatureNumber(VentWiseEntity, NumberEntity):
     _attr_native_min_value = 10.0
     _attr_native_max_value = 30.0
     _attr_native_step = 0.5
-    _attr_native_unit_of_measurement = "°C"
+    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(coordinator, "comfort_temperature", "Global comfort temperature")
@@ -110,7 +115,7 @@ class RoomTargetTemperatureOverrideNumber(VentWiseRoomEntity, NumberEntity):
     _attr_native_min_value = 10.0
     _attr_native_max_value = 30.0
     _attr_native_step = 0.5
-    _attr_native_unit_of_measurement = "°C"
+    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
         super().__init__(
