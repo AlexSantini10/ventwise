@@ -9,7 +9,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
-from .const import CONF_QUIET_HOURS_END, CONF_QUIET_HOURS_START
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity
 
@@ -37,7 +36,7 @@ class QuietHoursStartTime(VentWiseEntity, TimeEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours_start", "Quiet hours start")
+        super().__init__(coordinator, "quiet_hours_start", "Quiet hours start time")
 
     @property
     def native_value(self) -> time | None:
@@ -54,7 +53,7 @@ class QuietHoursEndTime(VentWiseEntity, TimeEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours_end", "Quiet hours end")
+        super().__init__(coordinator, "quiet_hours_end", "Quiet hours end time")
 
     @property
     def native_value(self) -> time | None:

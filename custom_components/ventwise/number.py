@@ -7,9 +7,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
+from .const import CONF_STABILITY_MINUTES, CONF_TARGET_HUMIDITY_PERCENT, CONF_TARGET_TEMPERATURE_C
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity
-from .const import CONF_STABILITY_MINUTES, CONF_TARGET_HUMIDITY_PERCENT, CONF_TARGET_TEMPERATURE_C
 
 
 async def async_setup_entry(
@@ -41,7 +41,7 @@ class ComfortTemperatureNumber(VentWiseEntity, NumberEntity):
     _attr_native_unit_of_measurement = "°C"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "comfort_temperature", "Comfort temperature")
+        super().__init__(coordinator, "comfort_temperature", "Indoor comfort temperature")
 
     @property
     def native_value(self) -> float:
@@ -63,7 +63,7 @@ class ComfortHumidityNumber(VentWiseEntity, NumberEntity):
     _attr_native_unit_of_measurement = "%"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "comfort_humidity", "Comfort humidity")
+        super().__init__(coordinator, "comfort_humidity", "Indoor comfort humidity")
 
     @property
     def native_value(self) -> float:
@@ -85,7 +85,7 @@ class StabilityMinutesNumber(VentWiseEntity, NumberEntity):
     _attr_native_unit_of_measurement = "min"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "stability_minutes", "Stability minutes")
+        super().__init__(coordinator, "stability_minutes", "Stability window")
 
     @property
     def native_value(self) -> float:

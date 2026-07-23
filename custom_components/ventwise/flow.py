@@ -22,7 +22,6 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_COOLDOWN_MINUTES,
-    CONF_MASTER_CONTROL_ENTITY_ID,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -31,12 +30,12 @@ from .const import (
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
-    CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
@@ -51,8 +50,6 @@ from .const import (
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_MINIMUM_SCORE,
-    DEFAULT_QUIET_HOURS_END,
-    DEFAULT_QUIET_HOURS_START,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
@@ -227,14 +224,20 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
                 CONF_ROOM_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-            **_optional_numeric_field(
-                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
-                defaults.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C),
-            ),
             **_optional_selector_field(
                 CONF_ROOM_HUMIDITY_ENTITY_ID,
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
+            ),
+            **_optional_numeric_field(
+                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+                defaults.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C),
+            ),
+            **_optional_numeric_field(
+                CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+                defaults.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE),
+                minimum=20.0,
+                maximum=80.0,
             ),
             **_optional_selector_field(
                 CONF_ROOM_START_ENTITY_ID,
@@ -278,10 +281,6 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
             0,
             24 * 60,
         )
-    _normalize_optional_entities(
-        data,
-        CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
-    )
     data[CONF_NOTIFICATION_DEVICE_ID] = _normalize_notification_device_ids(
         data.get(CONF_NOTIFICATION_DEVICE_ID)
     )
@@ -363,14 +362,6 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
             0,
             24 * 60,
         )
-    _normalize_optional_entities(
-        data,
-        CONF_MASTER_CONTROL_ENTITY_ID,
-    )
-    _normalize_optional_entity_ids(
-        data,
-        CONF_MASTER_CONTROL_ENTITY_ID,
-    )
     return data
 
 
@@ -400,6 +391,12 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
         10.0,
         30.0,
+    )
+    data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE] = _normalize_optional_float(
+        data.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE),
+        CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+        20.0,
+        80.0,
     )
     _normalize_optional_entity_ids(
         data,
@@ -451,8 +448,13 @@ def _normalize_bool(value: object, field: str, *, default: bool | None = None) -
         raise ConfigValidationError(field) from exc
 
 
-def _optional_numeric_field(field: str, suggested_value: object | None) -> dict[object, object]:
-    optional_numeric = vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)))
+def _optional_numeric_field(
+    field: str,
+    suggested_value: object | None,
+    minimum: float = 10.0,
+    maximum: float = 30.0,
+) -> dict[object, object]:
+    optional_numeric = vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=minimum, max=maximum)))
     if suggested_value is None:
         return {vol.Optional(field): optional_numeric}
     return {

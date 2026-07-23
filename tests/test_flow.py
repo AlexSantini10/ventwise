@@ -19,12 +19,13 @@ from custom_components.ventwise.const import (
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_END_ENTITY_ID,
-    CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
     CONF_QUIET_HOURS_START,
     CONF_QUIET_HOURS_START_ENTITY_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
@@ -148,8 +149,18 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
+    assert room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C].__class__.__name__ == "Any"
+    assert room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
+    assert list(room_schema.schema.keys())[:6] == [
+        CONF_ROOM_ENABLED,
+        CONF_ROOM_NAME,
+        CONF_ROOM_TEMPERATURE_ENTITY_ID,
+        CONF_ROOM_HUMIDITY_ENTITY_ID,
+        CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+        CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    ]
 
 
 def test_normalize_basic_config_strips_optional_entities() -> None:
@@ -161,7 +172,6 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
             CONF_TARGET_TEMPERATURE_C: "22.5",
             CONF_TARGET_HUMIDITY_PERCENT: "48",
             CONF_STABILITY_MINUTES: "15",
-            CONF_QUIET_HOURS_PAUSE_ENTITY_ID: " ",
             CONF_NOTIFICATION_DEVICE_ID: [" device-1 ", "device-2", ""],
         }
     )
@@ -170,7 +180,6 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     assert data[CONF_TARGET_TEMPERATURE_C] == 22.5
     assert data[CONF_TARGET_HUMIDITY_PERCENT] == 48.0
     assert data[CONF_STABILITY_MINUTES] == 15
-    assert data[CONF_QUIET_HOURS_PAUSE_ENTITY_ID] is None
     assert data[CONF_NOTIFICATION_DEVICE_ID] == ["device-1", "device-2"]
 
 

@@ -38,7 +38,11 @@ class RecommendationActiveBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:window-open"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "recommendation_active", "Recommendation active")
+        super().__init__(
+            coordinator,
+            "recommendation_actionable",
+            "Actionable recommendation",
+        )
 
     @property
     def is_on(self) -> bool:
@@ -52,7 +56,11 @@ class NotificationAllowedBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:bell-check"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "notification_allowed", "Notification allowed")
+        super().__init__(
+            coordinator,
+            "notification_allowed",
+            "Notifications allowed now",
+        )
 
     @property
     def is_on(self) -> bool:
@@ -66,7 +74,7 @@ class QuietHoursBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:minus-circle-outline"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours", "Quiet hours")
+        super().__init__(coordinator, "quiet_hours", "Quiet hours active")
 
     @property
     def is_on(self) -> bool:
@@ -79,7 +87,7 @@ class CooldownBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:timer-sand"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "cooldown", "Cooldown")
+        super().__init__(coordinator, "cooldown", "Notification cooldown active")
 
     @property
     def is_on(self) -> bool:
@@ -92,7 +100,12 @@ class RoomRecommendationActiveBinarySensor(VentWiseRoomEntity, BinarySensorEntit
     _attr_icon = "mdi:home-lightbulb-outline"
 
     def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
-        super().__init__(coordinator, room, "active", f"{room.name} active")
+        super().__init__(
+            coordinator,
+            room,
+            "active",
+            f"{room.name} actionable recommendation",
+        )
 
     @property
     def is_on(self) -> bool:

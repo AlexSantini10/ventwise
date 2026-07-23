@@ -35,7 +35,7 @@ class MasterEnableSwitch(VentWiseEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "master_enable", "Master enable")
+        super().__init__(coordinator, "master_enable", "VentWise enabled")
 
     @property
     def is_on(self) -> bool:
@@ -55,7 +55,7 @@ class NotificationEnableSwitch(VentWiseEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "notification_enable", "Notifications enabled")
+        super().__init__(coordinator, "notification_enable", "Send notifications")
 
     @property
     def is_on(self) -> bool:
@@ -75,7 +75,7 @@ class QuietHoursEnableSwitch(VentWiseEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours_enable", "Quiet hours enabled")
+        super().__init__(coordinator, "quiet_hours_enable", "Use quiet hours")
 
     @property
     def is_on(self) -> bool:
@@ -95,7 +95,7 @@ class RoomEnableSwitch(VentWiseRoomEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
-        super().__init__(coordinator, room, "enabled", f"{room.name} enabled")
+        super().__init__(coordinator, room, "enabled", f"Include {room.name}")
 
     @property
     def is_on(self) -> bool:
