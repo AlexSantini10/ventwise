@@ -50,6 +50,14 @@ class _FakeConfigEntries:
         self.reloaded.append(entry_id)
 
 
+class _FakeServices:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, dict[str, object], dict[str, object] | None]] = []
+
+    async def async_call(self, domain, service, service_data, *, target=None, blocking=False):
+        self.calls.append((domain, service, service_data, target))
+
+
 class _FakeConfigEntry:
     def __init__(
         self,
@@ -72,6 +80,7 @@ class _FakeConfigEntry:
 def _make_coordinator(options: dict[str, object] | None = None):
     hass = SimpleNamespace(
         config_entries=_FakeConfigEntries(),
+        services=_FakeServices(),
         states=SimpleNamespace(get=lambda *_: None),
     )
     entry = _FakeConfigEntry(
@@ -285,6 +294,63 @@ def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
     assert snapshot.notification_allowed is False
     assert snapshot.cooldown_active is True
     assert snapshot.weather_condition == "sunny"
+
+
+def test_coordinator_sends_notification_to_selected_devices(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+    monkeypatch.setattr(
+        coordinator_module,
+        "notification_entity_ids_for_device_ids",
+        lambda _hass, _device_ids: ("notify.mobile_app_alice", "notify.mobile_app_bob"),
+    )
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="28.0"),
+        "sensor.room_humidity": SimpleNamespace(state="55.0"),
+    }
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_NOTIFICATION_ENABLED: True,
+            CONF_NOTIFICATION_DEVICE_ID: ["device-1"],
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_STABILITY_MINUTES: 10,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                }
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+    coordinator._last_action_signature = ("close", "Camera")
+    coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
+    coordinator._last_notification_signature = None
+    coordinator._last_notification_at = fixed_now - timedelta(days=1)
+
+    snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert snapshot.notification_allowed is True
+    assert len(hass.services.calls) == 2
+    assert hass.services.calls[0][0] == "notify"
+    assert hass.services.calls[0][1] == "send_message"
+    assert hass.services.calls[0][2]["title"] == "VentWise"
+    assert hass.services.calls[0][2]["message"] == "Camera: open windows."
+    assert hass.services.calls[0][3] == {"entity_id": "notify.mobile_app_alice"}
+    assert hass.services.calls[1][3] == {"entity_id": "notify.mobile_app_bob"}
 
 
 def test_coordinator_uses_automatic_comfort_temperature_when_enabled(
