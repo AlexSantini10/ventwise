@@ -65,6 +65,20 @@ coverage run -m pytest
 coverage report
 ```
 
+## Local Home Assistant Sandbox
+
+Use the local Docker sandbox to test the integration without reinstalling from
+HACS on every run.
+
+```powershell
+python ha-local-docker-test.py
+```
+
+The script keeps Home Assistant runtime data outside the repository under
+`%LOCALAPPDATA%\VentWise-HA-Test` and bind-mounts
+`custom_components\ventwise` read-only into the container. The repo tree stays
+clean for commits.
+
 ## Expectations
 
 - keep the reusable core fully testable without Home Assistant

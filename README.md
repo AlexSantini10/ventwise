@@ -82,6 +82,8 @@ Coming soon.
 
 - Install the project in editable mode with the `dev` extra.
 - Run `pytest` for the local test suite.
+- Use `python ha-local-docker-test.py` for a local Home Assistant sandbox that
+  mounts the checked-out integration directly from the repo.
 - Keep repository hygiene rules in `.gitignore`.
 - Keep the backlog in GitHub issues rather than duplicating it in the repo.
 - CI validates HACS and Hassfest before releases.
