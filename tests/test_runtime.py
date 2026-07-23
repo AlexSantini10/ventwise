@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 
 from custom_components.ventwise.const import (
     CONF_COOLDOWN_MINUTES,
@@ -107,6 +107,28 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert outdoor.temperature_c == 20.0
     assert len(rooms) == 1
     assert rooms[0].name == "Camera"
+
+
+def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
+    config = build_integration_config(
+        {
+            CONF_QUIET_HOURS_START: None,
+            CONF_QUIET_HOURS_END: "",
+        }
+    )
+
+    assert config.quiet_hours_start == "22:00:00"
+    assert config.quiet_hours_end == "07:00:00"
+
+    config = build_integration_config(
+        {
+            CONF_QUIET_HOURS_START: time(23, 30),
+            CONF_QUIET_HOURS_END: time(6, 15),
+        }
+    )
+
+    assert config.quiet_hours_start == "23:30:00"
+    assert config.quiet_hours_end == "06:15:00"
 
 
 def test_build_room_profiles_skips_missing_sensor_values() -> None:

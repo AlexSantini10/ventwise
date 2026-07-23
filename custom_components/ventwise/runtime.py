@@ -168,8 +168,10 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         cooldown_minutes=int(data.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)),
         stability_minutes=int(data.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)),
         quiet_hours_enabled=bool(data.get(CONF_QUIET_HOURS_ENABLED, True)),
-        quiet_hours_start=str(data.get(CONF_QUIET_HOURS_START, DEFAULT_QUIET_HOURS_START)),
-        quiet_hours_end=str(data.get(CONF_QUIET_HOURS_END, DEFAULT_QUIET_HOURS_END)),
+        quiet_hours_start=_time_or_default(
+            data.get(CONF_QUIET_HOURS_START), DEFAULT_QUIET_HOURS_START
+        ),
+        quiet_hours_end=_time_or_default(data.get(CONF_QUIET_HOURS_END), DEFAULT_QUIET_HOURS_END),
         enabled=bool(data.get(CONF_ENABLED, True)),
         outdoor_temperature_source=_outdoor_source(
             data,
@@ -406,6 +408,23 @@ def _float_or_none(value: Any) -> float | None:
         return float(text)
     except (TypeError, ValueError):
         return None
+
+
+def _time_or_default(value: Any, default: str) -> str:
+    """Convert a saved quiet-hours value into a safe HH:MM[:SS] string."""
+
+    if value is None:
+        return default
+    if isinstance(value, time):
+        return value.strftime("%H:%M:%S")
+    text = str(value).strip()
+    if not text:
+        return default
+    try:
+        parsed = _parse_time(text)
+    except ValueError:
+        return default
+    return parsed.strftime("%H:%M:%S")
 
 
 def _string_list(value: Any) -> tuple[str, ...]:
