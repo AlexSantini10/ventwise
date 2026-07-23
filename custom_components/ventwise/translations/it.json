@@ -111,18 +111,18 @@
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
           "weight": "Peso stanza",
-          "start_entity_id": "Entità di avvio",
-          "stop_entity_id": "Entità di stop",
-          "pause_entity_id": "Entità di pausa"
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
           "weight": "Usa un peso maggiore per le stanze più importanti.",
-          "start_entity_id": "Facoltativo. Seleziona un'automazione o un helper per avviare la logica della stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona un'automazione o un helper per fermare la logica della stanza.",
-          "pause_entity_id": "Facoltativo. Seleziona un helper che possa sospendere questa stanza."
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa stanza."
         }
       },
       "add_macro_room": {
@@ -133,18 +133,18 @@
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
           "weight": "Peso stanza",
-          "start_entity_id": "Entità di avvio",
-          "stop_entity_id": "Entità di stop",
-          "pause_entity_id": "Entità di pausa"
+          "start_entity_id": "Automazione di apertura",
+          "stop_entity_id": "Automazione di chiusura",
+          "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
           "weight": "Usa un peso maggiore per le aree più importanti.",
-          "start_entity_id": "Facoltativo. Seleziona un'automazione o un helper per avviare la logica dell'area.",
-          "stop_entity_id": "Facoltativo. Seleziona un'automazione o un helper per fermare la logica dell'area.",
-          "pause_entity_id": "Facoltativo. Seleziona un helper che possa sospendere questa area."
+          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
+          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
+          "pause_entity_id": "Facoltativo. Seleziona l'automazione che deve sospendere questa area."
         }
       }
     },

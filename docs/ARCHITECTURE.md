@@ -48,6 +48,8 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   config entry, surfaced through the UI.
 - Collects the weather source during setup and lets each outdoor metric
   choose between the forecast value and a numeric override.
+- Lets each room optionally link automations for `open`, `close`, and
+  `pause`, so VentWise can trigger them when it asks to open or close a room.
 - Lets the user skip room creation entirely during initial setup.
 - Falls back to the standard weather forecast whenever a metric is left on
   forecast.

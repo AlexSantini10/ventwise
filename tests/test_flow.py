@@ -351,7 +351,7 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
             CONF_ROOM_WEIGHT: 1.25,
             CONF_ROOM_START_ENTITY_ID: "automation.start_room",
             CONF_ROOM_STOP_ENTITY_ID: "",
-            CONF_ROOM_PAUSE_ENTITY_ID: "input_boolean.room_pause",
+            CONF_ROOM_PAUSE_ENTITY_ID: "automation.room_pause",
         },
         "macro_room",
     )
@@ -362,7 +362,7 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
     assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
     assert data[CONF_ROOM_STOP_ENTITY_ID] is None
-    assert data[CONF_ROOM_PAUSE_ENTITY_ID] == "input_boolean.room_pause"
+    assert data[CONF_ROOM_PAUSE_ENTITY_ID] == "automation.room_pause"
 
 
 def test_normalize_room_config_rejects_invalid_room_kind() -> None:
@@ -405,6 +405,21 @@ def test_normalize_room_config_accepts_input_number_temperature_and_humidity() -
 
     assert data[CONF_ROOM_TEMPERATURE_ENTITY_ID] == "input_number.bedroom_temp"
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] == "input_number.bedroom_humidity"
+
+
+def test_normalize_room_config_rejects_non_automation_room_actions() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_room_config(
+            {
+                CONF_ROOM_NAME: "Bedroom",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                CONF_ROOM_START_ENTITY_ID: "switch.open_room",
+                CONF_ROOM_WEIGHT: 1.0,
+            },
+            "room",
+        )
+
+    assert exc_info.value.field == CONF_ROOM_START_ENTITY_ID
 
 
 def test_normalize_room_config_rejects_invalid_weight() -> None:

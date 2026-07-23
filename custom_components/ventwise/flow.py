@@ -280,17 +280,17 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
             ): vol.All(vol.Coerce(float), vol.Range(min=MIN_ROOM_WEIGHT, max=MAX_ROOM_WEIGHT)),
             **_optional_selector_field(
                 CONF_ROOM_START_ENTITY_ID,
-                EntitySelector(),
+                EntitySelector(EntitySelectorConfig(domain="automation")),
                 defaults.get(CONF_ROOM_START_ENTITY_ID),
             ),
             **_optional_selector_field(
                 CONF_ROOM_STOP_ENTITY_ID,
-                EntitySelector(),
+                EntitySelector(EntitySelectorConfig(domain="automation")),
                 defaults.get(CONF_ROOM_STOP_ENTITY_ID),
             ),
             **_optional_selector_field(
                 CONF_ROOM_PAUSE_ENTITY_ID,
-                EntitySelector(),
+                EntitySelector(EntitySelectorConfig(domain="automation")),
                 defaults.get(CONF_ROOM_PAUSE_ENTITY_ID),
             ),
         }
@@ -440,6 +440,13 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
+    )
+    _normalize_optional_entity_ids(
+        data,
+        CONF_ROOM_START_ENTITY_ID,
+        CONF_ROOM_STOP_ENTITY_ID,
+        CONF_ROOM_PAUSE_ENTITY_ID,
+        domain="automation",
     )
     return data
 

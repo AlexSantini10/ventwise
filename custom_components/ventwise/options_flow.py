@@ -187,7 +187,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 return await self.async_step_edit_room_details()
 
         return self.async_show_form(
-            step_id="edit_room_select",
+            step_id="edit_room",
             data_schema=self._room_selection_schema(),
             errors=errors,
             description_placeholders={
@@ -203,13 +203,12 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
 
         selected_room = self._rooms[self._selected_room_index]
         room_kind = str(selected_room.get(CONF_ROOM_KIND, "room"))
-        step_id = "edit_room_form" if room_kind == "room" else "edit_macro_room_form"
         return await self._handle_room_step(
             room_kind,
             user_input,
             room_index=self._selected_room_index,
             default_room=selected_room,
-            step_id=step_id,
+            step_id="edit_room_details",
         )
 
     async def async_step_remove_room(self, user_input: dict[str, Any] | None = None):
@@ -228,7 +227,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 return await self.async_step_rooms()
 
         return self.async_show_form(
-            step_id="remove_room_select",
+            step_id="remove_room",
             data_schema=self._room_selection_schema(),
             errors=errors,
             description_placeholders={

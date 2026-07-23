@@ -16,6 +16,7 @@ The UI should allow the user to:
 - choose forecast or override independently for outdoor temperature, humidity,
   and wind speed
 - select temperature and humidity sensors per room
+- optionally attach room automations for open, close, and pause actions
 - define notification targets and the devices that should receive them
 - configure all entity references used by the integration
 - set notification cooldown
@@ -56,7 +57,8 @@ Expose one logical device that groups runtime state and controls:
 - detailed debug attributes for the recommendation sensors
 
 Use the config flow and options flow for all user-editable inputs such as room
-sensors, comfort temperature, and notification target entities.
+sensors, comfort temperature, notification target entities, and room
+open/close/pause automations.
 
 ## Storage
 
