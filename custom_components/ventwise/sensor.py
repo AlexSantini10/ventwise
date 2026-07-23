@@ -23,6 +23,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [
         RecommendationStateSensor(coordinator),
         RecommendationScoreSensor(coordinator),
+        RecommendationConfidenceSensor(coordinator),
         RecommendationReasonSensor(coordinator),
         WeatherConditionSensor(coordinator),
         PerceivedIndoorTemperatureSensor(coordinator),
@@ -37,6 +38,7 @@ async def async_setup_entry(
             [
                 RoomRecommendationStateSensor(coordinator, room),
                 RoomRecommendationScoreSensor(coordinator, room),
+                RoomRecommendationConfidenceSensor(coordinator, room),
                 RoomRecommendationReasonSensor(coordinator, room),
                 RoomWeatherConditionSensor(coordinator, room),
                 RoomPerceivedIndoorTemperatureSensor(coordinator, room),
@@ -80,6 +82,23 @@ class RecommendationScoreSensor(VentWiseEntity, SensorEntity):
     @property
     def native_value(self) -> float:
         return self.coordinator.data.summary.score
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        return build_debug_attributes(self.coordinator.config, self.coordinator.data)
+
+
+class RecommendationConfidenceSensor(VentWiseEntity, SensorEntity):
+    """Numeric recommendation confidence."""
+
+    _attr_icon = "mdi:shield-check"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "confidence", "Recommendation confidence")
+
+    @property
+    def native_value(self) -> float:
+        return self.coordinator.data.summary.confidence
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
@@ -238,6 +257,20 @@ class RoomRecommendationScoreSensor(VentWiseRoomEntity, SensorEntity):
     def native_value(self) -> float:
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
         return 0.0 if recommendation is None else recommendation.score
+
+
+class RoomRecommendationConfidenceSensor(VentWiseRoomEntity, SensorEntity):
+    """Recommendation confidence for a single room."""
+
+    _attr_icon = "mdi:shield-check"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(coordinator, room, "confidence", f"{room.name} recommendation confidence")
+
+    @property
+    def native_value(self) -> float:
+        recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
+        return 0.0 if recommendation is None else recommendation.confidence
 
 
 class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):

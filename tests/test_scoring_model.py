@@ -25,6 +25,7 @@ def test_recommender_prefers_open_when_outside_is_more_comfortable() -> None:
 
     assert result.action == RecommendationAction.OPEN
     assert result.score > 0
+    assert result.confidence > 0
     assert result.best_room == "Camera"
 
 
@@ -43,6 +44,7 @@ def test_recommender_opens_when_outside_is_only_one_degree_closer_to_target() ->
 
     assert result.action == RecommendationAction.OPEN
     assert result.score >= 0.35
+    assert result.confidence > 0
 
 
 def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
@@ -58,6 +60,7 @@ def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
 
     assert result.action == RecommendationAction.CLOSE
     assert result.score > 0
+    assert result.confidence > 0
 
 
 def test_recommender_returns_none_for_neutral_conditions() -> None:
@@ -73,6 +76,7 @@ def test_recommender_returns_none_for_neutral_conditions() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.score == 0
+    assert result.confidence == 0
 
 
 def test_recommender_needs_a_minimum_perceived_gap() -> None:
@@ -89,6 +93,7 @@ def test_recommender_needs_a_minimum_perceived_gap() -> None:
     result = recommender.evaluate([room], outdoor)
 
     assert result.action == RecommendationAction.NONE
+    assert result.confidence == 0
 
 
 def test_recommender_applies_soft_outdoor_threshold_to_open_actions() -> None:
@@ -109,6 +114,7 @@ def test_recommender_applies_soft_outdoor_threshold_to_open_actions() -> None:
     assert cool_result.action == RecommendationAction.OPEN
     assert warm_result.action == RecommendationAction.OPEN
     assert warm_result.score < cool_result.score
+    assert warm_result.confidence <= cool_result.confidence
 
 
 def test_recommender_penalizes_strong_wind_for_open_actions() -> None:
@@ -129,6 +135,7 @@ def test_recommender_penalizes_strong_wind_for_open_actions() -> None:
     assert calm_result.action == RecommendationAction.OPEN
     assert windy_result.action != RecommendationAction.OPEN
     assert windy_result.score < calm_result.score
+    assert windy_result.confidence <= calm_result.confidence
 
 
 def test_recommender_returns_none_when_both_direction_scores_collapse_to_zero() -> None:
@@ -150,6 +157,7 @@ def test_recommender_returns_none_when_both_direction_scores_collapse_to_zero() 
 
     assert result.action == RecommendationAction.NONE
     assert result.score == 0.0
+    assert result.confidence == 0.0
 
 
 def test_recommender_blocks_until_stable() -> None:
@@ -171,6 +179,7 @@ def test_recommender_blocks_until_stable() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.blocked_by == "stability"
+    assert result.confidence == 0.0
 
 
 def test_recommender_can_be_hint_tuned_for_winter() -> None:
@@ -193,6 +202,7 @@ def test_recommender_can_be_hint_tuned_for_winter() -> None:
 
     assert result.action == RecommendationAction.CLOSE
     assert result.best_room == "Camera"
+    assert result.confidence > 0
 
 
 def test_recommender_returns_none_for_quiet_hours() -> None:
@@ -212,6 +222,7 @@ def test_recommender_returns_none_for_quiet_hours() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.blocked_by == "quiet_hours"
+    assert result.confidence == 0.0
 
 
 def test_recommender_prefers_the_best_room_by_score() -> None:
@@ -238,6 +249,7 @@ def test_recommender_prefers_the_best_room_by_score() -> None:
     assert result.best_room == "Studio"
     assert len(result.room_recommendations) == 2
     assert result.room_recommendations[0].room_name == "Studio"
+    assert result.confidence > 0
 
 
 def test_recommender_returns_none_when_no_rooms_are_configured() -> None:
@@ -248,6 +260,7 @@ def test_recommender_returns_none_when_no_rooms_are_configured() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.reason == "No enabled rooms configured."
+    assert result.confidence == 0.0
 
 
 def test_recommender_honors_room_target_override() -> None:
@@ -263,6 +276,7 @@ def test_recommender_honors_room_target_override() -> None:
     result = recommender.evaluate([room], outdoor)
 
     assert result.action == RecommendationAction.NONE
+    assert result.confidence == 0.0
 
 
 def test_recommender_honors_room_humidity_override() -> None:
@@ -287,6 +301,8 @@ def test_recommender_honors_room_humidity_override() -> None:
     assert baseline_result.action == RecommendationAction.OPEN
     assert humid_result.action == RecommendationAction.CLOSE
     assert humid_result.room_recommendations[0].target_perceived_c == 22.0
+    assert baseline_result.room_recommendations[0].confidence > 0
+    assert humid_result.room_recommendations[0].confidence > 0
 
 
 def test_recommender_penalizes_absurd_targets() -> None:
@@ -307,6 +323,7 @@ def test_recommender_penalizes_absurd_targets() -> None:
     result = recommender.evaluate([room], outdoor)
 
     assert result.score < 0.2
+    assert result.confidence > 0
 
 
 def test_recommender_skips_disabled_rooms() -> None:
@@ -323,3 +340,4 @@ def test_recommender_skips_disabled_rooms() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.reason == "No enabled rooms configured."
+    assert result.confidence == 0.0

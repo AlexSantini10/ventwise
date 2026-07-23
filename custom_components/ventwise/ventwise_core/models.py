@@ -98,6 +98,7 @@ class RoomRecommendation:
     room_id: str | None = None
     open_score: float = 0.0
     close_score: float = 0.0
+    confidence: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,3 +111,4 @@ class RecommendationSummary:
     room_recommendations: Tuple[RoomRecommendation, ...] = field(default_factory=tuple)
     blocked_by: str | None = None
     best_room: str | None = None
+    confidence: float = 0.0
