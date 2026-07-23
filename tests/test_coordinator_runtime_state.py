@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -238,8 +239,7 @@ def test_coordinator_schedules_next_time_refresh_after_stability_window(
     assert captured["point_in_time"] == fixed_now + timedelta(minutes=10)
 
 
-@pytest.mark.asyncio
-async def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
+def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
@@ -278,7 +278,7 @@ async def test_coordinator_keeps_recommendation_active_during_notification_coold
     coordinator._last_notification_signature = ("open", "Camera")
     coordinator._last_notification_at = fixed_now - timedelta(minutes=1)
 
-    snapshot = await coordinator._async_update_data()
+    snapshot = asyncio.run(coordinator._async_update_data())
 
     assert snapshot.summary.action.value == "open"
     assert snapshot.notification_allowed is False
