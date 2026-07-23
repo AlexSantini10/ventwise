@@ -274,7 +274,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         )
 
         if notification_allowed and self._last_notification_signature != signature:
-            title, message = build_notification_payload(summary)
+            title, message = build_notification_payload(
+                summary,
+                language=getattr(getattr(self.hass, "config", None), "language", None),
+            )
             delivered = await async_send_notification(
                 self.hass,
                 notification_entity_ids,

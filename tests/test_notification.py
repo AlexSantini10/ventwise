@@ -10,6 +10,7 @@ pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.notification import (
     async_send_notification,
+    build_notification_payload,
     notification_entity_ids_for_device_ids,
 )
 
@@ -65,8 +66,24 @@ def test_notification_entity_resolution_filters_to_notify_entities(monkeypatch: 
     assert result == ("notify.mobile_app_alice", "notify.mobile_app_bob")
 
 
+def test_build_notification_payload_uses_requested_language() -> None:
+    summary = type(
+        "Summary",
+        (),
+        {
+            "best_room": "Salotto",
+            "action": type("Action", (), {"value": "open"})(),
+        },
+    )()
+
+    title, message = build_notification_payload(summary, language="it-IT")
+
+    assert title == "VentWise"
+    assert message == "Salotto: apri le finestre."
+
+
 def test_async_send_notification_updates_home_assistant_persistent_notification() -> None:
-    hass = type("Hass", (), {"services": _FakeServices()})()
+    hass = type("Hass", (), {"services": _FakeServices(), "config": type("Config", (), {"language": "it"})()})()
 
     result = asyncio.run(
         async_send_notification(
@@ -82,10 +99,11 @@ def test_async_send_notification_updates_home_assistant_persistent_notification(
     assert hass.services.calls[0][:2] == ("notify", "send_message")
     assert hass.services.calls[1][:2] == ("persistent_notification", "create")
     assert hass.services.calls[1][2]["notification_id"] == "ventwise_last_notification_delivery"
+    assert hass.services.calls[1][2]["title"] == "Notifica VentWise consegnata"
 
 
 def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytest.LogCaptureFixture) -> None:
-    hass = type("Hass", (), {"services": _FakeServices(failing_target="notify.mobile_app_alice")})()
+    hass = type("Hass", (), {"services": _FakeServices(failing_target="notify.mobile_app_alice"), "config": type("Config", (), {"language": "it"})()})()
 
     with caplog.at_level("ERROR"):
         result = asyncio.run(
@@ -100,11 +118,12 @@ def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytes
 
     assert result is False
     assert hass.services.calls[-1][:2] == ("persistent_notification", "create")
+    assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
     assert any(record.exc_info for record in caplog.records)
 
 
 def test_async_send_notification_reports_missing_targets(caplog: pytest.LogCaptureFixture) -> None:
-    hass = type("Hass", (), {"services": _FakeServices()})()
+    hass = type("Hass", (), {"services": _FakeServices(), "config": type("Config", (), {"language": "it"})()})()
 
     with caplog.at_level("ERROR"):
         result = asyncio.run(
@@ -119,4 +138,5 @@ def test_async_send_notification_reports_missing_targets(caplog: pytest.LogCaptu
 
     assert result is False
     assert hass.services.calls[-1][:2] == ("persistent_notification", "create")
+    assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
     assert any(record.exc_info for record in caplog.records)
