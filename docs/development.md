@@ -46,6 +46,8 @@ coverage report
 
 ## Versioning
 
+- The integration release version is driven by `custom_components/ventwise/manifest.json`.
+- To create a new release, update the manifest version and let the release workflow publish from that value.
 - the core package should remain versioned through `pyproject.toml`
 - HACS publication continues to use the integration manifest version
   - experimental builds use prerelease tags derived from the manifest version and a zero-padded numeric `b` suffix
