@@ -122,7 +122,7 @@ def build_outdoor_source_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 ),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=SOURCE_OPTIONS,
+                    options=list(SOURCE_OPTIONS),
                     translation_key="outdoor_source",
                 )
             ),
@@ -135,7 +135,7 @@ def build_outdoor_source_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 ),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=SOURCE_OPTIONS,
+                    options=list(SOURCE_OPTIONS),
                     translation_key="outdoor_source",
                 )
             ),
@@ -148,7 +148,7 @@ def build_outdoor_source_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 ),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=SOURCE_OPTIONS,
+                    options=list(SOURCE_OPTIONS),
                     translation_key="outdoor_source",
                 )
             ),
@@ -333,7 +333,9 @@ def normalize_outdoor_source_config(user_input: Mapping[str, object]) -> dict[st
         data[source_field] = source
         if source != OUTDOOR_SOURCE_OVERRIDE:
             data[entity_field] = None
-        return data
+        elif entity_field not in data:
+            data[entity_field] = None
+    return data
 
 
 def normalize_outdoor_override_config(
@@ -345,7 +347,7 @@ def normalize_outdoor_override_config(
     data = dict(user_input)
     for source_field, entity_field in OUTDOOR_SOURCE_FIELDS:
         source = _default_outdoor_source(defaults, source_field, entity_field)
-        if source != OVERRIDE_SOURCE:
+        if source != OUTDOOR_SOURCE_OVERRIDE:
             data[entity_field] = None
             continue
         data[entity_field] = _normalize_required_entity_id(

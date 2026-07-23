@@ -236,26 +236,33 @@ def test_normalize_basic_config_rejects_invalid_weather_domain() -> None:
     assert exc_info.value.field == CONF_OUTDOOR_WEATHER_ENTITY_ID
 
 
-def test_normalize_basic_config_rejects_invalid_outdoor_sensor_domain() -> None:
+def test_normalize_outdoor_override_config_rejects_invalid_outdoor_sensor_domain() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
-        normalize_basic_config(
+        normalize_outdoor_override_config(
             {
-                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "binary_sensor.outdoor_temp",
-                CONF_TARGET_TEMPERATURE_C: 22.0,
             }
+            ,
+            {
+                CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
+                CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_FORECAST,
+            },
         )
 
     assert exc_info.value.field == CONF_OUTDOOR_TEMPERATURE_ENTITY_ID
 
 
-def test_normalize_basic_config_rejects_non_numeric_outdoor_entity() -> None:
+def test_normalize_outdoor_override_config_rejects_non_numeric_outdoor_entity() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
-        normalize_basic_config(
+        normalize_outdoor_override_config(
             {
-                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
                 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "light.outdoor_temp",
-                CONF_TARGET_TEMPERATURE_C: 22.0,
+            },
+            {
+                CONF_OUTDOOR_TEMPERATURE_SOURCE: OUTDOOR_SOURCE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_SOURCE: OUTDOOR_SOURCE_FORECAST,
+                CONF_WIND_SPEED_SOURCE: OUTDOOR_SOURCE_FORECAST,
             }
         )
 
@@ -267,8 +274,6 @@ def test_normalize_basic_config_rejects_invalid_target_temperature() -> None:
         normalize_basic_config(
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
-                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "sensor.outdoor_temp",
-                CONF_OUTDOOR_HUMIDITY_ENTITY_ID: "sensor.outdoor_humidity",
                 CONF_TARGET_TEMPERATURE_C: 5.0,
             }
         )
