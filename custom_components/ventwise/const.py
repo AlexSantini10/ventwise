@@ -5,6 +5,7 @@ NAME = "VentWise"
 MANUFACTURER = "VentWise"
 
 DEFAULT_TARGET_TEMPERATURE_C = 22.0
+DEFAULT_AUTO_COMFORT_TEMPERATURE = False
 DEFAULT_SOFT_OUTDOOR_THRESHOLD_C = 22.0
 DEFAULT_MINIMUM_SCORE = 0.35
 DEFAULT_COOLDOWN_MINUTES = 60
@@ -16,6 +17,7 @@ OUTDOOR_SOURCE_FORECAST = "forecast"
 OUTDOOR_SOURCE_OVERRIDE = "override"
 
 CONF_TARGET_TEMPERATURE_C = "target_temperature_c"
+CONF_AUTO_COMFORT_TEMPERATURE = "auto_comfort_temperature"
 CONF_TARGET_HUMIDITY_PERCENT = "target_humidity_percent"
 CONF_SOFT_OUTDOOR_THRESHOLD_C = "soft_outdoor_threshold_c"
 CONF_MINIMUM_SCORE = "minimum_score"
@@ -42,7 +44,9 @@ CONF_ROOM_KIND = "kind"
 CONF_ROOM_ID = "room_id"
 CONF_ROOM_NAME = "name"
 CONF_ROOM_ENABLED = "enabled"
+CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED = "target_temperature_c_override_enabled"
 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C = "target_temperature_c_override"
+CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED = "target_humidity_percent_override_enabled"
 CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE = "target_humidity_percent_override"
 CONF_ROOM_TEMPERATURE_ENTITY_ID = "temperature_entity_id"
 CONF_ROOM_HUMIDITY_ENTITY_ID = "humidity_entity_id"

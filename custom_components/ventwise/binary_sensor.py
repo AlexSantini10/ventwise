@@ -22,7 +22,6 @@ async def async_setup_entry(
 
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
     entities: list[BinarySensorEntity] = [
-        RecommendationActiveBinarySensor(coordinator),
         NotificationAllowedBinarySensor(coordinator),
         QuietHoursBinarySensor(coordinator),
         CooldownBinarySensor(coordinator),
@@ -30,24 +29,6 @@ async def async_setup_entry(
     for room in coordinator.config.rooms:
         entities.append(RoomRecommendationActiveBinarySensor(coordinator, room))
     async_add_entities(entities)
-
-
-class RecommendationActiveBinarySensor(VentWiseEntity, BinarySensorEntity):
-    """Whether a recommendation is currently actionable."""
-
-    _attr_icon = "mdi:window-open"
-
-    def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(
-            coordinator,
-            "recommendation_actionable",
-            "Actionable recommendation",
-        )
-
-    @property
-    def is_on(self) -> bool:
-        snapshot = self.coordinator.data
-        return snapshot.enabled and snapshot.summary.action != RecommendationAction.NONE
 
 
 class NotificationAllowedBinarySensor(VentWiseEntity, BinarySensorEntity):
@@ -59,7 +40,7 @@ class NotificationAllowedBinarySensor(VentWiseEntity, BinarySensorEntity):
         super().__init__(
             coordinator,
             "notification_allowed",
-            "Notifications allowed now",
+            "Notifications currently allowed",
         )
 
     @property
@@ -104,7 +85,7 @@ class RoomRecommendationActiveBinarySensor(VentWiseRoomEntity, BinarySensorEntit
             coordinator,
             room,
             "active",
-            f"{room.name} actionable recommendation",
+            f"{room.name} recommendation active",
         )
 
     @property

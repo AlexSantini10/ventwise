@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from datetime import datetime, time, timezone
 
 from custom_components.ventwise.const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
@@ -18,6 +19,10 @@ from custom_components.ventwise.const import (
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
@@ -30,6 +35,7 @@ from custom_components.ventwise.runtime import (
     dump_runtime_state,
     is_quiet_hours_active,
     load_runtime_state,
+    room_target_temperature_c,
     state_to_bool,
     state_to_float,
 )
@@ -71,6 +77,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
     config = build_integration_config(
         {
             CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_AUTO_COMFORT_TEMPERATURE: True,
             CONF_COOLDOWN_MINUTES: 60,
             CONF_STABILITY_MINUTES: 10,
             CONF_QUIET_HOURS_ENABLED: True,
@@ -85,14 +92,23 @@ def test_build_runtime_config_and_room_profiles() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 23.0,
+                    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: True,
+                    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE: 55.0,
                 }
             ],
         }
     )
 
     assert config.enabled is True
+    assert config.auto_comfort_temperature_enabled is True
     assert config.notification_device_ids == ("device-123", "device-456")
     assert config.rooms[0].name == "Camera"
+    assert config.rooms[0].target_temperature_c_override_enabled is True
+    assert config.rooms[0].target_temperature_c_override == 23.0
+    assert config.rooms[0].target_humidity_percent_override_enabled is True
+    assert config.rooms[0].target_humidity_percent_override == 55.0
 
     fake_states = {
         "sensor.outdoor_temp": SimpleNamespace(state="20.0"),
@@ -140,6 +156,8 @@ def test_build_room_profiles_skips_missing_sensor_values() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 23.0,
                 }
             ],
         }
@@ -289,12 +307,49 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     assert attributes["summary_best_room"] == "Camera"
     assert attributes["weather_condition"] == "sunny"
     assert attributes["target_perceived_c"] == 22.0
+    assert attributes["auto_comfort_temperature_enabled"] is False
     assert attributes["outdoor_perceived_c"] == 20.0
     assert attributes["active_indoor_perceived_c"] == 23.2
     assert attributes["notification_allowed"] is True
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
+
+
+def test_room_target_temperature_prefers_enabled_override() -> None:
+    config = build_integration_config(
+        {
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 24.0,
+                }
+            ],
+        }
+    )
+
+    assert room_target_temperature_c(config.rooms[0], config) == 24.0
+
+
+def test_room_target_temperature_falls_back_when_override_disabled() -> None:
+    config = build_integration_config(
+        {
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: False,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 24.0,
+                }
+            ],
+        }
+    )
+
+    assert room_target_temperature_c(config.rooms[0], config) == 22.0
 
 
 def test_runtime_state_round_trips_through_storage() -> None:
