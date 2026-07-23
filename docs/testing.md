@@ -52,7 +52,7 @@ installed in CI.
 - inside more humid, outside drier
 - windy cold outside with warm inside
 - neutral conditions near the target
-- multi-room evaluation with different room weights
+- multi-room evaluation with rooms treated independently
 - quiet hours and cooldown gate the recommendation
 - persisted state is reloaded after restart
 - debug attributes expose summary and per-room details

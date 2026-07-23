@@ -17,7 +17,7 @@
 
 **A Home Assistant custom integration for comfort-based window recommendations.**
 
-VentWise helps users decide when opening or closing windows is likely to improve indoor comfort. It evaluates temperature, humidity, wind, and the configured comfort target, then exposes a clear recommendation back to Home Assistant.
+VentWise helps users decide when opening or closing windows is likely to improve indoor comfort. It evaluates a standard weather source, optional outdoor temperature, humidity, and wind overrides, and the configured comfort target, then exposes a clear recommendation back to Home Assistant.
 
 ## At a glance
 
@@ -46,7 +46,9 @@ VentWise helps users decide when opening or closing windows is likely to improve
 
 Stable releases are published from `main` and remain the default latest version in HACS.
 Experimental builds are published as GitHub prereleases from the `test` branch family.
+Their tags use a zero-padded beta suffix like `v0.2.2b0000007` so prereleases stay ordered correctly.
 To see those builds in HACS, enable prerelease updates for the repository.
+Experimental builds are for testing only.
 
 ### Manual install
 

@@ -32,9 +32,11 @@ jobs:
         run: |
           base_version=$(python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/ventwise/manifest.json').read_text())['version'])")
           beta_number=$(git rev-list --count HEAD)
-          version="${base_version}b${beta_number}"
+          padded_beta_number=$(printf '%07d' "$beta_number")
+          version="${base_version}b${padded_beta_number}"
           echo "base_version=$base_version" >> "$GITHUB_OUTPUT"
           echo "beta_number=$beta_number" >> "$GITHUB_OUTPUT"
+          echo "padded_beta_number=$padded_beta_number" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
