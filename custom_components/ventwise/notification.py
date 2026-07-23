@@ -10,6 +10,7 @@ from homeassistant.helpers import entity_registry as er
 from .ventwise_core import RecommendationSummary
 
 _LOGGER = logging.getLogger(__name__)
+_PERSISTENT_NOTIFICATION_ID = "ventwise_last_notification_delivery"
 
 
 def notification_entity_ids_for_device_ids(
@@ -58,23 +59,79 @@ async def async_send_notification(
     *,
     title: str,
     message: str,
+    device_ids: Sequence[str] | None = None,
 ) -> bool:
     """Send a notification message to the selected notify entities."""
 
     targets = list(dict.fromkeys(entity_ids))
-    if not targets:
-        return False
-    delivered = False
-    for entity_id in targets:
-        try:
-            await hass.services.async_call(
-                "notify",
-                "send_message",
-                {"title": title, "message": message},
-                target={"entity_id": entity_id},
-                blocking=True,
+    try:
+        if not targets:
+            raise RuntimeError(f"No notify entities resolved for device IDs: {list(device_ids or [])}")
+
+        delivered_targets: list[str] = []
+        failed_targets: list[str] = []
+        for entity_id in targets:
+            try:
+                await hass.services.async_call(
+                    "notify",
+                    "send_message",
+                    {"title": title, "message": message},
+                    target={"entity_id": entity_id},
+                    blocking=True,
+                )
+                delivered_targets.append(entity_id)
+            except Exception:
+                failed_targets.append(entity_id)
+                _LOGGER.exception("Failed to deliver VentWise notification to %s", entity_id)
+
+        if failed_targets:
+            await _async_create_persistent_notification(
+                hass,
+                title="VentWise notification delivery failed",
+                message=(
+                    f"{title}: {message}\n\n"
+                    f"Failed targets: {', '.join(failed_targets)}"
+                ),
             )
-            delivered = True
-        except Exception:  # pragma: no cover - defensive logging only
-            _LOGGER.exception("Failed to deliver VentWise notification to %s", entity_id)
-    return delivered
+            return False
+
+        await _async_create_persistent_notification(
+            hass,
+            title="VentWise notification delivered",
+            message=(
+                f"{title}: {message}\n\n"
+                f"Delivered to: {', '.join(delivered_targets)}"
+            ),
+        )
+        return True
+    except Exception:
+        _LOGGER.exception("VentWise notification delivery failed")
+        await _async_create_persistent_notification(
+            hass,
+            title="VentWise notification delivery failed",
+            message=f"{title}: {message}",
+        )
+        return False
+
+
+async def _async_create_persistent_notification(
+    hass,
+    *,
+    title: str,
+    message: str,
+) -> None:
+    """Create or update the latest VentWise persistent notification."""
+
+    try:
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": title,
+                "message": message,
+                "notification_id": _PERSISTENT_NOTIFICATION_ID,
+            },
+            blocking=True,
+        )
+    except Exception:
+        _LOGGER.exception("Failed to create VentWise persistent notification")
