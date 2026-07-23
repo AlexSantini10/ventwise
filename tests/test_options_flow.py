@@ -46,10 +46,10 @@ def test_room_selection_helpers_expose_stable_labels() -> None:
     )
 
     assert flow._room_selection_options() == [
-        "1. Living room (room)",
-        "2. Upstairs (macro room)",
+        "1. Living room (Room)",
+        "2. Upstairs (Macro Room)",
     ]
-    assert flow._room_selection_index("2. Upstairs (macro room)") == 1
+    assert flow._room_selection_index("2. Upstairs (Macro Room)") == 1
 
 
 def test_remove_room_updates_the_saved_list() -> None:
@@ -70,7 +70,7 @@ def test_remove_room_updates_the_saved_list() -> None:
         }
     )
 
-    asyncio.run(flow.async_step_remove_room({CONF_ROOM_SELECTION: "1. Living room (room)"}))
+    asyncio.run(flow.async_step_remove_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
 
     assert len(flow._rooms) == 1
     assert flow._rooms[0][CONF_ROOM_NAME] == "Upstairs"
@@ -95,7 +95,7 @@ def test_edit_room_replaces_the_selected_room() -> None:
         }
     )
 
-    asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: "1. Living room (room)"}))
+    asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
     asyncio.run(
         flow.async_step_edit_room_details(
             {
