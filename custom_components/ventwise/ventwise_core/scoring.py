@@ -135,21 +135,24 @@ class ComfortRecommender:
                 close_score=close_score,
             )
 
-        delta = inside_delta - outside_delta
-        max_delta = max(inside_delta, outside_delta)
-        direction_scale = (
-            max(self._config.score_scale_c, max_delta, 1.0)
-            if max_delta > 20.0
-            else self._config.score_scale_c
+        open_score = self._direction_score(
+            need_c=inside_delta,
+            benefit_c=max(0.0, inside_delta - outside_delta),
+            outdoor=outdoor,
+            direction=RecommendationAction.OPEN,
         )
-        open_score = self._base_direction_score(delta, outdoor, direction_scale)
-        close_score = self._base_direction_score(-delta, outdoor, direction_scale)
+        close_score = self._direction_score(
+            need_c=outside_delta,
+            benefit_c=max(0.0, outside_delta - inside_delta),
+            outdoor=outdoor,
+            direction=RecommendationAction.CLOSE,
+        )
         open_score, close_score = self._apply_season_bias(open_score, close_score)
+        target_penalty = self._target_reasonableness_factor(target_temperature, target_humidity)
+        open_score = self._clamp(open_score * target_penalty)
+        close_score = self._clamp(close_score * target_penalty)
 
-        if abs(delta) < self._config.decision_threshold_c:
-            action = RecommendationAction.NONE
-            score = self._neutral_score(delta)
-        elif open_score <= 0.0 and close_score <= 0.0:
+        if max(inside_delta, outside_delta) < self._config.decision_threshold_c:
             action = RecommendationAction.NONE
             score = 0.0
         elif open_score > close_score:
@@ -313,14 +316,17 @@ class ComfortRecommender:
             best_room=best_room.room_name,
         )
 
-    def _base_direction_score(
+    def _direction_score(
         self,
-        delta_c: float,
+        need_c: float,
+        benefit_c: float,
         outdoor: ComfortObservation,
-        scale_c: float,
+        direction: RecommendationAction,
     ) -> float:
-        score = self._clamp(delta_c / scale_c)
-        if outdoor.wind_speed_m_s is not None:
+        need_score = _smoothstep(need_c, 0.0, 4.0)
+        benefit_score = _smoothstep(benefit_c, 0.4, 1.5)
+        score = self._clamp(need_score * benefit_score)
+        if direction == RecommendationAction.OPEN and outdoor.wind_speed_m_s is not None:
             if outdoor.wind_speed_m_s <= self._config.wind_open_preference_threshold_m_s:
                 score = self._clamp(
                     score
@@ -338,9 +344,6 @@ class ComfortRecommender:
                     )
                 )
         return score
-
-    def _neutral_score(self, delta_c: float) -> float:
-        return 0.0
 
     def _build_reason(
         self,
@@ -376,6 +379,17 @@ class ComfortRecommender:
             close_score += self._config.close_bias
         return self._clamp(open_score), self._clamp(close_score)
 
+    def _target_reasonableness_factor(
+        self,
+        target_temperature_c: float,
+        target_humidity_percent: float,
+    ) -> float:
+        temperature_distance = abs(target_temperature_c - 22.0)
+        humidity_distance = abs(target_humidity_percent - 50.0)
+        temperature_factor = 1.0 - _smoothstep(temperature_distance, 8.0, 20.0)
+        humidity_factor = 1.0 - _smoothstep(humidity_distance, 20.0, 50.0)
+        return self._clamp(min(temperature_factor, humidity_factor))
+
     @staticmethod
     def _clamp(value: float) -> float:
         return max(0.0, min(1.0, value))
@@ -383,6 +397,13 @@ class ComfortRecommender:
 
 def _clamp_temperature(value: float) -> float:
     return max(10.0, min(30.0, value))
+
+
+def _smoothstep(value: float, edge0: float, edge1: float) -> float:
+    if edge1 <= edge0:
+        return 1.0 if value >= edge1 else 0.0
+    x = max(0.0, min(1.0, (value - edge0) / (edge1 - edge0)))
+    return x * x * (3.0 - 2.0 * x)
 
 
 def _weather_requires_close(weather_condition: str | None) -> bool:
