@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Initial setup",
-        "description": "Choose the supported forecast, set comfort temperature, and optionally pick a notification target.",
+        "description": "Choose the forecast source, set comfort temperature, and optionally pick a notification target.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
@@ -17,17 +17,45 @@
         }
       },
       "outdoor": {
-        "title": "Outdoor overrides",
-        "description": "Optional. Leave these blank to use the forecast values.",
+        "title": "Outdoor data source",
+        "description": "Choose forecast or override for each outdoor value. If you pick override, VentWise will ask for the entity next.",
         "data": {
-          "outdoor_temperature_entity_id": "Optional outdoor temperature sensor or helper",
-          "outdoor_humidity_entity_id": "Optional outdoor humidity sensor or helper",
-          "wind_speed_entity_id": "Optional outdoor wind speed sensor or helper"
+          "outdoor_temperature_source": "Outdoor temperature source",
+          "outdoor_humidity_source": "Outdoor humidity source",
+          "wind_speed_source": "Outdoor wind speed source"
         },
         "data_description": {
-          "outdoor_temperature_entity_id": "Optional. Leave blank to keep the forecast temperature. Numeric helpers are allowed too.",
-          "outdoor_humidity_entity_id": "Optional. Leave blank to keep the forecast humidity. Numeric helpers are allowed too.",
-          "wind_speed_entity_id": "Optional. Leave blank to keep the forecast wind speed. Numeric helpers are allowed too."
+          "outdoor_temperature_source": "Use the forecast temperature from the weather entity, or override it with a numeric entity.",
+          "outdoor_humidity_source": "Use the forecast humidity from the weather entity, or override it with a numeric entity.",
+          "wind_speed_source": "Use the forecast wind speed from the weather entity, or override it with a numeric entity."
+        }
+      },
+      "outdoor_overrides": {
+        "title": "Outdoor overrides",
+        "description": "Pick the numeric entities only for the measurements marked as overrides.",
+        "data": {
+          "outdoor_temperature_entity_id": "Outdoor temperature override",
+          "outdoor_humidity_entity_id": "Outdoor humidity override",
+          "wind_speed_entity_id": "Outdoor wind speed override"
+        },
+        "data_description": {
+          "outdoor_temperature_entity_id": "Required only when temperature is set to override.",
+          "outdoor_humidity_entity_id": "Required only when humidity is set to override.",
+          "wind_speed_entity_id": "Required only when wind speed is set to override."
+        }
+      },
+      "outdoor_overrides": {
+        "title": "Outdoor overrides",
+        "description": "Pick the numeric entities only for the measurements marked as overrides.",
+        "data": {
+          "outdoor_temperature_entity_id": "Outdoor temperature override",
+          "outdoor_humidity_entity_id": "Outdoor humidity override",
+          "wind_speed_entity_id": "Outdoor wind speed override"
+        },
+        "data_description": {
+          "outdoor_temperature_entity_id": "Required only when temperature is set to override.",
+          "outdoor_humidity_entity_id": "Required only when humidity is set to override.",
+          "wind_speed_entity_id": "Required only when wind speed is set to override."
         }
       },
       "rooms": {
@@ -168,13 +196,43 @@
         "description": "Choose what you want to edit.",
         "menu_options": {
           "basic": "Basic settings",
+          "outdoor": "Outdoor data",
           "advanced": "Advanced settings",
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
-          "basic": "Forecast source, optional outdoor overrides, comfort temperature, quiet hours, and notifications.",
-          "advanced": "Tuning values, supported forecast data, and entity overrides.",
+          "basic": "Weather source, comfort temperature, quiet hours, and notifications.",
+          "outdoor": "Choose forecast or override per outdoor measurement.",
+          "advanced": "Tuning values and quiet-hours or master control helpers.",
           "rooms": "Add rooms and macro-rooms."
+        }
+      },
+      "outdoor": {
+        "title": "Outdoor data source",
+        "description": "Choose forecast or override for each outdoor value. If you pick override, VentWise will ask for the entity next.",
+        "data": {
+          "outdoor_temperature_source": "Outdoor temperature source",
+          "outdoor_humidity_source": "Outdoor humidity source",
+          "wind_speed_source": "Outdoor wind speed source"
+        },
+        "data_description": {
+          "outdoor_temperature_source": "Use the forecast temperature from the weather entity, or override it with a numeric entity.",
+          "outdoor_humidity_source": "Use the forecast humidity from the weather entity, or override it with a numeric entity.",
+          "wind_speed_source": "Use the forecast wind speed from the weather entity, or override it with a numeric entity."
+        }
+      },
+      "outdoor_overrides": {
+        "title": "Outdoor overrides",
+        "description": "Pick the numeric entities only for the measurements marked as overrides.",
+        "data": {
+          "outdoor_temperature_entity_id": "Outdoor temperature override",
+          "outdoor_humidity_entity_id": "Outdoor humidity override",
+          "wind_speed_entity_id": "Outdoor wind speed override"
+        },
+        "data_description": {
+          "outdoor_temperature_entity_id": "Required only when temperature is set to override.",
+          "outdoor_humidity_entity_id": "Required only when humidity is set to override.",
+          "wind_speed_entity_id": "Required only when wind speed is set to override."
         }
       },
       "basic": {
@@ -182,9 +240,6 @@
         "description": "Keep the everyday settings here.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "outdoor_temperature_entity_id": "Optional outdoor temperature sensor or helper",
-          "outdoor_humidity_entity_id": "Optional outdoor humidity sensor or helper",
-          "wind_speed_entity_id": "Optional outdoor wind speed sensor or helper",
           "target_temperature_c": "Comfort temperature",
           "quiet_hours_enabled": "Pause during quiet hours",
           "quiet_hours_pause_entity_id": "Quiet-hours pause entity",
@@ -192,9 +247,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
-          "outdoor_temperature_entity_id": "Optional. Leave blank to keep the forecast temperature. Numeric helpers are allowed too.",
-          "outdoor_humidity_entity_id": "Optional. Leave blank to keep the forecast humidity. Numeric helpers are allowed too.",
-          "wind_speed_entity_id": "Optional. Leave blank to keep the forecast wind speed. Numeric helpers are allowed too.",
           "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
           "quiet_hours_enabled": "Turn on a pause while quiet hours are active.",
           "quiet_hours_pause_entity_id": "Optional. Pick a helper or sensor that can suspend recommendations.",
@@ -203,7 +255,7 @@
       },
       "advanced": {
         "title": "Advanced settings",
-        "description": "Fine-tune the technical values. Supported forecast source: a standard Home Assistant weather entity. If you want VentWise to support another forecast source, open a GitHub issue.",
+        "description": "Fine-tune the technical values and optional helper entities.",
         "data": {
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Cooldown period (minutes)",
@@ -354,6 +406,15 @@
     },
     "error": {
       "invalid_input": "One or more values are invalid."
+    }
+  }
+  ,
+  "selector": {
+    "outdoor_source": {
+      "options": {
+        "forecast": "Use forecast",
+        "override": "Use override"
+      }
     }
   }
 }

@@ -23,7 +23,9 @@ from .const import (
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+    CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_QUIET_HOURS_END_ENTITY_ID,
     CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
     CONF_QUIET_HOURS_START_ENTITY_ID,
@@ -48,6 +50,7 @@ from .const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
@@ -56,6 +59,8 @@ from .const import (
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
+    OUTDOOR_SOURCE_FORECAST,
+    OUTDOOR_SOURCE_OVERRIDE,
 )
 from .ventwise_core import ComfortRecommender
 
@@ -91,8 +96,11 @@ class IntegrationConfig:
     quiet_hours_end_entity_id: str | None = None
     quiet_hours_pause_entity_id: str | None = None
     enabled: bool = True
-    outdoor_temperature_entity_id: str = ""
-    outdoor_humidity_entity_id: str = ""
+    outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
+    outdoor_temperature_entity_id: str | None = None
+    outdoor_humidity_source: str = OUTDOOR_SOURCE_FORECAST
+    outdoor_humidity_entity_id: str | None = None
+    wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
     master_control_entity_id: str | None = None
     notification_device_id: str | None = None
@@ -154,8 +162,19 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         quiet_hours_end_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_END_ENTITY_ID)),
         quiet_hours_pause_entity_id=_string_or_none(data.get(CONF_QUIET_HOURS_PAUSE_ENTITY_ID)),
         enabled=bool(data.get(CONF_ENABLED, True)),
-        outdoor_temperature_entity_id=str(data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID, "")),
-        outdoor_humidity_entity_id=str(data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID, "")),
+        outdoor_temperature_source=_outdoor_source(
+            data,
+            CONF_OUTDOOR_TEMPERATURE_SOURCE,
+            CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+        ),
+        outdoor_temperature_entity_id=_string_or_none(data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID)),
+        outdoor_humidity_source=_outdoor_source(
+            data,
+            CONF_OUTDOOR_HUMIDITY_SOURCE,
+            CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+        ),
+        outdoor_humidity_entity_id=_string_or_none(data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID)),
+        wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
         master_control_entity_id=_string_or_none(data.get(CONF_MASTER_CONTROL_ENTITY_ID)),
         notification_device_id=_string_or_none(data.get(CONF_NOTIFICATION_DEVICE_ID)),
@@ -251,12 +270,14 @@ def build_room_profiles(
     """Build room profiles and the outdoor observation from Home Assistant state."""
 
     outdoor_temp = _outdoor_value(
+        config.outdoor_temperature_source,
         config.outdoor_weather_entity_id,
         config.outdoor_temperature_entity_id,
         state_getter,
         "temperature",
     )
     outdoor_humidity = _outdoor_value(
+        config.outdoor_humidity_source,
         config.outdoor_weather_entity_id,
         config.outdoor_humidity_entity_id,
         state_getter,
@@ -269,6 +290,7 @@ def build_room_profiles(
         if outdoor_humidity is None:
             outdoor_humidity = 50.0
         wind_speed = _outdoor_value(
+            config.wind_speed_source,
             config.outdoor_weather_entity_id,
             config.wind_speed_entity_id,
             state_getter,
@@ -350,6 +372,7 @@ def _string_or_none(value: Any) -> str | None:
 
 
 def _outdoor_value(
+    source: str,
     weather_entity_id: str | None,
     override_entity_id: str | None,
     state_getter: Callable[[str], Any],
@@ -357,7 +380,7 @@ def _outdoor_value(
     *,
     allow_state_fallback: bool = True,
 ) -> float | None:
-    if override_entity_id:
+    if source == OUTDOOR_SOURCE_OVERRIDE and override_entity_id:
         return state_to_float(state_getter(override_entity_id))
     if not weather_entity_id:
         return None
@@ -374,6 +397,16 @@ def _outdoor_value(
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _outdoor_source(data: Mapping[str, Any], source_key: str, entity_key: str) -> str:
+    source = data.get(source_key)
+    if source in {OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE}:
+        return str(source)
+    entity = _string_or_none(data.get(entity_key))
+    if entity is not None:
+        return OUTDOOR_SOURCE_OVERRIDE
+    return OUTDOOR_SOURCE_FORECAST
 
 
 def _parse_time(value: str) -> time:

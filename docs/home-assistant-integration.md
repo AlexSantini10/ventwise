@@ -13,6 +13,8 @@ The UI should allow the user to:
 - choose the supported forecast source
 - set the ideal comfort temperature
 - optionally choose a notification target during the initial setup
+- choose forecast or override independently for outdoor temperature, humidity,
+  and wind speed
 - select temperature and humidity sensors per room
 - define notification targets and the devices that should receive them
 - configure all entity references used by the integration
@@ -21,7 +23,7 @@ The UI should allow the user to:
 - temporarily disable notifications without disabling the whole integration
 - enable or disable the whole integration
 - keep runtime state after a restart
-- fall back to the standard weather forecast when optional outdoor sensors or numeric helpers are not configured
+- fall back to the standard weather forecast whenever an outdoor metric stays on forecast
 - create rooms during the initial setup flow, or skip them and add them later
 
 Supported forecast sources are limited to the standard Home Assistant `weather` entities VentWise can read today. If a different forecast source should be supported, it should be requested as a GitHub issue.

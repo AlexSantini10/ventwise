@@ -9,12 +9,26 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
-from .const import CONF_ROOM_KIND, CONF_ROOM_NAME, CONF_ROOM_SELECTION, CONF_ROOMS, NAME
+from .const import (
+    CONF_OUTDOOR_HUMIDITY_SOURCE,
+    CONF_OUTDOOR_TEMPERATURE_SOURCE,
+    CONF_ROOM_KIND,
+    CONF_ROOM_NAME,
+    CONF_ROOM_SELECTION,
+    CONF_ROOMS,
+    CONF_WIND_SPEED_SOURCE,
+    NAME,
+    OUTDOOR_SOURCE_OVERRIDE,
+)
 from .flow import (
     ConfigValidationError,
     build_advanced_options_schema,
     build_basic_options_schema,
+    build_outdoor_override_schema,
+    build_outdoor_source_schema,
     build_room_schema,
+    normalize_outdoor_override_config,
+    normalize_outdoor_source_config,
     normalize_advanced_config,
     normalize_basic_config,
     normalize_room_config,
@@ -44,7 +58,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._room_index = len(current_rooms)
         return self.async_show_menu(
             step_id="init",
-            menu_options=["basic", "advanced", "rooms"],
+            menu_options=["basic", "outdoor", "advanced", "rooms"],
             description_placeholders={
                 "room_count": str(len(current_rooms)),
             },
@@ -85,6 +99,48 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return self.async_show_form(
             step_id="advanced",
             data_schema=build_advanced_options_schema(self._current_config),
+            errors=errors,
+        )
+
+    async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):
+        """Edit outdoor source preferences and overrides."""
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                self._current_config.update(normalize_outdoor_source_config(user_input))
+                if self._has_outdoor_overrides():
+                    return await self.async_step_outdoor_overrides()
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+
+        return self.async_show_form(
+            step_id="outdoor",
+            data_schema=build_outdoor_source_schema(self._current_config),
+            errors=errors,
+        )
+
+    async def async_step_outdoor_overrides(self, user_input: dict[str, Any] | None = None):
+        """Edit the outdoor override entities for selected sources."""
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                self._current_config.update(
+                    normalize_outdoor_override_config(user_input, self._current_config)
+                )
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+
+        return self.async_show_form(
+            step_id="outdoor_overrides",
+            data_schema=build_outdoor_override_schema(self._current_config),
             errors=errors,
         )
 
@@ -259,3 +315,15 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         data = dict(self._current_config)
         data[CONF_ROOMS] = deepcopy(self._rooms)
         return data
+
+    def _has_outdoor_overrides(self) -> bool:
+        """Return whether any outdoor value is configured as an override."""
+
+        return any(
+            self._current_config.get(source_field) == OUTDOOR_SOURCE_OVERRIDE
+            for source_field in (
+                CONF_OUTDOOR_TEMPERATURE_SOURCE,
+                CONF_OUTDOOR_HUMIDITY_SOURCE,
+                CONF_WIND_SPEED_SOURCE,
+            )
+        )

@@ -30,8 +30,8 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 - Exposes a `config flow` to create the integration.
 - Exposes an `options flow` to edit the configuration later.
-- The config flow collects weather and comfort temperature first, then offers
-  an optional notification target, optional outdoor overrides, and an initial
+- The config flow collects weather and comfort temperature first, then lets
+  the user choose forecast or override per outdoor metric before the initial
   room manager.
 - Creates a single visible device for the recommender.
 - Creates entities for:
@@ -46,11 +46,11 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   last-action state survive restarts.
 - Keeps all user-editable entity references and comfort settings in the
   config entry, surfaced through the UI.
-- Collects the weather source during setup and allows optional dedicated
-  outdoor temperature, humidity, and wind overrides.
+- Collects the weather source during setup and lets each outdoor metric
+  choose between the forecast value and a numeric override.
 - Lets the user skip room creation entirely during initial setup.
-- Falls back to the standard weather forecast when override sensors are not
-  provided.
+- Falls back to the standard weather forecast whenever a metric is left on
+  forecast.
 - Treats the standard Home Assistant weather entity as the only supported
   forecast source for now, and routes new forecast integrations through GitHub
   issues so the supported source list stays explicit.

@@ -13,6 +13,8 @@ from homeassistant.helpers.selector import (
     DeviceSelector,
     EntitySelector,
     EntitySelectorConfig,
+    SelectSelector,
+    SelectSelectorConfig,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -24,7 +26,9 @@ from .const import (
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+    CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_END_ENTITY_ID,
     CONF_QUIET_HOURS_ENABLED,
@@ -44,6 +48,7 @@ from .const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
@@ -54,9 +59,17 @@ from .const import (
     DEFAULT_TARGET_TEMPERATURE_C,
     MAX_ROOM_WEIGHT,
     MIN_ROOM_WEIGHT,
+    OUTDOOR_SOURCE_FORECAST,
+    OUTDOOR_SOURCE_OVERRIDE,
 )
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
+SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
+OUTDOOR_SOURCE_FIELDS: tuple[tuple[str, str], ...] = (
+    (CONF_OUTDOOR_TEMPERATURE_SOURCE, CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+    (CONF_OUTDOOR_HUMIDITY_SOURCE, CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+    (CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
+)
 
 
 @dataclass(slots=True)
@@ -90,27 +103,79 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
 
 
 def build_setup_overrides_schema(defaults: Mapping[str, object]) -> vol.Schema:
-    """Create the optional outdoor override schema for first-time setup."""
+    """Create the outdoor source schema for first-time setup."""
+
+    return build_outdoor_source_schema(defaults)
+
+
+def build_outdoor_source_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the forecast-or-override source selection schema."""
 
     return vol.Schema(
         {
-            **_optional_selector_field(
-                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
+            vol.Required(
+                CONF_OUTDOOR_TEMPERATURE_SOURCE,
+                default=_default_outdoor_source(
+                    defaults,
+                    CONF_OUTDOOR_TEMPERATURE_SOURCE,
+                    CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=SOURCE_OPTIONS,
+                    translation_key="outdoor_source",
+                )
             ),
-            **_optional_selector_field(
-                CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
+            vol.Required(
+                CONF_OUTDOOR_HUMIDITY_SOURCE,
+                default=_default_outdoor_source(
+                    defaults,
+                    CONF_OUTDOOR_HUMIDITY_SOURCE,
+                    CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=SOURCE_OPTIONS,
+                    translation_key="outdoor_source",
+                )
             ),
-            **_optional_selector_field(
-                CONF_WIND_SPEED_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_WIND_SPEED_ENTITY_ID),
+            vol.Required(
+                CONF_WIND_SPEED_SOURCE,
+                default=_default_outdoor_source(
+                    defaults,
+                    CONF_WIND_SPEED_SOURCE,
+                    CONF_WIND_SPEED_ENTITY_ID,
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=SOURCE_OPTIONS,
+                    translation_key="outdoor_source",
+                )
             ),
         }
     )
+
+
+def build_outdoor_override_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the entity selector schema for overridden outdoor values."""
+
+    schema: dict[object, object] = {}
+    for source_field, entity_field in OUTDOOR_SOURCE_FIELDS:
+        if _default_outdoor_source(defaults, source_field, entity_field) != OUTDOOR_SOURCE_OVERRIDE:
+            continue
+        default_value = defaults.get(entity_field)
+        if default_value is None:
+            schema[vol.Required(entity_field)] = EntitySelector(
+                EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)
+            )
+            continue
+        schema[
+            vol.Required(
+                entity_field,
+                default=default_value,
+            )
+        ] = EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS))
+    return vol.Schema(schema)
 
 
 def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
@@ -122,21 +187,6 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
-            **_optional_selector_field(
-                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_WIND_SPEED_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_WIND_SPEED_ENTITY_ID),
-            ),
             vol.Required(
                 CONF_TARGET_TEMPERATURE_C,
                 default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
@@ -195,21 +245,6 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_QUIET_HOURS_END_ENTITY_ID,
                 EntitySelector(),
                 defaults.get(CONF_QUIET_HOURS_END_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_WIND_SPEED_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_WIND_SPEED_ENTITY_ID),
             ),
             **_optional_selector_field(
                 CONF_MASTER_CONTROL_ENTITY_ID,
@@ -277,39 +312,47 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     )
     _normalize_optional_entities(
         data,
-        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-        CONF_WIND_SPEED_ENTITY_ID,
         CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
         CONF_NOTIFICATION_DEVICE_ID,
-    )
-    _normalize_optional_entity_ids(
-        data,
-        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-        CONF_WIND_SPEED_ENTITY_ID,
-        domains=NUMERIC_ENTITY_DOMAINS,
     )
     return data
 
 
 def normalize_setup_overrides_config(user_input: Mapping[str, object]) -> dict[str, object]:
-    """Normalize optional outdoor overrides collected during setup."""
+    """Normalize the outdoor source selection collected during setup."""
+
+    return normalize_outdoor_source_config(user_input)
+
+
+def normalize_outdoor_source_config(user_input: Mapping[str, object]) -> dict[str, object]:
+    """Normalize the forecast-or-override source selection."""
 
     data = dict(user_input)
-    _normalize_optional_entities(
-        data,
-        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-        CONF_WIND_SPEED_ENTITY_ID,
-    )
-    _normalize_optional_entity_ids(
-        data,
-        CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
-        CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
-        CONF_WIND_SPEED_ENTITY_ID,
-        domains=NUMERIC_ENTITY_DOMAINS,
-    )
+    for source_field, entity_field in OUTDOOR_SOURCE_FIELDS:
+        source = _normalize_outdoor_source(data.get(source_field), source_field)
+        data[source_field] = source
+        if source != OUTDOOR_SOURCE_OVERRIDE:
+            data[entity_field] = None
+        return data
+
+
+def normalize_outdoor_override_config(
+    user_input: Mapping[str, object],
+    defaults: Mapping[str, object],
+) -> dict[str, object]:
+    """Normalize the outdoor override values for the selected sources."""
+
+    data = dict(user_input)
+    for source_field, entity_field in OUTDOOR_SOURCE_FIELDS:
+        source = _default_outdoor_source(defaults, source_field, entity_field)
+        if source != OVERRIDE_SOURCE:
+            data[entity_field] = None
+            continue
+        data[entity_field] = _normalize_required_entity_id(
+            data.get(entity_field),
+            entity_field,
+            domains=NUMERIC_ENTITY_DOMAINS,
+        )
     return data
 
 
@@ -419,6 +462,27 @@ def _normalize_optional_entities(data: dict[str, object], *keys: str) -> None:
             continue
         text = str(value).strip()
         data[key] = text or None
+
+
+def _default_outdoor_source(
+    defaults: Mapping[str, object],
+    source_field: str,
+    entity_field: str,
+) -> str:
+    source = defaults.get(source_field)
+    if source in SOURCE_OPTIONS:
+        return str(source)
+    entity = defaults.get(entity_field)
+    if entity is not None and str(entity).strip():
+        return OUTDOOR_SOURCE_OVERRIDE
+    return OUTDOOR_SOURCE_FORECAST
+
+
+def _normalize_outdoor_source(value: object, field: str) -> str:
+    text = str(value).strip()
+    if text not in SOURCE_OPTIONS:
+        raise ConfigValidationError(field)
+    return text
 
 
 def _optional_selector_field(
