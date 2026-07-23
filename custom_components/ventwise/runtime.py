@@ -113,6 +113,7 @@ class RuntimeSnapshot:
     summary: RecommendationSummary
     weather_condition: str | None
     target_perceived_c: float | None
+    suggested_comfort_temperature_c: float | None
     outdoor_perceived_c: float | None
     active_indoor_perceived_c: float | None
     outdoor_temperature_c: float | None
@@ -368,8 +369,10 @@ def build_debug_attributes(
         "summary_reason": summary.reason,
         "summary_best_room": summary.best_room,
         "summary_blocked_by": summary.blocked_by,
+        "summary_suggested_comfort_temperature_c": summary.suggested_comfort_temperature_c,
         "weather_condition": snapshot.weather_condition,
         "target_perceived_c": snapshot.target_perceived_c,
+        "suggested_comfort_temperature_c": snapshot.suggested_comfort_temperature_c,
         "outdoor_perceived_c": snapshot.outdoor_perceived_c,
         "active_indoor_perceived_c": snapshot.active_indoor_perceived_c,
         "notification_enabled": config.notification_enabled,
@@ -521,6 +524,7 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "reason": recommendation.reason,
         "indoor_perceived_c": recommendation.indoor_perceived_c,
         "outdoor_perceived_c": recommendation.outdoor_perceived_c,
+        "suggested_comfort_temperature_c": recommendation.suggested_comfort_temperature_c,
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
     }
