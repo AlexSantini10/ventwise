@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from math import fsum
 from dataclasses import replace
 from collections.abc import Callable
 from datetime import datetime, time, timedelta
@@ -136,7 +137,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         rooms, outdoor = build_room_profiles(self._config, self.hass.states.get)
-        if outdoor is None or not rooms:
+        if outdoor is None:
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
@@ -154,6 +155,37 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_temperature_c=None,
                 outdoor_humidity_percent=None,
                 wind_speed_m_s=None,
+                notification_allowed=False,
+                quiet_hours_active=False,
+                cooldown_active=False,
+                enabled=True,
+                stable_for_seconds=0,
+                last_updated=dt_util.utcnow(),
+            )
+            self._refresh_time_listener(snapshot.last_updated, snapshot)
+            return snapshot
+
+        if not rooms:
+            snapshot = RuntimeSnapshot(
+                summary=RecommendationSummary(
+                    action=RecommendationAction.NONE,
+                    score=0.0,
+                    reason="No enabled rooms configured.",
+                ),
+                weather_condition=_weather_condition(
+                    self._config.outdoor_weather_entity_id,
+                    self.hass.states.get,
+                ),
+                target_perceived_c=self._config.target_temperature_c,
+                outdoor_perceived_c=outdoor.temperature_c
+                + (
+                    (outdoor.humidity_percent - self._config.target_humidity_percent)
+                    * self._recommender.config.humidity_weight
+                ),
+                active_indoor_perceived_c=None,
+                outdoor_temperature_c=outdoor.temperature_c,
+                outdoor_humidity_percent=outdoor.humidity_percent,
+                wind_speed_m_s=outdoor.wind_speed_m_s,
                 notification_allowed=False,
                 quiet_hours_active=False,
                 cooldown_active=False,
@@ -228,14 +260,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             (outdoor.humidity_percent - self._config.target_humidity_percent)
             * self._recommender.config.humidity_weight
         )
-        active_indoor_perceived_c = next(
-            (
-                recommendation.indoor_perceived_c
-                for recommendation in summary.room_recommendations
-                if recommendation.room_name == summary.best_room
-            ),
-            None,
-        )
+        active_indoor_perceived_c = _average_room_indoor_perceived_temperature(summary)
 
         snapshot = RuntimeSnapshot(
             summary=summary,
@@ -571,3 +596,14 @@ def _suggested_comfort_temperature(
     balance_point = (best_room.indoor_perceived_c + best_room.outdoor_perceived_c) / 2.0
     suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
     return round(max(10.0, min(30.0, suggestion)), 1)
+
+
+def _average_room_indoor_perceived_temperature(
+    summary: RecommendationSummary,
+) -> float | None:
+    """Return the mean perceived indoor temperature across available rooms."""
+
+    values = [recommendation.indoor_perceived_c for recommendation in summary.room_recommendations]
+    if not values:
+        return None
+    return fsum(values) / len(values)

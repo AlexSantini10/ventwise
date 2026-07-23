@@ -7,10 +7,10 @@
         "description": "Scegli la sorgente meteo, imposta i valori di comfort interni e, se vuoi, seleziona uno o più dispositivi di notifica.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
-          "target_temperature_c": "Temperatura di comfort interna",
+          "target_temperature_c": "Temperatura di comfort",
           "auto_comfort_temperature": "Temperatura di comfort automatica",
-          "target_humidity_percent": "Umidità di comfort interna",
-          "stability_minutes": "Finestra di stabilità (minuti)",
+          "target_humidity_percent": "Umidità di comfort",
+          "stability_minutes": "Finestra di stabilità della raccomandazione (minuti)",
           "notification_device_id": "Dispositivi da notificare"
         },
         "data_description": {
@@ -93,12 +93,12 @@
         "title": "Aggiungi stanza",
         "description": "Crea una stanza normale con le proprie finestre. Puoi anche impostare un override della temperatura di comfort per questa stanza.",
         "data": {
-          "enabled": "Includi questa stanza",
+          "enabled": "Abilita questa stanza",
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
-          "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
+          "target_temperature_c_override_enabled": "Abilita override temperatura stanza",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
-          "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
+          "target_humidity_percent_override_enabled": "Abilita override umidità stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "start_entity_id": "Automazione apertura finestre",
           "stop_entity_id": "Automazione chiusura finestre"

@@ -7,10 +7,10 @@
         "description": "Choose the weather source, set indoor comfort values, and optionally pick one or more notification devices.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "target_temperature_c": "Indoor comfort temperature",
+          "target_temperature_c": "Comfort temperature",
           "auto_comfort_temperature": "Automatic comfort temperature",
-          "target_humidity_percent": "Indoor comfort humidity",
-          "stability_minutes": "Stability window (minutes)",
+          "target_humidity_percent": "Comfort humidity",
+          "stability_minutes": "Recommendation stability window (minutes)",
           "notification_device_id": "Notification devices"
         },
         "data_description": {
@@ -92,12 +92,12 @@
         "title": "Add room",
         "description": "Create one room for a space with its own windows. You can optionally override the comfort temperature for this room.",
         "data": {
-          "enabled": "Include this room",
+          "enabled": "Enable this room",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
-          "target_temperature_c_override_enabled": "Use room comfort temperature override",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
-          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
@@ -118,7 +118,7 @@
         "title": "Edit room",
         "description": "Update the selected room for a space with its own windows. You can also change the room-specific comfort temperature override.",
         "data": {
-          "enabled": "Include this room",
+          "enabled": "Enable this room",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "target_temperature_c_override": "Room comfort temperature override",
@@ -140,12 +140,12 @@
         "title": "Add macro-room",
         "description": "Create one grouped area for spaces that share the same windows. You can optionally override the comfort temperature for this area.",
         "data": {
-          "enabled": "Include this room",
+          "enabled": "Enable this room",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
-          "target_temperature_c_override_enabled": "Use room comfort temperature override",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
-          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
@@ -166,7 +166,7 @@
         "title": "Edit macro-room",
         "description": "Update the selected grouped area that shares the same windows. You can also change the area-specific comfort temperature override.",
         "data": {
-          "enabled": "Include this room",
+          "enabled": "Enable this room",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "target_temperature_c_override": "Room comfort temperature override",
@@ -292,9 +292,9 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "target_temperature_c_override_enabled": "Use room comfort temperature override",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
-          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
@@ -340,9 +340,9 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "target_temperature_c_override_enabled": "Use room comfort temperature override",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
-          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
