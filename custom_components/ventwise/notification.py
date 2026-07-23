@@ -17,6 +17,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "open windows.",
         "close": "close windows.",
         "none": "no action needed.",
+        "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+        "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
         "delivered_title": "VentWise notification delivered",
         "failed_title": "VentWise notification delivery failed",
         "delivered_to": "Delivered to",
@@ -26,6 +28,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "apri le finestre.",
         "close": "chiudi le finestre.",
         "none": "nessuna azione necessaria.",
+        "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+        "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
         "delivered_title": "Notifica VentWise consegnata",
         "failed_title": "Consegna notifica VentWise fallita",
         "delivered_to": "Consegnata a",
@@ -35,6 +39,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "abre las ventanas.",
         "close": "cierra las ventanas.",
         "none": "no se necesita ninguna accion.",
+        "open_reason": "Afuera es más confortable ahora: {delta:.1f}°C más cerca del confort.",
+        "close_reason": "Adentro es más confortable ahora: {delta:.1f}°C más cerca del confort.",
         "delivered_title": "Notificacion de VentWise entregada",
         "failed_title": "Fallo la entrega de la notificacion de VentWise",
         "delivered_to": "Entregada a",
@@ -44,6 +50,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "откройте окна.",
         "close": "закройте окна.",
         "none": "действие не требуется.",
+        "open_reason": "Снаружи сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
+        "close_reason": "Внутри сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
         "delivered_title": "Уведомление VentWise доставлено",
         "failed_title": "Сбой доставки уведомления VentWise",
         "delivered_to": "Доставлено на",
@@ -53,6 +61,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "打开窗户。",
         "close": "关闭窗户。",
         "none": "无需操作。",
+        "open_reason": "现在室外更舒适：更接近舒适温度 {delta:.1f}°C。",
+        "close_reason": "现在室内更舒适：更接近舒适温度 {delta:.1f}°C。",
         "delivered_title": "VentWise 通知已送达",
         "failed_title": "VentWise 通知发送失败",
         "delivered_to": "已发送到",
@@ -95,9 +105,9 @@ def build_notification_payload(
 
     room_name = summary.best_room or "VentWise"
     action = summary.action.value
-    title = "VentWise"
     texts = _notification_texts(language)
-    body = f"{room_name}: {texts.get(action, texts['none'])}"
+    title = "VentWise"
+    body = _build_notification_body(room_name, action, summary, texts)
     return title, body
 
 
@@ -201,3 +211,58 @@ def _normalize_language_key(language: str | None) -> str:
         if normalized.startswith(prefix):
             return prefix
     return "en"
+
+
+def _build_notification_body(
+    room_name: str,
+    action: str,
+    summary: RecommendationSummary,
+    texts: dict[str, str],
+) -> str:
+    """Build a localized, human-readable notification body."""
+
+    if action == "open":
+        reason = _localized_temperature_reason(summary, texts, use_outside=True)
+        if reason is not None:
+            return f"{room_name}: {texts['open']} {reason}"
+    elif action == "close":
+        reason = _localized_temperature_reason(summary, texts, use_outside=False)
+        if reason is not None:
+            return f"{room_name}: {texts['close']} {reason}"
+    return f"{room_name}: {texts.get(action, texts['none'])}"
+
+
+def _localized_temperature_reason(
+    summary: RecommendationSummary,
+    texts: dict[str, str],
+    *,
+    use_outside: bool,
+) -> str | None:
+    """Return a brief localized explanation based on the best room metrics."""
+
+    recommendation = _best_room_recommendation(summary)
+    if recommendation is None:
+        return None
+
+    indoor_delta = abs(recommendation.indoor_perceived_c - recommendation.target_perceived_c)
+    outdoor_delta = abs(recommendation.outdoor_perceived_c - recommendation.target_perceived_c)
+    if abs(indoor_delta - outdoor_delta) < 0.05:
+        return None
+
+    if use_outside and outdoor_delta < indoor_delta:
+        return texts["open_reason"].format(delta=indoor_delta - outdoor_delta)
+    if not use_outside and indoor_delta < outdoor_delta:
+        return texts["close_reason"].format(delta=outdoor_delta - indoor_delta)
+    return None
+
+
+def _best_room_recommendation(summary: RecommendationSummary):
+    """Return the recommendation matching the summary's best room, if any."""
+
+    if not summary.best_room:
+        return None
+
+    for recommendation in summary.room_recommendations:
+        if recommendation.room_name == summary.best_room:
+            return recommendation
+    return summary.room_recommendations[0] if summary.room_recommendations else None
