@@ -25,7 +25,9 @@ from custom_components.ventwise.const import (
     CONF_ROOM_NAME,
     CONF_ROOM_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
@@ -147,7 +149,9 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
+    assert callable(room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C].__class__.__name__ == "Any"
+    assert callable(room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
@@ -156,7 +160,9 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
         CONF_ROOM_NAME,
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
+        CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+        CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
         CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
     ]
 
@@ -370,6 +376,9 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
                 CONF_ROOM_NAME: "  Bedroom  ",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
                 CONF_ROOM_HUMIDITY_ENTITY_ID: " ",
+                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
+                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: "23.5",
+                CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: False,
                 CONF_ROOM_START_ENTITY_ID: "automation.start_room",
                 CONF_ROOM_STOP_ENTITY_ID: "",
             },
@@ -379,6 +388,9 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
     assert data[CONF_ROOM_KIND] == "macro_room"
     assert data[CONF_ROOM_NAME] == "Bedroom"
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
+    assert data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED] is True
+    assert data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C] == 23.5
+    assert data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED] is False
     assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
     assert data[CONF_ROOM_STOP_ENTITY_ID] is None
 

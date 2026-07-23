@@ -278,6 +278,7 @@ def test_recommender_honors_room_humidity_override() -> None:
         room_id="room-1",
         name="Camera",
         indoor=RoomObservation(temperature_c=24.0, humidity_percent=80.0),
+        target_humidity_percent_override_enabled=True,
         target_humidity_percent_override=80.0,
     )
 
@@ -287,6 +288,25 @@ def test_recommender_honors_room_humidity_override() -> None:
     assert baseline_result.action == RecommendationAction.OPEN
     assert humid_result.action == RecommendationAction.CLOSE
     assert humid_result.room_recommendations[0].target_perceived_c == 22.0
+
+
+def test_recommender_ignores_disabled_room_overrides() -> None:
+    recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0, minimum_score=0.0))
+    outdoor = ComfortObservation(temperature_c=21.0, humidity_percent=20.0)
+
+    disabled_room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=24.0, humidity_percent=80.0),
+        target_temperature_c_override_enabled=False,
+        target_temperature_c_override=24.0,
+        target_humidity_percent_override_enabled=False,
+        target_humidity_percent_override=80.0,
+    )
+
+    result = recommender.evaluate([disabled_room], outdoor)
+
+    assert result.action == RecommendationAction.OPEN
 
 
 def test_recommender_penalizes_absurd_targets() -> None:

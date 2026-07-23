@@ -95,7 +95,9 @@
           "enabled": "Include this room",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override_enabled": "Use room comfort temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
@@ -104,7 +106,9 @@
           "enabled": "Turn this off if you do not want VentWise to consider this room.",
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort temperature.",
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
@@ -139,7 +143,9 @@
           "enabled": "Include this room",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override_enabled": "Use room comfort temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
@@ -148,7 +154,9 @@
           "enabled": "Turn this off if you do not want VentWise to consider this area.",
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort temperature.",
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
@@ -284,7 +292,9 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
+          "target_temperature_c_override_enabled": "Use room comfort temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
@@ -293,7 +303,9 @@
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort temperature.",
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
           "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
@@ -328,7 +340,9 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
+          "target_temperature_c_override_enabled": "Use room comfort temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override_enabled": "Use room comfort humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation"
@@ -337,7 +351,9 @@
           "name": "A friendly name for this larger area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort temperature.",
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
           "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."

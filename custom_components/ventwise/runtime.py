@@ -35,7 +35,9 @@ from .const import (
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
@@ -75,7 +77,9 @@ class RoomConfig:
     temperature_entity_id: str
     kind: str = "room"
     enabled: bool = True
+    target_temperature_c_override_enabled: bool = False
     target_temperature_c_override: float | None = None
+    target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
     start_entity_id: str | None = None
@@ -149,8 +153,22 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             name=str(room[CONF_ROOM_NAME]),
             temperature_entity_id=str(room[CONF_ROOM_TEMPERATURE_ENTITY_ID]),
             enabled=bool(room.get(CONF_ROOM_ENABLED, True)),
+            target_temperature_c_override_enabled=bool(
+                room.get(
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+                    room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C) is not None
+                    and str(room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)).strip() != "",
+                )
+            ),
             target_temperature_c_override=_float_or_none(
                 room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
+            ),
+            target_humidity_percent_override_enabled=bool(
+                room.get(
+                    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+                    room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE) is not None
+                    and str(room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)).strip() != "",
+                )
             ),
             target_humidity_percent_override=_float_or_none(
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
@@ -345,7 +363,9 @@ def build_room_profiles(
                 ),
                 kind=room.kind,
                 enabled=room.enabled,
+                target_temperature_c_override_enabled=room.target_temperature_c_override_enabled,
                 target_temperature_c_override=room.target_temperature_c_override,
+                target_humidity_percent_override_enabled=room.target_humidity_percent_override_enabled,
                 target_humidity_percent_override=room.target_humidity_percent_override,
             )
         )

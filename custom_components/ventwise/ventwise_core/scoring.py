@@ -54,12 +54,14 @@ class ComfortRecommender:
 
         target_temperature = (
             room.target_temperature_c_override
-            if room.target_temperature_c_override is not None
+            if room.target_temperature_c_override_enabled
+            and room.target_temperature_c_override is not None
             else self._config.target_temperature_c
         )
         target_humidity = (
             room.target_humidity_percent_override
-            if room.target_humidity_percent_override is not None
+            if room.target_humidity_percent_override_enabled
+            and room.target_humidity_percent_override is not None
             else self._config.target_humidity_percent
         )
         indoor_perceived = perceived_temperature(

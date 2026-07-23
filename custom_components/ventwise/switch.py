@@ -25,7 +25,14 @@ async def async_setup_entry(
         QuietHoursEnableSwitch(coordinator),
         NotificationEnableSwitch(coordinator),
     ]
-    entities.extend(RoomEnableSwitch(coordinator, room) for room in coordinator.config.rooms)
+    for room in coordinator.config.rooms:
+        entities.extend(
+            [
+                RoomEnableSwitch(coordinator, room),
+                RoomTargetTemperatureOverrideEnableSwitch(coordinator, room),
+                RoomTargetHumidityOverrideEnableSwitch(coordinator, room),
+            ]
+        )
     async_add_entities(entities)
 
 
@@ -127,3 +134,65 @@ class RoomEnableSwitch(VentWiseRoomEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_room_enabled(self.room.room_id or self.room.name, False)
+
+
+class RoomTargetTemperatureOverrideEnableSwitch(VentWiseRoomEntity, SwitchEntity):
+    """Enable or disable the room comfort temperature override."""
+
+    _attr_icon = "mdi:thermostat-box"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(
+            coordinator,
+            room,
+            "target_temperature_override_enabled",
+            f"Use {room.name} comfort temperature override",
+        )
+
+    @property
+    def is_on(self) -> bool:
+        return self.room.target_temperature_c_override_enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_target_temperature_override_enabled(
+            self.room.room_id or self.room.name,
+            True,
+        )
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_target_temperature_override_enabled(
+            self.room.room_id or self.room.name,
+            False,
+        )
+
+
+class RoomTargetHumidityOverrideEnableSwitch(VentWiseRoomEntity, SwitchEntity):
+    """Enable or disable the room comfort humidity override."""
+
+    _attr_icon = "mdi:water-percent"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(
+            coordinator,
+            room,
+            "target_humidity_override_enabled",
+            f"Use {room.name} comfort humidity override",
+        )
+
+    @property
+    def is_on(self) -> bool:
+        return self.room.target_humidity_percent_override_enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_target_humidity_override_enabled(
+            self.room.room_id or self.room.name,
+            True,
+        )
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_target_humidity_override_enabled(
+            self.room.room_id or self.room.name,
+            False,
+        )
