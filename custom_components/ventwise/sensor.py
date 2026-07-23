@@ -8,7 +8,13 @@ from homeassistant.core import HomeAssistant
 
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity, VentWiseRoomEntity
-from .runtime import RoomConfig, build_debug_attributes, find_room_recommendation, state_to_float
+from .runtime import (
+    RoomConfig,
+    build_debug_attributes,
+    find_room_recommendation,
+    room_target_temperature_c,
+    state_to_float,
+)
 from .ventwise_core import RecommendationAction
 
 
@@ -337,8 +343,7 @@ class RoomPerceivedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
-        return None if recommendation is None else recommendation.target_perceived_c
+        return room_target_temperature_c(self.room, self.coordinator.config)
 
 
 class RoomIndoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):

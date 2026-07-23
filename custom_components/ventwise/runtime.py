@@ -580,5 +580,16 @@ def find_room_recommendation(
             if recommendation.room_id == room.room_id:
                 return recommendation
         if recommendation.room_id is None and recommendation.room_name == room.name:
-            return recommendation
+                return recommendation
     return None
+
+
+def room_target_temperature_c(
+    room: RoomConfig,
+    config: IntegrationConfig,
+) -> float:
+    """Return the effective comfort temperature for a room."""
+
+    if room.target_temperature_c_override_enabled and room.target_temperature_c_override is not None:
+        return room.target_temperature_c_override
+    return config.target_temperature_c

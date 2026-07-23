@@ -35,6 +35,7 @@ from custom_components.ventwise.runtime import (
     dump_runtime_state,
     is_quiet_hours_active,
     load_runtime_state,
+    room_target_temperature_c,
     state_to_bool,
     state_to_float,
 )
@@ -313,6 +314,42 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
+
+
+def test_room_target_temperature_prefers_enabled_override() -> None:
+    config = build_integration_config(
+        {
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 24.0,
+                }
+            ],
+        }
+    )
+
+    assert room_target_temperature_c(config.rooms[0], config) == 24.0
+
+
+def test_room_target_temperature_falls_back_when_override_disabled() -> None:
+    config = build_integration_config(
+        {
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: False,
+                    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 24.0,
+                }
+            ],
+        }
+    )
+
+    assert room_target_temperature_c(config.rooms[0], config) == 22.0
 
 
 def test_runtime_state_round_trips_through_storage() -> None:
