@@ -47,6 +47,13 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._room_index = len(current_rooms)
         self._selected_room_index: int | None = None
 
+    def _language(self) -> str | None:
+        """Return the active HA language when available."""
+
+        hass = getattr(self, "hass", None)
+        config = getattr(hass, "config", None)
+        return getattr(config, "language", None)
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Show the options menu."""
 
@@ -306,7 +313,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 default_room,
                 self._room_index,
                 room_kind,
-                getattr(self.hass.config, "language", None),
+                self._language(),
             ),
             errors=errors,
             description_placeholders={
@@ -329,7 +336,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         """Return readable room labels for selection forms."""
 
         return [
-            self._room_selection_label(room, index, getattr(self.hass.config, "language", None))
+            self._room_selection_label(room, index, self._language())
             for index, room in enumerate(self._rooms)
         ]
 
