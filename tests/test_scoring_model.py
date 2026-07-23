@@ -147,20 +147,18 @@ def test_recommender_returns_none_for_quiet_hours() -> None:
     assert result.blocked_by == "quiet_hours"
 
 
-def test_recommender_prefers_the_best_weighted_room() -> None:
+def test_recommender_prefers_the_best_room_by_score() -> None:
     recommender = ComfortRecommender(
         ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
     )
     rooms = [
         RoomProfile(
             name="Studio",
-            indoor=RoomObservation(temperature_c=27.0, humidity_percent=55.0),
-            weight=3.0,
+            indoor=RoomObservation(temperature_c=30.0, humidity_percent=55.0),
         ),
         RoomProfile(
             name="Kitchen",
-            indoor=RoomObservation(temperature_c=29.5, humidity_percent=60.0),
-            weight=0.5,
+            indoor=RoomObservation(temperature_c=27.5, humidity_percent=60.0),
         ),
     ]
     outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)

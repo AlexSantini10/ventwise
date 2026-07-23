@@ -103,7 +103,6 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -112,7 +111,6 @@
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "weight": "Leave the default if you are not sure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
           "pause_entity_id": "Optional. Select the automation that should pause this room."
@@ -125,7 +123,6 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -134,7 +131,6 @@
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "weight": "Leave the default if you are not sure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
           "pause_entity_id": "Optional. Select the automation that should pause this room."
@@ -147,7 +143,6 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -156,7 +151,6 @@
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "weight": "Leave the default if you are not sure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
           "pause_entity_id": "Optional. Select the automation that should pause this area."
@@ -169,7 +163,6 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -178,7 +171,6 @@
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "weight": "Leave the default if you are not sure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
           "pause_entity_id": "Optional. Select the automation that should pause this area."
@@ -322,7 +314,6 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -331,7 +322,6 @@
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "weight": "Used to balance this room against others. Keep the default if you are unsure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
           "pause_entity_id": "Optional. Select the automation that should pause this room."
@@ -344,7 +334,6 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -353,7 +342,6 @@
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "weight": "Used to balance this room against others. Keep the default if you are unsure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
           "pause_entity_id": "Optional. Select the automation that should pause this room."
@@ -366,7 +354,6 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -375,7 +362,6 @@
           "name": "A friendly name for this larger area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "weight": "Used to balance this grouped area against others. Keep the default if you are unsure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
           "pause_entity_id": "Optional. Select the automation that should pause this area."
@@ -388,7 +374,6 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "weight": "Room weight",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
@@ -397,7 +382,6 @@
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "weight": "Used to balance this grouped area against others. Keep the default if you are unsure.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
           "pause_entity_id": "Optional. Select the automation that should pause this area."

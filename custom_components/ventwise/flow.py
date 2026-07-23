@@ -42,7 +42,6 @@ from .const import (
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
-    CONF_ROOM_WEIGHT,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
@@ -53,12 +52,9 @@ from .const import (
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
     DEFAULT_QUIET_HOURS_START,
-    DEFAULT_ROOM_WEIGHT,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
-    MAX_ROOM_WEIGHT,
-    MIN_ROOM_WEIGHT,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
@@ -274,10 +270,6 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
             ),
-            vol.Optional(
-                CONF_ROOM_WEIGHT,
-                default=defaults.get(CONF_ROOM_WEIGHT, DEFAULT_ROOM_WEIGHT),
-            ): vol.All(vol.Coerce(float), vol.Range(min=MIN_ROOM_WEIGHT, max=MAX_ROOM_WEIGHT)),
             **_optional_selector_field(
                 CONF_ROOM_START_ENTITY_ID,
                 EntitySelector(EntitySelectorConfig(domain="automation")),
@@ -418,12 +410,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     data[CONF_ROOM_NAME] = str(data[CONF_ROOM_NAME]).strip()
     if not data[CONF_ROOM_NAME]:
         raise ConfigValidationError(CONF_ROOM_NAME)
-    data[CONF_ROOM_WEIGHT] = _normalize_float(
-        data.get(CONF_ROOM_WEIGHT),
-        CONF_ROOM_WEIGHT,
-        MIN_ROOM_WEIGHT,
-        MAX_ROOM_WEIGHT,
-    )
     _normalize_optional_entities(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,

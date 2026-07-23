@@ -28,7 +28,6 @@ from custom_components.ventwise.const import (
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
-    CONF_ROOM_WEIGHT,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
@@ -146,7 +145,6 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
-    assert room_schema.schema[CONF_ROOM_WEIGHT].__class__.__name__ == "All"
     assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_PAUSE_ENTITY_ID].__class__.__name__ == "Any"
@@ -348,7 +346,6 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
             CONF_ROOM_NAME: "  Bedroom  ",
             CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
             CONF_ROOM_HUMIDITY_ENTITY_ID: " ",
-            CONF_ROOM_WEIGHT: 1.25,
             CONF_ROOM_START_ENTITY_ID: "automation.start_room",
             CONF_ROOM_STOP_ENTITY_ID: "",
             CONF_ROOM_PAUSE_ENTITY_ID: "automation.room_pause",
@@ -358,7 +355,6 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
 
     assert data[CONF_ROOM_KIND] == "macro_room"
     assert data[CONF_ROOM_NAME] == "Bedroom"
-    assert data[CONF_ROOM_WEIGHT] == 1.25
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
     assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
     assert data[CONF_ROOM_STOP_ENTITY_ID] is None
@@ -384,7 +380,6 @@ def test_normalize_room_config_rejects_invalid_temperature_entity() -> None:
             {
                 CONF_ROOM_NAME: "Bedroom",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "switch.bedroom_temp",
-                CONF_ROOM_WEIGHT: 1.0,
             },
             "room",
         )
@@ -398,7 +393,6 @@ def test_normalize_room_config_accepts_input_number_temperature_and_humidity() -
             CONF_ROOM_NAME: "Bedroom",
             CONF_ROOM_TEMPERATURE_ENTITY_ID: "input_number.bedroom_temp",
             CONF_ROOM_HUMIDITY_ENTITY_ID: "input_number.bedroom_humidity",
-            CONF_ROOM_WEIGHT: 1.0,
         },
         "room",
     )
@@ -414,26 +408,11 @@ def test_normalize_room_config_rejects_non_automation_room_actions() -> None:
                 CONF_ROOM_NAME: "Bedroom",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
                 CONF_ROOM_START_ENTITY_ID: "switch.open_room",
-                CONF_ROOM_WEIGHT: 1.0,
             },
             "room",
         )
 
     assert exc_info.value.field == CONF_ROOM_START_ENTITY_ID
-
-
-def test_normalize_room_config_rejects_invalid_weight() -> None:
-    with pytest.raises(ConfigValidationError) as exc_info:
-        normalize_room_config(
-            {
-                CONF_ROOM_NAME: "Bedroom",
-                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-                CONF_ROOM_WEIGHT: 0.01,
-            },
-            "room",
-        )
-
-    assert exc_info.value.field == CONF_ROOM_WEIGHT
 
 
 def test_split_config_data_separates_rooms_from_global_settings() -> None:
@@ -466,7 +445,6 @@ def test_split_config_data_returns_copies_of_rooms() -> None:
             {
                 CONF_ROOM_NAME: "Living room",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
-                CONF_ROOM_WEIGHT: 2.0,
             }
         ]
     }

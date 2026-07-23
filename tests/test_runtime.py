@@ -19,7 +19,6 @@ from custom_components.ventwise.const import (
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
-    CONF_ROOM_WEIGHT,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
@@ -86,7 +85,6 @@ def test_build_runtime_config_and_room_profiles() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
-                    CONF_ROOM_WEIGHT: 1.5,
                 }
             ],
         }
@@ -109,7 +107,6 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert outdoor.temperature_c == 20.0
     assert len(rooms) == 1
     assert rooms[0].name == "Camera"
-    assert rooms[0].weight == 1.5
 
 
 def test_build_room_profiles_skips_missing_sensor_values() -> None:
@@ -121,7 +118,6 @@ def test_build_room_profiles_skips_missing_sensor_values() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
-                    CONF_ROOM_WEIGHT: 1.0,
                 }
             ],
         }
@@ -141,7 +137,6 @@ def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_miss
                 {
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
-                    CONF_ROOM_WEIGHT: 1.0,
                 }
             ],
         }
@@ -172,7 +167,6 @@ def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> 
                 {
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
-                    CONF_ROOM_WEIGHT: 1.0,
                 }
             ],
         }
@@ -201,7 +195,6 @@ def test_build_room_profiles_skips_unknown_room_temperature() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
-                    CONF_ROOM_WEIGHT: 1.0,
                 }
             ],
         }
@@ -234,7 +227,6 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
-                    CONF_ROOM_WEIGHT: 1.5,
                 }
             ],
         }
@@ -244,7 +236,6 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         RoomProfile(
             name="Camera",
             indoor=RoomObservation(temperature_c=26.0, humidity_percent=60.0),
-            weight=1.5,
         )
     ]
     outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
@@ -269,7 +260,6 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     assert attributes["summary_best_room"] == "Camera"
     assert attributes["notification_allowed"] is True
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
-    assert attributes["room_recommendations"][0]["weight"] == 1.5
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
 

@@ -127,13 +127,8 @@ class ComfortRecommender:
                 reason="No rooms configured.",
             )
 
-        best_room = max(
-            room_recommendations,
-            key=lambda recommendation: recommendation.score * self._room_weight(
-                rooms, recommendation.room_name
-            ),
-        )
-        weighted_score = best_room.score * self._room_weight(rooms, best_room.room_name)
+        best_room = max(room_recommendations, key=lambda recommendation: recommendation.score)
+        weighted_score = best_room.score
         if best_room.action == RecommendationAction.OPEN and outdoor.temperature_c > self._config.soft_outdoor_threshold_c:
             weighted_score *= self._config.soft_threshold_penalty
 
@@ -215,12 +210,6 @@ class ComfortRecommender:
             open_score += self._config.open_bias
             close_score += self._config.close_bias
         return self._clamp(open_score), self._clamp(close_score)
-
-    def _room_weight(self, rooms: Sequence[RoomProfile], room_name: str) -> float:
-        for room in rooms:
-            if room.name == room_name:
-                return room.weight
-        return 1.0
 
     @staticmethod
     def _clamp(value: float) -> float:

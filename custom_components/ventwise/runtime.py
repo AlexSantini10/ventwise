@@ -39,7 +39,6 @@ from .const import (
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
-    CONF_ROOM_WEIGHT,
     CONF_ROOMS,
     CONF_RUNTIME_STATE,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
@@ -55,7 +54,6 @@ from .const import (
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
     DEFAULT_QUIET_HOURS_START,
-    DEFAULT_ROOM_WEIGHT,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
@@ -73,7 +71,6 @@ class RoomConfig:
     temperature_entity_id: str
     kind: str = "room"
     humidity_entity_id: str | None = None
-    weight: float = DEFAULT_ROOM_WEIGHT
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
     pause_entity_id: str | None = None
@@ -139,7 +136,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             name=str(room[CONF_ROOM_NAME]),
             temperature_entity_id=str(room[CONF_ROOM_TEMPERATURE_ENTITY_ID]),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
-            weight=float(room.get(CONF_ROOM_WEIGHT, DEFAULT_ROOM_WEIGHT)),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
             pause_entity_id=_string_or_none(room.get(CONF_ROOM_PAUSE_ENTITY_ID)),
@@ -322,7 +318,6 @@ def build_room_profiles(
                     temperature_c=temperature,
                     humidity_percent=humidity,
                 ),
-                weight=room.weight,
             )
         )
 
@@ -442,7 +437,6 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
     return {
         "room_name": room.name,
         "kind": room.kind,
-        "weight": room.weight,
         "action": recommendation.action.value,
         "score": recommendation.score,
         "reason": recommendation.reason,
