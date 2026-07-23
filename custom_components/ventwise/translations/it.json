@@ -7,14 +7,17 @@
         "description": "Scegli la sorgente meteo, imposta i valori di comfort interni e, se vuoi, seleziona uno o più dispositivi di notifica.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
-          "target_temperature_c": "Temperatura di comfort interna",
-          "target_humidity_percent": "Umidità di comfort interna",
-          "stability_minutes": "Finestra di stabilità (minuti)",
+          "target_temperature_c": "Temperatura di comfort",
+          "auto_comfort_temperature": "Temperatura di comfort automatica",
+          "target_humidity_percent": "Umidità di comfort",
+          "stability_minutes": "Finestra di stabilità della raccomandazione (minuti)",
           "notification_device_id": "Dispositivi da notificare"
         },
         "data_description": {
+          "auto_comfort_temperature": "Attiva questa opzione per far derivare a VentWise il target di comfort attivo dalla raccomandazione corrente.",
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
           "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
+          "auto_comfort_temperature": "Lascia che VentWise regoli automaticamente il target di comfort effettivo in base all'equilibrio tra stanza e esterno.",
           "target_humidity_percent": "Imposta l'umidità di comfort interna che VentWise deve cercare di raggiungere.",
           "stability_minutes": "Per quanto tempo il suggerimento deve restare uguale prima che VentWise agisca. Se non sei sicuro, lascia il valore predefinito.",
           "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise."
@@ -90,10 +93,12 @@
         "title": "Aggiungi stanza",
         "description": "Crea una stanza normale con le proprie finestre. Puoi anche impostare un override della temperatura di comfort per questa stanza.",
         "data": {
-          "enabled": "Includi questa stanza",
+          "enabled": "Abilita questa stanza",
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
+          "target_temperature_c_override_enabled": "Abilita override temperatura stanza",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
+          "target_humidity_percent_override_enabled": "Abilita override umidità stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "start_entity_id": "Automazione apertura finestre",
           "stop_entity_id": "Automazione chiusura finestre"
@@ -102,7 +107,9 @@
           "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa stanza.",
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa stanza.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza."
@@ -137,7 +144,9 @@
           "enabled": "Includi questa stanza",
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
+          "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
+          "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "start_entity_id": "Automazione apertura finestre",
           "stop_entity_id": "Automazione chiusura finestre"
@@ -146,7 +155,9 @@
           "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa area.",
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa area.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area."
@@ -241,6 +252,7 @@
         "title": "Impostazioni comfort",
         "description": "Rifinisci i valori di comfort usati da VentWise.",
         "data": {
+          "auto_comfort_temperature": "Temperatura di comfort automatica",
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
           "cooldown_minutes": "Pausa notifiche (minuti)"
         },
@@ -294,7 +306,9 @@
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
+          "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
+          "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
           "target_humidity_percent_override": "Override umidità di comfort (%) stanza",
           "start_entity_id": "Automazione apertura finestre",
           "stop_entity_id": "Automazione chiusura finestre"
@@ -303,7 +317,9 @@
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa stanza.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa stanza.",
           "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa stanza invece di quella globale.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza."
@@ -338,7 +354,9 @@
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
+          "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
+          "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
           "target_humidity_percent_override": "Override umidità di comfort (%) stanza",
           "start_entity_id": "Automazione apertura finestre",
           "stop_entity_id": "Automazione chiusura finestre"
@@ -347,7 +365,9 @@
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa area.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa area.",
           "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa area invece di quella globale.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area."

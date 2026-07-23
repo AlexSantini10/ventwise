@@ -11,6 +11,7 @@ import pytest
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ENABLED,
     CONF_NOTIFICATION_ENABLED,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -284,3 +285,119 @@ def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
     assert snapshot.notification_allowed is False
     assert snapshot.cooldown_active is True
     assert snapshot.weather_condition == "sunny"
+
+
+def test_coordinator_uses_automatic_comfort_temperature_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="28.0"),
+        "sensor.room_humidity": SimpleNamespace(state="50.0"),
+    }
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_AUTO_COMFORT_TEMPERATURE: True,
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_STABILITY_MINUTES: 10,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                }
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+
+    snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert snapshot.target_perceived_c == pytest.approx(22.5)
+    assert snapshot.summary.action.value == "open"
+
+
+def test_coordinator_keeps_global_outdoor_values_without_rooms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+    }
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+
+    snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert snapshot.summary.reason == "No enabled rooms configured."
+    assert snapshot.outdoor_temperature_c == 20.0
+    assert snapshot.outdoor_humidity_percent == 50.0
+    assert snapshot.wind_speed_m_s == 1.0
+
+
+def test_coordinator_averages_global_perceived_indoor_across_rooms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_1_temp": SimpleNamespace(state="24.0"),
+        "sensor.room_1_humidity": SimpleNamespace(state="50.0"),
+        "sensor.room_2_temp": SimpleNamespace(state="28.0"),
+        "sensor.room_2_humidity": SimpleNamespace(state="50.0"),
+    }
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera 1",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_1_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_1_humidity",
+                },
+                {
+                    CONF_ROOM_NAME: "Camera 2",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_2_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_2_humidity",
+                },
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+
+    snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert snapshot.active_indoor_perceived_c == pytest.approx(26.0)

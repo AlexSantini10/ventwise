@@ -1,0 +1,377 @@
+{
+  "title": "VentWise",
+  "config": {
+    "step": {
+      "user": {
+        "title": "初始设置",
+        "description": "选择天气来源，设置室内舒适值，如果需要，还可以选择一个或多个通知设备。",
+        "data": {
+          "outdoor_weather_entity_id": "天气来源",
+          "target_temperature_c": "室内舒适温度",
+          "target_humidity_percent": "室内舒适湿度",
+          "stability_minutes": "稳定窗口（分钟）",
+          "notification_device_id": "通知设备"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
+          "target_temperature_c": "设置你在家时感觉舒适的室内温度。",
+          "target_humidity_percent": "设置你在家时感觉舒适的室内湿度。",
+          "stability_minutes": "VentWise 在采取行动前，建议需要保持相同多久。如果不确定，就保留默认值。",
+          "notification_device_id": "可选。选择一个或多个接收 VentWise 通知的设备。"
+        }
+      },
+      "outdoor": {
+        "title": "室外数据",
+        "description": "使用复选框决定哪些室外测量值来自 Home Assistant 实体，而不是天气预报。",
+        "data": {
+          "outdoor_temperature_override": "使用手动室外温度",
+          "outdoor_humidity_override": "使用手动室外湿度",
+          "wind_speed_override": "使用手动室外风速"
+        },
+        "data_description": {
+          "outdoor_temperature_override": "启用后，输入数值温度实体，而不是使用天气预报。",
+          "outdoor_humidity_override": "启用后，输入数值湿度实体，而不是使用天气预报。",
+          "wind_speed_override": "启用后，输入数值风速实体，而不是使用天气预报。"
+        }
+      },
+      "outdoor_overrides": {
+        "title": "手动室外值",
+        "description": "只填写你通过复选框启用的字段。",
+        "data": {
+          "outdoor_temperature_entity_id": "手动室外温度",
+          "outdoor_humidity_entity_id": "手动室外湿度",
+          "wind_speed_entity_id": "手动室外风速"
+        },
+        "data_description": {
+          "outdoor_temperature_entity_id": "仅在启用手动温度时必填。",
+          "outdoor_humidity_entity_id": "仅在启用手动湿度时必填。",
+          "wind_speed_entity_id": "仅在启用手动风速时必填。"
+        }
+      },
+      "rooms": {
+        "title": "房间",
+        "description": "添加、编辑或删除共享同一空气的房间和宏房间。",
+        "menu_options": {
+          "add_room": "添加房间",
+          "add_macro_room": "添加宏房间",
+          "edit_room": "编辑房间",
+          "remove_room": "删除房间",
+          "finish": "完成"
+        },
+        "menu_option_descriptions": {
+          "add_room": "为一个独立空间创建一个房间。",
+          "add_macro_room": "为共享同一扇窗的空间创建一个分组区域。",
+          "edit_room": "更新现有的房间或分组区域。",
+          "remove_room": "删除现有的房间或分组区域。",
+          "finish": "先跳过房间设置并保存。"
+        }
+      },
+      "edit_room_select": {
+        "title": "编辑房间",
+        "description": "选择要更新的房间。",
+        "data": {
+          "room_selection": "房间"
+        },
+        "data_description": {
+          "room_selection": "选择 VentWise 中已保存的一个房间。"
+        }
+      },
+      "remove_room_select": {
+        "title": "删除房间",
+        "description": "选择要删除的房间。",
+        "data": {
+          "room_selection": "房间"
+        },
+        "data_description": {
+          "room_selection": "选择 VentWise 中已保存的一个房间。"
+        }
+      },
+      "add_room": {
+        "title": "添加房间",
+        "description": "创建一个带有自己窗户的普通房间。你也可以为此房间设置舒适温度覆盖值。",
+        "data": {
+          "enabled": "包含此房间",
+          "name": "房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "humidity_entity_id": "室内湿度传感器",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
+          "name": "一个容易识别的名字，例如卧室或书房。",
+          "temperature_entity_id": "选择房间温度传感器。",
+          "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "humidity_entity_id": "可选。选择房间湿度传感器。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。"
+        }
+      },
+      "edit_room_form": {
+        "title": "编辑房间",
+        "description": "更新所选带窗户的房间。你也可以修改该房间的舒适温度覆盖值。",
+        "data": {
+          "enabled": "包含此房间",
+          "name": "房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "humidity_entity_id": "室内湿度传感器",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
+          "name": "一个容易识别的名字，例如卧室或书房。",
+          "temperature_entity_id": "选择房间温度传感器。",
+          "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "humidity_entity_id": "可选。选择房间湿度传感器。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。"
+        }
+      },
+      "add_macro_room": {
+        "title": "添加宏房间",
+        "description": "为共享同一扇窗的空间创建一个分组区域。你也可以为该区域设置舒适温度覆盖值。",
+        "data": {
+          "enabled": "包含此房间",
+          "name": "宏房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "humidity_entity_id": "室内湿度传感器",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
+          "name": "一个容易识别的名字，例如楼上或客厅区域。",
+          "temperature_entity_id": "选择该区域的主要温度传感器。",
+          "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "humidity_entity_id": "可选。选择该区域的湿度传感器。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。"
+        }
+      },
+      "edit_macro_room_form": {
+        "title": "编辑宏房间",
+        "description": "更新所选共享同一扇窗的较大区域。你也可以修改该区域的舒适温度覆盖值。",
+        "data": {
+          "enabled": "包含此房间",
+          "name": "宏房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "humidity_entity_id": "室内湿度传感器",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
+          "name": "一个容易识别的名字，例如楼上或客厅区域。",
+          "temperature_entity_id": "选择该区域的主要温度传感器。",
+          "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "humidity_entity_id": "可选。选择该区域的湿度传感器。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。"
+        }
+      }
+    },
+    "error": {
+      "invalid_input": "一个或多个值无效。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "调整 VentWise",
+        "description": "选择你想编辑的内容。",
+        "menu_options": {
+          "basic": "基础设置",
+          "outdoor": "室外数据",
+          "advanced": "舒适设置",
+          "rooms": "房间"
+        },
+        "menu_option_descriptions": {
+          "basic": "天气来源和通知设备。",
+          "outdoor": "用复选框为每个室外参数选择预报或手动值。",
+          "advanced": "舒适值和调节参数。",
+          "rooms": "添加房间和宏房间。"
+        }
+      },
+      "outdoor": {
+        "title": "室外数据",
+        "description": "使用复选框决定哪些室外测量值来自 Home Assistant 实体，而不是天气预报。",
+        "data": {
+          "outdoor_temperature_override": "使用手动室外温度",
+          "outdoor_humidity_override": "使用手动室外湿度",
+          "wind_speed_override": "使用手动室外风速"
+        },
+        "data_description": {
+          "outdoor_temperature_override": "启用后，输入手动温度而不是使用天气预报。",
+          "outdoor_humidity_override": "启用后，输入手动湿度而不是使用天气预报。",
+          "wind_speed_override": "启用后，输入手动风速而不是使用天气预报。"
+        }
+      },
+      "basic": {
+        "title": "基础设置",
+        "description": "把日常控制放在这里。",
+        "data": {
+          "outdoor_weather_entity_id": "天气来源",
+          "notification_device_id": "通知设备"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
+          "notification_device_id": "可选。选择一个或多个接收通知的设备。"
+        }
+      },
+      "advanced": {
+        "title": "舒适设置",
+        "description": "微调 VentWise 使用的舒适值。",
+        "data": {
+          "soft_outdoor_threshold_c": "室外舒适阈值",
+          "cooldown_minutes": "通知冷却时间（分钟）"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "高于这个室外温度时，开窗的价值会更低。",
+          "cooldown_minutes": "VentWise 在再次发送相同通知前等待的时间。"
+        }
+      },
+      "rooms": {
+        "title": "房间",
+        "description": "为共享同一空气的空间添加、编辑或删除房间和宏房间。",
+        "menu_options": {
+          "add_room": "添加房间",
+          "add_macro_room": "添加宏房间",
+          "edit_room": "编辑房间",
+          "remove_room": "删除房间",
+          "finish": "完成"
+        },
+        "menu_option_descriptions": {
+          "add_room": "为一个独立空间创建一个房间。",
+          "add_macro_room": "为共享同一扇窗的空间创建一个分组区域。",
+          "edit_room": "更新现有的房间或分组区域。",
+          "remove_room": "删除现有的房间或分组区域。",
+          "finish": "先跳过房间并保存设置。"
+        }
+      },
+      "edit_room_select": {
+        "title": "编辑房间",
+        "description": "选择要更新的房间。",
+        "data": {
+          "room_selection": "房间"
+        },
+        "data_description": {
+          "room_selection": "从 VentWise 已保存的房间中选择一个。"
+        }
+      },
+      "remove_room_select": {
+        "title": "删除房间",
+        "description": "选择要删除的房间。",
+        "data": {
+          "room_selection": "房间"
+        },
+        "data_description": {
+          "room_selection": "从 VentWise 已保存的房间中选择一个。"
+        }
+      },
+      "add_room": {
+        "title": "添加房间",
+        "description": "创建一个标准房间。",
+        "data": {
+          "name": "房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "humidity_entity_id": "室内湿度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "name": "一个容易识别的名字，例如卧室、书房或办公室。",
+          "temperature_entity_id": "选择房间温度传感器。",
+          "humidity_entity_id": "可选。选择房间湿度传感器。",
+          "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override": "可选。使用该房间专属的舒适湿度百分比，而不是全局值。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。"
+        }
+      },
+      "edit_room_form": {
+        "title": "编辑房间",
+        "description": "更新所选标准房间。",
+        "data": {
+          "name": "房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "humidity_entity_id": "室内湿度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "name": "一个容易识别的名字，例如卧室、书房或办公室。",
+          "temperature_entity_id": "选择房间温度传感器。",
+          "humidity_entity_id": "可选。选择房间湿度传感器。",
+          "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override": "可选。使用该房间专属的舒适湿度百分比，而不是全局值。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。"
+        }
+      },
+      "add_macro_room": {
+        "title": "添加宏房间",
+        "description": "创建一个更大的分组区域，像房间一样工作。",
+        "data": {
+          "name": "宏房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "humidity_entity_id": "室内湿度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "name": "一个容易识别的名字，例如楼上或客厅区域。",
+          "temperature_entity_id": "选择该区域的主要温度传感器。",
+          "humidity_entity_id": "可选。选择该区域的湿度传感器。",
+          "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override": "可选。使用该区域专属的舒适湿度百分比，而不是全局值。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。"
+        }
+      },
+      "edit_macro_room_form": {
+        "title": "编辑宏房间",
+        "description": "更新所选更大区域。",
+        "data": {
+          "name": "宏房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "humidity_entity_id": "室内湿度传感器",
+          "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化"
+        },
+        "data_description": {
+          "name": "一个容易识别的名字，例如楼上或客厅区域。",
+          "temperature_entity_id": "选择该区域的主要温度传感器。",
+          "humidity_entity_id": "可选。选择该区域的湿度传感器。",
+          "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override": "可选。使用该区域专属的舒适湿度百分比，而不是全局值。",
+          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。"
+        }
+      }
+    },
+    "error": {
+      "invalid_input": "一个或多个值无效。"
+    }
+  },
+  "selector": {
+    "outdoor_source": {
+      "options": {
+        "forecast": "使用预报",
+        "override": "使用覆盖值"
+      }
+    }
+  }
+}

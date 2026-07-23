@@ -40,7 +40,9 @@ class RoomProfile:
     kind: str = "room"
     room_id: str | None = None
     enabled: bool = True
+    target_temperature_c_override_enabled: bool = False
     target_temperature_c_override: float | None = None
+    target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
 
 
