@@ -48,5 +48,5 @@ coverage report
 
 - the core package should remain versioned through `pyproject.toml`
 - HACS publication continues to use the integration manifest version
-- experimental builds use prerelease tags derived from the manifest version and a numeric `b` suffix
+  - experimental builds use prerelease tags derived from the manifest version and a zero-padded numeric `b` suffix
 - release automation is handled by GitHub Actions

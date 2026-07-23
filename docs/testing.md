@@ -52,7 +52,7 @@ installed in CI.
 - inside more humid, outside drier
 - windy cold outside with warm inside
 - neutral conditions near the target
-- multi-room evaluation with different room weights
+- multi-room evaluation with rooms treated independently
 - quiet hours and cooldown gate the recommendation
 - persisted state is reloaded after restart
 - debug attributes expose summary and per-room details
@@ -64,6 +64,20 @@ pytest
 coverage run -m pytest
 coverage report
 ```
+
+## Local Home Assistant Sandbox
+
+Use the local Docker sandbox to test the integration without reinstalling from
+HACS on every run.
+
+```powershell
+python ha-local-docker-test.py
+```
+
+The script keeps Home Assistant runtime data outside the repository under
+`%LOCALAPPDATA%\VentWise-HA-Test` and bind-mounts
+`custom_components\ventwise` read-only into the container. The repo tree stays
+clean for commits.
 
 ## Expectations
 
