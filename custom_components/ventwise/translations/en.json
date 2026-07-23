@@ -395,4 +395,105 @@
       }
     }
   }
+  ,
+  "entity": {
+    "binary_sensor": {
+      "notifications_currently_allowed": {
+        "name": "Notifications currently allowed"
+      },
+      "quiet_hours_active": {
+        "name": "Quiet hours active"
+      },
+      "notification_cooldown_active": {
+        "name": "Notification cooldown active"
+      },
+      "recommendation_active": {
+        "name": "Recommendation active"
+      }
+    },
+    "number": {
+      "comfort_temperature": {
+        "name": "Comfort temperature"
+      },
+      "comfort_humidity": {
+        "name": "Comfort humidity"
+      },
+      "recommendation_stability_window": {
+        "name": "Recommendation stability window"
+      },
+      "temperature_override": {
+        "name": "Temperature override"
+      },
+      "humidity_override": {
+        "name": "Humidity override"
+      }
+    },
+    "sensor": {
+      "weather_condition": {
+        "name": "Weather condition"
+      },
+      "average_perceived_indoor_temperature": {
+        "name": "Average perceived indoor temperature"
+      },
+      "perceived_outdoor_temperature": {
+        "name": "Perceived outdoor temperature"
+      },
+      "effective_comfort_temperature": {
+        "name": "Effective comfort temperature"
+      },
+      "suggested_comfort_temperature": {
+        "name": "Suggested comfort temperature"
+      },
+      "outdoor_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "outdoor_humidity": {
+        "name": "Outdoor humidity"
+      },
+      "wind_speed": {
+        "name": "Outdoor wind speed"
+      },
+      "recommendation": {
+        "name": "Recommendation"
+      },
+      "recommendation_score": {
+        "name": "Recommendation score"
+      },
+      "recommendation_reason": {
+        "name": "Recommendation reason"
+      },
+      "perceived_indoor_temperature": {
+        "name": "Perceived indoor temperature"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "indoor_humidity": {
+        "name": "Indoor humidity"
+      }
+    },
+    "switch": {
+      "integration_enabled": {
+        "name": "Integration enabled"
+      },
+      "notifications_enabled": {
+        "name": "Notifications enabled"
+      },
+      "automatic_comfort_temperature": {
+        "name": "Automatic comfort temperature"
+      },
+      "quiet_hours_enabled": {
+        "name": "Quiet hours enabled"
+      },
+      "enabled": {
+        "name": "Enabled"
+      },
+      "temperature_override_enabled": {
+        "name": "Temperature override enabled"
+      },
+      "humidity_override_enabled": {
+        "name": "Humidity override enabled"
+      }
+    }
+  }
 }

@@ -26,6 +26,7 @@ from .flow import (
     build_outdoor_override_schema,
     build_outdoor_source_schema,
     build_room_schema,
+    _localized_room_kind_label,
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_advanced_config,
@@ -301,7 +302,12 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._room_index = room_index if room_index is not None else len(self._rooms)
         return self.async_show_form(
             step_id=step_id or ("add_room" if room_kind == "room" else "add_macro_room"),
-            data_schema=build_room_schema(default_room, self._room_index, room_kind),
+            data_schema=build_room_schema(
+                default_room,
+                self._room_index,
+                room_kind,
+                getattr(self.hass.config, "language", None),
+            ),
             errors=errors,
             description_placeholders={
                 "current_room": str(self._room_index + 1),
@@ -322,7 +328,10 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
     def _room_selection_options(self) -> list[str]:
         """Return readable room labels for selection forms."""
 
-        return [self._room_selection_label(room, index) for index, room in enumerate(self._rooms)]
+        return [
+            self._room_selection_label(room, index, getattr(self.hass.config, "language", None))
+            for index, room in enumerate(self._rooms)
+        ]
 
     def _room_selection_index(self, room_label: str) -> int:
         """Resolve a selected room label back to its index."""
@@ -331,11 +340,12 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return options.index(room_label)
 
     @staticmethod
-    def _room_selection_label(room: dict[str, Any], index: int) -> str:
+    def _room_selection_label(room: dict[str, Any], index: int, language: str | None = None) -> str:
         """Build a stable room label for dropdowns."""
 
-        name = str(room.get(CONF_ROOM_NAME, f"Room {index + 1}")).strip()
-        kind = str(room.get(CONF_ROOM_KIND, "room")).replace("_", " ")
+        kind_value = str(room.get(CONF_ROOM_KIND, "room"))
+        name = str(room.get(CONF_ROOM_NAME, f"{_localized_room_kind_label(kind_value, language)} {index + 1}")).strip()
+        kind = _localized_room_kind_label(kind_value, language)
         return f"{index + 1}. {name} ({kind})"
 
     def _result_data(self) -> dict[str, Any]:

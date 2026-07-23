@@ -43,7 +43,7 @@ class MasterEnableSwitch(VentWiseEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "master_enable", "Integration enabled")
+        super().__init__(coordinator, "master_enable", "integration_enabled")
 
     @property
     def is_on(self) -> bool:
@@ -63,7 +63,7 @@ class NotificationEnableSwitch(VentWiseEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "notification_enable", "Notifications enabled")
+        super().__init__(coordinator, "notification_enable", "notifications_enabled")
 
     @property
     def is_on(self) -> bool:
@@ -83,7 +83,7 @@ class AutomaticComfortTemperatureSwitch(VentWiseEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "auto_comfort_temperature", "Adaptive comfort temperature")
+        super().__init__(coordinator, "auto_comfort_temperature", "automatic_comfort_temperature")
 
     @property
     def is_on(self) -> bool:
@@ -103,7 +103,7 @@ class QuietHoursEnableSwitch(VentWiseEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours_enable", "Quiet hours enabled")
+        super().__init__(coordinator, "quiet_hours_enable", "quiet_hours_enabled")
 
     @property
     def is_on(self) -> bool:
@@ -123,7 +123,7 @@ class RoomEnableSwitch(VentWiseRoomEntity, SwitchEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
-        super().__init__(coordinator, room, "enabled", f"Enable {room.name}")
+        super().__init__(coordinator, room, "enabled", "enabled")
 
     @property
     def is_on(self) -> bool:
@@ -147,7 +147,7 @@ class RoomTargetTemperatureOverrideEnableSwitch(VentWiseRoomEntity, SwitchEntity
             coordinator,
             room,
             "target_temperature_override_enabled",
-            f"{room.name} temperature override enabled",
+            "temperature_override_enabled",
         )
 
     @property
@@ -178,7 +178,7 @@ class RoomTargetHumidityOverrideEnableSwitch(VentWiseRoomEntity, SwitchEntity):
             coordinator,
             room,
             "target_humidity_override_enabled",
-            f"{room.name} humidity override enabled",
+            "humidity_override_enabled",
         )
 
     @property

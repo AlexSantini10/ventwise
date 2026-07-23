@@ -373,5 +373,105 @@
         "override": "Использовать override"
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "notifications_currently_allowed": {
+        "name": "Уведомления сейчас разрешены"
+      },
+      "quiet_hours_active": {
+        "name": "Активен режим тишины"
+      },
+      "notification_cooldown_active": {
+        "name": "Активна пауза уведомлений"
+      },
+      "recommendation_active": {
+        "name": "Рекомендация активна"
+      }
+    },
+    "number": {
+      "comfort_temperature": {
+        "name": "Комфортная температура"
+      },
+      "comfort_humidity": {
+        "name": "Комфортная влажность"
+      },
+      "recommendation_stability_window": {
+        "name": "Окно стабильности рекомендации"
+      },
+      "temperature_override": {
+        "name": "Override температуры"
+      },
+      "humidity_override": {
+        "name": "Override влажности"
+      }
+    },
+    "sensor": {
+      "weather_condition": {
+        "name": "Погодные условия"
+      },
+      "average_perceived_indoor_temperature": {
+        "name": "Средняя воспринимаемая внутренняя температура"
+      },
+      "perceived_outdoor_temperature": {
+        "name": "Воспринимаемая наружная температура"
+      },
+      "effective_comfort_temperature": {
+        "name": "Фактическая комфортная температура"
+      },
+      "suggested_comfort_temperature": {
+        "name": "Предлагаемая комфортная температура"
+      },
+      "outdoor_temperature": {
+        "name": "Наружная температура"
+      },
+      "outdoor_humidity": {
+        "name": "Наружная влажность"
+      },
+      "wind_speed": {
+        "name": "Скорость ветра снаружи"
+      },
+      "recommendation": {
+        "name": "Рекомендация"
+      },
+      "recommendation_score": {
+        "name": "Оценка рекомендации"
+      },
+      "recommendation_reason": {
+        "name": "Причина рекомендации"
+      },
+      "perceived_indoor_temperature": {
+        "name": "Воспринимаемая внутренняя температура"
+      },
+      "temperature": {
+        "name": "Температура"
+      },
+      "indoor_humidity": {
+        "name": "Внутренняя влажность"
+      }
+    },
+    "switch": {
+      "integration_enabled": {
+        "name": "Интеграция включена"
+      },
+      "notifications_enabled": {
+        "name": "Уведомления включены"
+      },
+      "automatic_comfort_temperature": {
+        "name": "Автоматическая комфортная температура"
+      },
+      "quiet_hours_enabled": {
+        "name": "Режим тишины включён"
+      },
+      "enabled": {
+        "name": "Включено"
+      },
+      "temperature_override_enabled": {
+        "name": "Override температуры включён"
+      },
+      "humidity_override_enabled": {
+        "name": "Override влажности включён"
+      }
+    }
   }
 }
