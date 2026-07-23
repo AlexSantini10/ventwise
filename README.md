@@ -67,11 +67,6 @@ Coming soon.
 - [HACS packaging](docs/hacs-packaging.md)
 - [Contributing](CONTRIBUTING.md)
 
-## TODO
-
-- [ ] Improve HACS presentation and repository branding ([#16](https://github.com/AlexSantini10/ventwise/issues/16))
-- [ ] Publish release automation and default catalog readiness ([#10](https://github.com/AlexSantini10/ventwise/issues/10))
-
 ## Project structure
 
 - `docs/`: development and design documentation
