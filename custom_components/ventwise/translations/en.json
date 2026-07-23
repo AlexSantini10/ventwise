@@ -4,58 +4,48 @@
     "step": {
       "user": {
         "title": "Initial setup",
-        "description": "Choose the forecast source, set comfort temperature, and optionally pick a notification target.",
+        "description": "Choose the weather source, set indoor comfort values, and optionally pick one or more notification devices.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "target_temperature_c": "Comfort temperature",
-          "notification_device_id": "Notification device"
+          "target_temperature_c": "Indoor comfort temperature",
+          "target_humidity_percent": "Indoor comfort humidity",
+          "stability_minutes": "Stability window (minutes)",
+          "notification_device_id": "Notification devices"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
-          "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
-          "notification_device_id": "Optional. Pick the device that should receive VentWise notifications."
+          "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
+          "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
+          "stability_minutes": "How long the recommendation should stay the same before VentWise acts. If you are not sure, leave the default value.",
+          "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications."
         }
       },
       "outdoor": {
-        "title": "Outdoor data source",
-        "description": "Choose forecast or override for each outdoor value. If you pick override, VentWise will ask for the entity next.",
+        "title": "Outdoor data",
+        "description": "Use the checkboxes to decide which outdoor measurements come from Home Assistant entities instead of the weather forecast.",
         "data": {
-          "outdoor_temperature_source": "Outdoor temperature source",
-          "outdoor_humidity_source": "Outdoor humidity source",
-          "wind_speed_source": "Outdoor wind speed source"
+          "outdoor_temperature_override": "Use manual outdoor temperature",
+          "outdoor_humidity_override": "Use manual outdoor humidity",
+          "wind_speed_override": "Use manual outdoor wind speed"
         },
         "data_description": {
-          "outdoor_temperature_source": "Use the forecast temperature from the weather entity, or override it with a numeric entity.",
-          "outdoor_humidity_source": "Use the forecast humidity from the weather entity, or override it with a numeric entity.",
-          "wind_speed_source": "Use the forecast wind speed from the weather entity, or override it with a numeric entity."
+          "outdoor_temperature_override": "Turn this on to enter a numeric temperature entity instead of using the weather forecast.",
+          "outdoor_humidity_override": "Turn this on to enter a numeric humidity entity instead of using the weather forecast.",
+          "wind_speed_override": "Turn this on to enter a numeric wind speed entity instead of using the weather forecast."
         }
       },
       "outdoor_overrides": {
-        "title": "Outdoor overrides",
-        "description": "Pick the numeric entities only for the measurements marked as overrides.",
+        "title": "Manual outdoor values",
+        "description": "Fill in only the fields you turned on with the checkboxes.",
         "data": {
-          "outdoor_temperature_entity_id": "Outdoor temperature override",
-          "outdoor_humidity_entity_id": "Outdoor humidity override",
-          "wind_speed_entity_id": "Outdoor wind speed override"
+          "outdoor_temperature_entity_id": "Manual outdoor temperature",
+          "outdoor_humidity_entity_id": "Manual outdoor humidity",
+          "wind_speed_entity_id": "Manual outdoor wind speed"
         },
         "data_description": {
-          "outdoor_temperature_entity_id": "Required only when temperature is set to override.",
-          "outdoor_humidity_entity_id": "Required only when humidity is set to override.",
-          "wind_speed_entity_id": "Required only when wind speed is set to override."
-        }
-      },
-      "outdoor_overrides": {
-        "title": "Outdoor overrides",
-        "description": "Pick the numeric entities only for the measurements marked as overrides.",
-        "data": {
-          "outdoor_temperature_entity_id": "Outdoor temperature override",
-          "outdoor_humidity_entity_id": "Outdoor humidity override",
-          "wind_speed_entity_id": "Outdoor wind speed override"
-        },
-        "data_description": {
-          "outdoor_temperature_entity_id": "Required only when temperature is set to override.",
-          "outdoor_humidity_entity_id": "Required only when humidity is set to override.",
-          "wind_speed_entity_id": "Required only when wind speed is set to override."
+          "outdoor_temperature_entity_id": "Required only when manual temperature is enabled.",
+          "outdoor_humidity_entity_id": "Required only when manual humidity is enabled.",
+          "wind_speed_entity_id": "Required only when manual wind speed is enabled."
         }
       },
       "rooms": {
@@ -98,82 +88,90 @@
       },
       "add_room": {
         "title": "Add room",
-        "description": "Create one room for a space with its own windows.",
+        "description": "Create one room for a space with its own windows. You can optionally override the comfort temperature for this room.",
         "data": {
+          "enabled": "Include this room",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this room.",
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
+          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
-          "pause_entity_id": "Optional. Select the automation that should pause this room."
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
         }
       },
       "edit_room_form": {
         "title": "Edit room",
-        "description": "Update the selected room for a space with its own windows.",
+        "description": "Update the selected room for a space with its own windows. You can also change the room-specific comfort temperature override.",
         "data": {
+          "enabled": "Include this room",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this room.",
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
+          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
-          "pause_entity_id": "Optional. Select the automation that should pause this room."
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
         }
       },
       "add_macro_room": {
         "title": "Add macro-room",
-        "description": "Create one grouped area for spaces that share the same windows.",
+        "description": "Create one grouped area for spaces that share the same windows. You can optionally override the comfort temperature for this area.",
         "data": {
+          "enabled": "Include this room",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this area.",
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
+          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
-          "pause_entity_id": "Optional. Select the automation that should pause this area."
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
         }
       },
       "edit_macro_room_form": {
         "title": "Edit macro-room",
-        "description": "Update the selected grouped area that shares the same windows.",
+        "description": "Update the selected grouped area that shares the same windows. You can also change the area-specific comfort temperature override.",
         "data": {
+          "enabled": "Include this room",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this area.",
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
+          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
-          "pause_entity_id": "Optional. Select the automation that should pause this area."
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
         }
       }
     },
@@ -189,42 +187,28 @@
         "menu_options": {
           "basic": "Basic settings",
           "outdoor": "Outdoor data",
-          "advanced": "Advanced settings",
+          "advanced": "Comfort settings",
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
-          "basic": "Weather source, comfort temperature, quiet hours, and notifications.",
-          "outdoor": "Choose forecast or override per outdoor measurement.",
-          "advanced": "Tuning values and quiet-hours or master control helpers.",
+          "basic": "Weather source and notification devices.",
+          "outdoor": "Choose forecast or manual values for each outdoor measurement with checkboxes.",
+          "advanced": "Comfort values and tuning.",
           "rooms": "Add rooms and macro-rooms."
         }
       },
       "outdoor": {
-        "title": "Outdoor data source",
-        "description": "Choose forecast or override for each outdoor value. If you pick override, VentWise will ask for the entity next.",
+        "title": "Outdoor data",
+        "description": "Use the checkboxes to decide which outdoor measurements come from Home Assistant entities instead of the weather forecast.",
         "data": {
-          "outdoor_temperature_source": "Outdoor temperature source",
-          "outdoor_humidity_source": "Outdoor humidity source",
-          "wind_speed_source": "Outdoor wind speed source"
+          "outdoor_temperature_override": "Use manual outdoor temperature",
+          "outdoor_humidity_override": "Use manual outdoor humidity",
+          "wind_speed_override": "Use manual outdoor wind speed"
         },
         "data_description": {
-          "outdoor_temperature_source": "Use the forecast temperature from the weather entity, or override it with a numeric entity.",
-          "outdoor_humidity_source": "Use the forecast humidity from the weather entity, or override it with a numeric entity.",
-          "wind_speed_source": "Use the forecast wind speed from the weather entity, or override it with a numeric entity."
-        }
-      },
-      "outdoor_overrides": {
-        "title": "Outdoor overrides",
-        "description": "Pick the numeric entities only for the measurements marked as overrides.",
-        "data": {
-          "outdoor_temperature_entity_id": "Outdoor temperature override",
-          "outdoor_humidity_entity_id": "Outdoor humidity override",
-          "wind_speed_entity_id": "Outdoor wind speed override"
-        },
-        "data_description": {
-          "outdoor_temperature_entity_id": "Required only when temperature is set to override.",
-          "outdoor_humidity_entity_id": "Required only when humidity is set to override.",
-          "wind_speed_entity_id": "Required only when wind speed is set to override."
+          "outdoor_temperature_override": "Turn this on to enter a numeric temperature entity instead of using the weather forecast.",
+          "outdoor_humidity_override": "Turn this on to enter a numeric humidity entity instead of using the weather forecast.",
+          "wind_speed_override": "Turn this on to enter a numeric wind speed entity instead of using the weather forecast."
         }
       },
       "basic": {
@@ -232,41 +216,23 @@
         "description": "Keep the everyday settings here.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "target_temperature_c": "Comfort temperature",
-          "quiet_hours_enabled": "Pause during quiet hours",
-          "quiet_hours_pause_entity_id": "Quiet-hours pause entity",
-          "notification_device_id": "Notification device"
+          "notification_device_id": "Notification devices"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
-          "target_temperature_c": "Set the indoor comfort temperature VentWise should aim for.",
-          "quiet_hours_enabled": "Turn on a pause while quiet hours are active.",
-          "quiet_hours_pause_entity_id": "Optional. Pick a helper or sensor that can suspend recommendations.",
-          "notification_device_id": "Optional. Pick the device that should receive notifications."
+          "notification_device_id": "Optional. Pick one or more devices that should receive notifications."
         }
       },
       "advanced": {
-        "title": "Advanced settings",
-        "description": "Fine-tune the technical values and optional helper entities.",
+        "title": "Comfort settings",
+        "description": "Fine-tune the comfort values used by VentWise.",
         "data": {
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
-          "cooldown_minutes": "Cooldown period (minutes)",
-          "stability_minutes": "Stability period (minutes)",
-          "quiet_hours_start": "Quiet hours start",
-          "quiet_hours_end": "Quiet hours end",
-          "quiet_hours_start_entity_id": "Quiet hours start entity",
-          "quiet_hours_end_entity_id": "Quiet hours end entity",
-          "master_control_entity_id": "Master control entity"
+          "cooldown_minutes": "Notification cooldown (minutes)"
         },
         "data_description": {
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
-          "cooldown_minutes": "How long VentWise waits before sending the same suggestion again.",
-          "stability_minutes": "How long a suggestion must remain unchanged before it can be sent.",
-          "quiet_hours_start": "Use a time like 22:00 or 22:00:00.",
-          "quiet_hours_end": "Use a time like 07:00 or 07:00:00.",
-          "quiet_hours_start_entity_id": "Optional. Pick a time entity to read the quiet-hours start from.",
-          "quiet_hours_end_entity_id": "Optional. Pick a time entity to read the quiet-hours end from.",
-          "master_control_entity_id": "Optional. Pick the switch or helper you want to use as the master control."
+          "cooldown_minutes": "How long VentWise waits before sending the same notification again."
         }
       },
       "rooms": {
@@ -314,17 +280,19 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override": "Room comfort humidity override (%)",
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
-          "pause_entity_id": "Optional. Select the automation that should pause this room."
+          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
         }
       },
       "edit_room_form": {
@@ -334,17 +302,19 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override": "Room comfort humidity override (%)",
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
-          "pause_entity_id": "Optional. Select the automation that should pause this room."
+          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
         }
       },
       "add_macro_room": {
@@ -354,17 +324,19 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override": "Room comfort humidity override (%)",
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
           "name": "A friendly name for this larger area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
-          "pause_entity_id": "Optional. Select the automation that should pause this area."
+          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one.",
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
         }
       },
       "edit_macro_room_form": {
@@ -374,17 +346,19 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "start_entity_id": "Open automation",
-          "stop_entity_id": "Close automation",
-          "pause_entity_id": "Pause automation"
+          "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override": "Room comfort humidity override (%)",
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation"
         },
         "data_description": {
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
-          "pause_entity_id": "Optional. Select the automation that should pause this area."
+          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one.",
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
         }
       }
     },

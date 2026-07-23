@@ -9,7 +9,8 @@ from homeassistant.core import HomeAssistant
 from .ventwise_core import RecommendationAction
 
 from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity
+from .entity import VentWiseEntity, VentWiseRoomEntity
+from .runtime import find_room_recommendation
 
 
 async def async_setup_entry(
@@ -20,13 +21,15 @@ async def async_setup_entry(
     """Set up binary sensor entities from a config entry."""
 
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
-    async_add_entities(
-        [
-            RecommendationActiveBinarySensor(coordinator),
-            QuietHoursBinarySensor(coordinator),
-            CooldownBinarySensor(coordinator),
-        ]
-    )
+    entities: list[BinarySensorEntity] = [
+        RecommendationActiveBinarySensor(coordinator),
+        NotificationAllowedBinarySensor(coordinator),
+        QuietHoursBinarySensor(coordinator),
+        CooldownBinarySensor(coordinator),
+    ]
+    for room in coordinator.config.rooms:
+        entities.append(RoomRecommendationActiveBinarySensor(coordinator, room))
+    async_add_entities(entities)
 
 
 class RecommendationActiveBinarySensor(VentWiseEntity, BinarySensorEntity):
@@ -35,12 +38,34 @@ class RecommendationActiveBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:window-open"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "recommendation_active", "Recommendation active")
+        super().__init__(
+            coordinator,
+            "recommendation_actionable",
+            "Actionable recommendation",
+        )
 
     @property
     def is_on(self) -> bool:
         snapshot = self.coordinator.data
-        return snapshot.summary.action != RecommendationAction.NONE and snapshot.notification_allowed
+        return snapshot.enabled and snapshot.summary.action != RecommendationAction.NONE
+
+
+class NotificationAllowedBinarySensor(VentWiseEntity, BinarySensorEntity):
+    """Whether VentWise is allowed to send a notification now."""
+
+    _attr_icon = "mdi:bell-check"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(
+            coordinator,
+            "notification_allowed",
+            "Notifications allowed now",
+        )
+
+    @property
+    def is_on(self) -> bool:
+        snapshot = self.coordinator.data
+        return snapshot.enabled and snapshot.notification_allowed
 
 
 class QuietHoursBinarySensor(VentWiseEntity, BinarySensorEntity):
@@ -49,7 +74,7 @@ class QuietHoursBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:minus-circle-outline"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours", "Quiet hours")
+        super().__init__(coordinator, "quiet_hours", "Quiet hours active")
 
     @property
     def is_on(self) -> bool:
@@ -62,8 +87,29 @@ class CooldownBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:timer-sand"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "cooldown", "Cooldown")
+        super().__init__(coordinator, "cooldown", "Notification cooldown active")
 
     @property
     def is_on(self) -> bool:
         return self.coordinator.data.cooldown_active
+
+
+class RoomRecommendationActiveBinarySensor(VentWiseRoomEntity, BinarySensorEntity):
+    """Whether a room currently has an actionable recommendation."""
+
+    _attr_icon = "mdi:home-lightbulb-outline"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(
+            coordinator,
+            room,
+            "active",
+            f"{room.name} actionable recommendation",
+        )
+
+    @property
+    def is_on(self) -> bool:
+        if not self.room.enabled:
+            return False
+        recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
+        return recommendation is not None and recommendation.action != RecommendationAction.NONE

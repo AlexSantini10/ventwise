@@ -10,15 +10,14 @@ from homeassistant import config_entries
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
-    CONF_OUTDOOR_HUMIDITY_SOURCE,
-    CONF_OUTDOOR_TEMPERATURE_SOURCE,
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
     CONF_ROOMS,
-    CONF_WIND_SPEED_SOURCE,
     NAME,
-    OUTDOOR_SOURCE_OVERRIDE,
+    CONF_WIND_SPEED_OVERRIDE,
 )
 from .flow import (
     ConfigValidationError,
@@ -103,7 +102,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         )
 
     async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):
-        """Edit outdoor source preferences and overrides."""
+        """Edit outdoor override preferences."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -124,7 +123,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         )
 
     async def async_step_outdoor_overrides(self, user_input: dict[str, Any] | None = None):
-        """Edit the outdoor override entities for selected sources."""
+        """Edit the manual outdoor measurements."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -208,7 +207,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             user_input,
             room_index=self._selected_room_index,
             default_room=selected_room,
-            step_id="edit_room_details",
+            step_id="edit_room_form" if room_kind == "room" else "edit_macro_room_form",
         )
 
     async def async_step_remove_room(self, user_input: dict[str, Any] | None = None):
@@ -256,7 +255,8 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                room = normalize_room_config(user_input, room_kind)
+                room_input = {**(default_room or {}), **user_input}
+                room = normalize_room_config(room_input, room_kind)
                 if room_index is None:
                     self._rooms.append(room)
                 else:
@@ -316,13 +316,11 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return data
 
     def _has_outdoor_overrides(self) -> bool:
-        """Return whether any outdoor value is configured as an override."""
-
         return any(
-            self._current_config.get(source_field) == OUTDOOR_SOURCE_OVERRIDE
-            for source_field in (
-                CONF_OUTDOOR_TEMPERATURE_SOURCE,
-                CONF_OUTDOOR_HUMIDITY_SOURCE,
-                CONF_WIND_SPEED_SOURCE,
+            bool(self._current_config.get(override_field))
+            for override_field in (
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+                CONF_WIND_SPEED_OVERRIDE,
             )
         )
