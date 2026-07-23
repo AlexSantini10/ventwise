@@ -1,0 +1,377 @@
+{
+  "title": "VentWise",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configuración inicial",
+        "description": "Elige la fuente meteorológica, define los valores de confort interiores y, si quieres, selecciona uno o más dispositivos de notificación.",
+        "data": {
+          "outdoor_weather_entity_id": "Fuente meteorológica",
+          "target_temperature_c": "Temperatura de confort interior",
+          "target_humidity_percent": "Humedad de confort interior",
+          "stability_minutes": "Ventana de estabilidad (minutos)",
+          "notification_device_id": "Dispositivos de notificación"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
+          "target_temperature_c": "Define la temperatura interior que te resulta cómoda cuando estás en casa.",
+          "target_humidity_percent": "Define la humedad interior que te resulta cómoda cuando estás en casa.",
+          "stability_minutes": "Cuánto tiempo debe mantenerse igual la recomendación antes de que VentWise actúe. Si no estás seguro, deja el valor predeterminado.",
+          "notification_device_id": "Opcional. Elige uno o más dispositivos que recibirán las notificaciones de VentWise."
+        }
+      },
+      "outdoor": {
+        "title": "Datos exteriores",
+        "description": "Usa las casillas para decidir qué mediciones exteriores llegan desde entidades de Home Assistant en lugar del pronóstico.",
+        "data": {
+          "outdoor_temperature_override": "Usar temperatura exterior manual",
+          "outdoor_humidity_override": "Usar humedad exterior manual",
+          "wind_speed_override": "Usar velocidad del viento exterior manual"
+        },
+        "data_description": {
+          "outdoor_temperature_override": "Activa esta casilla para introducir una entidad numérica de temperatura en lugar de usar el pronóstico.",
+          "outdoor_humidity_override": "Activa esta casilla para introducir una entidad numérica de humedad en lugar de usar el pronóstico.",
+          "wind_speed_override": "Activa esta casilla para introducir una entidad numérica de velocidad del viento en lugar de usar el pronóstico."
+        }
+      },
+      "outdoor_overrides": {
+        "title": "Valores exteriores manuales",
+        "description": "Rellena solo los campos que hayas activado con las casillas.",
+        "data": {
+          "outdoor_temperature_entity_id": "Temperatura exterior manual",
+          "outdoor_humidity_entity_id": "Humedad exterior manual",
+          "wind_speed_entity_id": "Velocidad del viento exterior manual"
+        },
+        "data_description": {
+          "outdoor_temperature_entity_id": "Obligatorio solo cuando la temperatura manual está activada.",
+          "outdoor_humidity_entity_id": "Obligatorio solo cuando la humedad manual está activada.",
+          "wind_speed_entity_id": "Obligatorio solo cuando la velocidad del viento manual está activada."
+        }
+      },
+      "rooms": {
+        "title": "Habitaciones",
+        "description": "Añade, edita o elimina habitaciones y macrohabitaciones para espacios que comparten el mismo aire.",
+        "menu_options": {
+          "add_room": "Añadir habitación",
+          "add_macro_room": "Añadir macrohabitación",
+          "edit_room": "Editar habitación",
+          "remove_room": "Eliminar habitación",
+          "finish": "Listo"
+        },
+        "menu_option_descriptions": {
+          "add_room": "Crea una habitación para un espacio individual.",
+          "add_macro_room": "Crea un área agrupada para espacios que comparten las mismas ventanas.",
+          "edit_room": "Actualiza una habitación o área agrupada existente.",
+          "remove_room": "Elimina una habitación o área agrupada existente.",
+          "finish": "Saltar las habitaciones por ahora y guardar la configuración."
+        }
+      },
+      "edit_room_select": {
+        "title": "Editar habitación",
+        "description": "Elige la habitación que quieres actualizar.",
+        "data": {
+          "room_selection": "Habitación"
+        },
+        "data_description": {
+          "room_selection": "Selecciona una de las habitaciones ya guardadas en VentWise."
+        }
+      },
+      "remove_room_select": {
+        "title": "Eliminar habitación",
+        "description": "Elige la habitación que quieres borrar.",
+        "data": {
+          "room_selection": "Habitación"
+        },
+        "data_description": {
+          "room_selection": "Selecciona una de las habitaciones ya guardadas en VentWise."
+        }
+      },
+      "add_room": {
+        "title": "Añadir habitación",
+        "description": "Crea una habitación normal con sus propias ventanas. También puedes definir un override de temperatura de confort para esta habitación.",
+        "data": {
+          "enabled": "Incluir esta habitación",
+          "name": "Nombre de la habitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta habitación.",
+          "name": "Un nombre fácil de reconocer, como Dormitorio o Estudio.",
+          "temperature_entity_id": "Selecciona el sensor de temperatura de la habitación.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de la habitación.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+        }
+      },
+      "edit_room_form": {
+        "title": "Editar habitación",
+        "description": "Actualiza la habitación seleccionada para un espacio con sus propias ventanas. También puedes cambiar el override de temperatura de confort de la habitación.",
+        "data": {
+          "enabled": "Incluir esta habitación",
+          "name": "Nombre de la habitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta habitación.",
+          "name": "Un nombre fácil de reconocer, como Dormitorio o Estudio.",
+          "temperature_entity_id": "Selecciona el sensor de temperatura de la habitación.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de la habitación.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+        }
+      },
+      "add_macro_room": {
+        "title": "Añadir macrohabitación",
+        "description": "Crea un área agrupada para espacios que comparten las mismas ventanas. También puedes definir un override de temperatura de confort para esta área.",
+        "data": {
+          "enabled": "Incluir esta habitación",
+          "name": "Nombre de la macrohabitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta área.",
+          "name": "Un nombre fácil de reconocer, como Planta superior o Zona de estar.",
+          "temperature_entity_id": "Selecciona el sensor principal de temperatura de esta área.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de esta área.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+        }
+      },
+      "edit_macro_room_form": {
+        "title": "Editar macrohabitación",
+        "description": "Actualiza el área seleccionada que comparte las mismas ventanas. También puedes cambiar el override de temperatura de confort del área.",
+        "data": {
+          "enabled": "Incluir esta habitación",
+          "name": "Nombre de la macrohabitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta área.",
+          "name": "Un nombre fácil de reconocer, como Planta superior o Zona de estar.",
+          "temperature_entity_id": "Selecciona el sensor principal de temperatura de esta área.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de esta área.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+        }
+      }
+    },
+    "error": {
+      "invalid_input": "Uno o más valores no son válidos."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ajustar VentWise",
+        "description": "Elige qué quieres editar.",
+        "menu_options": {
+          "basic": "Ajustes básicos",
+          "outdoor": "Datos exteriores",
+          "advanced": "Ajustes de confort",
+          "rooms": "Habitaciones"
+        },
+        "menu_option_descriptions": {
+          "basic": "Fuente meteorológica y dispositivos de notificación.",
+          "outdoor": "Elige pronóstico o valores manuales para cada dato exterior usando casillas.",
+          "advanced": "Valores de confort y ajuste fino.",
+          "rooms": "Añadir habitaciones y macrohabitaciones."
+        }
+      },
+      "outdoor": {
+        "title": "Datos exteriores",
+        "description": "Usa las casillas para decidir qué mediciones exteriores vienen de entidades de Home Assistant en lugar del pronóstico.",
+        "data": {
+          "outdoor_temperature_override": "Usar temperatura exterior manual",
+          "outdoor_humidity_override": "Usar humedad exterior manual",
+          "wind_speed_override": "Usar velocidad del viento exterior manual"
+        },
+        "data_description": {
+          "outdoor_temperature_override": "Activa esta casilla para introducir una temperatura manual en lugar de usar el pronóstico.",
+          "outdoor_humidity_override": "Activa esta casilla para introducir una humedad manual en lugar de usar el pronóstico.",
+          "wind_speed_override": "Activa esta casilla para introducir una velocidad del viento manual en lugar de usar el pronóstico."
+        }
+      },
+      "basic": {
+        "title": "Ajustes básicos",
+        "description": "Mantén aquí los controles de uso diario.",
+        "data": {
+          "outdoor_weather_entity_id": "Fuente meteorológica",
+          "notification_device_id": "Dispositivos de notificación"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
+          "notification_device_id": "Opcional. Elige uno o más dispositivos que recibirán notificaciones."
+        }
+      },
+      "advanced": {
+        "title": "Ajustes de confort",
+        "description": "Ajusta los valores de confort usados por VentWise.",
+        "data": {
+          "soft_outdoor_threshold_c": "Umbral de confort exterior",
+          "cooldown_minutes": "Pausa de notificaciones (minutos)"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "Por encima de esta temperatura exterior, abrir las ventanas es menos útil.",
+          "cooldown_minutes": "Cuánto tiempo espera VentWise antes de enviar de nuevo la misma notificación."
+        }
+      },
+      "rooms": {
+        "title": "Habitaciones",
+        "description": "Añade, edita o elimina habitaciones y macrohabitaciones para espacios que comparten el mismo aire.",
+        "menu_options": {
+          "add_room": "Añadir habitación",
+          "add_macro_room": "Añadir macrohabitación",
+          "edit_room": "Editar habitación",
+          "remove_room": "Eliminar habitación",
+          "finish": "Listo"
+        },
+        "menu_option_descriptions": {
+          "add_room": "Crea una habitación para un espacio individual.",
+          "add_macro_room": "Crea un área agrupada para espacios que comparten las mismas ventanas.",
+          "edit_room": "Actualiza una habitación o área agrupada existente.",
+          "remove_room": "Elimina una habitación o área agrupada existente.",
+          "finish": "Saltar las habitaciones por ahora y guardar la configuración."
+        }
+      },
+      "edit_room_select": {
+        "title": "Editar habitación",
+        "description": "Elige la habitación que quieres actualizar.",
+        "data": {
+          "room_selection": "Habitación"
+        },
+        "data_description": {
+          "room_selection": "Selecciona una de las habitaciones ya guardadas en VentWise."
+        }
+      },
+      "remove_room_select": {
+        "title": "Eliminar habitación",
+        "description": "Elige la habitación que quieres borrar.",
+        "data": {
+          "room_selection": "Habitación"
+        },
+        "data_description": {
+          "room_selection": "Selecciona una de las habitaciones ya guardadas en VentWise."
+        }
+      },
+      "add_room": {
+        "title": "Añadir habitación",
+        "description": "Crea una habitación estándar.",
+        "data": {
+          "name": "Nombre de la habitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "name": "Un nombre fácil de reconocer, como Dormitorio, Estudio u Oficina.",
+          "temperature_entity_id": "Selecciona el sensor de temperatura de la habitación.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de la habitación.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
+          "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta habitación en lugar del global.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+        }
+      },
+      "edit_room_form": {
+        "title": "Editar habitación",
+        "description": "Actualiza la habitación estándar seleccionada.",
+        "data": {
+          "name": "Nombre de la habitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "name": "Un nombre fácil de reconocer, como Dormitorio, Estudio u Oficina.",
+          "temperature_entity_id": "Selecciona el sensor de temperatura de la habitación.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de la habitación.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
+          "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta habitación en lugar del global.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+        }
+      },
+      "add_macro_room": {
+        "title": "Añadir macrohabitación",
+        "description": "Crea un grupo más grande que se comporta como una habitación.",
+        "data": {
+          "name": "Nombre de la macrohabitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "name": "Un nombre fácil de reconocer, como Planta superior o Zona de estar.",
+          "temperature_entity_id": "Selecciona el sensor principal de temperatura de esta área.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de esta área.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
+          "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta área en lugar del global.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+        }
+      },
+      "edit_macro_room_form": {
+        "title": "Editar macrohabitación",
+        "description": "Actualiza el área más grande seleccionada.",
+        "data": {
+          "name": "Nombre de la macrohabitación",
+          "temperature_entity_id": "Sensor de temperatura interior",
+          "humidity_entity_id": "Sensor de humedad interior",
+          "target_temperature_c_override": "Override de temperatura de confort de la habitación",
+          "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
+          "start_entity_id": "Automatización de apertura de ventanas",
+          "stop_entity_id": "Automatización de cierre de ventanas"
+        },
+        "data_description": {
+          "name": "Un nombre fácil de reconocer, como Planta superior o Zona de estar.",
+          "temperature_entity_id": "Selecciona el sensor principal de temperatura de esta área.",
+          "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de esta área.",
+          "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
+          "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta área en lugar del global.",
+          "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+        }
+      }
+    },
+    "error": {
+      "invalid_input": "Uno o más valores no son válidos."
+    }
+  },
+  "selector": {
+    "outdoor_source": {
+      "options": {
+        "forecast": "Usar pronóstico",
+        "override": "Usar override"
+      }
+    }
+  }
+}
