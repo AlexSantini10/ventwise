@@ -84,18 +84,22 @@
       },
       "add_room": {
         "title": "Add room",
-        "description": "Create one room for a space with its own windows.",
+        "description": "Create one room for a space with its own windows. You can optionally override the comfort temperature for this room.",
         "data": {
+          "enabled": "Room enabled",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this room.",
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
+          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
@@ -104,18 +108,22 @@
       },
       "edit_room_form": {
         "title": "Edit room",
-        "description": "Update the selected room for a space with its own windows.",
+        "description": "Update the selected room for a space with its own windows. You can also change the room-specific comfort temperature override.",
         "data": {
+          "enabled": "Room enabled",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this room.",
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
+          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this room.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this room.",
@@ -124,18 +132,22 @@
       },
       "add_macro_room": {
         "title": "Add macro-room",
-        "description": "Create one grouped area for spaces that share the same windows.",
+        "description": "Create one grouped area for spaces that share the same windows. You can optionally override the comfort temperature for this area.",
         "data": {
+          "enabled": "Room enabled",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this area.",
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
+          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",
@@ -144,18 +156,22 @@
       },
       "edit_macro_room_form": {
         "title": "Edit macro-room",
-        "description": "Update the selected grouped area that shares the same windows.",
+        "description": "Update the selected grouped area that shares the same windows. You can also change the area-specific comfort temperature override.",
         "data": {
+          "enabled": "Room enabled",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
+          "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open automation",
           "stop_entity_id": "Close automation",
           "pause_entity_id": "Pause automation"
         },
         "data_description": {
+          "enabled": "Turn this off if you do not want VentWise to consider this area.",
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
+          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open this area.",
           "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close this area.",

@@ -246,6 +246,9 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     )
     snapshot = RuntimeSnapshot(
         summary=summary,
+        outdoor_temperature_c=20.0,
+        outdoor_humidity_percent=45.0,
+        wind_speed_m_s=None,
         notification_allowed=True,
         quiet_hours_active=False,
         cooldown_active=False,

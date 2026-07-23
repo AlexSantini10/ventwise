@@ -38,6 +38,9 @@ class RoomProfile:
     name: str
     indoor: RoomObservation
     kind: str = "room"
+    room_id: str | None = None
+    enabled: bool = True
+    target_temperature_c_override: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +91,7 @@ class RoomRecommendation:
     reason: str
     indoor_perceived_c: float
     outdoor_perceived_c: float
+    room_id: str | None = None
     open_score: float = 0.0
     close_score: float = 0.0
 

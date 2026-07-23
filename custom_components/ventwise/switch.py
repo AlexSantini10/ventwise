@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity
+from .entity import VentWiseEntity, VentWiseRoomEntity
 
 
 async def async_setup_entry(
@@ -18,7 +18,9 @@ async def async_setup_entry(
     """Set up switch entities from a config entry."""
 
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
-    async_add_entities([MasterEnableSwitch(coordinator)])
+    entities: list[SwitchEntity] = [MasterEnableSwitch(coordinator)]
+    entities.extend(RoomEnableSwitch(coordinator, room) for room in coordinator.config.rooms)
+    async_add_entities(entities)
 
 
 class MasterEnableSwitch(VentWiseEntity, SwitchEntity):
@@ -39,3 +41,21 @@ class MasterEnableSwitch(VentWiseEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_set_enabled(False)
 
+
+class RoomEnableSwitch(VentWiseRoomEntity, SwitchEntity):
+    """Enable or disable a single room."""
+
+    _attr_icon = "mdi:home-switch"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(coordinator, room, "enabled", f"{room.name} enabled")
+
+    @property
+    def is_on(self) -> bool:
+        return self.room.enabled
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_enabled(self.room.room_id or self.room.name, True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_room_enabled(self.room.room_id or self.room.name, False)

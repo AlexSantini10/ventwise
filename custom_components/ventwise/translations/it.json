@@ -84,18 +84,22 @@
       },
       "add_room": {
         "title": "Aggiungi stanza",
-        "description": "Crea una stanza normale con le proprie finestre.",
+        "description": "Crea una stanza normale con le proprie finestre. Puoi anche impostare un override della temperatura di comfort per questa stanza.",
         "data": {
+          "enabled": "Stanza abilitata",
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
+          "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "start_entity_id": "Automazione di apertura",
           "stop_entity_id": "Automazione di chiusura",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa stanza.",
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
+          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
@@ -104,18 +108,22 @@
       },
       "edit_room_form": {
         "title": "Modifica stanza",
-        "description": "Aggiorna la stanza selezionata.",
+        "description": "Aggiorna la stanza selezionata. Puoi anche cambiare l'override della temperatura di comfort per questa stanza.",
         "data": {
+          "enabled": "Stanza abilitata",
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
+          "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "start_entity_id": "Automazione di apertura",
           "stop_entity_id": "Automazione di chiusura",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa stanza.",
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
+          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa stanza.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa stanza.",
@@ -124,18 +132,22 @@
       },
       "add_macro_room": {
         "title": "Aggiungi macro-stanza",
-        "description": "Crea un'area più grande che si comporta come una stanza.",
+        "description": "Crea un'area più grande che si comporta come una stanza. Puoi anche impostare un override della temperatura di comfort per questa area.",
         "data": {
+          "enabled": "Stanza abilitata",
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
+          "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "start_entity_id": "Automazione di apertura",
           "stop_entity_id": "Automazione di chiusura",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa area.",
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
+          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",
@@ -144,18 +156,22 @@
       },
       "edit_macro_room_form": {
         "title": "Modifica macro-stanza",
-        "description": "Aggiorna l'area selezionata.",
+        "description": "Aggiorna l'area selezionata. Puoi anche cambiare l'override della temperatura di comfort per questa area.",
         "data": {
+          "enabled": "Stanza abilitata",
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
+          "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "start_entity_id": "Automazione di apertura",
           "stop_entity_id": "Automazione di chiusura",
           "pause_entity_id": "Automazione di pausa"
         },
         "data_description": {
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa area.",
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
+          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
           "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire questa area.",
           "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere questa area.",

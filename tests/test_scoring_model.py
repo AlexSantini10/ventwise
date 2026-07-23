@@ -15,6 +15,7 @@ from ventwise_core import (
 def test_recommender_prefers_open_when_outside_is_more_comfortable() -> None:
     recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0))
     room = RoomProfile(
+        room_id="room-1",
         name="Camera",
         indoor=RoomObservation(temperature_c=26.0, humidity_percent=60.0),
     )
@@ -30,6 +31,7 @@ def test_recommender_prefers_open_when_outside_is_more_comfortable() -> None:
 def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
     recommender = ComfortRecommender()
     room = RoomProfile(
+        room_id="room-1",
         name="Salotto",
         indoor=RoomObservation(temperature_c=22.2, humidity_percent=45.0),
     )
@@ -44,6 +46,7 @@ def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
 def test_recommender_returns_none_for_neutral_conditions() -> None:
     recommender = ComfortRecommender()
     room = RoomProfile(
+        room_id="room-1",
         name="Studio",
         indoor=RoomObservation(temperature_c=22.1, humidity_percent=50.0),
     )
@@ -60,6 +63,7 @@ def test_recommender_applies_soft_outdoor_threshold_to_open_actions() -> None:
         ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
     )
     room = RoomProfile(
+        room_id="room-1",
         name="Camera",
         indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
     )
@@ -79,6 +83,7 @@ def test_recommender_penalizes_strong_wind_for_open_actions() -> None:
         ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
     )
     room = RoomProfile(
+        room_id="room-1",
         name="Camera",
         indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
     )
@@ -98,6 +103,7 @@ def test_recommender_blocks_until_stable() -> None:
         ScoringConfig(minimum_stability_seconds=600, minimum_score=0.0)
     )
     room = RoomProfile(
+        room_id="room-1",
         name="Camera",
         indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
     )
@@ -118,6 +124,7 @@ def test_recommender_can_be_hint_tuned_for_winter() -> None:
         ScoringConfig(season_mode=SeasonMode.WINTER, minimum_score=0.0, neutral_band_c=0.0)
     )
     room = RoomProfile(
+        room_id="room-1",
         name="Camera",
         indoor=RoomObservation(temperature_c=22.28, humidity_percent=50.0),
     )
@@ -132,6 +139,7 @@ def test_recommender_can_be_hint_tuned_for_winter() -> None:
 def test_recommender_returns_none_for_quiet_hours() -> None:
     recommender = ComfortRecommender()
     room = RoomProfile(
+        room_id="room-1",
         name="Salotto",
         indoor=RoomObservation(temperature_c=27.0, humidity_percent=60.0),
     )
@@ -153,10 +161,12 @@ def test_recommender_prefers_the_best_room_by_score() -> None:
     )
     rooms = [
         RoomProfile(
+            room_id="room-1",
             name="Studio",
             indoor=RoomObservation(temperature_c=30.0, humidity_percent=55.0),
         ),
         RoomProfile(
+            room_id="room-2",
             name="Kitchen",
             indoor=RoomObservation(temperature_c=27.5, humidity_percent=60.0),
         ),
@@ -178,4 +188,35 @@ def test_recommender_returns_none_when_no_rooms_are_configured() -> None:
     result = recommender.evaluate([], outdoor)
 
     assert result.action == RecommendationAction.NONE
-    assert result.reason == "No rooms configured."
+    assert result.reason == "No enabled rooms configured."
+
+
+def test_recommender_honors_room_target_override() -> None:
+    recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0, minimum_score=0.0))
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=24.0, humidity_percent=50.0),
+        target_temperature_c_override=24.0,
+    )
+    outdoor = ComfortObservation(temperature_c=24.0, humidity_percent=50.0)
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.action == RecommendationAction.NONE
+
+
+def test_recommender_skips_disabled_rooms() -> None:
+    recommender = ComfortRecommender()
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=60.0),
+        enabled=False,
+    )
+    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.action == RecommendationAction.NONE
+    assert result.reason == "No enabled rooms configured."

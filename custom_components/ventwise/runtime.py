@@ -33,9 +33,12 @@ from .const import (
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
     CONF_ROOM_KIND,
+    CONF_ROOM_ENABLED,
+    CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
     CONF_ROOM_PAUSE_ENTITY_ID,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
@@ -67,9 +70,12 @@ from .ventwise_core import ComfortRecommender
 class RoomConfig:
     """Serializable room configuration stored in the config entry."""
 
+    room_id: str | None
     name: str
     temperature_entity_id: str
     kind: str = "room"
+    enabled: bool = True
+    target_temperature_c_override: float | None = None
     humidity_entity_id: str | None = None
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
@@ -109,6 +115,9 @@ class RuntimeSnapshot:
     """Result of a coordinator refresh."""
 
     summary: RecommendationSummary
+    outdoor_temperature_c: float | None
+    outdoor_humidity_percent: float | None
+    wind_speed_m_s: float | None
     notification_allowed: bool
     quiet_hours_active: bool
     cooldown_active: bool
@@ -132,9 +141,14 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
 
     rooms = tuple(
         RoomConfig(
+            room_id=_string_or_none(room.get(CONF_ROOM_ID)),
             kind=str(room.get(CONF_ROOM_KIND, "room")),
             name=str(room[CONF_ROOM_NAME]),
             temperature_entity_id=str(room[CONF_ROOM_TEMPERATURE_ENTITY_ID]),
+            enabled=bool(room.get(CONF_ROOM_ENABLED, True)),
+            target_temperature_c_override=_float_or_none(
+                room.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
+            ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
@@ -313,11 +327,15 @@ def build_room_profiles(
             humidity = 50.0
         rooms.append(
             RoomProfile(
+                room_id=room.room_id,
                 name=room.name,
                 indoor=RoomObservation(
                     temperature_c=temperature,
                     humidity_percent=humidity,
                 ),
+                kind=room.kind,
+                enabled=room.enabled,
+                target_temperature_c_override=room.target_temperature_c_override,
             )
         )
 
@@ -349,6 +367,9 @@ def build_debug_attributes(
         "quiet_hours_active": snapshot.quiet_hours_active,
         "cooldown_active": snapshot.cooldown_active,
         "stable_for_seconds": snapshot.stable_for_seconds,
+        "outdoor_temperature_c": snapshot.outdoor_temperature_c,
+        "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
+        "wind_speed_m_s": snapshot.wind_speed_m_s,
         "target_temperature_c": config.target_temperature_c,
         "soft_outdoor_threshold_c": config.soft_outdoor_threshold_c,
         "minimum_score": config.minimum_score,
@@ -364,6 +385,18 @@ def _string_or_none(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _float_or_none(value: Any) -> float | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except (TypeError, ValueError):
+        return None
 
 
 def _string_list(value: Any) -> tuple[str, ...]:
@@ -462,3 +495,18 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
     }
+
+
+def find_room_recommendation(
+    summary: RecommendationSummary,
+    room: RoomConfig,
+) -> Any | None:
+    """Find the recommendation matching a room config."""
+
+    for recommendation in summary.room_recommendations:
+        if recommendation.room_id is not None and room.room_id is not None:
+            if recommendation.room_id == room.room_id:
+                return recommendation
+        if recommendation.room_id is None and recommendation.room_name == room.name:
+            return recommendation
+    return None

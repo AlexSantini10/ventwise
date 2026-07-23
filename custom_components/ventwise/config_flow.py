@@ -225,7 +225,8 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                room = normalize_room_config(user_input, room_kind)
+                room_input = {**(default_room or {}), **user_input}
+                room = normalize_room_config(room_input, room_kind)
                 if room_index is None:
                     self._rooms.append(room)
                 else:

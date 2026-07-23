@@ -41,10 +41,15 @@ class ComfortRecommender:
     ) -> RoomRecommendation:
         """Score one room against the outdoor conditions."""
 
+        target_temperature = (
+            room.target_temperature_c_override
+            if room.target_temperature_c_override is not None
+            else self._config.target_temperature_c
+        )
         indoor_perceived = self._perceived_temperature(room.indoor)
         outdoor_perceived = self._perceived_temperature(outdoor)
-        inside_delta = abs(indoor_perceived - self._config.target_temperature_c)
-        outside_delta = abs(outdoor_perceived - self._config.target_temperature_c)
+        inside_delta = abs(indoor_perceived - target_temperature)
+        outside_delta = abs(outdoor_perceived - target_temperature)
         delta = inside_delta - outside_delta
 
         open_score = self._base_direction_score(inside_delta - outside_delta, outdoor)
@@ -73,6 +78,7 @@ class ComfortRecommender:
         )
 
         return RoomRecommendation(
+            room_id=room.room_id,
             room_name=room.name,
             action=action,
             score=score,
@@ -117,14 +123,15 @@ class ComfortRecommender:
                 blocked_by="stability",
             )
 
+        active_rooms = tuple(room for room in rooms if room.enabled)
         room_recommendations = tuple(
-            self.evaluate_room(room=room, outdoor=outdoor) for room in rooms
+            self.evaluate_room(room=room, outdoor=outdoor) for room in active_rooms
         )
         if not room_recommendations:
             return RecommendationSummary(
                 action=RecommendationAction.NONE,
                 score=0.0,
-                reason="No rooms configured.",
+                reason="No enabled rooms configured.",
             )
 
         best_room = max(room_recommendations, key=lambda recommendation: recommendation.score)

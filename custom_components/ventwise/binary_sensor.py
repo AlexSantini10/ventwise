@@ -9,7 +9,8 @@ from homeassistant.core import HomeAssistant
 from .ventwise_core import RecommendationAction
 
 from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity
+from .entity import VentWiseEntity, VentWiseRoomEntity
+from .runtime import find_room_recommendation
 
 
 async def async_setup_entry(
@@ -20,13 +21,14 @@ async def async_setup_entry(
     """Set up binary sensor entities from a config entry."""
 
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
-    async_add_entities(
-        [
-            RecommendationActiveBinarySensor(coordinator),
-            QuietHoursBinarySensor(coordinator),
-            CooldownBinarySensor(coordinator),
-        ]
-    )
+    entities: list[BinarySensorEntity] = [
+        RecommendationActiveBinarySensor(coordinator),
+        QuietHoursBinarySensor(coordinator),
+        CooldownBinarySensor(coordinator),
+    ]
+    for room in coordinator.config.rooms:
+        entities.append(RoomRecommendationActiveBinarySensor(coordinator, room))
+    async_add_entities(entities)
 
 
 class RecommendationActiveBinarySensor(VentWiseEntity, BinarySensorEntity):
@@ -67,3 +69,19 @@ class CooldownBinarySensor(VentWiseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         return self.coordinator.data.cooldown_active
+
+
+class RoomRecommendationActiveBinarySensor(VentWiseRoomEntity, BinarySensorEntity):
+    """Whether a room currently has an actionable recommendation."""
+
+    _attr_icon = "mdi:home-lightbulb-outline"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(coordinator, room, "active", f"{room.name} active")
+
+    @property
+    def is_on(self) -> bool:
+        if not self.room.enabled:
+            return False
+        recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
+        return recommendation is not None and recommendation.action != RecommendationAction.NONE

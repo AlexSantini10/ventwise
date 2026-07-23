@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import datetime
 from dataclasses import dataclass
+from uuid import uuid4
 from typing import Sequence
 
 import voluptuous as vol
@@ -36,10 +37,13 @@ from .const import (
     CONF_QUIET_HOURS_PAUSE_ENTITY_ID,
     CONF_QUIET_HOURS_START,
     CONF_QUIET_HOURS_START_ENTITY_ID,
+    CONF_ROOM_ENABLED,
+    CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_PAUSE_ENTITY_ID,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
@@ -249,6 +253,10 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
     return vol.Schema(
         {
             vol.Required(
+                CONF_ROOM_ENABLED,
+                default=defaults.get(CONF_ROOM_ENABLED, True),
+            ): cv.boolean,
+            vol.Required(
                 CONF_ROOM_NAME,
                 default=defaults.get(CONF_ROOM_NAME, friendly_default),
             ): cv.string,
@@ -256,6 +264,10 @@ def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kin
                 CONF_ROOM_TEMPERATURE_ENTITY_ID,
                 default=defaults.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+            **_optional_numeric_field(
+                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+                defaults.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C),
+            ),
             **_optional_selector_field(
                 CONF_ROOM_HUMIDITY_ENTITY_ID,
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
@@ -398,7 +410,9 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     """Normalize room flow data for storage."""
 
     data = dict(user_input)
+    data[CONF_ROOM_ID] = _normalize_room_id(data.get(CONF_ROOM_ID))
     data[CONF_ROOM_KIND] = _normalize_room_kind(room_kind)
+    data[CONF_ROOM_ENABLED] = _normalize_bool(data.get(CONF_ROOM_ENABLED), CONF_ROOM_ENABLED, default=True)
     data[CONF_ROOM_NAME] = str(data[CONF_ROOM_NAME]).strip()
     if not data[CONF_ROOM_NAME]:
         raise ConfigValidationError(CONF_ROOM_NAME)
@@ -413,6 +427,12 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
+    )
+    data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C] = _normalize_optional_float(
+        data.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C),
+        CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+        10.0,
+        30.0,
     )
     _normalize_optional_entity_ids(
         data,
@@ -449,6 +469,49 @@ def _normalize_optional_entities(data: dict[str, object], *keys: str) -> None:
             continue
         text = str(value).strip()
         data[key] = text or None
+
+
+def _normalize_room_id(value: object) -> str:
+    text = str(value).strip() if value is not None else ""
+    return text or uuid4().hex
+
+
+def _normalize_bool(value: object, field: str, *, default: bool | None = None) -> bool:
+    if value is None and default is not None:
+        return default
+    try:
+        return cv.boolean(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigValidationError(field) from exc
+
+
+def _optional_numeric_field(field: str, suggested_value: object | None) -> dict[object, object]:
+    optional_numeric = vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)))
+    if suggested_value is None:
+        return {vol.Optional(field): optional_numeric}
+    return {
+        vol.Optional(field, description={"suggested_value": suggested_value}): optional_numeric
+    }
+
+
+def _normalize_optional_float(
+    value: object,
+    field: str,
+    minimum: float,
+    maximum: float,
+) -> float | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        number = float(text)
+    except (TypeError, ValueError) as exc:
+        raise ConfigValidationError(field) from exc
+    if number < minimum or number > maximum:
+        raise ConfigValidationError(field)
+    return number
 
 
 def _normalize_notification_device_ids(value: object) -> list[str] | None:

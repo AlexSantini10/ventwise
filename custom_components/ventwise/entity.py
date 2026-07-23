@@ -7,6 +7,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER, NAME
 from .coordinator import VentWiseCoordinator
+from .runtime import RoomConfig
 
 
 class VentWiseEntity(CoordinatorEntity[VentWiseCoordinator]):
@@ -28,3 +29,33 @@ class VentWiseEntity(CoordinatorEntity[VentWiseCoordinator]):
             manufacturer=MANUFACTURER,
             name=coordinator.config_entry.title or NAME,
         )
+
+
+class VentWiseRoomEntity(VentWiseEntity):
+    """Base entity attached to a specific room device."""
+
+    def __init__(
+        self,
+        coordinator: VentWiseCoordinator,
+        room: RoomConfig,
+        entity_suffix: str,
+        friendly_name: str,
+    ) -> None:
+        room_key = room.room_id or room.name
+        super().__init__(
+            coordinator,
+            f"{room_key}_{entity_suffix}",
+            friendly_name,
+        )
+        self._room = room
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.config_entry.entry_id, room_key)},
+            manufacturer=MANUFACTURER,
+            name=room.name,
+        )
+
+    @property
+    def room(self) -> RoomConfig:
+        """Return the associated room config."""
+
+        return self._room

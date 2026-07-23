@@ -33,6 +33,7 @@ from .runtime import (
     is_quiet_hours_active,
     state_to_bool,
 )
+from .const import CONF_ROOM_ENABLED, CONF_ROOM_ID, CONF_ROOMS, CONF_STABILITY_MINUTES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,6 +87,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     reason="The integration is disabled.",
                     blocked_by="disabled",
                 ),
+                outdoor_temperature_c=None,
+                outdoor_humidity_percent=None,
+                wind_speed_m_s=None,
                 notification_allowed=False,
                 quiet_hours_active=False,
                 cooldown_active=False,
@@ -103,6 +107,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     reason="Outdoor or room sensor data is not available yet.",
                     blocked_by="unavailable",
                 ),
+                outdoor_temperature_c=None,
+                outdoor_humidity_percent=None,
+                wind_speed_m_s=None,
                 notification_allowed=False,
                 quiet_hours_active=False,
                 cooldown_active=False,
@@ -179,6 +186,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         return RuntimeSnapshot(
             summary=summary,
+            outdoor_temperature_c=outdoor.temperature_c,
+            outdoor_humidity_percent=outdoor.humidity_percent,
+            wind_speed_m_s=outdoor.wind_speed_m_s,
             notification_allowed=notification_allowed,
             quiet_hours_active=quiet_hours_active,
             cooldown_active=cooldown_active,
@@ -190,10 +200,25 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     async def async_set_enabled(self, enabled: bool) -> None:
         """Persist the master enable flag in config entry options."""
 
-        self.hass.config_entries.async_update_entry(
-            self._config_entry,
-            options={**self._config_entry.options, "enabled": enabled},
-        )
+        self._update_entry_options({"enabled": enabled})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_stability_minutes(self, minutes: int) -> None:
+        """Persist the global stability window in config entry options."""
+
+        self._update_entry_options({CONF_STABILITY_MINUTES: minutes})
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def async_set_room_enabled(self, room_key: str, enabled: bool) -> None:
+        """Persist the enabled flag for one room."""
+
+        options = dict(self._config_entry.options)
+        rooms = [dict(room) for room in options.get(CONF_ROOMS, [])]
+        for room in rooms:
+            if self._room_matches(room, room_key):
+                room[CONF_ROOM_ENABLED] = enabled
+                break
+        self._update_entry_options({CONF_ROOMS: rooms})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
@@ -219,6 +244,19 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 **dump_runtime_state(runtime_state),
             },
         )
+
+    def _update_entry_options(self, updates: dict[str, Any]) -> None:
+        self.hass.config_entries.async_update_entry(
+            self._config_entry,
+            options={**self._config_entry.options, **updates},
+        )
+
+    @staticmethod
+    def _room_matches(room: dict[str, Any], room_key: str) -> bool:
+        room_id = room.get(CONF_ROOM_ID)
+        if room_id is not None and str(room_id) == room_key:
+            return True
+        return str(room.get("name", "")).strip() == room_key
 
 
 def _state_to_time_string(state: Any | None, fallback: str) -> str:
