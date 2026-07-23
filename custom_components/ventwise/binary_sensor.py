@@ -37,11 +37,7 @@ class NotificationAllowedBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:bell-check"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(
-            coordinator,
-            "notification_allowed",
-            "Notifications currently allowed",
-        )
+        super().__init__(coordinator, "notification_allowed", "notifications_currently_allowed")
 
     @property
     def is_on(self) -> bool:
@@ -55,7 +51,7 @@ class QuietHoursBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:minus-circle-outline"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours", "Quiet hours active")
+        super().__init__(coordinator, "quiet_hours", "quiet_hours_active")
 
     @property
     def is_on(self) -> bool:
@@ -68,7 +64,7 @@ class CooldownBinarySensor(VentWiseEntity, BinarySensorEntity):
     _attr_icon = "mdi:timer-sand"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "cooldown", "Notification cooldown active")
+        super().__init__(coordinator, "cooldown", "notification_cooldown_active")
 
     @property
     def is_on(self) -> bool:
@@ -85,7 +81,7 @@ class RoomRecommendationActiveBinarySensor(VentWiseRoomEntity, BinarySensorEntit
             coordinator,
             room,
             "active",
-            f"{room.name} recommendation active",
+            "recommendation_active",
         )
 
     @property

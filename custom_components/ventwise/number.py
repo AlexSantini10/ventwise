@@ -52,7 +52,7 @@ class ComfortTemperatureNumber(VentWiseEntity, NumberEntity):
     _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "comfort_temperature", "Global comfort temperature")
+        super().__init__(coordinator, "comfort_temperature", "comfort_temperature")
 
     @property
     def native_value(self) -> float:
@@ -74,7 +74,7 @@ class ComfortHumidityNumber(VentWiseEntity, NumberEntity):
     _attr_native_unit_of_measurement = "%"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "comfort_humidity", "Global comfort humidity")
+        super().__init__(coordinator, "comfort_humidity", "comfort_humidity")
 
     @property
     def native_value(self) -> float:
@@ -96,7 +96,7 @@ class StabilityMinutesNumber(VentWiseEntity, NumberEntity):
     _attr_native_unit_of_measurement = "min"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "stability_minutes", "Recommendation stability window")
+        super().__init__(coordinator, "stability_minutes", "recommendation_stability_window")
 
     @property
     def native_value(self) -> float:
@@ -122,7 +122,7 @@ class RoomTargetTemperatureOverrideNumber(VentWiseRoomEntity, NumberEntity):
             coordinator,
             room,
             "target_temperature_override",
-            f"{room.name} temperature override",
+            "temperature_override",
         )
 
     @property
@@ -152,7 +152,7 @@ class RoomTargetHumidityOverrideNumber(VentWiseRoomEntity, NumberEntity):
             coordinator,
             room,
             "target_humidity_override",
-            f"{room.name} humidity override",
+            "humidity_override",
         )
 
     @property

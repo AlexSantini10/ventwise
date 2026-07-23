@@ -63,6 +63,13 @@ from .const import (
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
 SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
+ROOM_KIND_LABELS: dict[str, dict[str, str]] = {
+    "en": {"room": "Room", "macro_room": "Macro Room"},
+    "es": {"room": "Habitación", "macro_room": "Macrohabitación"},
+    "it": {"room": "Stanza", "macro_room": "Macro-stanza"},
+    "ru": {"room": "Комната", "macro_room": "Макрокомната"},
+    "zh-hans": {"room": "房间", "macro_room": "宏房间"},
+}
 OUTDOOR_OVERRIDE_FIELDS: tuple[tuple[str, str, str], ...] = (
     (
         CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
@@ -222,10 +229,15 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     )
 
 
-def build_room_schema(defaults: Mapping[str, object], room_number: int, room_kind: str) -> vol.Schema:
+def build_room_schema(
+    defaults: Mapping[str, object],
+    room_number: int,
+    room_kind: str,
+    language: str | None = None,
+) -> vol.Schema:
     """Create the schema for a room or macro-room definition."""
 
-    friendly_default = f"{room_kind.replace('_', ' ').title()} {room_number + 1}"
+    friendly_default = _localized_room_default(room_kind, room_number, language)
     return vol.Schema(
         {
             vol.Required(
@@ -672,6 +684,20 @@ def _normalize_room_kind(value: object) -> str:
     if text not in {"room", "macro_room"}:
         raise ConfigValidationError(CONF_ROOM_KIND)
     return text
+
+
+def _localized_room_default(room_kind: str, room_number: int, language: str | None) -> str:
+    label = _localized_room_kind_label(room_kind, language)
+    return f"{label} {room_number + 1}"
+
+
+def _localized_room_kind_label(room_kind: str, language: str | None) -> str:
+    normalized_language = (language or "en").replace("_", "-").lower()
+    labels = ROOM_KIND_LABELS.get(normalized_language) or ROOM_KIND_LABELS.get(
+        normalized_language.split("-", 1)[0],
+        ROOM_KIND_LABELS["en"],
+    )
+    return labels.get(room_kind, room_kind.replace("_", " ").title())
 
 
 def _normalize_time_string(value: object, field: str) -> str:

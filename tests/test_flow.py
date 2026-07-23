@@ -167,6 +167,28 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     ]
 
 
+def test_room_schema_localizes_default_names() -> None:
+    """Room defaults should follow the requested language."""
+
+    room_schema = build_room_schema({}, 0, "room", "it")
+    macro_schema = build_room_schema({}, 0, "macro_room", "it")
+
+    assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == "Stanza 1"
+    assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro-stanza 1"
+
+
+def test_room_selection_label_localizes_room_kind() -> None:
+    """The room selector should use localized kind labels."""
+
+    from custom_components.ventwise.config_flow import VentWiseConfigFlow
+
+    assert VentWiseConfigFlow._room_selection_label(  # noqa: SLF001
+        {CONF_ROOM_NAME: "Camera", CONF_ROOM_KIND: "room"},
+        0,
+        "it",
+    ) == "1. Camera (Stanza)"
+
+
 def test_normalize_basic_config_strips_optional_entities() -> None:
     """Optional basic values should be normalized to clean strings or None."""
 

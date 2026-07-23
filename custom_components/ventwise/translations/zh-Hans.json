@@ -373,5 +373,105 @@
         "override": "使用覆盖值"
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "notifications_currently_allowed": {
+        "name": "当前允许通知"
+      },
+      "quiet_hours_active": {
+        "name": "静默时段已启用"
+      },
+      "notification_cooldown_active": {
+        "name": "通知冷却已启用"
+      },
+      "recommendation_active": {
+        "name": "建议已启用"
+      }
+    },
+    "number": {
+      "comfort_temperature": {
+        "name": "舒适温度"
+      },
+      "comfort_humidity": {
+        "name": "舒适湿度"
+      },
+      "recommendation_stability_window": {
+        "name": "建议稳定窗口"
+      },
+      "temperature_override": {
+        "name": "温度覆盖"
+      },
+      "humidity_override": {
+        "name": "湿度覆盖"
+      }
+    },
+    "sensor": {
+      "weather_condition": {
+        "name": "天气状况"
+      },
+      "average_perceived_indoor_temperature": {
+        "name": "平均感知室内温度"
+      },
+      "perceived_outdoor_temperature": {
+        "name": "感知室外温度"
+      },
+      "effective_comfort_temperature": {
+        "name": "实际舒适温度"
+      },
+      "suggested_comfort_temperature": {
+        "name": "建议舒适温度"
+      },
+      "outdoor_temperature": {
+        "name": "室外温度"
+      },
+      "outdoor_humidity": {
+        "name": "室外湿度"
+      },
+      "wind_speed": {
+        "name": "室外风速"
+      },
+      "recommendation": {
+        "name": "建议"
+      },
+      "recommendation_score": {
+        "name": "建议分数"
+      },
+      "recommendation_reason": {
+        "name": "建议原因"
+      },
+      "perceived_indoor_temperature": {
+        "name": "感知室内温度"
+      },
+      "temperature": {
+        "name": "温度"
+      },
+      "indoor_humidity": {
+        "name": "室内湿度"
+      }
+    },
+    "switch": {
+      "integration_enabled": {
+        "name": "集成已启用"
+      },
+      "notifications_enabled": {
+        "name": "通知已启用"
+      },
+      "automatic_comfort_temperature": {
+        "name": "自动舒适温度"
+      },
+      "quiet_hours_enabled": {
+        "name": "静默时段已启用"
+      },
+      "enabled": {
+        "name": "已启用"
+      },
+      "temperature_override_enabled": {
+        "name": "温度覆盖已启用"
+      },
+      "humidity_override_enabled": {
+        "name": "湿度覆盖已启用"
+      }
+    }
   }
 }

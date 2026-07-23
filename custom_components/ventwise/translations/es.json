@@ -373,5 +373,105 @@
         "override": "Usar override"
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "notifications_currently_allowed": {
+        "name": "Notificaciones permitidas ahora"
+      },
+      "quiet_hours_active": {
+        "name": "Horas de silencio activas"
+      },
+      "notification_cooldown_active": {
+        "name": "Enfriamiento de notificaciones activo"
+      },
+      "recommendation_active": {
+        "name": "Recomendación activa"
+      }
+    },
+    "number": {
+      "comfort_temperature": {
+        "name": "Temperatura de confort"
+      },
+      "comfort_humidity": {
+        "name": "Humedad de confort"
+      },
+      "recommendation_stability_window": {
+        "name": "Ventana de estabilidad de la recomendación"
+      },
+      "temperature_override": {
+        "name": "Override de temperatura"
+      },
+      "humidity_override": {
+        "name": "Override de humedad"
+      }
+    },
+    "sensor": {
+      "weather_condition": {
+        "name": "Condición meteorológica"
+      },
+      "average_perceived_indoor_temperature": {
+        "name": "Temperatura interior percibida media"
+      },
+      "perceived_outdoor_temperature": {
+        "name": "Temperatura exterior percibida"
+      },
+      "effective_comfort_temperature": {
+        "name": "Temperatura de confort efectiva"
+      },
+      "suggested_comfort_temperature": {
+        "name": "Temperatura de confort sugerida"
+      },
+      "outdoor_temperature": {
+        "name": "Temperatura exterior"
+      },
+      "outdoor_humidity": {
+        "name": "Humedad exterior"
+      },
+      "wind_speed": {
+        "name": "Velocidad del viento exterior"
+      },
+      "recommendation": {
+        "name": "Recomendación"
+      },
+      "recommendation_score": {
+        "name": "Puntuación de recomendación"
+      },
+      "recommendation_reason": {
+        "name": "Motivo de la recomendación"
+      },
+      "perceived_indoor_temperature": {
+        "name": "Temperatura interior percibida"
+      },
+      "temperature": {
+        "name": "Temperatura"
+      },
+      "indoor_humidity": {
+        "name": "Humedad interior"
+      }
+    },
+    "switch": {
+      "integration_enabled": {
+        "name": "Integración habilitada"
+      },
+      "notifications_enabled": {
+        "name": "Notificaciones habilitadas"
+      },
+      "automatic_comfort_temperature": {
+        "name": "Temperatura de confort automática"
+      },
+      "quiet_hours_enabled": {
+        "name": "Horas de silencio habilitadas"
+      },
+      "enabled": {
+        "name": "Habilitado"
+      },
+      "temperature_override_enabled": {
+        "name": "Override de temperatura habilitado"
+      },
+      "humidity_override_enabled": {
+        "name": "Override de humedad habilitado"
+      }
+    }
   }
 }
