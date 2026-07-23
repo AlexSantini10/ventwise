@@ -349,7 +349,8 @@ def test_coordinator_sends_notification_to_selected_devices(
     assert hass.services.calls[0][0] == "notify"
     assert hass.services.calls[0][1] == "send_message"
     assert hass.services.calls[0][2]["title"] == "VentWise"
-    assert hass.services.calls[0][2]["message"] == "Camera: open windows."
+    assert hass.services.calls[0][2]["message"].startswith("Camera: open windows.")
+    assert "too warm" in hass.services.calls[0][2]["message"] or "troppo caldo" in hass.services.calls[0][2]["message"]
     assert hass.services.calls[0][3] == {"entity_id": "notify.mobile_app_alice"}
     assert hass.services.calls[1][3] == {"entity_id": "notify.mobile_app_bob"}
     assert hass.services.calls[2][0] == "persistent_notification"

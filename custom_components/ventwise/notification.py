@@ -17,6 +17,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "open windows.",
         "close": "close windows.",
         "none": "no action needed.",
+        "too_warm": "It is too warm inside: {delta:.1f}°C above comfort.",
+        "too_cold": "It is too cold inside: {delta:.1f}°C below comfort.",
         "delivered_title": "VentWise notification delivered",
         "failed_title": "VentWise notification delivery failed",
         "delivered_to": "Delivered to",
@@ -26,6 +28,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "apri le finestre.",
         "close": "chiudi le finestre.",
         "none": "nessuna azione necessaria.",
+        "too_warm": "Dentro fa troppo caldo: {delta:.1f}°C sopra il comfort.",
+        "too_cold": "Dentro fa troppo freddo: {delta:.1f}°C sotto il comfort.",
         "delivered_title": "Notifica VentWise consegnata",
         "failed_title": "Consegna notifica VentWise fallita",
         "delivered_to": "Consegnata a",
@@ -35,6 +39,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "abre las ventanas.",
         "close": "cierra las ventanas.",
         "none": "no se necesita ninguna accion.",
+        "too_warm": "Dentro hace demasiado calor: {delta:.1f}°C por encima del confort.",
+        "too_cold": "Dentro hace demasiado frio: {delta:.1f}°C por debajo del confort.",
         "delivered_title": "Notificacion de VentWise entregada",
         "failed_title": "Fallo la entrega de la notificacion de VentWise",
         "delivered_to": "Entregada a",
@@ -44,6 +50,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "откройте окна.",
         "close": "закройте окна.",
         "none": "действие не требуется.",
+        "too_warm": "Внутри слишком жарко: на {delta:.1f}°C выше комфорта.",
+        "too_cold": "Внутри слишком холодно: на {delta:.1f}°C ниже комфорта.",
         "delivered_title": "Уведомление VentWise доставлено",
         "failed_title": "Сбой доставки уведомления VentWise",
         "delivered_to": "Доставлено на",
@@ -53,6 +61,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "打开窗户。",
         "close": "关闭窗户。",
         "none": "无需操作。",
+        "too_warm": "室内太热: 比舒适温度高 {delta:.1f}°C。",
+        "too_cold": "室内太冷: 比舒适温度低 {delta:.1f}°C。",
         "delivered_title": "VentWise 通知已送达",
         "failed_title": "VentWise 通知发送失败",
         "delivered_to": "已发送到",
@@ -97,7 +107,7 @@ def build_notification_payload(
     action = summary.action.value
     title = "VentWise"
     texts = _notification_texts(language)
-    body = f"{room_name}: {texts.get(action, texts['none'])}"
+    body = _build_notification_body(room_name, action, summary, texts)
     return title, body
 
 
@@ -201,3 +211,57 @@ def _normalize_language_key(language: str | None) -> str:
         if normalized.startswith(prefix):
             return prefix
     return "en"
+
+
+def _build_notification_body(
+    room_name: str,
+    action: str,
+    summary: RecommendationSummary,
+    texts: dict[str, str],
+) -> str:
+    """Build a localized, human-readable notification body."""
+
+    if action == "open":
+        reason = _localized_temperature_reason(summary, texts, warmer=True)
+        if reason is not None:
+            return f"{room_name}: {texts['open']} {reason}"
+    elif action == "close":
+        reason = _localized_temperature_reason(summary, texts, warmer=False)
+        if reason is not None:
+            return f"{room_name}: {texts['close']} {reason}"
+    return f"{room_name}: {texts.get(action, texts['none'])}"
+
+
+def _localized_temperature_reason(
+    summary: RecommendationSummary,
+    texts: dict[str, str],
+    *,
+    warmer: bool,
+) -> str | None:
+    """Return a brief localized explanation based on the best room metrics."""
+
+    recommendation = _best_room_recommendation(summary)
+    if recommendation is None:
+        return None
+
+    delta = recommendation.indoor_perceived_c - recommendation.target_perceived_c
+    if abs(delta) < 0.05:
+        return None
+
+    if warmer and delta > 0:
+        return texts["too_warm"].format(delta=delta)
+    if not warmer and delta < 0:
+        return texts["too_cold"].format(delta=abs(delta))
+    return None
+
+
+def _best_room_recommendation(summary: RecommendationSummary):
+    """Return the recommendation matching the summary's best room, if any."""
+
+    if not summary.best_room:
+        return None
+
+    for recommendation in summary.room_recommendations:
+        if recommendation.room_name == summary.best_room:
+            return recommendation
+    return summary.room_recommendations[0] if summary.room_recommendations else None

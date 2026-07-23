@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from types import SimpleNamespace
 
 import pytest
 
@@ -67,19 +68,23 @@ def test_notification_entity_resolution_filters_to_notify_entities(monkeypatch: 
 
 
 def test_build_notification_payload_uses_requested_language() -> None:
-    summary = type(
-        "Summary",
-        (),
-        {
-            "best_room": "Salotto",
-            "action": type("Action", (), {"value": "open"})(),
-        },
-    )()
+    summary = SimpleNamespace(
+        best_room="Salotto",
+        action=SimpleNamespace(value="open"),
+        room_recommendations=(
+            SimpleNamespace(
+                room_name="Salotto",
+                indoor_perceived_c=27.2,
+                target_perceived_c=22.0,
+                outdoor_perceived_c=23.5,
+            ),
+        ),
+    )
 
     title, message = build_notification_payload(summary, language="it-IT")
 
     assert title == "VentWise"
-    assert message == "Salotto: apri le finestre."
+    assert message == "Salotto: apri le finestre. Dentro fa troppo caldo: 5.2°C sopra il comfort."
 
 
 def test_async_send_notification_updates_home_assistant_persistent_notification() -> None:
