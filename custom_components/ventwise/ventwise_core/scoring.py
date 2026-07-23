@@ -8,6 +8,7 @@ from .models import (
     ComfortObservation,
     RecommendationAction,
     RecommendationContext,
+    RecommendationIntensity,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
@@ -99,6 +100,7 @@ class ComfortRecommender:
                 outdoor_perceived_c=outdoor_perceived,
                 open_score=0.0,
                 close_score=close_score,
+                intensity=_recommendation_intensity(RecommendationAction.CLOSE, close_score),
             )
 
         delta = inside_delta - outside_delta
@@ -150,6 +152,7 @@ class ComfortRecommender:
             outdoor_perceived_c=outdoor_perceived,
             open_score=open_score,
             close_score=close_score,
+            intensity=_recommendation_intensity(action, score),
         )
 
     def evaluate(
@@ -167,6 +170,7 @@ class ComfortRecommender:
                 score=0.0,
                 reason="Quiet hours are active.",
                 blocked_by="quiet_hours",
+                intensity=RecommendationIntensity.NONE,
             )
         if context.cooldown_active:
             return RecommendationSummary(
@@ -174,6 +178,7 @@ class ComfortRecommender:
                 score=0.0,
                 reason="Notification cooldown is active.",
                 blocked_by="cooldown",
+                intensity=RecommendationIntensity.NONE,
             )
         if context.stable_for_seconds < self._config.minimum_stability_seconds:
             return RecommendationSummary(
@@ -184,6 +189,7 @@ class ComfortRecommender:
                     f"({context.stable_for_seconds}s < {self._config.minimum_stability_seconds}s)."
                 ),
                 blocked_by="stability",
+                intensity=RecommendationIntensity.NONE,
             )
 
         active_rooms = tuple(room for room in rooms if room.enabled)
@@ -195,6 +201,7 @@ class ComfortRecommender:
                 action=RecommendationAction.NONE,
                 score=0.0,
                 reason="No enabled rooms configured.",
+                intensity=RecommendationIntensity.NONE,
             )
 
         best_room = max(room_recommendations, key=lambda recommendation: recommendation.score)
@@ -213,6 +220,7 @@ class ComfortRecommender:
                 reason="The strongest room signal is too small to notify.",
                 room_recommendations=room_recommendations,
                 best_room=best_room.room_name,
+                intensity=_recommendation_intensity(RecommendationAction.NONE, weighted_score),
             )
         return RecommendationSummary(
             action=best_room.action,
@@ -220,6 +228,7 @@ class ComfortRecommender:
             reason=best_room.reason,
             room_recommendations=room_recommendations,
             best_room=best_room.room_name,
+            intensity=_recommendation_intensity(best_room.action, weighted_score),
         )
 
     def _base_direction_score(
@@ -295,3 +304,16 @@ def _weather_requires_close(weather_condition: str | None) -> bool:
         return False
     lowered = weather_condition.strip().lower()
     return any(token in lowered for token in ("thunder", "lightning", "storm", "hail"))
+
+
+def _recommendation_intensity(
+    action: RecommendationAction,
+    score: float,
+) -> RecommendationIntensity:
+    if action == RecommendationAction.NONE or score <= 0.0:
+        return RecommendationIntensity.NONE
+    if score < 0.4:
+        return RecommendationIntensity.LOW
+    if score < 0.75:
+        return RecommendationIntensity.MEDIUM
+    return RecommendationIntensity.HIGH

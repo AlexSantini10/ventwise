@@ -365,6 +365,7 @@ def build_debug_attributes(
     return {
         "summary_action": summary.action.value,
         "summary_score": summary.score,
+        "summary_intensity": summary.intensity.value,
         "summary_reason": summary.reason,
         "summary_best_room": summary.best_room,
         "summary_blocked_by": summary.blocked_by,
@@ -518,6 +519,7 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "kind": room.kind,
         "action": recommendation.action.value,
         "score": recommendation.score,
+        "intensity": recommendation.intensity.value,
         "reason": recommendation.reason,
         "indoor_perceived_c": recommendation.indoor_perceived_c,
         "outdoor_perceived_c": recommendation.outdoor_perceived_c,

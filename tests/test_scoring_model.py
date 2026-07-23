@@ -5,6 +5,7 @@ from ventwise_core import (
     ComfortRecommender,
     RecommendationAction,
     RecommendationContext,
+    RecommendationIntensity,
     RoomObservation,
     RoomProfile,
     SeasonMode,
@@ -26,6 +27,7 @@ def test_recommender_prefers_open_when_outside_is_more_comfortable() -> None:
     assert result.action == RecommendationAction.OPEN
     assert result.score > 0
     assert result.best_room == "Camera"
+    assert result.intensity == RecommendationIntensity.HIGH
 
 
 def test_recommender_opens_when_outside_is_only_one_degree_closer_to_target() -> None:
@@ -43,6 +45,7 @@ def test_recommender_opens_when_outside_is_only_one_degree_closer_to_target() ->
 
     assert result.action == RecommendationAction.OPEN
     assert result.score >= 0.35
+    assert result.intensity == RecommendationIntensity.LOW
 
 
 def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
@@ -58,6 +61,7 @@ def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
 
     assert result.action == RecommendationAction.CLOSE
     assert result.score > 0
+    assert result.intensity == RecommendationIntensity.HIGH
 
 
 def test_recommender_returns_none_for_neutral_conditions() -> None:
@@ -73,6 +77,7 @@ def test_recommender_returns_none_for_neutral_conditions() -> None:
 
     assert result.action == RecommendationAction.NONE
     assert result.score == 0
+    assert result.intensity == RecommendationIntensity.NONE
 
 
 def test_recommender_needs_a_minimum_perceived_gap() -> None:
@@ -89,6 +94,41 @@ def test_recommender_needs_a_minimum_perceived_gap() -> None:
     result = recommender.evaluate([room], outdoor)
 
     assert result.action == RecommendationAction.NONE
+    assert result.intensity == RecommendationIntensity.NONE
+
+
+def test_recommender_maps_score_to_low_intensity() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0, decision_threshold_c=0.0)
+    )
+    room = RoomProfile(
+        room_id="room-1",
+        name="Studio",
+        indoor=RoomObservation(temperature_c=22.7, humidity_percent=50.0),
+    )
+    outdoor = ComfortObservation(temperature_c=22.0, humidity_percent=50.0)
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.action == RecommendationAction.OPEN
+    assert result.intensity == RecommendationIntensity.LOW
+
+
+def test_recommender_maps_score_to_medium_intensity() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0, decision_threshold_c=0.0)
+    )
+    room = RoomProfile(
+        room_id="room-1",
+        name="Studio",
+        indoor=RoomObservation(temperature_c=23.2, humidity_percent=50.0),
+    )
+    outdoor = ComfortObservation(temperature_c=22.0, humidity_percent=50.0)
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.action == RecommendationAction.OPEN
+    assert result.intensity == RecommendationIntensity.MEDIUM
 
 
 def test_recommender_applies_soft_outdoor_threshold_to_open_actions() -> None:

@@ -15,6 +15,15 @@ class RecommendationAction(str, Enum):
     NONE = "none"
 
 
+class RecommendationIntensity(str, Enum):
+    """Coarse strength level for a recommendation."""
+
+    NONE = "none"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
 class SeasonMode(str, Enum):
     """High-level season hint for optional scoring bias."""
 
@@ -98,6 +107,7 @@ class RoomRecommendation:
     room_id: str | None = None
     open_score: float = 0.0
     close_score: float = 0.0
+    intensity: RecommendationIntensity = RecommendationIntensity.NONE
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,3 +120,4 @@ class RecommendationSummary:
     room_recommendations: Tuple[RoomRecommendation, ...] = field(default_factory=tuple)
     blocked_by: str | None = None
     best_room: str | None = None
+    intensity: RecommendationIntensity = RecommendationIntensity.NONE

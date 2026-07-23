@@ -287,12 +287,14 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
 
     assert attributes["summary_action"] == summary.action.value
     assert attributes["summary_best_room"] == "Camera"
+    assert attributes["summary_intensity"] == summary.intensity.value
     assert attributes["weather_condition"] == "sunny"
     assert attributes["target_perceived_c"] == 22.0
     assert attributes["outdoor_perceived_c"] == 20.0
     assert attributes["active_indoor_perceived_c"] == 23.2
     assert attributes["notification_allowed"] is True
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
+    assert "intensity" in attributes["room_recommendations"][0]
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
 
