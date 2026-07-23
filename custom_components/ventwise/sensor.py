@@ -30,6 +30,7 @@ async def async_setup_entry(
         PerceivedIndoorTemperatureSensor(coordinator),
         PerceivedOutdoorTemperatureSensor(coordinator),
         PerceivedComfortTemperatureSensor(coordinator),
+        SuggestedComfortTemperatureSensor(coordinator),
         OutdoorTemperatureSensor(coordinator),
         OutdoorHumiditySensor(coordinator),
         WindSpeedSensor(coordinator),
@@ -44,6 +45,7 @@ async def async_setup_entry(
                 RoomPerceivedIndoorTemperatureSensor(coordinator, room),
                 RoomPerceivedOutdoorTemperatureSensor(coordinator, room),
                 RoomPerceivedComfortTemperatureSensor(coordinator, room),
+                RoomSuggestedComfortTemperatureSensor(coordinator, room),
                 RoomIndoorTemperatureSensor(coordinator, room),
                 RoomIndoorHumiditySensor(coordinator, room),
                 RoomOutdoorTemperatureSensor(coordinator, room),
@@ -129,6 +131,24 @@ class PerceivedComfortTemperatureSensor(VentWiseEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         return self.coordinator.data.target_perceived_c
+
+
+class SuggestedComfortTemperatureSensor(VentWiseEntity, SensorEntity):
+    """Current suggested comfort temperature from the algorithm."""
+
+    _attr_icon = "mdi:thermometer-auto"
+    _attr_native_unit_of_measurement = "Â°C"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(
+            coordinator,
+            "suggested_comfort_temperature",
+            "Suggested comfort temperature",
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.data.suggested_comfort_temperature_c
 
 
 class OutdoorTemperatureSensor(VentWiseEntity, SensorEntity):
@@ -301,6 +321,26 @@ class RoomPerceivedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         return room_target_temperature_c(self.room, self.coordinator.config)
+
+
+class RoomSuggestedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+    """Suggested comfort temperature shown on a room device."""
+
+    _attr_icon = "mdi:thermometer-auto"
+    _attr_native_unit_of_measurement = "Â°C"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(
+            coordinator,
+            room,
+            "suggested_comfort_temperature",
+            f"{room.name} suggested comfort temperature",
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
+        return None if recommendation is None else recommendation.suggested_comfort_temperature_c
 
 
 class RoomIndoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):

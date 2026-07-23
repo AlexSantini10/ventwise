@@ -1,5 +1,7 @@
 """Tests for the comfort scoring core."""
 
+import pytest
+
 from ventwise_core import (
     ComfortObservation,
     ComfortRecommender,
@@ -26,6 +28,23 @@ def test_recommender_prefers_open_when_outside_is_more_comfortable() -> None:
     assert result.action == RecommendationAction.OPEN
     assert result.score > 0
     assert result.best_room == "Camera"
+
+
+def test_recommender_exposes_suggested_comfort_temperature() -> None:
+    recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0))
+    room = RoomProfile(
+        room_id="room-1",
+        name="Camera",
+        indoor=RoomObservation(temperature_c=29.0, humidity_percent=50.0),
+    )
+    outdoor = ComfortObservation(temperature_c=28.0, humidity_percent=50.0)
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.suggested_comfort_temperature_c == pytest.approx(23.625)
+    assert result.room_recommendations[0].suggested_comfort_temperature_c == pytest.approx(
+        23.625
+    )
 
 
 def test_recommender_opens_when_outside_is_only_one_degree_closer_to_target() -> None:
