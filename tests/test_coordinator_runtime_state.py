@@ -337,7 +337,7 @@ def test_coordinator_sends_notification_to_selected_devices(
         }
     )
     coordinator.hass.states = SimpleNamespace(get=fake_states.get)
-    coordinator._last_action_signature = ("close", "Camera")
+    coordinator._last_action_signature = ("open", "Camera")
     coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
     coordinator._last_notification_signature = None
     coordinator._last_notification_at = fixed_now - timedelta(days=1)
