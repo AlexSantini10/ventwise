@@ -276,6 +276,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 notification_entity_ids,
                 title=title,
                 message=message,
+                device_ids=self._config.notification_device_ids,
             )
             if delivered:
                 self._last_notification_signature = signature

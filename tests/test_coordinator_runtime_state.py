@@ -344,13 +344,16 @@ def test_coordinator_sends_notification_to_selected_devices(
     snapshot = asyncio.run(coordinator._async_update_data())
 
     assert snapshot.notification_allowed is True
-    assert len(hass.services.calls) == 2
+    assert len(hass.services.calls) == 3
     assert hass.services.calls[0][0] == "notify"
     assert hass.services.calls[0][1] == "send_message"
     assert hass.services.calls[0][2]["title"] == "VentWise"
     assert hass.services.calls[0][2]["message"] == "Camera: open windows."
     assert hass.services.calls[0][3] == {"entity_id": "notify.mobile_app_alice"}
     assert hass.services.calls[1][3] == {"entity_id": "notify.mobile_app_bob"}
+    assert hass.services.calls[2][0] == "persistent_notification"
+    assert hass.services.calls[2][1] == "create"
+    assert hass.services.calls[2][2]["notification_id"] == "ventwise_last_notification_delivery"
 
 
 def test_coordinator_uses_automatic_comfort_temperature_when_enabled(
