@@ -155,7 +155,7 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
-    assert list(room_schema.schema.keys())[:6] == [
+    assert list(room_schema.schema.keys())[:8] == [
         CONF_ROOM_ENABLED,
         CONF_ROOM_NAME,
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
