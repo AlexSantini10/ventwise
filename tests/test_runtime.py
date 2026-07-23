@@ -199,6 +199,34 @@ def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_miss
     assert len(rooms) == 1
 
 
+def test_build_room_profiles_reads_wind_gust_from_weather_attributes() -> None:
+    config = build_integration_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                }
+            ],
+        }
+    )
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="rainy",
+            attributes={"temperature": 20.0, "humidity": 55.0, "wind_gust_speed": 14.5},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="25.0"),
+    }
+
+    rooms, outdoor = build_room_profiles(config, fake_states.get)
+
+    assert outdoor is not None
+    assert outdoor.wind_gust_m_s == 14.5
+    assert len(rooms) == 1
+
+
 def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> None:
     config = build_integration_config(
         {
@@ -294,6 +322,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         outdoor_temperature_c=20.0,
         outdoor_humidity_percent=45.0,
         wind_speed_m_s=None,
+        wind_gust_m_s=None,
         notification_allowed=True,
         quiet_hours_active=False,
         cooldown_active=False,

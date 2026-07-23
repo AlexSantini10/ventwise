@@ -126,6 +126,7 @@ class RuntimeSnapshot:
     outdoor_temperature_c: float | None
     outdoor_humidity_percent: float | None
     wind_speed_m_s: float | None
+    wind_gust_m_s: float | None
     notification_allowed: bool
     quiet_hours_active: bool
     cooldown_active: bool
@@ -339,10 +340,15 @@ def build_room_profiles(
             "wind_speed",
             allow_state_fallback=False,
         )
+        wind_gust = _weather_gust_value(
+            config.outdoor_weather_entity_id,
+            state_getter,
+        )
         outdoor = ComfortObservation(
             temperature_c=outdoor_temp,
             humidity_percent=outdoor_humidity,
             wind_speed_m_s=wind_speed,
+            wind_gust_m_s=wind_gust,
             weather_condition=weather_condition,
         )
 
@@ -409,6 +415,7 @@ def build_debug_attributes(
         "outdoor_temperature_c": snapshot.outdoor_temperature_c,
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
+        "wind_gust_m_s": snapshot.wind_gust_m_s,
         "target_temperature_c": config.target_temperature_c,
         "auto_comfort_temperature_enabled": config.auto_comfort_temperature_enabled,
         "target_humidity_percent": config.target_humidity_percent,
@@ -571,6 +578,29 @@ def _weather_condition(
         return None
     text = str(raw_state).strip()
     return text or None
+
+
+def _weather_gust_value(
+    weather_entity_id: str | None,
+    state_getter: Callable[[str], Any],
+) -> float | None:
+    """Extract a wind gust value from a weather entity when available."""
+
+    if not weather_entity_id:
+        return None
+    state = state_getter(weather_entity_id)
+    if state is None:
+        return None
+    attributes = getattr(state, "attributes", {}) or {}
+    for key in ("wind_gust_speed", "wind_gust_m_s", "wind_gust"):
+        value = attributes.get(key)
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def find_room_recommendation(

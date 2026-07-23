@@ -53,6 +53,7 @@ class ComfortObservation:
     temperature_c: float
     humidity_percent: float
     wind_speed_m_s: float | None = None
+    wind_gust_m_s: float | None = None
     weather_condition: str | None = None
 
 
@@ -71,6 +72,34 @@ class ScoringConfig:
     wind_open_preference_threshold_m_s: float = 4.0
     wind_open_preference_per_m_s: float = 0.02
     wind_open_penalty_per_m_s: float = 0.07
+    wind_open_block_m_s: float = 12.0
+    wind_gust_open_block_m_s: float = 15.0
+    weather_open_block_conditions: Tuple[str, ...] = (
+        "thunder",
+        "lightning",
+        "storm",
+        "hail",
+        "tornado",
+        "hurricane",
+        "blizzard",
+        "squall",
+        "freezing",
+        "icy",
+        "ice",
+    )
+    weather_open_reduce_conditions: Tuple[str, ...] = (
+        "rain",
+        "drizzle",
+        "shower",
+        "snow",
+        "sleet",
+        "fog",
+        "mist",
+        "haze",
+        "smoke",
+        "windy",
+        "gust",
+    )
     soft_threshold_penalty: float = 0.7
     season_mode: SeasonMode = SeasonMode.AUTO
     open_bias: float = 0.0

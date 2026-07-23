@@ -151,6 +151,22 @@ class ComfortRecommender:
         target_penalty = self._target_reasonableness_factor(target_temperature, target_humidity)
         open_score = self._clamp(open_score * target_penalty)
         close_score = self._clamp(close_score * target_penalty)
+        (
+            environmental_open_factor,
+            environmental_close_factor,
+            environmental_close_bonus,
+            force_close_floor,
+            environment_notes,
+        ) = (
+            self._environmental_adjustments(outdoor)
+        )
+        open_score = self._clamp(open_score * environmental_open_factor)
+        close_score = self._clamp(
+            (close_score * environmental_close_factor) + environmental_close_bonus
+        )
+        if force_close_floor > 0.0:
+            open_score = 0.0
+            close_score = self._clamp(max(close_score, force_close_floor))
 
         if max(inside_delta, outside_delta) < self._config.decision_threshold_c:
             action = RecommendationAction.NONE
@@ -174,6 +190,7 @@ class ComfortRecommender:
             outside_delta,
             open_score,
             close_score,
+            environment_notes,
         )
         _LOGGER.debug(
             "Recommendation decision for room %s: action=%s score=%.2f reason=%s "
@@ -283,6 +300,9 @@ class ComfortRecommender:
 
         weighted_score = self._clamp(weighted_score)
         if weighted_score < self._config.minimum_score or best_room.action == RecommendationAction.NONE:
+            suppressed_reason = (
+                f"{best_room.reason} The strongest room signal is too small to notify."
+            )
             _LOGGER.debug(
                 "Recommendation summary suppressed: best_room=%s action=%s score=%.2f minimum_score=%.2f "
                 "reason=%s",
@@ -290,12 +310,12 @@ class ComfortRecommender:
                 best_room.action.value,
                 weighted_score,
                 self._config.minimum_score,
-                "The strongest room signal is too small to notify.",
+                suppressed_reason,
             )
             return RecommendationSummary(
                 action=RecommendationAction.NONE,
                 score=weighted_score,
-                reason="The strongest room signal is too small to notify.",
+                reason=suppressed_reason,
                 suggested_comfort_temperature_c=best_room.suggested_comfort_temperature_c,
                 room_recommendations=room_recommendations,
                 best_room=best_room.room_name,
@@ -325,25 +345,7 @@ class ComfortRecommender:
     ) -> float:
         need_score = _smoothstep(need_c, 0.0, 4.0)
         benefit_score = _smoothstep(benefit_c, 0.4, 1.5)
-        score = self._clamp(need_score * benefit_score)
-        if direction == RecommendationAction.OPEN and outdoor.wind_speed_m_s is not None:
-            if outdoor.wind_speed_m_s <= self._config.wind_open_preference_threshold_m_s:
-                score = self._clamp(
-                    score
-                    + (outdoor.wind_speed_m_s * self._config.wind_open_preference_per_m_s)
-                )
-            else:
-                score = self._clamp(
-                    score
-                    - (
-                        (
-                            outdoor.wind_speed_m_s
-                            - self._config.wind_open_preference_threshold_m_s
-                        )
-                        * self._config.wind_open_penalty_per_m_s
-                    )
-                )
-        return score
+        return self._clamp(need_score * benefit_score)
 
     def _build_reason(
         self,
@@ -355,16 +357,20 @@ class ComfortRecommender:
         outside_delta: float,
         open_score: float,
         close_score: float,
+        environment_notes: tuple[str, ...] = (),
     ) -> str:
         direction = "open" if action == RecommendationAction.OPEN else "close"
         if action == RecommendationAction.NONE:
             direction = "none"
-        return (
+        reason = (
             f"{room_name}: inside perceived {indoor_perceived:.1f}C is "
             f"{inside_delta:.1f}C from target, outside perceived {outdoor_perceived:.1f}C is "
             f"{outside_delta:.1f}C from target, open={open_score:.2f}, close={close_score:.2f}, "
             f"so action={direction}."
         )
+        if environment_notes:
+            reason = f"{reason} {' '.join(environment_notes)}"
+        return reason
 
     def _apply_season_bias(self, open_score: float, close_score: float) -> tuple[float, float]:
         if abs(open_score - close_score) > 0.05:
@@ -390,6 +396,115 @@ class ComfortRecommender:
         humidity_factor = 1.0 - _smoothstep(humidity_distance, 20.0, 50.0)
         return self._clamp(min(temperature_factor, humidity_factor))
 
+    def _environmental_adjustments(
+        self,
+        outdoor: ComfortObservation,
+    ) -> tuple[float, float, float, float, tuple[str, ...]]:
+        open_factor = 1.0
+        close_factor = 1.0
+        close_bonus = 0.0
+        force_close_floor = 0.0
+        notes: list[str] = []
+
+        weather_factor, weather_close_bonus, weather_force_close_floor, weather_note = (
+            self._weather_adjustment(outdoor.weather_condition)
+        )
+        open_factor *= weather_factor
+        close_bonus += weather_close_bonus
+        force_close_floor = max(force_close_floor, weather_force_close_floor)
+        if weather_note is not None:
+            notes.append(weather_note)
+
+        wind_factor, wind_close_bonus, wind_force_close_floor, wind_note = self._wind_adjustment(
+            outdoor.wind_speed_m_s,
+            outdoor.wind_gust_m_s,
+        )
+        open_factor *= wind_factor
+        close_bonus += wind_close_bonus
+        force_close_floor = max(force_close_floor, wind_force_close_floor)
+        if wind_factor == 0.0 and wind_force_close_floor == 0.0:
+            close_factor = 0.0
+        if wind_note is not None:
+            notes.append(wind_note)
+
+        return open_factor, close_factor, close_bonus, force_close_floor, tuple(notes)
+
+    def _weather_adjustment(
+        self,
+        weather_condition: str | None,
+    ) -> tuple[float, float, float, str | None]:
+        if weather_condition is None:
+            return 1.0, 0.0, 0.0, None
+        lowered = weather_condition.strip().lower()
+        if not lowered:
+            return 1.0, 0.0, 0.0, None
+        if any(token in lowered for token in self._config.weather_open_block_conditions):
+            return (
+                0.0,
+                0.35,
+                max(self._config.minimum_score, 0.75),
+                f"weather condition {weather_condition} suppresses opening.",
+            )
+        severity = _weather_reduction_severity(lowered, self._config.weather_open_reduce_conditions)
+        if severity <= 0.0:
+            return 1.0, 0.0, 0.0, None
+        open_factor = max(0.0, 1.0 - severity)
+        close_bonus = max(0.05, severity * 0.25)
+        return (
+            open_factor,
+            close_bonus,
+            0.0,
+            f"weather condition {weather_condition} reduces opening.",
+        )
+
+    def _wind_adjustment(
+        self,
+        wind_speed_m_s: float | None,
+        wind_gust_m_s: float | None,
+    ) -> tuple[float, float, float, str | None]:
+        effective_wind = _effective_wind_speed(wind_speed_m_s, wind_gust_m_s)
+        if effective_wind is None:
+            return 1.0, 0.0, 0.0, None
+
+        gust_note = ""
+        if (
+            wind_gust_m_s is not None
+            and wind_speed_m_s is not None
+            and wind_gust_m_s > wind_speed_m_s
+        ):
+            gust_note = f" gust {wind_gust_m_s:.1f}m/s"
+
+        if effective_wind <= self._config.wind_open_preference_threshold_m_s:
+            bonus = effective_wind * self._config.wind_open_preference_per_m_s
+            return (
+                1.0 + bonus,
+                0.0,
+                0.0,
+                f"wind {effective_wind:.1f}m/s{gust_note} supports opening.",
+            )
+
+        if effective_wind >= self._config.wind_gust_open_block_m_s:
+            return (
+                0.0,
+                0.0,
+                0.0,
+                f"wind {effective_wind:.1f}m/s{gust_note} blocks opening.",
+            )
+
+        severity = _smoothstep(
+            effective_wind,
+            self._config.wind_open_preference_threshold_m_s,
+            self._config.wind_open_block_m_s,
+        )
+        open_factor = max(0.0, 1.0 - severity)
+        close_bonus = severity * 0.15
+        return (
+            open_factor,
+            close_bonus,
+            0.0,
+            f"wind {effective_wind:.1f}m/s{gust_note} reduces opening.",
+        )
+
     @staticmethod
     def _clamp(value: float) -> float:
         return max(0.0, min(1.0, value))
@@ -411,3 +526,37 @@ def _weather_requires_close(weather_condition: str | None) -> bool:
         return False
     lowered = weather_condition.strip().lower()
     return any(token in lowered for token in ("thunder", "lightning", "storm", "hail"))
+
+
+def _effective_wind_speed(
+    wind_speed_m_s: float | None,
+    wind_gust_m_s: float | None,
+) -> float | None:
+    values = [value for value in (wind_speed_m_s, wind_gust_m_s) if value is not None]
+    if not values:
+        return None
+    return max(values)
+
+
+def _weather_reduction_severity(
+    lowered_weather_condition: str,
+    tokens: tuple[str, ...],
+) -> float:
+    severities = {
+        "rain": 0.8,
+        "drizzle": 0.6,
+        "shower": 0.7,
+        "snow": 0.75,
+        "sleet": 0.9,
+        "fog": 0.4,
+        "mist": 0.3,
+        "haze": 0.25,
+        "smoke": 0.3,
+        "windy": 0.35,
+        "gust": 0.35,
+    }
+    severity = 0.0
+    for token in tokens:
+        if token in lowered_weather_condition:
+            severity = max(severity, severities.get(token, 0.5))
+    return severity
