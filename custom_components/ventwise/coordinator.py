@@ -29,6 +29,7 @@ from .ventwise_core import (
 from .runtime import (
     IntegrationConfig,
     NotificationMarker,
+    RoomActionGuard,
     RuntimeSnapshot,
     RuntimeState,
     build_integration_config,
@@ -85,6 +86,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._last_action_signature = self._runtime_state.last_action_signature
         self._last_action_started_at = self._runtime_state.last_action_started_at or dt_util.utcnow()
         self._notification_markers = dict(self._runtime_state.notification_markers)
+        self._room_action_guards = dict(self._runtime_state.room_action_guards)
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
         self._listeners_initialized = False
@@ -250,6 +252,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             ),
         )
         summary = _with_suggested_comfort_temperature(summary, suggested_target)
+        summary = self._apply_room_action_guardrails(summary, now)
         signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -552,6 +555,129 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             and marker.severity != "urgent"
         )
 
+    def _apply_room_action_guardrails(
+        self,
+        summary: RecommendationSummary,
+        now: datetime,
+    ) -> RecommendationSummary:
+        """Hold per-room reversals so sensor noise cannot flip advice rapidly."""
+
+        room_config_by_key = {
+            (room.room_id or room.name): room for room in self._config.rooms
+        }
+        guarded_recommendations = []
+        for recommendation in summary.room_recommendations:
+            room_key = recommendation.room_id or recommendation.room_name
+            room = room_config_by_key.get(room_key)
+            if room is None:
+                guarded_recommendations.append(recommendation)
+                continue
+            guarded_recommendations.append(
+                self._guard_room_recommendation(recommendation, room, now)
+            )
+
+        actionable = [
+            recommendation
+            for recommendation in guarded_recommendations
+            if recommendation.action != RecommendationAction.NONE
+        ]
+        if not actionable:
+            return replace(
+                summary,
+                action=RecommendationAction.NONE,
+                score=0.0,
+                reason="No room currently has a stable action recommendation.",
+                best_room=None,
+                room_recommendations=tuple(guarded_recommendations),
+            )
+        best = max(actionable, key=lambda recommendation: recommendation.score)
+        return replace(
+            summary,
+            action=best.action,
+            score=best.score,
+            reason=best.reason,
+            best_room=best.room_name,
+            room_recommendations=tuple(guarded_recommendations),
+        )
+
+    def _guard_room_recommendation(self, recommendation, room, now: datetime):
+        """Apply one room's reversal hold and action lockout."""
+
+        if recommendation.action == RecommendationAction.NONE:
+            return recommendation
+
+        room_key = recommendation.room_id or recommendation.room_name
+        guard = self._room_action_guards.get(room_key)
+        action = recommendation.action.value
+        if guard is None:
+            self._accept_room_action(room_key, action, room.action_lockout_minutes, now)
+            return recommendation
+        if action == guard.accepted_action:
+            if guard.pending_action is not None:
+                self._room_action_guards[room_key] = replace(
+                    guard, pending_action=None, pending_since=None
+                )
+            return recommendation
+
+        # A close recommendation with an urgent score is safety-critical and is
+        # never delayed by a previous open suggestion.
+        if (
+            recommendation.action == RecommendationAction.CLOSE
+            and self._notification_severity(recommendation.score) == "urgent"
+        ):
+            self._accept_room_action(room_key, action, room.action_lockout_minutes, now)
+            return recommendation
+
+        if guard.lockout_until is not None and now < guard.lockout_until:
+            return self._guarded_recommendation(
+                recommendation,
+                "VentWise is keeping the previous room advice until its safety lock expires.",
+            )
+
+        if guard.pending_action != action or guard.pending_since is None:
+            self._room_action_guards[room_key] = replace(
+                guard, pending_action=action, pending_since=now
+            )
+            return self._guarded_recommendation(
+                recommendation,
+                "VentWise is waiting for this room's changed advice to settle.",
+            )
+
+        if (now - guard.pending_since) < timedelta(minutes=room.action_change_hold_minutes):
+            return self._guarded_recommendation(
+                recommendation,
+                "VentWise is waiting for this room's changed advice to settle.",
+            )
+
+        self._accept_room_action(room_key, action, room.action_lockout_minutes, now)
+        return recommendation
+
+    def _accept_room_action(
+        self,
+        room_key: str,
+        action: str,
+        lockout_minutes: int,
+        now: datetime,
+    ) -> None:
+        self._room_action_guards[room_key] = RoomActionGuard(
+            accepted_action=action,
+            lockout_until=now + timedelta(minutes=lockout_minutes)
+            if lockout_minutes
+            else None,
+        )
+
+    @staticmethod
+    def _guarded_recommendation(recommendation, reason: str):
+        """Hide an unstable reversal until the room-specific guard permits it."""
+
+        return replace(
+            recommendation,
+            action=RecommendationAction.NONE,
+            score=0.0,
+            reason=reason,
+            reason_code="guarded",
+        )
+
     def _load_runtime_state(self) -> RuntimeState:
         return load_runtime_state({**self._config_entry.data, **self._config_entry.options})
 
@@ -603,6 +729,21 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 target = marker.notified_at + timedelta(minutes=self._config.cooldown_minutes)
                 if target > now:
                     candidates.append(target)
+        room_config_by_key = {
+            configured_room.room_id or configured_room.name: configured_room
+            for configured_room in self._config.rooms
+        }
+        for room_key, guard in self._room_action_guards.items():
+            if guard.pending_since is not None:
+                room = room_config_by_key.get(room_key)
+                if room is not None:
+                    target = guard.pending_since + timedelta(
+                        minutes=room.action_change_hold_minutes
+                    )
+                    if target > now:
+                        candidates.append(target)
+            if guard.lockout_until is not None and guard.lockout_until > now:
+                candidates.append(guard.lockout_until)
         if self._config.quiet_hours_enabled:
             quiet_hours_target = _next_quiet_hours_transition(
                 now,
@@ -667,6 +808,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             last_action_signature=self._last_action_signature,
             last_action_started_at=self._last_action_started_at,
             notification_markers=dict(self._notification_markers),
+            room_action_guards=dict(self._room_action_guards),
         )
         if runtime_state == self._runtime_state:
             return

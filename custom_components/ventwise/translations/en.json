@@ -105,7 +105,9 @@
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this room.",
@@ -116,7 +118,9 @@
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       },
       "edit_room_form": {
@@ -129,7 +133,9 @@
           "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this room.",
@@ -138,7 +144,9 @@
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       },
       "add_macro_room": {
@@ -153,7 +161,9 @@
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this area.",
@@ -164,7 +174,9 @@
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       },
       "edit_macro_room_form": {
@@ -177,7 +189,9 @@
           "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this area.",
@@ -186,7 +200,9 @@
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       }
     },
@@ -336,7 +352,9 @@
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
@@ -347,7 +365,9 @@
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
           "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       },
       "edit_room_form": {
@@ -360,7 +380,9 @@
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
@@ -369,7 +391,9 @@
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       },
       "add_macro_room": {
@@ -384,7 +408,9 @@
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "name": "A friendly name for this larger area, like Upstairs or Living area.",
@@ -395,7 +421,9 @@
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
           "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       },
       "edit_macro_room_form": {
@@ -408,7 +436,9 @@
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
           "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation"
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)"
         },
         "data_description": {
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
@@ -417,7 +447,9 @@
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one.",
           "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area."
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       }
     },
