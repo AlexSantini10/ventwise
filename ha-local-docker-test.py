@@ -18,6 +18,7 @@ DEFAULT_PORT = 8123
 USER_JOURNEY_TEST = "tests/test_user_journey.py"
 TEST_FIXTURES_MARKER = "# VentWise test fixtures"
 TEST_HELPERS_FILE = "ventwise_test_helpers.yaml"
+TEST_OPENING_HELPERS_FILE = "ventwise_test_opening_helpers.yaml"
 TEST_WEATHER_CONDITION_FILE = "ventwise_test_weather_condition.yaml"
 TEST_WEATHER_FILE = "ventwise_test_weather.yaml"
 TEST_DASHBOARD_CONFIG_FILE = "ventwise_test_dashboards.yaml"
@@ -81,6 +82,14 @@ ventwise_test_wind_speed:
   unit_of_measurement: "m/s"
 """
 
+TEST_OPENING_HELPERS_YAML = """ventwise_test_bedroom_window:
+  name: VentWise Test Bedroom Window
+  icon: mdi:window-closed-variant
+ventwise_test_bedroom_door:
+  name: VentWise Test Bedroom Door
+  icon: mdi:door-closed
+"""
+
 TEST_WEATHER_YAML = """- weather:
     - name: VentWise Test Weather
       unique_id: ventwise_test_weather
@@ -90,6 +99,15 @@ TEST_WEATHER_YAML = """- weather:
       humidity: "{{ states('input_number.ventwise_test_outdoor_humidity') | float(45) }}"
       wind_speed: "{{ states('input_number.ventwise_test_wind_speed') | float(2) }}"
       wind_speed_unit: "m/s"
+- binary_sensor:
+    - name: VentWise Test Bedroom Window
+      unique_id: ventwise_test_bedroom_window
+      device_class: window
+      state: "{{ is_state('input_boolean.ventwise_test_bedroom_window', 'on') }}"
+    - name: VentWise Test Bedroom Door
+      unique_id: ventwise_test_bedroom_door
+      device_class: door
+      state: "{{ is_state('input_boolean.ventwise_test_bedroom_door', 'on') }}"
 """
 
 TEST_WEATHER_CONDITION_YAML = """ventwise_test_weather_condition:
@@ -134,6 +152,10 @@ views:
         entities:
           - input_number.ventwise_test_bedroom_temperature
           - input_number.ventwise_test_bedroom_humidity
+          - input_boolean.ventwise_test_bedroom_window
+          - input_boolean.ventwise_test_bedroom_door
+          - binary_sensor.ventwise_test_bedroom_window
+          - binary_sensor.ventwise_test_bedroom_door
       - type: entities
         title: Living room test data
         entities:
@@ -200,6 +222,7 @@ def ensure_test_fixtures(config_dir: Path, config_file: Path) -> None:
     config_text = config_file.read_text(encoding="utf-8")
     fixture_lines = (
         f"input_number: !include {TEST_HELPERS_FILE}",
+        f"input_boolean: !include {TEST_OPENING_HELPERS_FILE}",
         f"input_select: !include {TEST_WEATHER_CONDITION_FILE}",
         f"template: !include {TEST_WEATHER_FILE}",
         f"lovelace: !include {TEST_DASHBOARD_CONFIG_FILE}",
@@ -212,6 +235,10 @@ def ensure_test_fixtures(config_dir: Path, config_file: Path) -> None:
             encoding="utf-8",
         )
     (config_dir / TEST_HELPERS_FILE).write_text(TEST_HELPERS_YAML, encoding="utf-8")
+    (config_dir / TEST_OPENING_HELPERS_FILE).write_text(
+        TEST_OPENING_HELPERS_YAML,
+        encoding="utf-8",
+    )
     (config_dir / TEST_WEATHER_CONDITION_FILE).write_text(
         TEST_WEATHER_CONDITION_YAML,
         encoding="utf-8",

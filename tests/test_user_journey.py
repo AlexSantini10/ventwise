@@ -17,6 +17,8 @@ from custom_components.ventwise.const import (
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_ROOM_ENABLED,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_OPENING_ENTITY_IDS,
+    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -91,6 +93,8 @@ def _setup_options() -> dict[str, object]:
             CONF_ROOM_NAME: "Camera test",
             CONF_ROOM_TEMPERATURE_ENTITY_ID: "input_number.ventwise_test_bedroom_temperature",
             CONF_ROOM_HUMIDITY_ENTITY_ID: "input_number.ventwise_test_bedroom_humidity",
+            CONF_ROOM_OPENING_ENTITY_IDS: ["binary_sensor.ventwise_test_bedroom_window"],
+            CONF_ROOM_OPENINGS_COMPLETE: True,
             CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: False,
             CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: None,
             CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: False,
@@ -133,6 +137,8 @@ def test_config_flow_creates_a_room_from_the_user_journey() -> None:
         CONF_ROOM_NAME: "Camera test",
         CONF_ROOM_TEMPERATURE_ENTITY_ID: "input_number.ventwise_test_bedroom_temperature",
         CONF_ROOM_HUMIDITY_ENTITY_ID: "input_number.ventwise_test_bedroom_humidity",
+        CONF_ROOM_OPENING_ENTITY_IDS: ["binary_sensor.ventwise_test_bedroom_window"],
+        CONF_ROOM_OPENINGS_COMPLETE: True,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: False,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: None,
         CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: False,
@@ -188,6 +194,7 @@ def test_setup_to_user_facing_open_and_close_recommendations() -> None:
         ),
         "input_number.ventwise_test_bedroom_temperature": SimpleNamespace(state="26"),
         "input_number.ventwise_test_bedroom_humidity": SimpleNamespace(state="50"),
+        "binary_sensor.ventwise_test_bedroom_window": SimpleNamespace(state="off"),
     }
 
     open_summary, open_room = _evaluate(options, states)
@@ -202,6 +209,7 @@ def test_setup_to_user_facing_open_and_close_recommendations() -> None:
         attributes={"temperature": 28.0, "humidity": 45.0, "wind_speed": 2.0},
     )
     states["input_number.ventwise_test_bedroom_temperature"] = SimpleNamespace(state="19")
+    states["binary_sensor.ventwise_test_bedroom_window"] = SimpleNamespace(state="on")
 
     close_summary, close_room = _evaluate(options, states)
 
