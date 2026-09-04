@@ -23,6 +23,7 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "none": "no action needed.",
         "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
         "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+        "forecast_reason": "Short-term forecast: outside conditions are expected to become less comfortable soon.",
         "failed_title": "VentWise notification delivery failed",
         "failed_targets": "Failed targets",
     },
@@ -32,6 +33,7 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "none": "nessuna azione necessaria.",
         "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
         "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+        "forecast_reason": "Previsione a breve termine: fuori sarà presto meno confortevole.",
         "failed_title": "Consegna notifica VentWise fallita",
         "failed_targets": "Target falliti",
     },
@@ -154,9 +156,13 @@ def build_recommendation_explanation(
     action = recommendation.action.value
     prefix = f"{recommendation.room_name}: " if include_room_name else ""
     if action == "open":
+        if recommendation.reason_code == "forecast":
+            return f"{prefix}{texts['open']} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
         return f"{prefix}{texts['open']} {reason}" if reason else f"{prefix}{texts['open']}"
     if action == "close":
+        if recommendation.reason_code == "forecast":
+            return f"{prefix}{texts['close']} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
         return f"{prefix}{texts['close']} {reason}" if reason else f"{prefix}{texts['close']}"
     return f"{prefix}{texts['none']}"

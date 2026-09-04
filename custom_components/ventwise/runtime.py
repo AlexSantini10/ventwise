@@ -134,6 +134,7 @@ class RuntimeSnapshot:
     outdoor_perceived_c: float | None
     active_indoor_perceived_c: float | None
     outdoor_temperature_c: float | None
+    forecast_temperature_c: float | None
     outdoor_humidity_percent: float | None
     wind_speed_m_s: float | None
     wind_gust_m_s: float | None
@@ -374,6 +375,7 @@ def is_quiet_hours_active(now: datetime, start_time: str, end_time: str) -> bool
 def build_room_profiles(
     config: IntegrationConfig,
     state_getter: Callable[[str], Any],
+    forecast_temperature_c: float | None = None,
 ) -> tuple[list[RoomProfile], ComfortObservation | None]:
     """Build room profiles and the outdoor observation from Home Assistant state."""
 
@@ -419,6 +421,7 @@ def build_room_profiles(
             wind_speed_m_s=wind_speed,
             wind_gust_m_s=wind_gust,
             weather_condition=weather_condition,
+            forecast_temperature_c=forecast_temperature_c,
         )
 
     rooms: list[RoomProfile] = []
@@ -482,6 +485,7 @@ def build_debug_attributes(
         "cooldown_active": snapshot.cooldown_active,
         "stable_for_seconds": snapshot.stable_for_seconds,
         "outdoor_temperature_c": snapshot.outdoor_temperature_c,
+        "forecast_temperature_c": snapshot.forecast_temperature_c,
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "wind_gust_m_s": snapshot.wind_gust_m_s,

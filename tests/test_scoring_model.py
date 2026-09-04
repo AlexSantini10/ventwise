@@ -105,6 +105,28 @@ def test_recommender_returns_none_for_neutral_conditions() -> None:
     assert result.score == 0
 
 
+def test_recommender_closes_early_when_short_term_forecast_worsens_comfort() -> None:
+    """A comfortable room gets early close advice before outside heat arrives."""
+
+    recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0))
+    room = RoomProfile(
+        room_id="room-1",
+        name="Studio",
+        indoor=RoomObservation(temperature_c=22.1, humidity_percent=50.0),
+    )
+    outdoor = ComfortObservation(
+        temperature_c=22.0,
+        humidity_percent=50.0,
+        forecast_temperature_c=28.0,
+    )
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.action == RecommendationAction.CLOSE
+    assert "short-term forecast" in result.reason
+    assert result.room_recommendations[0].reason_code == "forecast"
+
+
 def test_recommender_needs_a_minimum_perceived_gap() -> None:
     recommender = ComfortRecommender(
         ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)

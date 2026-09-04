@@ -87,6 +87,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._last_action_started_at = self._runtime_state.last_action_started_at or dt_util.utcnow()
         self._notification_markers = dict(self._runtime_state.notification_markers)
         self._room_action_guards = dict(self._runtime_state.room_action_guards)
+        self._forecast_temperature_c: float | None = None
+        self._forecast_fetched_at: datetime | None = None
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
         self._listeners_initialized = False
@@ -136,6 +138,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_perceived_c=None,
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=None,
+                forecast_temperature_c=None,
                 outdoor_humidity_percent=None,
                 wind_speed_m_s=None,
                 wind_gust_m_s=None,
@@ -149,7 +152,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._refresh_time_listener(snapshot.last_updated, snapshot)
             return snapshot
 
-        rooms, outdoor = build_room_profiles(self._config, self.hass.states.get)
+        forecast_temperature_c = await self._async_forecast_temperature(now=dt_util.now())
+        rooms, outdoor = build_room_profiles(
+            self._config,
+            self.hass.states.get,
+            forecast_temperature_c=forecast_temperature_c,
+        )
         notification_entity_ids = (
             notification_entity_ids_for_device_ids(
                 self.hass,
@@ -176,6 +184,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_perceived_c=None,
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=None,
+                forecast_temperature_c=forecast_temperature_c,
                 outdoor_humidity_percent=None,
                 wind_speed_m_s=None,
                 wind_gust_m_s=None,
@@ -209,6 +218,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 ),
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=outdoor.temperature_c,
+                forecast_temperature_c=forecast_temperature_c,
                 outdoor_humidity_percent=outdoor.humidity_percent,
                 wind_speed_m_s=outdoor.wind_speed_m_s,
                 wind_gust_m_s=outdoor.wind_gust_m_s,
@@ -395,6 +405,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             outdoor_perceived_c=outdoor_perceived_c,
             active_indoor_perceived_c=active_indoor_perceived_c,
             outdoor_temperature_c=outdoor.temperature_c,
+            forecast_temperature_c=forecast_temperature_c,
             outdoor_humidity_percent=outdoor.humidity_percent,
             wind_speed_m_s=outdoor.wind_speed_m_s,
             wind_gust_m_s=outdoor.wind_gust_m_s,
@@ -414,6 +425,42 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         self._update_entry_options({"enabled": enabled})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def _async_forecast_temperature(self, now: datetime) -> float | None:
+        """Return the first short-term hourly forecast temperature when available."""
+
+        weather_entity_id = self._config.outdoor_weather_entity_id
+        if weather_entity_id is None:
+            return None
+        if (
+            self._forecast_fetched_at is not None
+            and now - self._forecast_fetched_at < timedelta(minutes=15)
+        ):
+            return self._forecast_temperature_c
+
+        self._forecast_fetched_at = now
+        forecasts = None
+        try:
+            response = await self.hass.services.async_call(
+                "weather",
+                "get_forecasts",
+                {"entity_id": weather_entity_id, "type": "hourly"},
+                blocking=True,
+                return_response=True,
+            )
+            if isinstance(response, dict):
+                payload = response.get(weather_entity_id)
+                if isinstance(payload, dict):
+                    forecasts = payload.get("forecast")
+        except Exception:  # A provider may not expose hourly forecasts.
+            _LOGGER.debug("VentWise short-term forecast unavailable for %s", weather_entity_id)
+
+        if not isinstance(forecasts, list):
+            state = self.hass.states.get(weather_entity_id)
+            attributes = getattr(state, "attributes", {}) if state is not None else {}
+            forecasts = attributes.get("forecast") if isinstance(attributes, dict) else None
+        self._forecast_temperature_c = _first_forecast_temperature(forecasts, now)
+        return self._forecast_temperature_c
 
     async def async_set_notification_enabled(self, enabled: bool) -> None:
         """Persist the notification enable flag in config entry options."""
@@ -886,6 +933,27 @@ def _weather_condition(
         return None
     text = str(raw_state).strip()
     return text or None
+
+
+def _first_forecast_temperature(forecasts: Any, now: datetime) -> float | None:
+    """Pick the nearest upcoming numeric temperature from a forecast response."""
+
+    if not isinstance(forecasts, list):
+        return None
+    candidates: list[tuple[datetime, float]] = []
+    for forecast in forecasts:
+        if not isinstance(forecast, dict):
+            continue
+        try:
+            temperature = float(forecast["temperature"])
+            forecast_at = datetime.fromisoformat(str(forecast["datetime"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        if forecast_at.tzinfo is None:
+            forecast_at = forecast_at.replace(tzinfo=now.tzinfo)
+        if forecast_at >= now:
+            candidates.append((forecast_at, temperature))
+    return min(candidates, default=(None, None), key=lambda item: item[0])[1]
 
 
 def _with_suggested_comfort_temperature(

@@ -322,6 +322,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         outdoor_perceived_c=20.0,
         active_indoor_perceived_c=23.2,
         outdoor_temperature_c=20.0,
+        forecast_temperature_c=24.0,
         outdoor_humidity_percent=45.0,
         wind_speed_m_s=None,
         wind_gust_m_s=None,
@@ -339,6 +340,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     assert attributes["summary_best_room"] == "Camera"
     assert attributes["weather_condition"] == "sunny"
     assert attributes["target_perceived_c"] == 22.0
+    assert attributes["forecast_temperature_c"] == 24.0
     assert attributes["suggested_comfort_temperature_c"] == summary.suggested_comfort_temperature_c
     assert attributes["auto_comfort_temperature_enabled"] is False
     assert attributes["outdoor_perceived_c"] == 20.0

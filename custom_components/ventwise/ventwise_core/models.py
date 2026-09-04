@@ -55,6 +55,7 @@ class ComfortObservation:
     wind_speed_m_s: float | None = None
     wind_gust_m_s: float | None = None
     weather_condition: str | None = None
+    forecast_temperature_c: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
