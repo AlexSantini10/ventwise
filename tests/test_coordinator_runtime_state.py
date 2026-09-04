@@ -39,7 +39,7 @@ from custom_components.ventwise.const import (
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from custom_components.ventwise.coordinator import VentWiseCoordinator
-from custom_components.ventwise.runtime import NotificationMarker
+from custom_components.ventwise.runtime import NotificationMarker, RoomActionGuard, RoomConfig
 from custom_components.ventwise.ventwise_core import RecommendationAction
 from custom_components.ventwise.ventwise_core.models import RoomRecommendation
 
@@ -174,6 +174,62 @@ def test_coordinator_persists_notification_reason_and_severity() -> None:
     ]["Camera"]
     assert marker["reason"] == "Outside is more comfortable."
     assert marker["severity"] == "urgent"
+
+
+def test_room_action_guard_holds_reversals_and_survives_restart() -> None:
+    """A room cannot flip from open to close until its own guards permit it."""
+
+    coordinator, hass, entry = _make_coordinator({CONF_ENABLED: True})
+    room = RoomConfig(
+        room_id="bedroom-1",
+        name="Bedroom",
+        temperature_entity_id="sensor.bedroom_temperature",
+        action_change_hold_minutes=5,
+        action_lockout_minutes=30,
+    )
+    started_at = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    open_recommendation = RoomRecommendation(
+        "Bedroom", RecommendationAction.OPEN, 0.5, "Fresh air helps.", 22.0, 25.0, 20.0, 22.0,
+        room_id="bedroom-1",
+    )
+    close_recommendation = RoomRecommendation(
+        "Bedroom", RecommendationAction.CLOSE, 0.5, "Keep the room closed.", 22.0, 25.0, 30.0, 22.0,
+        room_id="bedroom-1",
+    )
+
+    assert coordinator._guard_room_recommendation(open_recommendation, room, started_at).action == RecommendationAction.OPEN
+    assert coordinator._guard_room_recommendation(
+        close_recommendation, room, started_at + timedelta(minutes=1)
+    ).action == RecommendationAction.NONE
+    assert coordinator._guard_room_recommendation(
+        close_recommendation, room, started_at + timedelta(minutes=31)
+    ).action == RecommendationAction.NONE
+    assert coordinator._guard_room_recommendation(
+        close_recommendation, room, started_at + timedelta(minutes=36)
+    ).action == RecommendationAction.CLOSE
+
+    coordinator._persist_runtime_state()
+    restored = _FakeConfigEntry(entry_id="abc123", data={}, options=hass.config_entries.updated[-1])
+    restarted = VentWiseCoordinator(
+        SimpleNamespace(config_entries=_FakeConfigEntries(), states=SimpleNamespace(get=lambda *_: None)),
+        restored,
+        restored.options,
+    )
+    assert restarted._room_action_guards["bedroom-1"].accepted_action == "close"
+
+
+def test_urgent_close_bypasses_room_action_guard() -> None:
+    coordinator, _, _ = _make_coordinator({CONF_ENABLED: True})
+    room = RoomConfig(None, "Bedroom", "sensor.bedroom_temperature")
+    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    coordinator._room_action_guards["Bedroom"] = RoomActionGuard(
+        "open", lockout_until=now + timedelta(minutes=30)
+    )
+    urgent_close = RoomRecommendation(
+        "Bedroom", RecommendationAction.CLOSE, 0.8, "Storm incoming.", 22.0, 25.0, 20.0, 22.0
+    )
+
+    assert coordinator._guard_room_recommendation(urgent_close, room, now).action == RecommendationAction.CLOSE
 
 
 def test_coordinator_ignores_corrupted_runtime_state_payload() -> None:

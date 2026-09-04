@@ -43,6 +43,8 @@ from .const import (
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
+    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOMS,
     CONF_RUNTIME_STATE,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
@@ -50,6 +52,7 @@ from .const import (
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_NOTIFICATION_MARKERS,
+    CONF_RUNTIME_ROOM_ACTION_GUARDS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
@@ -63,6 +66,8 @@ from .const import (
     DEFAULT_QUIET_HOURS_START,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
+    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
@@ -86,6 +91,8 @@ class RoomConfig:
     humidity_entity_id: str | None = None
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
+    action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
+    action_lockout_minutes: int = DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +152,7 @@ class RuntimeState:
     last_action_signature: tuple[str, str] | None = None
     last_action_started_at: datetime | None = None
     notification_markers: Mapping[str, "NotificationMarker"] = field(default_factory=dict)
+    room_action_guards: Mapping[str, "RoomActionGuard"] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,6 +163,16 @@ class NotificationMarker:
     notified_at: datetime
     reason: str | None = None
     severity: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RoomActionGuard:
+    """Persisted per-room action transition state."""
+
+    accepted_action: str
+    lockout_until: datetime | None = None
+    pending_action: str | None = None
+    pending_since: datetime | None = None
 
 
 def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
@@ -190,6 +208,18 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
+            action_change_hold_minutes=int(
+                room.get(
+                    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                )
+            ),
+            action_lockout_minutes=int(
+                room.get(
+                    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+                    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
+                )
+            ),
         )
         for room in data.get(CONF_ROOMS, [])
     )
@@ -256,6 +286,7 @@ def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
     notification_markers = _load_notification_markers(
         raw_state.get(CONF_RUNTIME_NOTIFICATION_MARKERS)
     )
+    room_action_guards = _load_room_action_guards(raw_state.get(CONF_RUNTIME_ROOM_ACTION_GUARDS))
     if not notification_markers:
         legacy_signature = _load_signature(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE))
         legacy_notified_at = _load_datetime(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_AT))
@@ -268,6 +299,7 @@ def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
         last_action_signature=_load_signature(raw_state.get(CONF_RUNTIME_LAST_ACTION_SIGNATURE)),
         last_action_started_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_ACTION_STARTED_AT)),
         notification_markers=notification_markers,
+        room_action_guards=room_action_guards,
     )
 
 
@@ -288,6 +320,15 @@ def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
                     **({"severity": marker.severity} if marker.severity is not None else {}),
                 }
                 for room_name, marker in state.notification_markers.items()
+            },
+            CONF_RUNTIME_ROOM_ACTION_GUARDS: {
+                room_key: {
+                    "accepted_action": guard.accepted_action,
+                    **({"lockout_until": _dump_datetime(guard.lockout_until)} if guard.lockout_until else {}),
+                    **({"pending_action": guard.pending_action} if guard.pending_action else {}),
+                    **({"pending_since": _dump_datetime(guard.pending_since)} if guard.pending_since else {}),
+                }
+                for room_key, guard in state.room_action_guards.items()
             },
         }
     }
@@ -581,6 +622,30 @@ def _load_notification_markers(value: Any) -> dict[str, NotificationMarker]:
                 _string_or_none(raw_marker.get("severity")),
             )
     return markers
+
+
+def _load_room_action_guards(value: Any) -> dict[str, RoomActionGuard]:
+    """Load valid per-room action guardrails from persisted data."""
+
+    if not isinstance(value, Mapping):
+        return {}
+    guards: dict[str, RoomActionGuard] = {}
+    for room_key, raw_guard in value.items():
+        if not isinstance(room_key, str) or not room_key.strip() or not isinstance(raw_guard, Mapping):
+            continue
+        accepted_action = raw_guard.get("accepted_action")
+        if accepted_action not in {"open", "close"}:
+            continue
+        pending_action = raw_guard.get("pending_action")
+        if pending_action not in {"open", "close"}:
+            pending_action = None
+        guards[room_key] = RoomActionGuard(
+            accepted_action,
+            _load_datetime(raw_guard.get("lockout_until")),
+            pending_action,
+            _load_datetime(raw_guard.get("pending_since")),
+        )
+    return guards
 
 
 def _load_datetime(value: Any) -> datetime | None:
