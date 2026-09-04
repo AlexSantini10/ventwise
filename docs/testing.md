@@ -85,6 +85,10 @@ The script keeps Home Assistant runtime data outside the repository under
 `custom_components\ventwise` read-only into the container. The repo tree stays
 clean for commits.
 
+Every `up` or `restart` reads the local integration version from `manifest.json`,
+prints it, and verifies that the container sees the same mounted manifest. A
+version mismatch stops the command before manual testing can use stale source.
+
 The sandbox automatically provisions adjustable test fixtures:
 
 - `input_number.ventwise_test_bedroom_temperature` and `_humidity`
