@@ -18,6 +18,8 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_OPENING_ENTITY_IDS,
+    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -36,6 +38,7 @@ from custom_components.ventwise.runtime import (
     is_quiet_hours_active,
     load_runtime_state,
     room_target_temperature_c,
+    room_opening_state,
     state_to_bool,
     state_to_float,
 )
@@ -54,6 +57,7 @@ from ventwise_core import (
     RecommendationContext,
     RoomObservation,
     RoomProfile,
+    OpeningState,
 )
 
 
@@ -93,6 +97,11 @@ def test_build_runtime_config_and_room_profiles() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                    CONF_ROOM_OPENING_ENTITY_IDS: [
+                        "binary_sensor.room_window",
+                        "binary_sensor.room_door",
+                    ],
+                    CONF_ROOM_OPENINGS_COMPLETE: True,
                     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
                     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 23.0,
                     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: True,
@@ -111,12 +120,19 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert config.rooms[0].target_temperature_c_override == 23.0
     assert config.rooms[0].target_humidity_percent_override_enabled is True
     assert config.rooms[0].target_humidity_percent_override == 55.0
+    assert config.rooms[0].opening_entity_ids == (
+        "binary_sensor.room_window",
+        "binary_sensor.room_door",
+    )
+    assert config.rooms[0].openings_complete is True
 
     fake_states = {
         "sensor.outdoor_temp": SimpleNamespace(state="20.0"),
         "sensor.outdoor_humidity": SimpleNamespace(state="55"),
         "sensor.room_temp": SimpleNamespace(state="26.0"),
         "sensor.room_humidity": SimpleNamespace(state="60"),
+        "binary_sensor.room_window": SimpleNamespace(state="off"),
+        "binary_sensor.room_door": SimpleNamespace(state="on"),
     }
 
     rooms, outdoor = build_room_profiles(config, fake_states.get)
@@ -125,6 +141,41 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert outdoor.temperature_c == 20.0
     assert len(rooms) == 1
     assert rooms[0].name == "Camera"
+    assert rooms[0].opening_state == OpeningState.OPEN
+
+
+def test_room_opening_state_is_conservative_when_sensor_coverage_is_partial() -> None:
+    complete_room = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                    CONF_ROOM_OPENING_ENTITY_IDS: ["binary_sensor.bedroom_window"],
+                    CONF_ROOM_OPENINGS_COMPLETE: True,
+                }
+            ]
+        }
+    ).rooms[0]
+    partial_room = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                    CONF_ROOM_OPENING_ENTITY_IDS: ["binary_sensor.bedroom_window"],
+                    CONF_ROOM_OPENINGS_COMPLETE: False,
+                }
+            ]
+        }
+    ).rooms[0]
+
+    closed_state = {"binary_sensor.bedroom_window": SimpleNamespace(state="off")}.get
+    open_state = {"binary_sensor.bedroom_window": SimpleNamespace(state="on")}.get
+
+    assert room_opening_state(complete_room, closed_state) == OpeningState.CLOSED
+    assert room_opening_state(partial_room, closed_state) == OpeningState.PARTIAL
+    assert room_opening_state(partial_room, open_state) == OpeningState.OPEN
 
 
 def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
