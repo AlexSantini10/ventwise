@@ -175,6 +175,25 @@ class ComfortRecommender:
             direction=RecommendationAction.CLOSE,
         )
         open_score, close_score = self._apply_season_bias(open_score, close_score)
+        forecast_note = None
+        if outdoor.forecast_temperature_c is not None:
+            forecast_perceived = perceived_temperature(
+                outdoor.forecast_temperature_c,
+                outdoor.humidity_percent,
+                target_humidity,
+                self._config.humidity_weight,
+            )
+            forecast_delta = abs(forecast_perceived - target_perceived)
+            worsening = forecast_delta - outside_delta
+            if worsening >= 1.0:
+                forecast_note = (
+                    f"short-term forecast moves outside conditions further from comfort "
+                    f"({outdoor.temperature_c:.1f}C to {outdoor.forecast_temperature_c:.1f}C)."
+                )
+                if inside_delta <= self._config.decision_threshold_c:
+                    close_score = max(close_score, self._clamp(0.35 + (worsening * 0.12)))
+                elif outside_delta < inside_delta:
+                    open_score = max(open_score, self._clamp(0.35 + (worsening * 0.10)))
         target_penalty = self._target_reasonableness_factor(target_temperature, target_humidity)
         open_score = self._clamp(open_score * target_penalty)
         close_score = self._clamp(close_score * target_penalty)
@@ -187,6 +206,8 @@ class ComfortRecommender:
         ) = (
             self._environmental_adjustments(outdoor)
         )
+        if forecast_note is not None:
+            environment_notes = (*environment_notes, forecast_note)
         open_score = self._clamp(open_score * environmental_open_factor)
         close_score = self._clamp(
             (close_score * environmental_close_factor) + environmental_close_bonus
@@ -195,7 +216,10 @@ class ComfortRecommender:
             open_score = 0.0
             close_score = self._clamp(max(close_score, force_close_floor))
 
-        if max(inside_delta, outside_delta) < self._config.decision_threshold_c:
+        if (
+            max(inside_delta, outside_delta) < self._config.decision_threshold_c
+            and forecast_note is None
+        ):
             action = RecommendationAction.NONE
             score = 0.0
         elif open_score > close_score:
@@ -557,6 +581,8 @@ def _recommendation_reason_code(
     if any(note.startswith("weather condition") for note in environment_notes):
         normalized_weather = (weather_condition or "unknown").strip().lower()
         return f"weather:{normalized_weather or 'unknown'}"
+    if any(note.startswith("short-term forecast") for note in environment_notes):
+        return "forecast"
     if any(note.startswith("wind ") for note in environment_notes):
         return "wind"
     return "comfort"

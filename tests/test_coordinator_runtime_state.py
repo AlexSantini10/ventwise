@@ -38,7 +38,7 @@ from custom_components.ventwise.const import (
     CONF_STABILITY_MINUTES,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from custom_components.ventwise.coordinator import VentWiseCoordinator
+from custom_components.ventwise.coordinator import VentWiseCoordinator, _first_forecast_temperature
 from custom_components.ventwise.runtime import NotificationMarker, RoomActionGuard, RoomConfig
 from custom_components.ventwise.ventwise_core import RecommendationAction
 from custom_components.ventwise.ventwise_core.models import RoomRecommendation
@@ -230,6 +230,21 @@ def test_urgent_close_bypasses_room_action_guard() -> None:
     )
 
     assert coordinator._guard_room_recommendation(urgent_close, room, now).action == RecommendationAction.CLOSE
+
+
+def test_short_term_forecast_uses_the_nearest_upcoming_temperature() -> None:
+    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+
+    temperature = _first_forecast_temperature(
+        [
+            {"datetime": "2026-07-21T12:00:00+00:00", "temperature": 19.0},
+            {"datetime": "2026-07-21T15:00:00+00:00", "temperature": 28.0},
+            {"datetime": "2026-07-21T14:00:00+00:00", "temperature": 26.0},
+        ],
+        now,
+    )
+
+    assert temperature == 26.0
 
 
 def test_coordinator_ignores_corrupted_runtime_state_payload() -> None:
