@@ -86,8 +86,8 @@ def test_build_notification_payload_uses_requested_language() -> None:
 
     title, message = build_notification_payload(summary, language="it-IT")
 
-    assert title == "VentWise"
-    assert message == "Salotto: apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
+    assert title == "VentWise · Salotto"
+    assert message == "apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
 
 
 def test_recommendation_explanation_is_concise_and_localized() -> None:

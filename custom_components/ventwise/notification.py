@@ -101,16 +101,17 @@ def build_notification_payload(
 ) -> tuple[str, str]:
     """Build a readable notification title and body."""
 
-    title = "VentWise"
     recommendation = _best_room_recommendation(summary)
     if recommendation is not None:
+        title = f"VentWise · {recommendation.room_name}"
         body = build_recommendation_explanation(
             recommendation,
             language=language,
-            include_room_name=True,
+            include_room_name=False,
         )
     else:
         room_name = summary.best_room or "VentWise"
+        title = "VentWise" if room_name == "VentWise" else f"VentWise · {room_name}"
         body = f"{room_name}: {_notification_texts(language).get(summary.action.value, _notification_texts(language)['none'])}"
     return title, body
 
