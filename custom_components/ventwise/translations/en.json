@@ -193,18 +193,50 @@
     "step": {
       "init": {
         "title": "Adjust VentWise",
-        "description": "Choose what you want to edit.",
+        "description": "Choose what you want to manage.",
         "menu_options": {
-          "basic": "Basic settings",
-          "outdoor": "Outdoor data",
-          "advanced": "Comfort settings",
+          "settings": "Settings",
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
-          "basic": "Weather source and notification devices.",
-          "outdoor": "Choose forecast or manual values for each outdoor measurement with checkboxes.",
-          "advanced": "Comfort values and tuning.",
-          "rooms": "Add rooms and macro-rooms."
+          "settings": "Weather, comfort, notifications, and outdoor data in one screen.",
+          "rooms": "Add, edit, or remove rooms and grouped areas."
+        }
+      },
+      "settings": {
+        "title": "VentWise settings",
+        "description": "Set everyday comfort, notifications, and outdoor data here. Manual outdoor entities are required only when their matching switch is enabled.",
+        "data": {
+          "outdoor_weather_entity_id": "Weather source",
+          "target_temperature_c": "Comfort temperature",
+          "auto_comfort_temperature": "Adapt comfort temperature automatically",
+          "target_humidity_percent": "Comfort humidity",
+          "stability_minutes": "Wait before recommending (minutes)",
+          "notification_device_id": "Notification devices",
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "cooldown_minutes": "Notification cooldown (minutes)",
+          "outdoor_temperature_override": "Use manual outdoor temperature",
+          "outdoor_humidity_override": "Use manual outdoor humidity",
+          "wind_speed_override": "Use manual outdoor wind speed",
+          "outdoor_temperature_entity_id": "Manual outdoor temperature",
+          "outdoor_humidity_entity_id": "Manual outdoor humidity",
+          "wind_speed_entity_id": "Manual outdoor wind speed"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity used by VentWise.",
+          "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
+          "auto_comfort_temperature": "Adapt the comfort target from current conditions. This affects VentWise recommendations, not a thermostat or HVAC system.",
+          "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
+          "stability_minutes": "How long a recommendation must remain unchanged before VentWise notifies you.",
+          "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
+          "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
+          "cooldown_minutes": "How long VentWise waits before sending the same notification again.",
+          "outdoor_temperature_override": "Use the manual temperature entity below instead of the weather forecast.",
+          "outdoor_humidity_override": "Use the manual humidity entity below instead of the weather forecast.",
+          "wind_speed_override": "Use the manual wind-speed entity below instead of the weather forecast.",
+          "outdoor_temperature_entity_id": "Required only when manual outdoor temperature is enabled.",
+          "outdoor_humidity_entity_id": "Required only when manual outdoor humidity is enabled.",
+          "wind_speed_entity_id": "Required only when manual outdoor wind speed is enabled."
         }
       },
       "outdoor": {
@@ -249,7 +281,7 @@
       },
       "rooms": {
         "title": "Rooms",
-        "description": "Add, edit, or remove rooms and macro-rooms for spaces whose windows affect the same air.",
+        "description": "Add, edit, or remove rooms and grouped areas.",
         "menu_options": {
           "add_room": "Add room",
           "add_macro_room": "Add macro-room",
@@ -262,7 +294,7 @@
           "add_macro_room": "Create one grouped area for spaces that share the same windows.",
           "edit_room": "Update an existing room or grouped area.",
           "remove_room": "Delete an existing room or grouped area.",
-          "finish": "Skip rooms for now and save the setup."
+          "finish": "Save room changes and close."
         }
       },
       "edit_room_select": {

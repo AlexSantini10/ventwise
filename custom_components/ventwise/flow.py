@@ -229,6 +229,23 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     )
 
 
+def build_settings_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the single-screen schema for everyday VentWise settings."""
+
+    fields = dict(build_config_schema(defaults).schema)
+    fields.update(build_advanced_options_schema(defaults).schema)
+    fields.update(build_outdoor_source_schema(defaults).schema)
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        fields.update(
+            _optional_selector_field(
+                entity_field,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(entity_field),
+            )
+        )
+    return vol.Schema(fields)
+
+
 def build_room_schema(
     defaults: Mapping[str, object],
     room_number: int,
@@ -418,6 +435,19 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
             24 * 60,
         )
     return data
+
+
+def normalize_settings_config(
+    user_input: Mapping[str, object],
+    defaults: Mapping[str, object],
+) -> dict[str, object]:
+    """Normalize every field shown in the single-screen options form."""
+
+    data = dict(defaults)
+    data.update(normalize_basic_config(user_input))
+    data.update(normalize_advanced_config(user_input))
+    data.update(normalize_outdoor_source_config(user_input))
+    return normalize_outdoor_override_config(data, data)
 
 
 def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> dict[str, object]:
