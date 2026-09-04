@@ -101,6 +101,8 @@ Change the helpers from **Settings > Devices & services > Helpers** to create
 repeatable open, close, humidity, and wind scenarios without physical devices.
 The **VentWise Test Lab** dashboard in the sidebar provides the same controls
 and displays the `Camera test` recommendation entities after the integration is configured.
+When climate-adaptive comfort is enabled, compare its effective comfort
+temperature with the climate-adaptive comfort target in that dashboard.
 
 `tests/test_user_journey.py` covers the automated path from the submitted setup
 data through room sensor readings, scoring, and the Italian explanation shown to

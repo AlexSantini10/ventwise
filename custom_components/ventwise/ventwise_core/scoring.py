@@ -33,14 +33,38 @@ def perceived_temperature(
 
 def suggested_comfort_temperature(
     target_temperature_c: float,
-    indoor_perceived_c: float,
     outdoor_perceived_c: float,
 ) -> float:
-    """Estimate a comfort temperature suggestion from the current conditions."""
+    """Return a stable, climate-adaptive indoor comfort target.
 
-    balance_point = (indoor_perceived_c + outdoor_perceived_c) / 2.0
-    suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
-    return _clamp_temperature(suggestion)
+    The configured target remains the resident's personal preference. The
+    recommendation is adjusted from that baseline only by the *perceived*
+    outdoor temperature: a warmer or cooler climate gradually changes what
+    normally feels comfortable indoors. Indoor readings deliberately do not
+    move the target; they are the condition to correct and letting them move
+    the target would make the recommendation chase a hot or cold room.
+    """
+
+    reference_outdoor_temperature_c = 20.0
+    adjustment_per_degree_c = 0.25
+    maximum_adjustment_c = 2.0
+    standard_minimum_c = 18.0
+    standard_maximum_c = 26.0
+
+    climate_adjustment = (
+        outdoor_perceived_c - reference_outdoor_temperature_c
+    ) * adjustment_per_degree_c
+    climate_adjustment = max(
+        -maximum_adjustment_c,
+        min(maximum_adjustment_c, climate_adjustment),
+    )
+    return round(
+        max(
+            standard_minimum_c,
+            min(standard_maximum_c, target_temperature_c + climate_adjustment),
+        ),
+        1,
+    )
 
 
 class ComfortRecommender:
@@ -99,7 +123,6 @@ class ComfortRecommender:
         )
         suggested_temperature = suggested_comfort_temperature(
             target_perceived,
-            indoor_perceived,
             outdoor_perceived,
         )
         inside_delta = abs(indoor_perceived - target_perceived)
@@ -508,10 +531,6 @@ class ComfortRecommender:
     @staticmethod
     def _clamp(value: float) -> float:
         return max(0.0, min(1.0, value))
-
-
-def _clamp_temperature(value: float) -> float:
-    return max(10.0, min(30.0, value))
 
 
 def _smoothstep(value: float, edge0: float, edge1: float) -> float:

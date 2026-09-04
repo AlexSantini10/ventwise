@@ -13,7 +13,6 @@ from .notification import build_recommendation_explanation, build_recommendation
 from .runtime import (
     RoomConfig,
     find_room_recommendation,
-    room_target_temperature_c,
     state_to_float,
 )
 from .ventwise_core import RecommendationAction
@@ -331,7 +330,8 @@ class RoomPerceivedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return room_target_temperature_c(self.room, self.coordinator.config)
+        recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
+        return None if recommendation is None else recommendation.target_perceived_c
 
 
 class RoomSuggestedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
