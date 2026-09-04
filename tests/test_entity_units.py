@@ -32,6 +32,7 @@ def _coordinator() -> SimpleNamespace:
     return SimpleNamespace(
         config_entry=SimpleNamespace(entry_id="entry-1", title="VentWise"),
         config=SimpleNamespace(target_temperature_c=22.0, rooms=[]),
+        hass=SimpleNamespace(config=SimpleNamespace(language="en")),
     )
 
 
