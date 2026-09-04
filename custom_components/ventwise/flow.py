@@ -611,7 +611,7 @@ def _normalize_notification_device_ids(value: object) -> list[str] | None:
             text = str(item).strip()
             if text:
                 items.append(text)
-        return items or None
+        return items
     text = str(value).strip()
     return [text] if text else None
 
