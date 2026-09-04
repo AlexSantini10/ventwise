@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 from .const import UNIT_CELSIUS
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity, VentWiseRoomEntity
+from .notification import build_recommendation_explanation, build_recommendation_status
 from .runtime import (
     RoomConfig,
     find_room_recommendation,
@@ -235,11 +236,20 @@ class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         if not self.room.enabled:
-            return "Room disabled."
+            return build_recommendation_status(
+                blocked_by="disabled",
+                language=self.hass.config.language,
+            )
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
         if recommendation is None:
-            return self.coordinator.data.summary.reason
-        return recommendation.reason
+            return build_recommendation_status(
+                blocked_by=self.coordinator.data.summary.blocked_by,
+                language=self.hass.config.language,
+            )
+        return build_recommendation_explanation(
+            recommendation,
+            language=self.hass.config.language,
+        )
 
 
 class RoomWeatherConditionSensor(VentWiseRoomEntity, SensorEntity):

@@ -14,10 +14,13 @@ from pathlib import Path
 DEFAULT_IMAGE = "ghcr.io/home-assistant/home-assistant:stable"
 DEFAULT_CONTAINER_NAME = "ventwise-ha-test"
 DEFAULT_PORT = 8123
+USER_JOURNEY_TEST = "tests/test_user_journey.py"
 TEST_FIXTURES_MARKER = "# VentWise test fixtures"
 TEST_HELPERS_FILE = "ventwise_test_helpers.yaml"
 TEST_WEATHER_CONDITION_FILE = "ventwise_test_weather_condition.yaml"
 TEST_WEATHER_FILE = "ventwise_test_weather.yaml"
+TEST_DASHBOARD_CONFIG_FILE = "ventwise_test_dashboards.yaml"
+TEST_DASHBOARD_FILE = "ventwise_test_dashboard.yaml"
 
 TEST_HELPERS_YAML = """ventwise_test_bedroom_temperature:
   name: VentWise Test Bedroom Temperature
@@ -98,6 +101,52 @@ TEST_WEATHER_CONDITION_YAML = """ventwise_test_weather_condition:
   icon: mdi:weather-partly-cloudy
 """
 
+TEST_DASHBOARD_CONFIG_YAML = """dashboards:
+  ventwise-test-lab:
+    mode: yaml
+    title: VentWise Test Lab
+    icon: mdi:test-tube
+    show_in_sidebar: true
+    filename: ventwise_test_dashboard.yaml
+"""
+
+TEST_DASHBOARD_YAML = """title: VentWise Test Lab
+views:
+  - title: Scenarios
+    path: ventwise-test-lab
+    icon: mdi:test-tube
+    cards:
+      - type: markdown
+        content: >
+          Adjust the fixtures below, then inspect the VentWise room entities.
+          The default scenario should recommend opening the bedroom windows.
+      - type: entities
+        title: Outdoor test data
+        entities:
+          - input_number.ventwise_test_outdoor_temperature
+          - input_number.ventwise_test_outdoor_humidity
+          - input_number.ventwise_test_wind_speed
+          - input_select.ventwise_test_weather_condition
+          - weather.ventwise_test_weather
+      - type: entities
+        title: Bedroom test data
+        entities:
+          - input_number.ventwise_test_bedroom_temperature
+          - input_number.ventwise_test_bedroom_humidity
+      - type: entities
+        title: Living room test data
+        entities:
+          - input_number.ventwise_test_living_room_temperature
+          - input_number.ventwise_test_living_room_humidity
+      - type: entities
+        title: VentWise results for Camera test
+        entities:
+          - sensor.camera_test_recommendation
+          - sensor.camera_test_recommendation_score
+          - sensor.camera_test_recommendation_reason
+          - binary_sensor.camera_test_recommendation_active
+"""
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parent
@@ -150,6 +199,7 @@ def ensure_test_fixtures(config_dir: Path, config_file: Path) -> None:
         f"input_number: !include {TEST_HELPERS_FILE}",
         f"input_select: !include {TEST_WEATHER_CONDITION_FILE}",
         f"template: !include {TEST_WEATHER_FILE}",
+        f"lovelace: !include {TEST_DASHBOARD_CONFIG_FILE}",
     )
     missing_lines = [line for line in fixture_lines if line not in config_text]
     if missing_lines:
@@ -164,6 +214,11 @@ def ensure_test_fixtures(config_dir: Path, config_file: Path) -> None:
         encoding="utf-8",
     )
     (config_dir / TEST_WEATHER_FILE).write_text(TEST_WEATHER_YAML, encoding="utf-8")
+    (config_dir / TEST_DASHBOARD_CONFIG_FILE).write_text(
+        TEST_DASHBOARD_CONFIG_YAML,
+        encoding="utf-8",
+    )
+    (config_dir / TEST_DASHBOARD_FILE).write_text(TEST_DASHBOARD_YAML, encoding="utf-8")
 
 
 def integration_source() -> Path:
@@ -230,6 +285,32 @@ def start_container(
     print(f"Local integration: {integration_dir}")
 
 
+def run_user_journey_test(name: str) -> None:
+    """Run the setup-to-recommendation journey inside Home Assistant's Python runtime."""
+
+    test_path = repo_root() / USER_JOURNEY_TEST
+    if not test_path.exists():
+        raise SystemExit(f"User journey test not found: {test_path}")
+    if not container_exists(name):
+        raise SystemExit(f"Home Assistant container is not running: {name}")
+    container_test_path = "/tmp/ventwise_test_user_journey.py"
+    run(["docker", "cp", str(test_path), f"{name}:{container_test_path}"])
+    run(
+        [
+            "docker",
+            "exec",
+            "-e",
+            "PYTHONPATH=/config",
+            name,
+            "python",
+            "-m",
+            "pytest",
+            "-q",
+            container_test_path,
+        ]
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="ha-local-docker-test.py",
@@ -238,7 +319,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "action",
         nargs="?",
-        choices=("up", "down", "logs", "restart"),
+        choices=("up", "down", "logs", "restart", "test"),
         default="up",
         help="Container action to run.",
     )
@@ -283,6 +364,10 @@ def main() -> int:
 
     if args.action == "logs":
         run(["docker", "logs", "-f", args.container_name])
+        return 0
+
+    if args.action == "test":
+        run_user_journey_test(args.container_name)
         return 0
 
     raise SystemExit(f"Unsupported action: {args.action}")
