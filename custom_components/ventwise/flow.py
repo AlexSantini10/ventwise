@@ -43,6 +43,8 @@ from .const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
+    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
@@ -54,6 +56,8 @@ from .const import (
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
+    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
@@ -315,6 +319,20 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain="automation")),
                 defaults.get(CONF_ROOM_STOP_ENTITY_ID),
             ),
+            vol.Required(
+                CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                default=defaults.get(
+                    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            vol.Required(
+                CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+                default=defaults.get(
+                    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+                    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
         }
     )
 
@@ -515,6 +533,18 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         raise ConfigValidationError(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
     if data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED] and data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE] is None:
         raise ConfigValidationError(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
+    data[CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES] = _normalize_int(
+        data.get(CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES, DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES),
+        CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+        0,
+        24 * 60,
+    )
+    data[CONF_ROOM_ACTION_LOCKOUT_MINUTES] = _normalize_int(
+        data.get(CONF_ROOM_ACTION_LOCKOUT_MINUTES, DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES),
+        CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+        0,
+        24 * 60,
+    )
     _normalize_optional_entity_ids(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
