@@ -1,6 +1,9 @@
 {
   "title": "VentWise",
   "config": {
+    "abort": {
+      "single_instance_allowed": "VentWise è già configurato. Usa Configura per modificarlo."
+    },
     "step": {
       "user": {
         "title": "Configurazione iniziale",

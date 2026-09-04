@@ -47,12 +47,17 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._rooms: list[dict[str, Any]] = []
         self._room_index = 0
         self._selected_room_index: int | None = None
+        self._setup_completed = False
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Collect the minimal setup required to start."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
+            await self.async_set_unique_id(DOMAIN)
+            self._abort_if_unique_id_configured()
+            if self._async_current_entries():
+                return self.async_abort(reason="single_instance_allowed")
             try:
                 self._setup_data = normalize_basic_config(user_input)
                 self._current_config = dict(self._setup_data)
@@ -238,7 +243,10 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             return self.async_abort(reason="invalid_step")
+        if self._setup_completed:
+            return self.async_abort(reason="single_instance_allowed")
 
+        self._setup_completed = True
         self._current_config[CONF_ROOMS] = deepcopy(self._rooms)
         return self.async_create_entry(title=NAME, data={}, options=self._result_data())
 

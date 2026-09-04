@@ -1,6 +1,9 @@
 {
   "title": "VentWise",
   "config": {
+    "abort": {
+      "single_instance_allowed": "VentWise is already configured. Use Configure to update it."
+    },
     "step": {
       "user": {
         "title": "Initial setup",
