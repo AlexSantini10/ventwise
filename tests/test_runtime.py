@@ -45,6 +45,7 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_RUNTIME_NOTIFICATION_MARKERS,
 )
 from custom_components.ventwise.runtime import RuntimeSnapshot
 from ventwise_core import (
@@ -407,8 +408,12 @@ def test_runtime_state_round_trips_through_storage() -> None:
     runtime_state = stored[CONF_RUNTIME_STATE]
     assert runtime_state[CONF_RUNTIME_LAST_ACTION_SIGNATURE] == ["open", "Camera"]
     assert runtime_state[CONF_RUNTIME_LAST_ACTION_STARTED_AT] == started_at.isoformat()
-    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE] == ["open", "Camera"]
-    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_AT] == notification_at.isoformat()
+    assert runtime_state[CONF_RUNTIME_NOTIFICATION_MARKERS] == {
+        "Camera": {
+            "signature": ["open", "Camera"],
+            "notified_at": notification_at.isoformat(),
+        }
+    }
 
 
 def test_load_runtime_state_ignores_corrupted_markers() -> None:
@@ -425,5 +430,6 @@ def test_load_runtime_state_ignores_corrupted_markers() -> None:
 
     assert loaded.last_action_signature is None
     assert loaded.last_action_started_at is None
-    assert loaded.last_notification_signature == ("open", "Camera")
-    assert loaded.last_notification_at == datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)
+    marker = loaded.notification_markers["Camera"]
+    assert marker.signature == ("open", "Camera")
+    assert marker.notified_at == datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -12,6 +13,7 @@ pytest.importorskip("homeassistant")
 from custom_components.ventwise.notification import (
     async_send_notification,
     build_notification_payload,
+    home_assistant_notification_id_for_room,
     build_recommendation_explanation,
     build_recommendation_status,
     notification_entity_ids_for_device_ids,
@@ -86,8 +88,8 @@ def test_build_notification_payload_uses_requested_language() -> None:
 
     title, message = build_notification_payload(summary, language="it-IT")
 
-    assert title == "VentWise"
-    assert message == "Salotto: apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
+    assert title == "VentWise · Salotto"
+    assert message == "apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
 
 
 def test_recommendation_explanation_is_concise_and_localized() -> None:
@@ -102,6 +104,23 @@ def test_recommendation_explanation_is_concise_and_localized() -> None:
     explanation = build_recommendation_explanation(recommendation, language="it-IT")
 
     assert explanation == "chiudi le finestre. Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
+
+
+def test_home_assistant_notification_id_is_distinct_per_delivery_and_room() -> None:
+    camera = SimpleNamespace(room_name="Camera", room_id="camera-1")
+    living_room = SimpleNamespace(room_name="Salotto", room_id="living-1")
+    first_delivery = datetime(2026, 9, 4, 10, 15, 30, tzinfo=timezone.utc)
+    second_delivery = datetime(2026, 9, 4, 11, 15, 30, tzinfo=timezone.utc)
+
+    assert home_assistant_notification_id_for_room(
+        camera, first_delivery
+    ) == "ventwise_recommendation_camera-1_20260904t101530000000"
+    assert home_assistant_notification_id_for_room(
+        living_room, first_delivery
+    ) == "ventwise_recommendation_living-1_20260904t101530000000"
+    assert home_assistant_notification_id_for_room(
+        camera, second_delivery
+    ) == "ventwise_recommendation_camera-1_20260904t111530000000"
 
 
 def test_recommendation_status_is_localized() -> None:

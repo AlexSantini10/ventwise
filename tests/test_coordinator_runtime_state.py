@@ -12,6 +12,7 @@ pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
@@ -26,6 +27,7 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_SOURCE,
     CONF_ROOMS,
@@ -37,6 +39,7 @@ from custom_components.ventwise.const import (
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from custom_components.ventwise.coordinator import VentWiseCoordinator
+from custom_components.ventwise.runtime import NotificationMarker
 
 
 class _FakeConfigEntries:
@@ -111,8 +114,9 @@ def test_coordinator_loads_persisted_runtime_state() -> None:
 
     assert coordinator._last_action_signature == ("open", "Camera")
     assert coordinator._last_action_started_at == started_at
-    assert coordinator._last_notification_signature == ("open", "Camera")
-    assert coordinator._last_notification_at == notification_at
+    assert coordinator._notification_markers == {
+        "Camera": NotificationMarker(("open", "Camera"), notification_at)
+    }
 
 
 def test_coordinator_persists_runtime_state_without_dropping_options() -> None:
@@ -125,8 +129,9 @@ def test_coordinator_persists_runtime_state_without_dropping_options() -> None:
     timestamp = datetime(2026, 7, 21, 13, 15, tzinfo=timezone.utc)
     coordinator._last_action_signature = ("open", "Camera")
     coordinator._last_action_started_at = timestamp
-    coordinator._last_notification_signature = ("open", "Camera")
-    coordinator._last_notification_at = timestamp
+    coordinator._notification_markers = {
+        "Camera": NotificationMarker(("open", "Camera"), timestamp)
+    }
 
     coordinator._persist_runtime_state()
 
@@ -139,6 +144,12 @@ def test_coordinator_persists_runtime_state_without_dropping_options() -> None:
         "Camera",
     ]
     assert persisted[CONF_RUNTIME_STATE][CONF_RUNTIME_LAST_ACTION_STARTED_AT] == timestamp.isoformat()
+    assert persisted[CONF_RUNTIME_STATE][CONF_RUNTIME_NOTIFICATION_MARKERS] == {
+        "Camera": {
+            "signature": ["open", "Camera"],
+            "notified_at": timestamp.isoformat(),
+        }
+    }
     assert entry.options == persisted
 
 
@@ -157,8 +168,7 @@ def test_coordinator_ignores_corrupted_runtime_state_payload() -> None:
 
     assert coordinator._last_action_signature is None
     assert coordinator._last_action_started_at is not None
-    assert coordinator._last_notification_signature == ("open", "Camera")
-    assert coordinator._last_notification_at is not None
+    assert coordinator._notification_markers == {}
 
 
 def test_coordinator_tracks_source_entities_for_event_refresh(
@@ -287,8 +297,9 @@ def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
     coordinator.hass.states = SimpleNamespace(get=fake_states.get)
     coordinator._last_action_signature = ("open", "Camera")
     coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
-    coordinator._last_notification_signature = ("open", "Camera")
-    coordinator._last_notification_at = fixed_now - timedelta(minutes=1)
+    coordinator._notification_markers = {
+        "Camera": NotificationMarker(("open", "Camera"), fixed_now - timedelta(minutes=1))
+    }
 
     snapshot = asyncio.run(coordinator._async_update_data())
 
@@ -296,6 +307,117 @@ def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
     assert snapshot.notification_allowed is False
     assert snapshot.cooldown_active is True
     assert snapshot.weather_condition == "sunny"
+
+
+def test_coordinator_applies_cooldown_independently_per_room(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.camera_temp": SimpleNamespace(state="28.0"),
+        "sensor.living_temp": SimpleNamespace(state="28.0"),
+    }
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_NOTIFICATION_ENABLED: True,
+            CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
+            CONF_COOLDOWN_MINUTES: 60,
+            CONF_STABILITY_MINUTES: 0,
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.camera_temp",
+                },
+                {
+                    CONF_ROOM_NAME: "Salotto",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
+                },
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+    coordinator._notification_markers = {
+        "Camera": NotificationMarker(("open", "Camera"), fixed_now - timedelta(minutes=1))
+    }
+
+    living_snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert living_snapshot.summary.best_room == "Camera"
+    assert living_snapshot.notification_allowed is True
+    assert len(hass.services.calls) == 1
+    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation_salotto_20260723t120000000000"
+
+    fake_states["sensor.camera_temp"] = SimpleNamespace(state="28.0")
+    fake_states["sensor.living_temp"] = SimpleNamespace(state="28.0")
+    camera_snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert camera_snapshot.summary.best_room == "Camera"
+    assert camera_snapshot.cooldown_active is True
+    assert camera_snapshot.notification_allowed is False
+    assert len(hass.services.calls) == 1
+
+
+def test_coordinator_notifies_each_eligible_room(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.camera_temp": SimpleNamespace(state="28.0"),
+        "sensor.living_temp": SimpleNamespace(state="28.0"),
+    }
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_NOTIFICATION_ENABLED: True,
+            CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
+            CONF_STABILITY_MINUTES: 0,
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.camera_temp",
+                },
+                {
+                    CONF_ROOM_NAME: "Salotto",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
+                },
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+
+    snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert snapshot.notification_allowed is True
+    assert len(hass.services.calls) == 2
+    assert {call[2]["notification_id"] for call in hass.services.calls} == {
+        "ventwise_recommendation_camera_20260723t120000000000",
+        "ventwise_recommendation_salotto_20260723t120000000000",
+    }
+    assert {call[2]["title"] for call in hass.services.calls} == {
+        "VentWise · Camera",
+        "VentWise · Salotto",
+    }
 
 
 def test_coordinator_sends_notification_to_selected_devices(
@@ -340,8 +462,7 @@ def test_coordinator_sends_notification_to_selected_devices(
     coordinator.hass.states = SimpleNamespace(get=fake_states.get)
     coordinator._last_action_signature = ("open", "Camera")
     coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
-    coordinator._last_notification_signature = None
-    coordinator._last_notification_at = fixed_now - timedelta(days=1)
+    coordinator._notification_markers = {}
 
     snapshot = asyncio.run(coordinator._async_update_data())
 
@@ -349,8 +470,8 @@ def test_coordinator_sends_notification_to_selected_devices(
     assert len(hass.services.calls) == 2
     assert hass.services.calls[0][0] == "notify"
     assert hass.services.calls[0][1] == "send_message"
-    assert hass.services.calls[0][2]["title"] == "VentWise"
-    assert hass.services.calls[0][2]["message"].startswith("Camera: open windows.")
+    assert hass.services.calls[0][2]["title"] == "VentWise · Camera"
+    assert hass.services.calls[0][2]["message"].startswith("open windows.")
     assert "Outside is more comfortable" in hass.services.calls[0][2]["message"] or "Fuori è più confortevole" in hass.services.calls[0][2]["message"]
     assert hass.services.calls[0][3] == {"entity_id": "notify.mobile_app_alice"}
     assert hass.services.calls[1][3] == {"entity_id": "notify.mobile_app_bob"}
@@ -393,15 +514,14 @@ def test_coordinator_sends_notification_to_home_assistant_when_selected(
     coordinator.hass.states = SimpleNamespace(get=fake_states.get)
     coordinator._last_action_signature = ("open", "Camera")
     coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
-    coordinator._last_notification_signature = None
-    coordinator._last_notification_at = fixed_now - timedelta(days=1)
+    coordinator._notification_markers = {}
 
     snapshot = asyncio.run(coordinator._async_update_data())
 
     assert snapshot.notification_allowed is True
     assert len(hass.services.calls) == 1
     assert hass.services.calls[0][0:2] == ("persistent_notification", "create")
-    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation"
+    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation_camera_20260723t120000000000"
 
 
 def test_coordinator_uses_automatic_comfort_temperature_when_enabled(

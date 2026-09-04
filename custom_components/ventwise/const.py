@@ -61,4 +61,5 @@ CONF_RUNTIME_LAST_ACTION_SIGNATURE = "last_action_signature"
 CONF_RUNTIME_LAST_ACTION_STARTED_AT = "last_action_started_at"
 CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE = "last_notification_signature"
 CONF_RUNTIME_LAST_NOTIFICATION_AT = "last_notification_at"
+CONF_RUNTIME_NOTIFICATION_MARKERS = "notification_markers"
 MAX_ROOM_COUNT = 8

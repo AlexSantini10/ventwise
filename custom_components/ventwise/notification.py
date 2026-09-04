@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterable, Sequence
+from datetime import datetime
 
 from homeassistant.helpers import entity_registry as er
 
@@ -101,18 +103,43 @@ def build_notification_payload(
 ) -> tuple[str, str]:
     """Build a readable notification title and body."""
 
-    title = "VentWise"
     recommendation = _best_room_recommendation(summary)
     if recommendation is not None:
-        body = build_recommendation_explanation(
-            recommendation,
-            language=language,
-            include_room_name=True,
-        )
+        return build_room_notification_payload(recommendation, language=language)
     else:
         room_name = summary.best_room or "VentWise"
+        title = "VentWise" if room_name == "VentWise" else f"VentWise · {room_name}"
         body = f"{room_name}: {_notification_texts(language).get(summary.action.value, _notification_texts(language)['none'])}"
     return title, body
+
+
+def build_room_notification_payload(
+    recommendation: RoomRecommendation,
+    *,
+    language: str | None = None,
+) -> tuple[str, str]:
+    """Build a notification payload for one specific room."""
+
+    return (
+        f"VentWise · {recommendation.room_name}",
+        build_recommendation_explanation(
+            recommendation,
+            language=language,
+            include_room_name=False,
+        ),
+    )
+
+
+def home_assistant_notification_id_for_room(
+    recommendation: RoomRecommendation,
+    delivered_at: datetime,
+) -> str:
+    """Return a distinct persistent-notification ID for one delivery."""
+
+    identifier = recommendation.room_id or recommendation.room_name
+    safe_identifier = re.sub(r"[^a-z0-9_-]+", "_", identifier.lower()).strip("_")
+    delivered_stamp = delivered_at.strftime("%Y%m%dT%H%M%S%f").lower()
+    return f"{_PERSISTENT_RECOMMENDATION_ID}_{safe_identifier or 'room'}_{delivered_stamp}"
 
 
 def build_recommendation_explanation(
@@ -179,6 +206,7 @@ async def async_send_notification(
     message: str,
     device_ids: Sequence[str] | None = None,
     send_to_home_assistant: bool = False,
+    home_assistant_notification_id: str = _PERSISTENT_RECOMMENDATION_ID,
 ) -> bool:
     """Deliver a recommendation to selected devices and/or Home Assistant."""
 
@@ -210,7 +238,7 @@ async def async_send_notification(
                 hass,
                 title=title,
                 message=message,
-                notification_id=_PERSISTENT_RECOMMENDATION_ID,
+                notification_id=home_assistant_notification_id,
             )
 
         if failed_targets:
