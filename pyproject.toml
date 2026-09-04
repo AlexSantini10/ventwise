@@ -46,6 +46,7 @@ addopts = "-ra"
 filterwarnings = [
   "error::DeprecationWarning",
   "error::PendingDeprecationWarning",
+  "ignore:Inheritance class HomeAssistantApplication from web.Application is discouraged:DeprecationWarning:aiohttp\\.web_app",
 ]
 
 [tool.coverage.run]
