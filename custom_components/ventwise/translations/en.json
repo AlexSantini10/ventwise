@@ -4,22 +4,22 @@
     "step": {
       "user": {
         "title": "Initial setup",
-        "description": "Choose the weather source, set indoor comfort values, and pick one or more notification devices.",
+        "description": "Choose the weather source, set indoor comfort values, and optionally pick notification devices.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
-          "auto_comfort_temperature": "Automatic comfort temperature",
+          "auto_comfort_temperature": "Adapt comfort temperature automatically",
           "target_humidity_percent": "Comfort humidity",
-          "stability_minutes": "Recommendation stability window (minutes)",
+          "stability_minutes": "Wait before recommending (minutes)",
           "notification_device_id": "Notification devices"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
           "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
-          "auto_comfort_temperature": "Let VentWise adjust the effective comfort target automatically from the current room and outdoor balance.",
+          "auto_comfort_temperature": "Turn this on to let VentWise adapt the active comfort temperature from current indoor and outdoor conditions.",
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
-          "stability_minutes": "How long the recommendation should stay the same before VentWise acts. If you are not sure, leave the default value.",
-          "notification_device_id": "Pick one or more devices that should receive VentWise notifications."
+          "stability_minutes": "How long the recommendation must stay unchanged before VentWise notifies you. If you are not sure, leave the default value.",
+          "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications."
         }
       },
       "outdoor": {
@@ -230,19 +230,19 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
-          "notification_device_id": "Pick one or more devices that should receive notifications."
+          "notification_device_id": "Optional. Pick one or more devices that should receive notifications."
         }
       },
       "advanced": {
         "title": "Comfort settings",
         "description": "Fine-tune the comfort values used by VentWise.",
         "data": {
-          "auto_comfort_temperature": "Automatic comfort temperature",
+          "auto_comfort_temperature": "Adapt comfort temperature automatically",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Notification cooldown (minutes)"
         },
         "data_description": {
-          "auto_comfort_temperature": "Turn this on to let VentWise derive the active comfort target from the current recommendation.",
+          "auto_comfort_temperature": "Turn this on to let VentWise adapt the active comfort temperature from current indoor and outdoor conditions.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending the same notification again."
         }
@@ -385,17 +385,7 @@
     "error": {
       "invalid_input": "One or more values are invalid."
     }
-  }
-  ,
-  "selector": {
-    "outdoor_source": {
-      "options": {
-        "forecast": "Use forecast",
-        "override": "Use override"
-      }
-    }
-  }
-  ,
+  },
   "entity": {
     "binary_sensor": {
       "notifications_currently_allowed": {

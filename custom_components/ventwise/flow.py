@@ -333,8 +333,6 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     notification_device_ids = _normalize_notification_device_ids(
         data.get(CONF_NOTIFICATION_DEVICE_ID)
     )
-    if not notification_device_ids:
-        raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID)
     data[CONF_NOTIFICATION_DEVICE_ID] = notification_device_ids
     return data
 

@@ -211,17 +211,16 @@ def test_normalize_basic_config_strips_optional_entities() -> None:
     assert data[CONF_NOTIFICATION_DEVICE_ID] == ["device-1", "device-2"]
 
 
-def test_normalize_basic_config_rejects_missing_notification_devices() -> None:
-    with pytest.raises(ConfigValidationError) as exc_info:
-        normalize_basic_config(
-            {
-                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
-                CONF_TARGET_TEMPERATURE_C: 22.0,
-                CONF_NOTIFICATION_DEVICE_ID: [],
-            }
-        )
+def test_normalize_basic_config_allows_missing_notification_devices() -> None:
+    data = normalize_basic_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_NOTIFICATION_DEVICE_ID: [],
+        }
+    )
 
-    assert exc_info.value.field == CONF_NOTIFICATION_DEVICE_ID
+    assert data[CONF_NOTIFICATION_DEVICE_ID] == []
 
 
 def test_normalize_outdoor_source_config_defaults_and_clears_overrides() -> None:
