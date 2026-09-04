@@ -153,6 +153,8 @@ class NotificationMarker:
 
     signature: tuple[str, str]
     notified_at: datetime
+    reason: str | None = None
+    severity: str | None = None
 
 
 def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
@@ -282,6 +284,8 @@ def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
                 room_name: {
                     "signature": list(marker.signature),
                     "notified_at": _dump_datetime(marker.notified_at),
+                    **({"reason": marker.reason} if marker.reason is not None else {}),
+                    **({"severity": marker.severity} if marker.severity is not None else {}),
                 }
                 for room_name, marker in state.notification_markers.items()
             },
@@ -570,7 +574,12 @@ def _load_notification_markers(value: Any) -> dict[str, NotificationMarker]:
         signature = _load_signature(raw_marker.get("signature"))
         notified_at = _load_datetime(raw_marker.get("notified_at"))
         if signature is not None and notified_at is not None:
-            markers[room_name] = NotificationMarker(signature, notified_at)
+            markers[room_name] = NotificationMarker(
+                signature,
+                notified_at,
+                _string_or_none(raw_marker.get("reason")),
+                _string_or_none(raw_marker.get("severity")),
+            )
     return markers
 
 

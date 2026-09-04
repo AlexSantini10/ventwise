@@ -40,6 +40,8 @@ from custom_components.ventwise.const import (
 )
 from custom_components.ventwise.coordinator import VentWiseCoordinator
 from custom_components.ventwise.runtime import NotificationMarker
+from custom_components.ventwise.ventwise_core import RecommendationAction
+from custom_components.ventwise.ventwise_core.models import RoomRecommendation
 
 
 class _FakeConfigEntries:
@@ -151,6 +153,27 @@ def test_coordinator_persists_runtime_state_without_dropping_options() -> None:
         }
     }
     assert entry.options == persisted
+
+
+def test_coordinator_persists_notification_reason_and_severity() -> None:
+    coordinator, hass, _ = _make_coordinator({CONF_ENABLED: True})
+    timestamp = datetime(2026, 7, 21, 13, 15, tzinfo=timezone.utc)
+    coordinator._notification_markers = {
+        "Camera": NotificationMarker(
+            ("open", "Camera"),
+            timestamp,
+            "Outside is more comfortable.",
+            "urgent",
+        )
+    }
+
+    coordinator._persist_runtime_state()
+
+    marker = hass.config_entries.updated[-1][CONF_RUNTIME_STATE][
+        CONF_RUNTIME_NOTIFICATION_MARKERS
+    ]["Camera"]
+    assert marker["reason"] == "Outside is more comfortable."
+    assert marker["severity"] == "urgent"
 
 
 def test_coordinator_ignores_corrupted_runtime_state_payload() -> None:
@@ -297,8 +320,15 @@ def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
     coordinator.hass.states = SimpleNamespace(get=fake_states.get)
     coordinator._last_action_signature = ("open", "Camera")
     coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
+    initial_snapshot = asyncio.run(coordinator._async_update_data())
+    recommendation = initial_snapshot.summary.room_recommendations[0]
     coordinator._notification_markers = {
-        "Camera": NotificationMarker(("open", "Camera"), fixed_now - timedelta(minutes=1))
+        "Camera": NotificationMarker(
+            coordinator._notification_identity(recommendation),
+            fixed_now - timedelta(minutes=1),
+            recommendation.reason_code,
+            coordinator._notification_severity(recommendation.score),
+        )
     }
 
     snapshot = asyncio.run(coordinator._async_update_data())
@@ -347,9 +377,21 @@ def test_coordinator_applies_cooldown_independently_per_room(
         }
     )
     coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+    initial_snapshot = asyncio.run(coordinator._async_update_data())
+    camera_recommendation = next(
+        recommendation
+        for recommendation in initial_snapshot.summary.room_recommendations
+        if recommendation.room_name == "Camera"
+    )
     coordinator._notification_markers = {
-        "Camera": NotificationMarker(("open", "Camera"), fixed_now - timedelta(minutes=1))
+        "Camera": NotificationMarker(
+            coordinator._notification_identity(camera_recommendation),
+            fixed_now - timedelta(minutes=1),
+            camera_recommendation.reason_code,
+            coordinator._notification_severity(camera_recommendation.score),
+        )
     }
+    hass.services.calls.clear()
 
     living_snapshot = asyncio.run(coordinator._async_update_data())
 
@@ -358,14 +400,216 @@ def test_coordinator_applies_cooldown_independently_per_room(
     assert len(hass.services.calls) == 1
     assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation_salotto_20260723t120000000000"
 
-    fake_states["sensor.camera_temp"] = SimpleNamespace(state="28.0")
-    fake_states["sensor.living_temp"] = SimpleNamespace(state="28.0")
     camera_snapshot = asyncio.run(coordinator._async_update_data())
 
     assert camera_snapshot.summary.best_room == "Camera"
     assert camera_snapshot.cooldown_active is True
     assert camera_snapshot.notification_allowed is False
     assert len(hass.services.calls) == 1
+
+
+def test_coordinator_repeats_equivalent_notification_after_cooldown_expiry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current_now = [datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)]
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: current_now[0])
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: current_now[0])
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="28.0"),
+    }
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_NOTIFICATION_ENABLED: True,
+            CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
+            CONF_COOLDOWN_MINUTES: 60,
+            CONF_STABILITY_MINUTES: 0,
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                }
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+
+    first_snapshot = asyncio.run(coordinator._async_update_data())
+    first_marker = coordinator._notification_markers["Camera"]
+    coordinator._notification_markers["Camera"] = NotificationMarker(
+        first_marker.signature,
+        first_marker.notified_at,
+        "wind",
+        first_marker.severity,
+    )
+    suppressed_snapshot = asyncio.run(coordinator._async_update_data())
+    current_now[0] += timedelta(minutes=61)
+    second_snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert first_snapshot.notification_allowed is True
+    assert suppressed_snapshot.notification_allowed is False
+    assert suppressed_snapshot.cooldown_active is True
+    assert second_snapshot.notification_allowed is True
+    assert len(hass.services.calls) == 2
+    assert hass.services.calls[0][2]["notification_id"] != hass.services.calls[1][2]["notification_id"]
+
+
+def test_notification_marker_detects_action_reason_and_severity_changes() -> None:
+    marker = NotificationMarker(
+        ("open", "Camera"),
+        datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc),
+        "comfort",
+        "normal",
+    )
+    equivalent = RoomRecommendation(
+        room_name="Camera",
+        action=RecommendationAction.OPEN,
+        score=0.5,
+        reason="Outside is more comfortable.",
+        target_perceived_c=22.0,
+        indoor_perceived_c=26.0,
+        outdoor_perceived_c=20.0,
+        suggested_comfort_temperature_c=22.0,
+    )
+
+    assert VentWiseCoordinator._matches_notification_marker(
+        SimpleNamespace(
+            _notification_identity=VentWiseCoordinator._notification_identity,
+            _notification_severity=VentWiseCoordinator._notification_severity,
+        ),
+        marker,
+        equivalent,
+    )
+    assert VentWiseCoordinator._matches_notification_marker(
+        SimpleNamespace(
+            _notification_identity=VentWiseCoordinator._notification_identity,
+            _notification_severity=VentWiseCoordinator._notification_severity,
+        ),
+        marker,
+        RoomRecommendation(
+            room_name="Camera",
+            action=RecommendationAction.OPEN,
+            score=0.5,
+            reason="Outside is 2.1°C closer to comfort.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=26.0,
+            outdoor_perceived_c=20.0,
+            suggested_comfort_temperature_c=22.0,
+        ),
+    )
+
+    assert not VentWiseCoordinator._matches_notification_marker(
+        SimpleNamespace(
+            _notification_identity=VentWiseCoordinator._notification_identity,
+            _notification_severity=VentWiseCoordinator._notification_severity,
+        ),
+        marker,
+        RoomRecommendation(
+            room_name="Camera",
+            action=RecommendationAction.CLOSE,
+            score=0.5,
+            reason="Outside is more comfortable.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=26.0,
+            outdoor_perceived_c=20.0,
+            suggested_comfort_temperature_c=22.0,
+        ),
+    )
+
+
+def test_notification_cooldown_bypass_is_limited_to_actions_and_urgency() -> None:
+    coordinator = SimpleNamespace(
+        _notification_identity=VentWiseCoordinator._notification_identity,
+        _notification_severity=VentWiseCoordinator._notification_severity,
+    )
+    marker = NotificationMarker(
+        ("open", "Camera"),
+        datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc),
+        "comfort",
+        "normal",
+    )
+
+    def recommendation(
+        *,
+        action: RecommendationAction = RecommendationAction.OPEN,
+        score: float = 0.5,
+        reason_code: str = "comfort",
+    ) -> RoomRecommendation:
+        return RoomRecommendation(
+            room_name="Camera",
+            action=action,
+            score=score,
+            reason="Human-readable explanation.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=26.0,
+            outdoor_perceived_c=20.0,
+            suggested_comfort_temperature_c=22.0,
+            reason_code=reason_code,
+        )
+
+    assert not VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(),
+    )
+    assert not VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(reason_code="wind"),
+    )
+    assert VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(action=RecommendationAction.CLOSE),
+    )
+    assert VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(score=0.8),
+    )
+    assert not VentWiseCoordinator._matches_notification_marker(
+        SimpleNamespace(
+            _notification_identity=VentWiseCoordinator._notification_identity,
+            _notification_severity=VentWiseCoordinator._notification_severity,
+        ),
+        marker,
+        RoomRecommendation(
+            room_name="Camera",
+            action=RecommendationAction.OPEN,
+            score=0.5,
+            reason="Indoor humidity is too high.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=26.0,
+            outdoor_perceived_c=20.0,
+            suggested_comfort_temperature_c=22.0,
+            reason_code="humidity",
+        ),
+    )
+    assert not VentWiseCoordinator._matches_notification_marker(
+        SimpleNamespace(
+            _notification_identity=VentWiseCoordinator._notification_identity,
+            _notification_severity=VentWiseCoordinator._notification_severity,
+        ),
+        marker,
+        RoomRecommendation(
+            room_name="Camera",
+            action=RecommendationAction.OPEN,
+            score=0.8,
+            reason="Outside is more comfortable.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=26.0,
+            outdoor_perceived_c=20.0,
+            suggested_comfort_temperature_c=22.0,
+        ),
+    )
 
 
 def test_coordinator_notifies_each_eligible_room(

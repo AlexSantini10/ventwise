@@ -130,6 +130,7 @@ class RoomRecommendation:
     room_id: str | None = None
     open_score: float = 0.0
     close_score: float = 0.0
+    reason_code: str = "comfort"
 
 
 @dataclass(frozen=True, slots=True)
