@@ -12,6 +12,8 @@ pytest.importorskip("homeassistant")
 from custom_components.ventwise.notification import (
     async_send_notification,
     build_notification_payload,
+    build_recommendation_explanation,
+    build_recommendation_status,
     notification_entity_ids_for_device_ids,
 )
 
@@ -85,6 +87,26 @@ def test_build_notification_payload_uses_requested_language() -> None:
 
     assert title == "VentWise"
     assert message == "Salotto: apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
+
+
+def test_recommendation_explanation_is_concise_and_localized() -> None:
+    recommendation = SimpleNamespace(
+        room_name="Camera",
+        action=SimpleNamespace(value="close"),
+        indoor_perceived_c=21.0,
+        outdoor_perceived_c=25.0,
+        target_perceived_c=22.0,
+    )
+
+    explanation = build_recommendation_explanation(recommendation, language="it-IT")
+
+    assert explanation == "chiudi le finestre. Dentro è più confortevole adesso: 3.0°C più vicino al comfort."
+
+
+def test_recommendation_status_is_localized() -> None:
+    assert build_recommendation_status(blocked_by="stability", language="it") == (
+        "In attesa che la raccomandazione resti stabile."
+    )
 
 
 def test_async_send_notification_updates_home_assistant_persistent_notification() -> None:

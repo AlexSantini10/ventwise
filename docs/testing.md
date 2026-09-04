@@ -74,6 +74,12 @@ HACS on every run.
 python ha-local-docker-test.py
 ```
 
+Run the complete setup-to-recommendation journey in the container with:
+
+```powershell
+python ha-local-docker-test.py test
+```
+
 The script keeps Home Assistant runtime data outside the repository under
 `%LOCALAPPDATA%\VentWise-HA-Test` and bind-mounts
 `custom_components\ventwise` read-only into the container. The repo tree stays
@@ -89,6 +95,12 @@ The sandbox automatically provisions adjustable test fixtures:
 
 Change the helpers from **Settings > Devices & services > Helpers** to create
 repeatable open, close, humidity, and wind scenarios without physical devices.
+The **VentWise Test Lab** dashboard in the sidebar provides the same controls
+and displays the `Camera test` recommendation entities after the integration is configured.
+
+`tests/test_user_journey.py` covers the automated path from the submitted setup
+data through room sensor readings, scoring, and the Italian explanation shown to
+the user. It runs in the Home Assistant CI job.
 
 ## Expectations
 

@@ -60,7 +60,7 @@ jobs:
       - name: Run Home Assistant tests on 2026.7.2
         env:
           PYTHONWARNINGS: ignore::DeprecationWarning
-        run: python -m pytest tests/test_flow.py tests/test_options_flow.py tests/test_coordinator_runtime_state.py -q
+        run: python -m pytest tests/test_flow.py tests/test_options_flow.py tests/test_coordinator_runtime_state.py tests/test_notification.py tests/test_entity_units.py tests/test_user_journey.py -q
 
   hassfest:
     name: hassfest

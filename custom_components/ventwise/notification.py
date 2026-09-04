@@ -8,6 +8,7 @@ from collections.abc import Iterable, Sequence
 from homeassistant.helpers import entity_registry as er
 
 from .ventwise_core import RecommendationSummary
+from .ventwise_core.models import RoomRecommendation
 
 _LOGGER = logging.getLogger(__name__)
 _PERSISTENT_NOTIFICATION_ID = "ventwise_last_notification_delivery"
@@ -103,12 +104,74 @@ def build_notification_payload(
 ) -> tuple[str, str]:
     """Build a readable notification title and body."""
 
-    room_name = summary.best_room or "VentWise"
-    action = summary.action.value
-    texts = _notification_texts(language)
     title = "VentWise"
-    body = _build_notification_body(room_name, action, summary, texts)
+    recommendation = _best_room_recommendation(summary)
+    if recommendation is not None:
+        body = build_recommendation_explanation(
+            recommendation,
+            language=language,
+            include_room_name=True,
+        )
+    else:
+        room_name = summary.best_room or "VentWise"
+        body = f"{room_name}: {_notification_texts(language).get(summary.action.value, _notification_texts(language)['none'])}"
     return title, body
+
+
+def build_recommendation_explanation(
+    recommendation: RoomRecommendation,
+    *,
+    language: str | None = None,
+    include_room_name: bool = False,
+) -> str:
+    """Build a concise user-facing explanation for one room recommendation."""
+
+    texts = _notification_texts(language)
+    action = recommendation.action.value
+    prefix = f"{recommendation.room_name}: " if include_room_name else ""
+    if action == "open":
+        reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
+        return f"{prefix}{texts['open']} {reason}" if reason else f"{prefix}{texts['open']}"
+    if action == "close":
+        reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
+        return f"{prefix}{texts['close']} {reason}" if reason else f"{prefix}{texts['close']}"
+    return f"{prefix}{texts['none']}"
+
+
+def build_recommendation_status(
+    *,
+    blocked_by: str | None,
+    language: str | None = None,
+) -> str:
+    """Explain why no actionable recommendation is currently available."""
+
+    texts = _notification_texts(language)
+    status_texts = {
+        "quiet_hours": {
+            "en": "Recommendations are paused during quiet hours.",
+            "it": "Le raccomandazioni sono sospese durante la fascia silenziosa.",
+        },
+        "cooldown": {
+            "en": "The same recommendation was sent recently.",
+            "it": "La stessa raccomandazione è stata inviata di recente.",
+        },
+        "stability": {
+            "en": "Waiting for the recommendation to remain stable.",
+            "it": "In attesa che la raccomandazione resti stabile.",
+        },
+        "unavailable": {
+            "en": "Waiting for the required sensor data.",
+            "it": "In attesa dei dati richiesti dai sensori.",
+        },
+        "disabled": {
+            "en": "VentWise is disabled.",
+            "it": "VentWise è disabilitato.",
+        },
+    }
+    language_key = _normalize_language_key(language)
+    if blocked_by in status_texts:
+        return status_texts[blocked_by].get(language_key, status_texts[blocked_by]["en"])
+    return texts["none"]
 
 
 async def async_send_notification(
@@ -213,36 +276,13 @@ def _normalize_language_key(language: str | None) -> str:
     return "en"
 
 
-def _build_notification_body(
-    room_name: str,
-    action: str,
-    summary: RecommendationSummary,
-    texts: dict[str, str],
-) -> str:
-    """Build a localized, human-readable notification body."""
-
-    if action == "open":
-        reason = _localized_temperature_reason(summary, texts, use_outside=True)
-        if reason is not None:
-            return f"{room_name}: {texts['open']} {reason}"
-    elif action == "close":
-        reason = _localized_temperature_reason(summary, texts, use_outside=False)
-        if reason is not None:
-            return f"{room_name}: {texts['close']} {reason}"
-    return f"{room_name}: {texts.get(action, texts['none'])}"
-
-
 def _localized_temperature_reason(
-    summary: RecommendationSummary,
+    recommendation: RoomRecommendation,
     texts: dict[str, str],
     *,
     use_outside: bool,
 ) -> str | None:
     """Return a brief localized explanation based on the best room metrics."""
-
-    recommendation = _best_room_recommendation(summary)
-    if recommendation is None:
-        return None
 
     indoor_delta = abs(recommendation.indoor_perceived_c - recommendation.target_perceived_c)
     outdoor_delta = abs(recommendation.outdoor_perceived_c - recommendation.target_perceived_c)
