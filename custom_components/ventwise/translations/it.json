@@ -196,18 +196,50 @@
     "step": {
       "init": {
         "title": "Modifica VentWise",
-        "description": "Scegli cosa vuoi modificare.",
+        "description": "Scegli cosa vuoi gestire.",
         "menu_options": {
-          "basic": "Impostazioni base",
-          "outdoor": "Dati esterni",
-          "advanced": "Impostazioni comfort",
+          "settings": "Impostazioni",
           "rooms": "Stanze"
         },
         "menu_option_descriptions": {
-          "basic": "Sorgente meteo e dispositivi da notificare.",
-          "outdoor": "Scegli forecast o valori manuali per ogni dato esterno con le checkbox.",
-          "advanced": "Valori di comfort e taratura.",
-          "rooms": "Aggiungi stanze e macro-stanze."
+          "settings": "Meteo, comfort, notifiche e dati esterni in una sola schermata.",
+          "rooms": "Aggiungi, modifica o rimuovi stanze e aree raggruppate."
+        }
+      },
+      "settings": {
+        "title": "Impostazioni VentWise",
+        "description": "Imposta qui comfort quotidiano, notifiche e dati esterni. Le entità esterne manuali sono obbligatorie solo quando attivi il relativo interruttore.",
+        "data": {
+          "outdoor_weather_entity_id": "Sorgente meteo",
+          "target_temperature_c": "Temperatura di comfort",
+          "auto_comfort_temperature": "Adatta automaticamente la temperatura di comfort",
+          "target_humidity_percent": "Umidità di comfort",
+          "stability_minutes": "Attesa prima della raccomandazione (minuti)",
+          "notification_device_id": "Dispositivi da notificare",
+          "soft_outdoor_threshold_c": "Soglia di comfort esterna",
+          "cooldown_minutes": "Pausa notifiche (minuti)",
+          "outdoor_temperature_override": "Usa temperatura esterna manuale",
+          "outdoor_humidity_override": "Usa umidità esterna manuale",
+          "wind_speed_override": "Usa velocità del vento esterna manuale",
+          "outdoor_temperature_entity_id": "Temperatura esterna manuale",
+          "outdoor_humidity_entity_id": "Umidità esterna manuale",
+          "wind_speed_entity_id": "Velocità del vento esterna manuale"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant usata da VentWise.",
+          "target_temperature_c": "Imposta la temperatura interna che trovi confortevole quando sei in casa.",
+          "auto_comfort_temperature": "Adatta il target di comfort alle condizioni correnti. Influenza solo le raccomandazioni VentWise, non termostato o HVAC.",
+          "target_humidity_percent": "Imposta l'umidità interna che trovi confortevole quando sei in casa.",
+          "stability_minutes": "Per quanto tempo una raccomandazione deve restare invariata prima di una notifica.",
+          "notification_device_id": "Facoltativo. Seleziona i dispositivi che riceveranno le notifiche VentWise.",
+          "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
+          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo la stessa notifica.",
+          "outdoor_temperature_override": "Usa l'entità manuale sotto invece del forecast meteo.",
+          "outdoor_humidity_override": "Usa l'entità manuale sotto invece del forecast meteo.",
+          "wind_speed_override": "Usa l'entità manuale sotto invece del forecast meteo.",
+          "outdoor_temperature_entity_id": "Obbligatoria solo quando la temperatura esterna manuale è attiva.",
+          "outdoor_humidity_entity_id": "Obbligatoria solo quando l'umidità esterna manuale è attiva.",
+          "wind_speed_entity_id": "Obbligatoria solo quando la velocità del vento esterna manuale è attiva."
         }
       },
       "basic": {
@@ -252,7 +284,7 @@
       },
       "rooms": {
         "title": "Stanze",
-        "description": "Aggiungi, modifica o rimuovi stanze e macro-stanze per gli spazi che condividono la stessa aria.",
+        "description": "Aggiungi, modifica o rimuovi stanze e aree raggruppate.",
         "menu_options": {
           "add_room": "Aggiungi stanza",
           "add_macro_room": "Aggiungi macro-stanza",
@@ -265,7 +297,7 @@
           "add_macro_room": "Crea un'area raggruppata per spazi che condividono le stesse finestre.",
           "edit_room": "Aggiorna una stanza o un'area raggruppata esistente.",
           "remove_room": "Elimina una stanza o un'area raggruppata esistente.",
-          "finish": "Salta le stanze per ora e salva la configurazione."
+          "finish": "Salva le modifiche alle stanze e chiudi."
         }
       },
       "edit_room_select": {

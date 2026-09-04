@@ -10,11 +10,22 @@ import pytest
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_COOLDOWN_MINUTES,
+    CONF_NOTIFICATION_DEVICE_ID,
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
+    CONF_SOFT_OUTDOOR_THRESHOLD_C,
+    CONF_STABILITY_MINUTES,
+    CONF_TARGET_HUMIDITY_PERCENT,
+    CONF_TARGET_TEMPERATURE_C,
+    CONF_WIND_SPEED_OVERRIDE,
 )
 from custom_components.ventwise.options_flow import VentWiseOptionsFlowHandler
 
@@ -75,6 +86,46 @@ def test_remove_room_updates_the_saved_list() -> None:
     assert len(flow._rooms) == 1
     assert flow._rooms[0][CONF_ROOM_NAME] == "Upstairs"
     assert flow._current_config[CONF_ROOMS][0][CONF_ROOM_NAME] == "Upstairs"
+
+
+def test_settings_screen_saves_everyday_and_comfort_values_together() -> None:
+    """Users do not need to navigate between technical settings sections."""
+
+    flow = _make_flow()
+
+    saved = asyncio.run(
+        flow.async_step_settings(
+            {
+                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+                CONF_TARGET_TEMPERATURE_C: 22.0,
+                CONF_AUTO_COMFORT_TEMPERATURE: True,
+                CONF_TARGET_HUMIDITY_PERCENT: 50.0,
+                CONF_STABILITY_MINUTES: 10,
+                CONF_NOTIFICATION_DEVICE_ID: [],
+                CONF_SOFT_OUTDOOR_THRESHOLD_C: 23.0,
+                CONF_COOLDOWN_MINUTES: 45,
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: False,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+                CONF_WIND_SPEED_OVERRIDE: False,
+            }
+        )
+    )
+
+    assert saved["type"] == "create_entry"
+    assert saved["data"][CONF_AUTO_COMFORT_TEMPERATURE] is True
+    assert saved["data"][CONF_COOLDOWN_MINUTES] == 45
+
+
+def test_options_menu_has_one_settings_screen_and_rooms() -> None:
+    """The top level does not fragment everyday settings into submenus."""
+
+    flow = _make_flow()
+
+    overview = asyncio.run(flow.async_step_init())
+
+    assert overview["type"] == "menu"
+    assert overview["step_id"] == "init"
+    assert overview["menu_options"] == ["settings", "rooms"]
 
 
 def test_edit_room_replaces_the_selected_room() -> None:
