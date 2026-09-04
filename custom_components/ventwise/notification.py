@@ -11,7 +11,8 @@ from .ventwise_core import RecommendationSummary
 from .ventwise_core.models import RoomRecommendation
 
 _LOGGER = logging.getLogger(__name__)
-_PERSISTENT_NOTIFICATION_ID = "ventwise_last_notification_delivery"
+_PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
+_PERSISTENT_DELIVERY_FAILURE_ID = "ventwise_notification_delivery_failure"
 _LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "ru", "zh-hans")
 _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
     "en": {
@@ -20,9 +21,7 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "none": "no action needed.",
         "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
         "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
-        "delivered_title": "VentWise notification delivered",
         "failed_title": "VentWise notification delivery failed",
-        "delivered_to": "Delivered to",
         "failed_targets": "Failed targets",
     },
     "it": {
@@ -31,9 +30,7 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "none": "nessuna azione necessaria.",
         "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
         "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
-        "delivered_title": "Notifica VentWise consegnata",
         "failed_title": "Consegna notifica VentWise fallita",
-        "delivered_to": "Consegnata a",
         "failed_targets": "Target falliti",
     },
     "es": {
@@ -181,13 +178,14 @@ async def async_send_notification(
     title: str,
     message: str,
     device_ids: Sequence[str] | None = None,
+    send_to_home_assistant: bool = False,
 ) -> bool:
-    """Send a notification message to the selected notify entities."""
+    """Deliver a recommendation to selected devices and/or Home Assistant."""
 
     targets = list(dict.fromkeys(entity_ids))
     texts = _notification_texts(getattr(getattr(hass, "config", None), "language", None))
     try:
-        if not targets:
+        if not targets and not send_to_home_assistant:
             raise RuntimeError(f"No notify entities resolved for device IDs: {list(device_ids or [])}")
 
         delivered_targets: list[str] = []
@@ -206,6 +204,15 @@ async def async_send_notification(
                 failed_targets.append(entity_id)
                 _LOGGER.exception("Failed to deliver VentWise notification to %s", entity_id)
 
+        home_assistant_delivered = False
+        if send_to_home_assistant:
+            home_assistant_delivered = await _async_create_persistent_notification(
+                hass,
+                title=title,
+                message=message,
+                notification_id=_PERSISTENT_RECOMMENDATION_ID,
+            )
+
         if failed_targets:
             await _async_create_persistent_notification(
                 hass,
@@ -214,24 +221,16 @@ async def async_send_notification(
                     f"{title}: {message}\n\n"
                     f"{texts['failed_targets']}: {', '.join(failed_targets)}"
                 ),
+                notification_id=_PERSISTENT_DELIVERY_FAILURE_ID,
             )
-            return False
-
-        await _async_create_persistent_notification(
-            hass,
-            title=texts["delivered_title"],
-            message=(
-                f"{title}: {message}\n\n"
-                f"{texts['delivered_to']}: {', '.join(delivered_targets)}"
-            ),
-        )
-        return True
+        return bool(delivered_targets) or home_assistant_delivered
     except Exception:
         _LOGGER.exception("VentWise notification delivery failed")
         await _async_create_persistent_notification(
             hass,
             title=texts["failed_title"],
             message=f"{title}: {message}",
+            notification_id=_PERSISTENT_DELIVERY_FAILURE_ID,
         )
         return False
 
@@ -241,7 +240,8 @@ async def _async_create_persistent_notification(
     *,
     title: str,
     message: str,
-) -> None:
+    notification_id: str,
+) -> bool:
     """Create or update the latest VentWise persistent notification."""
 
     try:
@@ -251,12 +251,14 @@ async def _async_create_persistent_notification(
             {
                 "title": title,
                 "message": message,
-                "notification_id": _PERSISTENT_NOTIFICATION_ID,
+                "notification_id": notification_id,
             },
             blocking=True,
         )
+        return True
     except Exception:
         _LOGGER.exception("Failed to create VentWise persistent notification")
+        return False
 
 
 def _notification_texts(language: str | None) -> dict[str, str]:

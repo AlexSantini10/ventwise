@@ -74,9 +74,10 @@ def test_build_notification_payload_uses_requested_language() -> None:
         best_room="Salotto",
         action=SimpleNamespace(value="open"),
         room_recommendations=(
-            SimpleNamespace(
-                room_name="Salotto",
-                indoor_perceived_c=27.2,
+                SimpleNamespace(
+                    room_name="Salotto",
+                    action=SimpleNamespace(value="open"),
+                    indoor_perceived_c=27.2,
                 target_perceived_c=22.0,
                 outdoor_perceived_c=23.8,
             ),
@@ -100,7 +101,7 @@ def test_recommendation_explanation_is_concise_and_localized() -> None:
 
     explanation = build_recommendation_explanation(recommendation, language="it-IT")
 
-    assert explanation == "chiudi le finestre. Dentro è più confortevole adesso: 3.0°C più vicino al comfort."
+    assert explanation == "chiudi le finestre. Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
 
 
 def test_recommendation_status_is_localized() -> None:
@@ -109,7 +110,7 @@ def test_recommendation_status_is_localized() -> None:
     )
 
 
-def test_async_send_notification_updates_home_assistant_persistent_notification() -> None:
+def test_async_send_notification_does_not_create_delivery_debug_on_success() -> None:
     hass = type("Hass", (), {"services": _FakeServices(), "config": type("Config", (), {"language": "it"})()})()
 
     result = asyncio.run(
@@ -125,9 +126,35 @@ def test_async_send_notification_updates_home_assistant_persistent_notification(
     assert result is True
     assert hass.services.calls[0][:2] == ("notify", "send_message")
     assert hass.services.calls[0][2]["message"] == "Camera: open windows."
-    assert hass.services.calls[1][:2] == ("persistent_notification", "create")
-    assert hass.services.calls[1][2]["notification_id"] == "ventwise_last_notification_delivery"
-    assert hass.services.calls[1][2]["title"] == "Notifica VentWise consegnata"
+    assert len(hass.services.calls) == 1
+
+
+def test_async_send_notification_delivers_to_home_assistant_when_selected() -> None:
+    hass = type("Hass", (), {"services": _FakeServices(), "config": type("Config", (), {"language": "it"})()})()
+
+    result = asyncio.run(
+        async_send_notification(
+            hass,
+            [],
+            title="VentWise",
+            message="Camera: open windows.",
+            send_to_home_assistant=True,
+        )
+    )
+
+    assert result is True
+    assert hass.services.calls == [
+        (
+            "persistent_notification",
+            "create",
+            {
+                "title": "VentWise",
+                "message": "Camera: open windows.",
+                "notification_id": "ventwise_recommendation",
+            },
+            None,
+        )
+    ]
 
 
 def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytest.LogCaptureFixture) -> None:
@@ -147,6 +174,7 @@ def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytes
     assert result is False
     assert hass.services.calls[-1][:2] == ("persistent_notification", "create")
     assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
+    assert hass.services.calls[-1][2]["notification_id"] == "ventwise_notification_delivery_failure"
     assert any(record.exc_info for record in caplog.records)
 
 

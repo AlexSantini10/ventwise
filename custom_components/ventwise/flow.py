@@ -23,6 +23,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -129,6 +130,10 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 default=_normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID))
                 or [],
             ): DeviceSelector(DeviceSelectorConfig(multiple=True)),
+            vol.Required(
+                CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+                default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
+            ): cv.boolean,
         }
     )
 
@@ -351,6 +356,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         data.get(CONF_NOTIFICATION_DEVICE_ID)
     )
     data[CONF_NOTIFICATION_DEVICE_ID] = notification_device_ids
+    data[CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED] = _normalize_bool(
+        data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED),
+        CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+        default=False,
+    )
     return data
 
 

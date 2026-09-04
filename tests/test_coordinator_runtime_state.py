@@ -15,6 +15,7 @@ from custom_components.ventwise.const import (
     CONF_ENABLED,
     CONF_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
@@ -345,7 +346,7 @@ def test_coordinator_sends_notification_to_selected_devices(
     snapshot = asyncio.run(coordinator._async_update_data())
 
     assert snapshot.notification_allowed is True
-    assert len(hass.services.calls) == 3
+    assert len(hass.services.calls) == 2
     assert hass.services.calls[0][0] == "notify"
     assert hass.services.calls[0][1] == "send_message"
     assert hass.services.calls[0][2]["title"] == "VentWise"
@@ -353,9 +354,54 @@ def test_coordinator_sends_notification_to_selected_devices(
     assert "Outside is more comfortable" in hass.services.calls[0][2]["message"] or "Fuori è più confortevole" in hass.services.calls[0][2]["message"]
     assert hass.services.calls[0][3] == {"entity_id": "notify.mobile_app_alice"}
     assert hass.services.calls[1][3] == {"entity_id": "notify.mobile_app_bob"}
-    assert hass.services.calls[2][0] == "persistent_notification"
-    assert hass.services.calls[2][1] == "create"
-    assert hass.services.calls[2][2]["notification_id"] == "ventwise_last_notification_delivery"
+
+
+def test_coordinator_sends_notification_to_home_assistant_when_selected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="28.0"),
+        "sensor.room_humidity": SimpleNamespace(state="55.0"),
+    }
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_NOTIFICATION_ENABLED: True,
+            CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_STABILITY_MINUTES: 10,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                }
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+    coordinator._last_action_signature = ("open", "Camera")
+    coordinator._last_action_started_at = fixed_now - timedelta(minutes=15)
+    coordinator._last_notification_signature = None
+    coordinator._last_notification_at = fixed_now - timedelta(days=1)
+
+    snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert snapshot.notification_allowed is True
+    assert len(hass.services.calls) == 1
+    assert hass.services.calls[0][0:2] == ("persistent_notification", "create")
+    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation"
 
 
 def test_coordinator_uses_automatic_comfort_temperature_when_enabled(
