@@ -6,6 +6,7 @@ import pytest
 from ventwise_core import (
     ComfortObservation,
     ComfortRecommender,
+    OpeningState,
     RecommendationAction,
     RecommendationContext,
     RoomObservation,
@@ -88,6 +89,60 @@ def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
 
     assert result.action == RecommendationAction.CLOSE
     assert result.score > 0
+
+
+def test_recommender_does_not_ask_to_open_when_a_monitored_opening_is_open() -> None:
+    recommender = ComfortRecommender()
+    room = RoomProfile(
+        room_id="room-1",
+        name="Bedroom",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=50.0),
+        opening_state=OpeningState.OPEN,
+        openings_complete=False,
+    )
+    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=50.0)
+
+    result = recommender.evaluate([room], outdoor)
+    recommendation = result.room_recommendations[0]
+
+    assert recommendation.action == RecommendationAction.NONE
+    assert recommendation.reason_code == "already_open"
+    assert result.action == RecommendationAction.NONE
+
+
+def test_recommender_does_not_ask_to_close_when_all_openings_are_confirmed_closed() -> None:
+    recommender = ComfortRecommender()
+    room = RoomProfile(
+        room_id="room-1",
+        name="Bedroom",
+        indoor=RoomObservation(temperature_c=22.0, humidity_percent=50.0),
+        opening_state=OpeningState.CLOSED,
+        openings_complete=True,
+    )
+    outdoor = ComfortObservation(temperature_c=29.0, humidity_percent=50.0)
+
+    result = recommender.evaluate([room], outdoor)
+    recommendation = result.room_recommendations[0]
+
+    assert recommendation.action == RecommendationAction.NONE
+    assert recommendation.reason_code == "already_closed"
+
+
+def test_recommender_keeps_advice_cautious_when_opening_coverage_is_partial() -> None:
+    recommender = ComfortRecommender()
+    room = RoomProfile(
+        room_id="room-1",
+        name="Bedroom",
+        indoor=RoomObservation(temperature_c=28.0, humidity_percent=50.0),
+        opening_state=OpeningState.PARTIAL,
+        openings_complete=False,
+    )
+    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=50.0)
+
+    recommendation = recommender.evaluate([room], outdoor).room_recommendations[0]
+
+    assert recommendation.action == RecommendationAction.OPEN
+    assert recommendation.opening_state == OpeningState.PARTIAL
 
 
 def test_recommender_returns_none_for_neutral_conditions() -> None:

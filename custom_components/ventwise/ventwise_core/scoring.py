@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from typing import Sequence
 
 from .models import (
     ComfortObservation,
+    OpeningState,
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
@@ -144,7 +146,7 @@ class ComfortRecommender:
                 indoor_perceived,
                 outdoor_perceived,
             )
-            return RoomRecommendation(
+            return _apply_opening_state(RoomRecommendation(
                 room_id=room.room_id,
                 room_name=room.name,
                 action=RecommendationAction.CLOSE,
@@ -160,7 +162,7 @@ class ComfortRecommender:
                     outdoor.weather_condition,
                     ("weather condition",),
                 ),
-            )
+            ), room)
 
         open_score = self._direction_score(
             need_c=inside_delta,
@@ -260,7 +262,7 @@ class ComfortRecommender:
             outside_delta,
         )
 
-        return RoomRecommendation(
+        return _apply_opening_state(RoomRecommendation(
             room_id=room.room_id,
             room_name=room.name,
             action=action,
@@ -276,7 +278,7 @@ class ComfortRecommender:
                 outdoor.weather_condition,
                 environment_notes,
             ),
-        )
+        ), room)
 
     def evaluate(
         self,
@@ -390,6 +392,7 @@ class ComfortRecommender:
             room_recommendations=room_recommendations,
             best_room=best_room.room_name,
         )
+
 
     def _direction_score(
         self,
@@ -563,6 +566,38 @@ class ComfortRecommender:
     @staticmethod
     def _clamp(value: float) -> float:
         return max(0.0, min(1.0, value))
+
+
+def _apply_opening_state(
+    recommendation: RoomRecommendation,
+    room: RoomProfile,
+) -> RoomRecommendation:
+    """Avoid advice that contradicts a known complete opening state."""
+
+    recommendation = replace(
+        recommendation,
+        opening_state=room.opening_state,
+        openings_complete=room.openings_complete,
+    )
+    if room.opening_state == OpeningState.OPEN and recommendation.action == RecommendationAction.OPEN:
+        return replace(
+            recommendation,
+            action=RecommendationAction.NONE,
+            score=0.0,
+            open_score=0.0,
+            reason=f"{room.name}: one or more monitored openings are already open.",
+            reason_code="already_open",
+        )
+    if room.opening_state == OpeningState.CLOSED and recommendation.action == RecommendationAction.CLOSE:
+        return replace(
+            recommendation,
+            action=RecommendationAction.NONE,
+            score=0.0,
+            close_score=0.0,
+            reason=f"{room.name}: all monitored openings are already closed.",
+            reason_code="already_closed",
+        )
+    return recommendation
 
 
 def _smoothstep(value: float, edge0: float, edge1: float) -> float:
