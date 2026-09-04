@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterable, Sequence
+from datetime import datetime
 
 from homeassistant.helpers import entity_registry as er
 
 from .ventwise_core import RecommendationSummary
+from .ventwise_core.models import RoomRecommendation
 
 _LOGGER = logging.getLogger(__name__)
-_PERSISTENT_NOTIFICATION_ID = "ventwise_last_notification_delivery"
+_PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
+_PERSISTENT_DELIVERY_FAILURE_ID = "ventwise_notification_delivery_failure"
 _LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "ru", "zh-hans")
 _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
     "en": {
@@ -19,9 +23,7 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "none": "no action needed.",
         "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
         "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
-        "delivered_title": "VentWise notification delivered",
         "failed_title": "VentWise notification delivery failed",
-        "delivered_to": "Delivered to",
         "failed_targets": "Failed targets",
     },
     "it": {
@@ -30,9 +32,7 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "none": "nessuna azione necessaria.",
         "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
         "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
-        "delivered_title": "Notifica VentWise consegnata",
         "failed_title": "Consegna notifica VentWise fallita",
-        "delivered_to": "Consegnata a",
         "failed_targets": "Target falliti",
     },
     "es": {
@@ -103,12 +103,99 @@ def build_notification_payload(
 ) -> tuple[str, str]:
     """Build a readable notification title and body."""
 
-    room_name = summary.best_room or "VentWise"
-    action = summary.action.value
-    texts = _notification_texts(language)
-    title = "VentWise"
-    body = _build_notification_body(room_name, action, summary, texts)
+    recommendation = _best_room_recommendation(summary)
+    if recommendation is not None:
+        return build_room_notification_payload(recommendation, language=language)
+    else:
+        room_name = summary.best_room or "VentWise"
+        title = "VentWise" if room_name == "VentWise" else f"VentWise · {room_name}"
+        body = f"{room_name}: {_notification_texts(language).get(summary.action.value, _notification_texts(language)['none'])}"
     return title, body
+
+
+def build_room_notification_payload(
+    recommendation: RoomRecommendation,
+    *,
+    language: str | None = None,
+) -> tuple[str, str]:
+    """Build a notification payload for one specific room."""
+
+    return (
+        f"VentWise · {recommendation.room_name}",
+        build_recommendation_explanation(
+            recommendation,
+            language=language,
+            include_room_name=False,
+        ),
+    )
+
+
+def home_assistant_notification_id_for_room(
+    recommendation: RoomRecommendation,
+    delivered_at: datetime,
+) -> str:
+    """Return a distinct persistent-notification ID for one delivery."""
+
+    identifier = recommendation.room_id or recommendation.room_name
+    safe_identifier = re.sub(r"[^a-z0-9_-]+", "_", identifier.lower()).strip("_")
+    delivered_stamp = delivered_at.strftime("%Y%m%dT%H%M%S%f").lower()
+    return f"{_PERSISTENT_RECOMMENDATION_ID}_{safe_identifier or 'room'}_{delivered_stamp}"
+
+
+def build_recommendation_explanation(
+    recommendation: RoomRecommendation,
+    *,
+    language: str | None = None,
+    include_room_name: bool = False,
+) -> str:
+    """Build a concise user-facing explanation for one room recommendation."""
+
+    texts = _notification_texts(language)
+    action = recommendation.action.value
+    prefix = f"{recommendation.room_name}: " if include_room_name else ""
+    if action == "open":
+        reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
+        return f"{prefix}{texts['open']} {reason}" if reason else f"{prefix}{texts['open']}"
+    if action == "close":
+        reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
+        return f"{prefix}{texts['close']} {reason}" if reason else f"{prefix}{texts['close']}"
+    return f"{prefix}{texts['none']}"
+
+
+def build_recommendation_status(
+    *,
+    blocked_by: str | None,
+    language: str | None = None,
+) -> str:
+    """Explain why no actionable recommendation is currently available."""
+
+    texts = _notification_texts(language)
+    status_texts = {
+        "quiet_hours": {
+            "en": "Recommendations are paused during quiet hours.",
+            "it": "Le raccomandazioni sono sospese durante la fascia silenziosa.",
+        },
+        "cooldown": {
+            "en": "The same recommendation was sent recently.",
+            "it": "La stessa raccomandazione è stata inviata di recente.",
+        },
+        "stability": {
+            "en": "Waiting for the recommendation to remain stable.",
+            "it": "In attesa che la raccomandazione resti stabile.",
+        },
+        "unavailable": {
+            "en": "Waiting for the required sensor data.",
+            "it": "In attesa dei dati richiesti dai sensori.",
+        },
+        "disabled": {
+            "en": "VentWise is disabled.",
+            "it": "VentWise è disabilitato.",
+        },
+    }
+    language_key = _normalize_language_key(language)
+    if blocked_by in status_texts:
+        return status_texts[blocked_by].get(language_key, status_texts[blocked_by]["en"])
+    return texts["none"]
 
 
 async def async_send_notification(
@@ -118,13 +205,15 @@ async def async_send_notification(
     title: str,
     message: str,
     device_ids: Sequence[str] | None = None,
+    send_to_home_assistant: bool = False,
+    home_assistant_notification_id: str = _PERSISTENT_RECOMMENDATION_ID,
 ) -> bool:
-    """Send a notification message to the selected notify entities."""
+    """Deliver a recommendation to selected devices and/or Home Assistant."""
 
     targets = list(dict.fromkeys(entity_ids))
     texts = _notification_texts(getattr(getattr(hass, "config", None), "language", None))
     try:
-        if not targets:
+        if not targets and not send_to_home_assistant:
             raise RuntimeError(f"No notify entities resolved for device IDs: {list(device_ids or [])}")
 
         delivered_targets: list[str] = []
@@ -143,6 +232,15 @@ async def async_send_notification(
                 failed_targets.append(entity_id)
                 _LOGGER.exception("Failed to deliver VentWise notification to %s", entity_id)
 
+        home_assistant_delivered = False
+        if send_to_home_assistant:
+            home_assistant_delivered = await _async_create_persistent_notification(
+                hass,
+                title=title,
+                message=message,
+                notification_id=home_assistant_notification_id,
+            )
+
         if failed_targets:
             await _async_create_persistent_notification(
                 hass,
@@ -151,24 +249,16 @@ async def async_send_notification(
                     f"{title}: {message}\n\n"
                     f"{texts['failed_targets']}: {', '.join(failed_targets)}"
                 ),
+                notification_id=_PERSISTENT_DELIVERY_FAILURE_ID,
             )
-            return False
-
-        await _async_create_persistent_notification(
-            hass,
-            title=texts["delivered_title"],
-            message=(
-                f"{title}: {message}\n\n"
-                f"{texts['delivered_to']}: {', '.join(delivered_targets)}"
-            ),
-        )
-        return True
+        return bool(delivered_targets) or home_assistant_delivered
     except Exception:
         _LOGGER.exception("VentWise notification delivery failed")
         await _async_create_persistent_notification(
             hass,
             title=texts["failed_title"],
             message=f"{title}: {message}",
+            notification_id=_PERSISTENT_DELIVERY_FAILURE_ID,
         )
         return False
 
@@ -178,7 +268,8 @@ async def _async_create_persistent_notification(
     *,
     title: str,
     message: str,
-) -> None:
+    notification_id: str,
+) -> bool:
     """Create or update the latest VentWise persistent notification."""
 
     try:
@@ -188,12 +279,14 @@ async def _async_create_persistent_notification(
             {
                 "title": title,
                 "message": message,
-                "notification_id": _PERSISTENT_NOTIFICATION_ID,
+                "notification_id": notification_id,
             },
             blocking=True,
         )
+        return True
     except Exception:
         _LOGGER.exception("Failed to create VentWise persistent notification")
+        return False
 
 
 def _notification_texts(language: str | None) -> dict[str, str]:
@@ -213,36 +306,13 @@ def _normalize_language_key(language: str | None) -> str:
     return "en"
 
 
-def _build_notification_body(
-    room_name: str,
-    action: str,
-    summary: RecommendationSummary,
-    texts: dict[str, str],
-) -> str:
-    """Build a localized, human-readable notification body."""
-
-    if action == "open":
-        reason = _localized_temperature_reason(summary, texts, use_outside=True)
-        if reason is not None:
-            return f"{room_name}: {texts['open']} {reason}"
-    elif action == "close":
-        reason = _localized_temperature_reason(summary, texts, use_outside=False)
-        if reason is not None:
-            return f"{room_name}: {texts['close']} {reason}"
-    return f"{room_name}: {texts.get(action, texts['none'])}"
-
-
 def _localized_temperature_reason(
-    summary: RecommendationSummary,
+    recommendation: RoomRecommendation,
     texts: dict[str, str],
     *,
     use_outside: bool,
 ) -> str | None:
     """Return a brief localized explanation based on the best room metrics."""
-
-    recommendation = _best_room_recommendation(summary)
-    if recommendation is None:
-        return None
 
     indoor_delta = abs(recommendation.indoor_perceived_c - recommendation.target_perceived_c)
     outdoor_delta = abs(recommendation.outdoor_perceived_c - recommendation.target_perceived_c)

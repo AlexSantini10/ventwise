@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
@@ -22,6 +22,7 @@ from .const import (
     CONF_MINIMUM_SCORE,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_NOTIFICATION_ENABLED,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
@@ -48,6 +49,7 @@ from .const import (
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
@@ -109,6 +111,7 @@ class IntegrationConfig:
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
     notification_enabled: bool = True
+    home_assistant_notification_enabled: bool = False
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -141,8 +144,15 @@ class RuntimeState:
 
     last_action_signature: tuple[str, str] | None = None
     last_action_started_at: datetime | None = None
-    last_notification_signature: tuple[str, str] | None = None
-    last_notification_at: datetime | None = None
+    notification_markers: Mapping[str, "NotificationMarker"] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class NotificationMarker:
+    """Last delivered recommendation for one room."""
+
+    signature: tuple[str, str]
+    notified_at: datetime
 
 
 def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
@@ -215,6 +225,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
         notification_enabled=bool(data.get(CONF_NOTIFICATION_ENABLED, True)),
+        home_assistant_notification_enabled=bool(
+            data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)
+        ),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -238,13 +251,21 @@ def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
     raw_state = data.get(CONF_RUNTIME_STATE)
     if not isinstance(raw_state, Mapping):
         return RuntimeState()
+    notification_markers = _load_notification_markers(
+        raw_state.get(CONF_RUNTIME_NOTIFICATION_MARKERS)
+    )
+    if not notification_markers:
+        legacy_signature = _load_signature(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE))
+        legacy_notified_at = _load_datetime(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_AT))
+        if legacy_signature is not None and legacy_notified_at is not None and legacy_signature[1]:
+            notification_markers = {
+                legacy_signature[1]: NotificationMarker(legacy_signature, legacy_notified_at)
+            }
+
     return RuntimeState(
         last_action_signature=_load_signature(raw_state.get(CONF_RUNTIME_LAST_ACTION_SIGNATURE)),
         last_action_started_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_ACTION_STARTED_AT)),
-        last_notification_signature=_load_signature(
-            raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE)
-        ),
-        last_notification_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_AT)),
+        notification_markers=notification_markers,
     )
 
 
@@ -257,10 +278,13 @@ def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
             if state.last_action_signature is not None
             else None,
             CONF_RUNTIME_LAST_ACTION_STARTED_AT: _dump_datetime(state.last_action_started_at),
-            CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE: list(state.last_notification_signature)
-            if state.last_notification_signature is not None
-            else None,
-            CONF_RUNTIME_LAST_NOTIFICATION_AT: _dump_datetime(state.last_notification_at),
+            CONF_RUNTIME_NOTIFICATION_MARKERS: {
+                room_name: {
+                    "signature": list(marker.signature),
+                    "notified_at": _dump_datetime(marker.notified_at),
+                }
+                for room_name, marker in state.notification_markers.items()
+            },
         }
     }
 
@@ -532,6 +556,22 @@ def _load_signature(value: Any) -> tuple[str, str] | None:
         return None
     first, second = value
     return str(first), str(second)
+
+
+def _load_notification_markers(value: Any) -> dict[str, NotificationMarker]:
+    """Load valid per-room notification markers from persisted data."""
+
+    if not isinstance(value, Mapping):
+        return {}
+    markers: dict[str, NotificationMarker] = {}
+    for room_name, raw_marker in value.items():
+        if not isinstance(room_name, str) or not room_name.strip() or not isinstance(raw_marker, Mapping):
+            continue
+        signature = _load_signature(raw_marker.get("signature"))
+        notified_at = _load_datetime(raw_marker.get("notified_at"))
+        if signature is not None and notified_at is not None:
+            markers[room_name] = NotificationMarker(signature, notified_at)
+    return markers
 
 
 def _load_datetime(value: Any) -> datetime | None:

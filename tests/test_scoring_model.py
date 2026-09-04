@@ -12,6 +12,7 @@ from ventwise_core import (
     RoomProfile,
     SeasonMode,
     ScoringConfig,
+    suggested_comfort_temperature,
 )
 
 
@@ -42,10 +43,19 @@ def test_recommender_exposes_suggested_comfort_temperature() -> None:
 
     result = recommender.evaluate([room], outdoor)
 
-    assert result.suggested_comfort_temperature_c == pytest.approx(23.625)
+    assert result.suggested_comfort_temperature_c == pytest.approx(24.0)
     assert result.room_recommendations[0].suggested_comfort_temperature_c == pytest.approx(
-        23.625
+        24.0
     )
+
+
+def test_adaptive_comfort_target_uses_outdoor_climate_not_room_discomfort() -> None:
+    """A hot or cold room must not make the target chase its own anomaly."""
+
+    assert suggested_comfort_temperature(22.0, 20.0) == 22.0
+    assert suggested_comfort_temperature(22.0, 28.0) == 24.0
+    assert suggested_comfort_temperature(22.0, 8.0) == 20.0
+    assert suggested_comfort_temperature(25.0, 30.0) == 26.0
 
 
 def test_recommender_opens_when_outside_is_only_one_degree_closer_to_target() -> None:

@@ -9,10 +9,10 @@ from homeassistant.core import HomeAssistant
 from .const import UNIT_CELSIUS
 from .coordinator import VentWiseCoordinator
 from .entity import VentWiseEntity, VentWiseRoomEntity
+from .notification import build_recommendation_explanation, build_recommendation_status
 from .runtime import (
     RoomConfig,
     find_room_recommendation,
-    room_target_temperature_c,
     state_to_float,
 )
 from .ventwise_core import RecommendationAction
@@ -235,11 +235,20 @@ class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         if not self.room.enabled:
-            return "Room disabled."
+            return build_recommendation_status(
+                blocked_by="disabled",
+                language=self.hass.config.language,
+            )
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
         if recommendation is None:
-            return self.coordinator.data.summary.reason
-        return recommendation.reason
+            return build_recommendation_status(
+                blocked_by=self.coordinator.data.summary.blocked_by,
+                language=self.hass.config.language,
+            )
+        return build_recommendation_explanation(
+            recommendation,
+            language=self.hass.config.language,
+        )
 
 
 class RoomWeatherConditionSensor(VentWiseRoomEntity, SensorEntity):
@@ -321,7 +330,8 @@ class RoomPerceivedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return room_target_temperature_c(self.room, self.coordinator.config)
+        recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
+        return None if recommendation is None else recommendation.target_perceived_c
 
 
 class RoomSuggestedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):

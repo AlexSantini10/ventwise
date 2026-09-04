@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -12,6 +13,9 @@ pytest.importorskip("homeassistant")
 from custom_components.ventwise.notification import (
     async_send_notification,
     build_notification_payload,
+    home_assistant_notification_id_for_room,
+    build_recommendation_explanation,
+    build_recommendation_status,
     notification_entity_ids_for_device_ids,
 )
 
@@ -72,9 +76,10 @@ def test_build_notification_payload_uses_requested_language() -> None:
         best_room="Salotto",
         action=SimpleNamespace(value="open"),
         room_recommendations=(
-            SimpleNamespace(
-                room_name="Salotto",
-                indoor_perceived_c=27.2,
+                SimpleNamespace(
+                    room_name="Salotto",
+                    action=SimpleNamespace(value="open"),
+                    indoor_perceived_c=27.2,
                 target_perceived_c=22.0,
                 outdoor_perceived_c=23.8,
             ),
@@ -83,11 +88,48 @@ def test_build_notification_payload_uses_requested_language() -> None:
 
     title, message = build_notification_payload(summary, language="it-IT")
 
-    assert title == "VentWise"
-    assert message == "Salotto: apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
+    assert title == "VentWise · Salotto"
+    assert message == "apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
 
 
-def test_async_send_notification_updates_home_assistant_persistent_notification() -> None:
+def test_recommendation_explanation_is_concise_and_localized() -> None:
+    recommendation = SimpleNamespace(
+        room_name="Camera",
+        action=SimpleNamespace(value="close"),
+        indoor_perceived_c=21.0,
+        outdoor_perceived_c=25.0,
+        target_perceived_c=22.0,
+    )
+
+    explanation = build_recommendation_explanation(recommendation, language="it-IT")
+
+    assert explanation == "chiudi le finestre. Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
+
+
+def test_home_assistant_notification_id_is_distinct_per_delivery_and_room() -> None:
+    camera = SimpleNamespace(room_name="Camera", room_id="camera-1")
+    living_room = SimpleNamespace(room_name="Salotto", room_id="living-1")
+    first_delivery = datetime(2026, 9, 4, 10, 15, 30, tzinfo=timezone.utc)
+    second_delivery = datetime(2026, 9, 4, 11, 15, 30, tzinfo=timezone.utc)
+
+    assert home_assistant_notification_id_for_room(
+        camera, first_delivery
+    ) == "ventwise_recommendation_camera-1_20260904t101530000000"
+    assert home_assistant_notification_id_for_room(
+        living_room, first_delivery
+    ) == "ventwise_recommendation_living-1_20260904t101530000000"
+    assert home_assistant_notification_id_for_room(
+        camera, second_delivery
+    ) == "ventwise_recommendation_camera-1_20260904t111530000000"
+
+
+def test_recommendation_status_is_localized() -> None:
+    assert build_recommendation_status(blocked_by="stability", language="it") == (
+        "In attesa che la raccomandazione resti stabile."
+    )
+
+
+def test_async_send_notification_does_not_create_delivery_debug_on_success() -> None:
     hass = type("Hass", (), {"services": _FakeServices(), "config": type("Config", (), {"language": "it"})()})()
 
     result = asyncio.run(
@@ -103,9 +145,35 @@ def test_async_send_notification_updates_home_assistant_persistent_notification(
     assert result is True
     assert hass.services.calls[0][:2] == ("notify", "send_message")
     assert hass.services.calls[0][2]["message"] == "Camera: open windows."
-    assert hass.services.calls[1][:2] == ("persistent_notification", "create")
-    assert hass.services.calls[1][2]["notification_id"] == "ventwise_last_notification_delivery"
-    assert hass.services.calls[1][2]["title"] == "Notifica VentWise consegnata"
+    assert len(hass.services.calls) == 1
+
+
+def test_async_send_notification_delivers_to_home_assistant_when_selected() -> None:
+    hass = type("Hass", (), {"services": _FakeServices(), "config": type("Config", (), {"language": "it"})()})()
+
+    result = asyncio.run(
+        async_send_notification(
+            hass,
+            [],
+            title="VentWise",
+            message="Camera: open windows.",
+            send_to_home_assistant=True,
+        )
+    )
+
+    assert result is True
+    assert hass.services.calls == [
+        (
+            "persistent_notification",
+            "create",
+            {
+                "title": "VentWise",
+                "message": "Camera: open windows.",
+                "notification_id": "ventwise_recommendation",
+            },
+            None,
+        )
+    ]
 
 
 def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytest.LogCaptureFixture) -> None:
@@ -125,6 +193,7 @@ def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytes
     assert result is False
     assert hass.services.calls[-1][:2] == ("persistent_notification", "create")
     assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
+    assert hass.services.calls[-1][2]["notification_id"] == "ventwise_notification_delivery_failure"
     assert any(record.exc_info for record in caplog.records)
 
 

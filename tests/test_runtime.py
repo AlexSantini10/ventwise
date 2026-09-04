@@ -45,6 +45,7 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_RUNTIME_NOTIFICATION_MARKERS,
 )
 from custom_components.ventwise.runtime import RuntimeSnapshot
 from ventwise_core import (
@@ -103,6 +104,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
 
     assert config.enabled is True
     assert config.auto_comfort_temperature_enabled is True
+    assert config.home_assistant_notification_enabled is False
     assert config.notification_device_ids == ("device-123", "device-456")
     assert config.rooms[0].name == "Camera"
     assert config.rooms[0].target_temperature_c_override_enabled is True
@@ -316,7 +318,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         summary=summary,
         weather_condition="sunny",
         target_perceived_c=22.0,
-        suggested_comfort_temperature_c=22.275,
+        suggested_comfort_temperature_c=summary.suggested_comfort_temperature_c,
         outdoor_perceived_c=20.0,
         active_indoor_perceived_c=23.2,
         outdoor_temperature_c=20.0,
@@ -337,14 +339,17 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     assert attributes["summary_best_room"] == "Camera"
     assert attributes["weather_condition"] == "sunny"
     assert attributes["target_perceived_c"] == 22.0
-    assert attributes["suggested_comfort_temperature_c"] == 22.275
+    assert attributes["suggested_comfort_temperature_c"] == summary.suggested_comfort_temperature_c
     assert attributes["auto_comfort_temperature_enabled"] is False
     assert attributes["outdoor_perceived_c"] == 20.0
     assert attributes["active_indoor_perceived_c"] == 23.2
     assert attributes["notification_allowed"] is True
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0
-    assert attributes["room_recommendations"][0]["suggested_comfort_temperature_c"] == 22.275
+    assert (
+        attributes["room_recommendations"][0]["suggested_comfort_temperature_c"]
+        == summary.room_recommendations[0].suggested_comfort_temperature_c
+    )
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
 
 
@@ -403,8 +408,12 @@ def test_runtime_state_round_trips_through_storage() -> None:
     runtime_state = stored[CONF_RUNTIME_STATE]
     assert runtime_state[CONF_RUNTIME_LAST_ACTION_SIGNATURE] == ["open", "Camera"]
     assert runtime_state[CONF_RUNTIME_LAST_ACTION_STARTED_AT] == started_at.isoformat()
-    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE] == ["open", "Camera"]
-    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_AT] == notification_at.isoformat()
+    assert runtime_state[CONF_RUNTIME_NOTIFICATION_MARKERS] == {
+        "Camera": {
+            "signature": ["open", "Camera"],
+            "notified_at": notification_at.isoformat(),
+        }
+    }
 
 
 def test_load_runtime_state_ignores_corrupted_markers() -> None:
@@ -421,5 +430,6 @@ def test_load_runtime_state_ignores_corrupted_markers() -> None:
 
     assert loaded.last_action_signature is None
     assert loaded.last_action_started_at is None
-    assert loaded.last_notification_signature == ("open", "Camera")
-    assert loaded.last_notification_at == datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)
+    marker = loaded.notification_markers["Camera"]
+    assert marker.signature == ("open", "Camera")
+    assert marker.notified_at == datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)

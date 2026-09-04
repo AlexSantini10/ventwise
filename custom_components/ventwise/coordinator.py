@@ -19,14 +19,16 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from .ventwise_core import (
+    ComfortRecommender,
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
+    suggested_comfort_temperature,
 )
-from .ventwise_core import ComfortRecommender
 
 from .runtime import (
     IntegrationConfig,
+    NotificationMarker,
     RuntimeSnapshot,
     RuntimeState,
     build_integration_config,
@@ -38,7 +40,8 @@ from .runtime import (
 )
 from .notification import (
     async_send_notification,
-    build_notification_payload,
+    build_room_notification_payload,
+    home_assistant_notification_id_for_room,
     notification_entity_ids_for_device_ids,
 )
 from .const import (
@@ -78,10 +81,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._runtime_state = self._load_runtime_state()
         self._last_action_signature = self._runtime_state.last_action_signature
         self._last_action_started_at = self._runtime_state.last_action_started_at or dt_util.utcnow()
-        self._last_notification_at = self._runtime_state.last_notification_at or (
-            dt_util.utcnow() - timedelta(days=1)
-        )
-        self._last_notification_signature = self._runtime_state.last_notification_signature
+        self._notification_markers = dict(self._runtime_state.notification_markers)
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
         self._listeners_initialized = False
@@ -218,7 +218,26 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         now = dt_util.now()
-        summary = self._recommender.evaluate(
+        outdoor_perceived_c = outdoor.temperature_c + (
+            (outdoor.humidity_percent - self._config.target_humidity_percent)
+            * self._recommender.config.humidity_weight
+        )
+        suggested_target = suggested_comfort_temperature(
+            self._config.target_temperature_c,
+            outdoor_perceived_c,
+        )
+        effective_target_temperature_c = (
+            suggested_target
+            if self._config.auto_comfort_temperature_enabled
+            else self._config.target_temperature_c
+        )
+        scoring_config = build_scoring_config(
+            replace(
+                self._config,
+                target_temperature_c=effective_target_temperature_c,
+            )
+        )
+        summary = ComfortRecommender(scoring_config).evaluate(
             rooms=rooms,
             outdoor=outdoor,
             context=RecommendationContext(
@@ -227,27 +246,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 stable_for_seconds=10**6,
             ),
         )
-        effective_target_temperature_c = self._config.target_temperature_c
-        if self._config.auto_comfort_temperature_enabled:
-            suggested_target = _suggested_comfort_temperature(
-                self._config.target_temperature_c,
-                summary,
-            )
-            if suggested_target is not None:
-                effective_target_temperature_c = suggested_target
-                auto_config = replace(
-                    self._config,
-                    target_temperature_c=effective_target_temperature_c,
-                )
-                summary = ComfortRecommender(build_scoring_config(auto_config)).evaluate(
-                    rooms=rooms,
-                    outdoor=outdoor,
-                    context=RecommendationContext(
-                        quiet_hours_active=False,
-                        cooldown_active=False,
-                        stable_for_seconds=10**6,
-                    ),
-                )
+        summary = _with_suggested_comfort_temperature(summary, suggested_target)
         signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -259,23 +258,45 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._config.quiet_hours_start,
             self._config.quiet_hours_end,
         )
-        cooldown_active = self._last_notification_signature == signature and (
-            now - self._last_notification_at
-        ) < timedelta(minutes=self._config.cooldown_minutes)
-
-        notification_allowed = (
-            self._config.notification_enabled
-            and bool(notification_entity_ids)
-            and summary.action != RecommendationAction.NONE
-            and summary.score >= self._config.minimum_score
-            and not quiet_hours_active
-            and not cooldown_active
-            and stable_for_seconds >= self._config.stability_minutes * 60
+        notification_marker = self._notification_markers.get(summary.best_room or "")
+        cooldown_active = (
+            notification_marker is not None
+            and notification_marker.signature == signature
+            and (now - notification_marker.notified_at)
+            < timedelta(minutes=self._config.cooldown_minutes)
         )
 
-        if notification_allowed and self._last_notification_signature != signature:
-            title, message = build_notification_payload(
-                summary,
+        notification_channel_available = (
+            self._config.notification_enabled
+            and (
+                bool(notification_entity_ids)
+                or self._config.home_assistant_notification_enabled
+            )
+            and not quiet_hours_active
+            and stable_for_seconds >= self._config.stability_minutes * 60
+        )
+        notification_allowed = False
+        for recommendation in summary.room_recommendations:
+            room_signature = (recommendation.action.value, recommendation.room_name)
+            room_marker = self._notification_markers.get(recommendation.room_name)
+            room_cooldown_active = (
+                room_marker is not None
+                and room_marker.signature == room_signature
+                and (now - room_marker.notified_at)
+                < timedelta(minutes=self._config.cooldown_minutes)
+            )
+            room_notification_allowed = (
+                notification_channel_available
+                and recommendation.action != RecommendationAction.NONE
+                and recommendation.score >= self._config.minimum_score
+                and not room_cooldown_active
+                and (room_marker is None or room_marker.signature != room_signature)
+            )
+            if not room_notification_allowed:
+                continue
+
+            title, message = build_room_notification_payload(
+                recommendation,
                 language=getattr(getattr(self.hass, "config", None), "language", None),
             )
             delivered = await async_send_notification(
@@ -284,16 +305,20 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 title=title,
                 message=message,
                 device_ids=self._config.notification_device_ids,
+                send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                home_assistant_notification_id=home_assistant_notification_id_for_room(
+                    recommendation,
+                    now,
+                ),
             )
             if delivered:
-                self._last_notification_signature = signature
-                self._last_notification_at = now
+                self._notification_markers[recommendation.room_name] = NotificationMarker(
+                    room_signature,
+                    now,
+                )
+                notification_allowed = True
 
         target_perceived_c = effective_target_temperature_c
-        outdoor_perceived_c = outdoor.temperature_c + (
-            (outdoor.humidity_percent - self._config.target_humidity_percent)
-            * self._recommender.config.humidity_weight
-        )
         active_indoor_perceived_c = _average_room_indoor_perceived_temperature(summary)
 
         snapshot = RuntimeSnapshot(
@@ -303,7 +328,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 self.hass.states.get,
             ),
             target_perceived_c=target_perceived_c,
-            suggested_comfort_temperature_c=summary.suggested_comfort_temperature_c,
+            suggested_comfort_temperature_c=suggested_target,
             outdoor_perceived_c=outdoor_perceived_c,
             active_indoor_perceived_c=active_indoor_perceived_c,
             outdoor_temperature_c=outdoor.temperature_c,
@@ -470,9 +495,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             if target > now:
                 candidates.append(target)
         if snapshot.cooldown_active:
-            target = self._last_notification_at + timedelta(minutes=self._config.cooldown_minutes)
-            if target > now:
-                candidates.append(target)
+            marker = self._notification_markers.get(snapshot.summary.best_room or "")
+            if marker is not None:
+                target = marker.notified_at + timedelta(minutes=self._config.cooldown_minutes)
+                if target > now:
+                    candidates.append(target)
         if self._config.quiet_hours_enabled:
             quiet_hours_target = _next_quiet_hours_transition(
                 now,
@@ -536,8 +563,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         runtime_state = RuntimeState(
             last_action_signature=self._last_action_signature,
             last_action_started_at=self._last_action_started_at,
-            last_notification_signature=self._last_notification_signature,
-            last_notification_at=self._last_notification_at,
+            notification_markers=dict(self._notification_markers),
         )
         if runtime_state == self._runtime_state:
             return
@@ -617,21 +643,24 @@ def _weather_condition(
     return text or None
 
 
-def _suggested_comfort_temperature(
-    target_temperature_c: float,
+def _with_suggested_comfort_temperature(
     summary: RecommendationSummary,
-) -> float | None:
-    if not summary.best_room:
-        return None
-    best_room = next(
-        (recommendation for recommendation in summary.room_recommendations if recommendation.room_name == summary.best_room),
-        None,
+    suggested_temperature_c: float,
+) -> RecommendationSummary:
+    """Keep the exposed adaptive target consistent across summary and rooms."""
+
+    room_recommendations = tuple(
+        replace(
+            recommendation,
+            suggested_comfort_temperature_c=suggested_temperature_c,
+        )
+        for recommendation in summary.room_recommendations
     )
-    if best_room is None:
-        return None
-    balance_point = (best_room.indoor_perceived_c + best_room.outdoor_perceived_c) / 2.0
-    suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
-    return round(max(10.0, min(30.0, suggestion)), 1)
+    return replace(
+        summary,
+        suggested_comfort_temperature_c=suggested_temperature_c,
+        room_recommendations=room_recommendations,
+    )
 
 
 def _average_room_indoor_perceived_temperature(

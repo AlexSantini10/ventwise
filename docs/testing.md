@@ -74,10 +74,39 @@ HACS on every run.
 python ha-local-docker-test.py
 ```
 
+Run the complete setup-to-recommendation journey in the container with:
+
+```powershell
+python ha-local-docker-test.py test
+```
+
 The script keeps Home Assistant runtime data outside the repository under
 `%LOCALAPPDATA%\VentWise-HA-Test` and bind-mounts
 `custom_components\ventwise` read-only into the container. The repo tree stays
 clean for commits.
+
+Every `up` or `restart` reads the local integration version from `manifest.json`,
+prints it, and verifies that the container sees the same mounted manifest. A
+version mismatch stops the command before manual testing can use stale source.
+
+The sandbox automatically provisions adjustable test fixtures:
+
+- `input_number.ventwise_test_bedroom_temperature` and `_humidity`
+- `input_number.ventwise_test_living_room_temperature` and `_humidity`
+- `input_number.ventwise_test_outdoor_temperature`, `_humidity`, and `_wind_speed`
+- `input_select.ventwise_test_weather_condition` (`sunny`, `rainy`, or `thunderstorm`)
+- `weather.ventwise_test_weather`, which reads the outdoor helpers
+
+Change the helpers from **Settings > Devices & services > Helpers** to create
+repeatable open, close, humidity, and wind scenarios without physical devices.
+The **VentWise Test Lab** dashboard in the sidebar provides the same controls
+and displays the `Camera test` recommendation entities after the integration is configured.
+When climate-adaptive comfort is enabled, compare its effective comfort
+temperature with the climate-adaptive comfort target in that dashboard.
+
+`tests/test_user_journey.py` covers the automated path from the submitted setup
+data through room sensor readings, scoring, and the Italian explanation shown to
+the user. It runs in the Home Assistant CI job.
 
 ## Expectations
 

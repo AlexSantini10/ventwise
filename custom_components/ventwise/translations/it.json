@@ -1,6 +1,9 @@
 {
   "title": "VentWise",
   "config": {
+    "abort": {
+      "single_instance_allowed": "VentWise è già configurato. Usa Configura per modificarlo."
+    },
     "step": {
       "user": {
         "title": "Configurazione iniziale",
@@ -8,19 +11,20 @@
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
           "target_temperature_c": "Temperatura di comfort",
-          "auto_comfort_temperature": "Temperatura di comfort automatica",
+          "auto_comfort_temperature": "Usa un target di comfort adattivo al clima",
           "target_humidity_percent": "Umidità di comfort",
-          "stability_minutes": "Finestra di stabilità della raccomandazione (minuti)",
-          "notification_device_id": "Dispositivi da notificare"
+          "stability_minutes": "Attesa prima della raccomandazione (minuti)",
+          "notification_device_id": "Dispositivi da notificare",
+          "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant"
         },
         "data_description": {
-          "auto_comfort_temperature": "Attiva questa opzione per far derivare a VentWise il target di comfort attivo dalla raccomandazione corrente.",
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
           "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
-          "auto_comfort_temperature": "Lascia che VentWise regoli automaticamente il target di comfort effettivo in base all'equilibrio tra stanza e esterno.",
+          "auto_comfort_temperature": "Usa la tua temperatura di comfort come base e la corregge gradualmente in base alla temperatura esterna percepita. Lo scostamento è limitato a ±2 °C nel range domestico di sicurezza 18–26 °C. I sensori della stanza determinano il consiglio, ma non spostano il target. Non controlla termostato o HVAC.",
           "target_humidity_percent": "Imposta l'umidità di comfort interna che VentWise deve cercare di raggiungere.",
-          "stability_minutes": "Per quanto tempo il suggerimento deve restare uguale prima che VentWise agisca. Se non sei sicuro, lascia il valore predefinito.",
-          "notification_device_id": "Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise."
+          "stability_minutes": "Per quanto tempo il suggerimento deve restare invariato prima che VentWise invii una notifica. Se non sei sicuro, lascia il valore predefinito.",
+          "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise.",
+          "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant."
         }
       },
       "outdoor": {
@@ -194,18 +198,52 @@
     "step": {
       "init": {
         "title": "Modifica VentWise",
-        "description": "Scegli cosa vuoi modificare.",
+        "description": "Scegli cosa vuoi gestire.",
         "menu_options": {
-          "basic": "Impostazioni base",
-          "outdoor": "Dati esterni",
-          "advanced": "Impostazioni comfort",
+          "settings": "Impostazioni",
           "rooms": "Stanze"
         },
         "menu_option_descriptions": {
-          "basic": "Sorgente meteo e dispositivi da notificare.",
-          "outdoor": "Scegli forecast o valori manuali per ogni dato esterno con le checkbox.",
-          "advanced": "Valori di comfort e taratura.",
-          "rooms": "Aggiungi stanze e macro-stanze."
+          "settings": "Meteo, comfort, notifiche e dati esterni in una sola schermata.",
+          "rooms": "Aggiungi, modifica o rimuovi stanze e aree raggruppate."
+        }
+      },
+      "settings": {
+        "title": "Impostazioni VentWise",
+        "description": "Imposta qui comfort quotidiano, notifiche e dati esterni. Le entità esterne manuali sono obbligatorie solo quando attivi il relativo interruttore.",
+        "data": {
+          "outdoor_weather_entity_id": "Sorgente meteo",
+          "target_temperature_c": "Temperatura di comfort",
+          "auto_comfort_temperature": "Adatta automaticamente la temperatura di comfort",
+          "target_humidity_percent": "Umidità di comfort",
+          "stability_minutes": "Attesa prima della raccomandazione (minuti)",
+          "notification_device_id": "Dispositivi da notificare",
+          "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant",
+          "soft_outdoor_threshold_c": "Soglia di comfort esterna",
+          "cooldown_minutes": "Pausa notifiche per stanza (minuti)",
+          "outdoor_temperature_override": "Usa temperatura esterna manuale",
+          "outdoor_humidity_override": "Usa umidità esterna manuale",
+          "wind_speed_override": "Usa velocità del vento esterna manuale",
+          "outdoor_temperature_entity_id": "Temperatura esterna manuale",
+          "outdoor_humidity_entity_id": "Umidità esterna manuale",
+          "wind_speed_entity_id": "Velocità del vento esterna manuale"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant usata da VentWise.",
+          "target_temperature_c": "Imposta la temperatura interna che trovi confortevole quando sei in casa.",
+          "auto_comfort_temperature": "Adatta il target di comfort alle condizioni correnti. Influenza solo le raccomandazioni VentWise, non termostato o HVAC.",
+          "target_humidity_percent": "Imposta l'umidità interna che trovi confortevole quando sei in casa.",
+          "stability_minutes": "Per quanto tempo una raccomandazione deve restare invariata prima di una notifica.",
+          "notification_device_id": "Facoltativo. Seleziona i dispositivi che riceveranno le notifiche VentWise.",
+          "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant.",
+          "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
+          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo la stessa raccomandazione per ciascuna stanza.",
+          "outdoor_temperature_override": "Usa l'entità manuale sotto invece del forecast meteo.",
+          "outdoor_humidity_override": "Usa l'entità manuale sotto invece del forecast meteo.",
+          "wind_speed_override": "Usa l'entità manuale sotto invece del forecast meteo.",
+          "outdoor_temperature_entity_id": "Obbligatoria solo quando la temperatura esterna manuale è attiva.",
+          "outdoor_humidity_entity_id": "Obbligatoria solo quando l'umidità esterna manuale è attiva.",
+          "wind_speed_entity_id": "Obbligatoria solo quando la velocità del vento esterna manuale è attiva."
         }
       },
       "basic": {
@@ -217,7 +255,7 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
-          "notification_device_id": "Seleziona uno o più dispositivi che riceveranno le notifiche."
+          "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche."
         }
       },
       "outdoor": {
@@ -234,36 +272,23 @@
           "wind_speed_override": "Attiva questa checkbox per inserire una velocità del vento manuale invece di usare il forecast."
         }
       },
-      "outdoor_overrides": {
-        "title": "Valori esterni manuali",
-        "description": "Compila solo i campi che hai attivato con le checkbox.",
-        "data": {
-          "outdoor_temperature_entity_id": "Temperatura esterna manuale",
-          "outdoor_humidity_entity_id": "Umidità esterna manuale",
-          "wind_speed_entity_id": "Velocità del vento esterna manuale"
-        },
-        "data_description": {
-          "outdoor_temperature_entity_id": "Obbligatorio solo quando la temperatura manuale è attiva.",
-          "outdoor_humidity_entity_id": "Obbligatorio solo quando l'umidità manuale è attiva.",
-          "wind_speed_entity_id": "Obbligatorio solo quando la velocità del vento manuale è attiva."
-        }
-      },
       "advanced": {
         "title": "Impostazioni comfort",
         "description": "Rifinisci i valori di comfort usati da VentWise.",
         "data": {
-          "auto_comfort_temperature": "Temperatura di comfort automatica",
+          "auto_comfort_temperature": "Usa un target di comfort adattivo al clima",
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
           "cooldown_minutes": "Pausa notifiche (minuti)"
         },
         "data_description": {
+          "auto_comfort_temperature": "Usa la tua temperatura di comfort come base e la corregge gradualmente in base alla temperatura esterna percepita. Lo scostamento è limitato a ±2 °C nel range domestico di sicurezza 18–26 °C. I sensori della stanza determinano il consiglio, ma non spostano il target. Non controlla termostato o HVAC.",
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
           "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo la stessa notifica."
         }
       },
       "rooms": {
         "title": "Stanze",
-        "description": "Aggiungi, modifica o rimuovi stanze e macro-stanze per gli spazi che condividono la stessa aria.",
+        "description": "Aggiungi, modifica o rimuovi stanze e aree raggruppate.",
         "menu_options": {
           "add_room": "Aggiungi stanza",
           "add_macro_room": "Aggiungi macro-stanza",
@@ -276,7 +301,7 @@
           "add_macro_room": "Crea un'area raggruppata per spazi che condividono le stesse finestre.",
           "edit_room": "Aggiorna una stanza o un'area raggruppata esistente.",
           "remove_room": "Elimina una stanza o un'area raggruppata esistente.",
-          "finish": "Salta le stanze per ora e salva la configurazione."
+          "finish": "Salva le modifiche alle stanze e chiudi."
         }
       },
       "edit_room_select": {
@@ -446,7 +471,7 @@
         "name": "Temperatura di comfort effettiva"
       },
       "suggested_comfort_temperature": {
-        "name": "Temperatura di comfort suggerita"
+        "name": "Target di comfort adattivo al clima"
       },
       "outdoor_temperature": {
         "name": "Temperatura esterna"

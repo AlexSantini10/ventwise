@@ -10,27 +10,18 @@ from homeassistant import config_entries
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
-    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
-    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
     CONF_ROOMS,
     NAME,
-    CONF_WIND_SPEED_OVERRIDE,
 )
 from .flow import (
     ConfigValidationError,
-    build_advanced_options_schema,
-    build_basic_options_schema,
-    build_outdoor_override_schema,
-    build_outdoor_source_schema,
     build_room_schema,
+    build_settings_schema,
     _localized_room_kind_label,
-    normalize_outdoor_override_config,
-    normalize_outdoor_source_config,
-    normalize_advanced_config,
-    normalize_basic_config,
+    normalize_settings_config,
     normalize_room_config,
     split_config_data,
 )
@@ -55,7 +46,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return getattr(config, "language", None)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        """Show the options menu."""
+        """Show the small top-level navigation menu."""
 
         if user_input is not None:
             return self.async_abort(reason="invalid_step")
@@ -65,79 +56,20 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._room_index = len(current_rooms)
         return self.async_show_menu(
             step_id="init",
-            menu_options=["basic", "outdoor", "advanced", "rooms"],
+            menu_options=["settings", "rooms"],
             description_placeholders={
                 "room_count": str(len(current_rooms)),
             },
         )
 
-    async def async_step_basic(self, user_input: dict[str, Any] | None = None):
-        """Edit the user-facing basic settings."""
-
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            try:
-                self._current_config.update(normalize_basic_config(user_input))
-                return self.async_create_entry(title=NAME, data=self._result_data())
-            except ConfigValidationError as err:
-                errors[err.field] = err.message
-            except (ValueError, TypeError, KeyError):
-                errors["base"] = "invalid_input"
-
-        return self.async_show_form(
-            step_id="basic",
-            data_schema=build_basic_options_schema(self._current_config),
-            errors=errors,
-        )
-
-    async def async_step_advanced(self, user_input: dict[str, Any] | None = None):
-        """Edit the advanced settings."""
-
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            try:
-                self._current_config.update(normalize_advanced_config(user_input))
-                return self.async_create_entry(title=NAME, data=self._result_data())
-            except ConfigValidationError as err:
-                errors[err.field] = err.message
-            except (ValueError, TypeError, KeyError):
-                errors["base"] = "invalid_input"
-
-        return self.async_show_form(
-            step_id="advanced",
-            data_schema=build_advanced_options_schema(self._current_config),
-            errors=errors,
-        )
-
-    async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):
-        """Edit outdoor override preferences."""
-
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            try:
-                self._current_config.update(normalize_outdoor_source_config(user_input))
-                if self._has_outdoor_overrides():
-                    return await self.async_step_outdoor_overrides()
-                return self.async_create_entry(title=NAME, data=self._result_data())
-            except ConfigValidationError as err:
-                errors[err.field] = err.message
-            except (ValueError, TypeError, KeyError):
-                errors["base"] = "invalid_input"
-
-        return self.async_show_form(
-            step_id="outdoor",
-            data_schema=build_outdoor_source_schema(self._current_config),
-            errors=errors,
-        )
-
-    async def async_step_outdoor_overrides(self, user_input: dict[str, Any] | None = None):
-        """Edit the manual outdoor measurements."""
+    async def async_step_settings(self, user_input: dict[str, Any] | None = None):
+        """Edit everyday, outdoor, and comfort settings on one screen."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
                 self._current_config.update(
-                    normalize_outdoor_override_config(user_input, self._current_config)
+                    normalize_settings_config(user_input, self._current_config)
                 )
                 return self.async_create_entry(title=NAME, data=self._result_data())
             except ConfigValidationError as err:
@@ -146,8 +78,8 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 errors["base"] = "invalid_input"
 
         return self.async_show_form(
-            step_id="outdoor_overrides",
-            data_schema=build_outdoor_override_schema(self._current_config),
+            step_id="settings",
+            data_schema=build_settings_schema(self._current_config),
             errors=errors,
         )
 
@@ -271,7 +203,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         )
 
     async def async_step_finish(self, user_input: dict[str, Any] | None = None):
-        """Finish room management."""
+        """Save all staged settings and close the options flow."""
 
         if user_input is not None:
             return self.async_abort(reason="invalid_step")
@@ -359,13 +291,3 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         data = dict(self._current_config)
         data[CONF_ROOMS] = deepcopy(self._rooms)
         return data
-
-    def _has_outdoor_overrides(self) -> bool:
-        return any(
-            bool(self._current_config.get(override_field))
-            for override_field in (
-                CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
-                CONF_OUTDOOR_HUMIDITY_OVERRIDE,
-                CONF_WIND_SPEED_OVERRIDE,
-            )
-        )

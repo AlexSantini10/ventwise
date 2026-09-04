@@ -23,6 +23,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -129,6 +130,10 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 default=_normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID))
                 or [],
             ): DeviceSelector(DeviceSelectorConfig(multiple=True)),
+            vol.Required(
+                CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+                default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
+            ): cv.boolean,
         }
     )
 
@@ -227,6 +232,23 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
         }
     )
+
+
+def build_settings_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the single-screen schema for everyday VentWise settings."""
+
+    fields = dict(build_config_schema(defaults).schema)
+    fields.update(build_advanced_options_schema(defaults).schema)
+    fields.update(build_outdoor_source_schema(defaults).schema)
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        fields.update(
+            _optional_selector_field(
+                entity_field,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(entity_field),
+            )
+        )
+    return vol.Schema(fields)
 
 
 def build_room_schema(
@@ -333,9 +355,12 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     notification_device_ids = _normalize_notification_device_ids(
         data.get(CONF_NOTIFICATION_DEVICE_ID)
     )
-    if not notification_device_ids:
-        raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID)
     data[CONF_NOTIFICATION_DEVICE_ID] = notification_device_ids
+    data[CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED] = _normalize_bool(
+        data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED),
+        CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+        default=False,
+    )
     return data
 
 
@@ -420,6 +445,19 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
             24 * 60,
         )
     return data
+
+
+def normalize_settings_config(
+    user_input: Mapping[str, object],
+    defaults: Mapping[str, object],
+) -> dict[str, object]:
+    """Normalize every field shown in the single-screen options form."""
+
+    data = dict(defaults)
+    data.update(normalize_basic_config(user_input))
+    data.update(normalize_advanced_config(user_input))
+    data.update(normalize_outdoor_source_config(user_input))
+    return normalize_outdoor_override_config(data, data)
 
 
 def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> dict[str, object]:
