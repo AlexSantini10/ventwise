@@ -156,6 +156,10 @@ class ComfortRecommender:
                 suggested_comfort_temperature_c=suggested_temperature,
                 open_score=0.0,
                 close_score=close_score,
+                reason_code=_recommendation_reason_code(
+                    outdoor.weather_condition,
+                    ("weather condition",),
+                ),
             )
 
         open_score = self._direction_score(
@@ -244,6 +248,10 @@ class ComfortRecommender:
             suggested_comfort_temperature_c=suggested_temperature,
             open_score=open_score,
             close_score=close_score,
+            reason_code=_recommendation_reason_code(
+                outdoor.weather_condition,
+                environment_notes,
+            ),
         )
 
     def evaluate(
@@ -538,6 +546,20 @@ def _smoothstep(value: float, edge0: float, edge1: float) -> float:
         return 1.0 if value >= edge1 else 0.0
     x = max(0.0, min(1.0, (value - edge0) / (edge1 - edge0)))
     return x * x * (3.0 - 2.0 * x)
+
+
+def _recommendation_reason_code(
+    weather_condition: str | None,
+    environment_notes: tuple[str, ...],
+) -> str:
+    """Return a stable semantic category for notification deduplication."""
+
+    if any(note.startswith("weather condition") for note in environment_notes):
+        normalized_weather = (weather_condition or "unknown").strip().lower()
+        return f"weather:{normalized_weather or 'unknown'}"
+    if any(note.startswith("wind ") for note in environment_notes):
+        return "wind"
+    return "comfort"
 
 
 def _weather_requires_close(weather_condition: str | None) -> bool:

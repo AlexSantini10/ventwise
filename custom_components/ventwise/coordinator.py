@@ -65,6 +65,9 @@ from .const import CONF_NOTIFICATION_ENABLED
 
 _LOGGER = logging.getLogger(__name__)
 
+_NOTIFICATION_SEVERITY_ELEVATED_SCORE = 0.55
+_NOTIFICATION_SEVERITY_URGENT_SCORE = 0.75
+
 
 class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     """Coordinate state across all VentWise entities."""
@@ -258,10 +261,19 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._config.quiet_hours_start,
             self._config.quiet_hours_end,
         )
+        best_recommendation = next(
+            (
+                recommendation
+                for recommendation in summary.room_recommendations
+                if recommendation.room_name == summary.best_room
+            ),
+            None,
+        )
         notification_marker = self._notification_markers.get(summary.best_room or "")
         cooldown_active = (
             notification_marker is not None
-            and notification_marker.signature == signature
+            and best_recommendation is not None
+            and self._matches_notification_marker(notification_marker, best_recommendation)
             and (now - notification_marker.notified_at)
             < timedelta(minutes=self._config.cooldown_minutes)
         )
@@ -277,11 +289,14 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         )
         notification_allowed = False
         for recommendation in summary.room_recommendations:
-            room_signature = (recommendation.action.value, recommendation.room_name)
+            room_signature = self._notification_identity(recommendation)
             room_marker = self._notification_markers.get(recommendation.room_name)
+            matches_marker = room_marker is not None and self._matches_notification_marker(
+                room_marker,
+                recommendation,
+            )
             room_cooldown_active = (
-                room_marker is not None
-                and room_marker.signature == room_signature
+                matches_marker
                 and (now - room_marker.notified_at)
                 < timedelta(minutes=self._config.cooldown_minutes)
             )
@@ -290,10 +305,38 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 and recommendation.action != RecommendationAction.NONE
                 and recommendation.score >= self._config.minimum_score
                 and not room_cooldown_active
-                and (room_marker is None or room_marker.signature != room_signature)
             )
             if not room_notification_allowed:
+                if room_cooldown_active:
+                    _LOGGER.debug(
+                        "VentWise notification suppressed: equivalent recommendation for room=%s "
+                        "action=%s reason_code=%s severity=%s cooldown_remaining_seconds=%d",
+                        recommendation.room_name,
+                        recommendation.action.value,
+                        recommendation.reason_code,
+                        self._notification_severity(recommendation.score),
+                        int(
+                            (
+                                timedelta(minutes=self._config.cooldown_minutes)
+                                - (now - room_marker.notified_at)
+                            ).total_seconds()
+                        ),
+                    )
                 continue
+
+            if room_marker is not None and not matches_marker:
+                _LOGGER.debug(
+                    "VentWise notification cooldown bypassed: changed recommendation for room=%s "
+                    "previous_action=%s previous_reason_code=%s previous_severity=%s "
+                    "action=%s reason_code=%s severity=%s",
+                    recommendation.room_name,
+                    room_marker.signature[0],
+                    room_marker.reason,
+                    room_marker.severity,
+                    recommendation.action.value,
+                    recommendation.reason_code,
+                    self._notification_severity(recommendation.score),
+                )
 
             title, message = build_room_notification_payload(
                 recommendation,
@@ -315,6 +358,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 self._notification_markers[recommendation.room_name] = NotificationMarker(
                     room_signature,
                     now,
+                    recommendation.reason_code,
+                    self._notification_severity(recommendation.score),
                 )
                 notification_allowed = True
 
@@ -448,6 +493,31 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
         return (summary.action.value, summary.best_room or "")
+
+    @staticmethod
+    def _notification_identity(recommendation) -> tuple[str, str]:
+        """Return the stable action identity stored for one room."""
+
+        return recommendation.action.value, recommendation.room_name
+
+    @staticmethod
+    def _notification_severity(score: float) -> str:
+        """Bucket a score so material urgency changes bypass the cooldown."""
+
+        if score >= _NOTIFICATION_SEVERITY_URGENT_SCORE:
+            return "urgent"
+        if score >= _NOTIFICATION_SEVERITY_ELEVATED_SCORE:
+            return "elevated"
+        return "normal"
+
+    def _matches_notification_marker(self, marker: NotificationMarker, recommendation) -> bool:
+        """Return whether a marker represents the same semantic recommendation."""
+
+        return (
+            marker.signature == self._notification_identity(recommendation)
+            and marker.reason == recommendation.reason_code
+            and marker.severity == self._notification_severity(recommendation.score)
+        )
 
     def _load_runtime_state(self) -> RuntimeState:
         return load_runtime_state({**self._config_entry.data, **self._config_entry.options})
