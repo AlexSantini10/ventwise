@@ -273,9 +273,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         cooldown_active = (
             notification_marker is not None
             and best_recommendation is not None
-            and self._matches_notification_marker(notification_marker, best_recommendation)
             and (now - notification_marker.notified_at)
             < timedelta(minutes=self._config.cooldown_minutes)
+            and not self._should_bypass_notification_cooldown(
+                notification_marker,
+                best_recommendation,
+            )
         )
 
         notification_channel_available = (
@@ -295,10 +298,15 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 room_marker,
                 recommendation,
             )
+            bypasses_cooldown = room_marker is not None and self._should_bypass_notification_cooldown(
+                room_marker,
+                recommendation,
+            )
             room_cooldown_active = (
-                matches_marker
+                room_marker is not None
                 and (now - room_marker.notified_at)
                 < timedelta(minutes=self._config.cooldown_minutes)
+                and not bypasses_cooldown
             )
             room_notification_allowed = (
                 notification_channel_available
@@ -309,8 +317,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             if not room_notification_allowed:
                 if room_cooldown_active:
                     _LOGGER.debug(
-                        "VentWise notification suppressed: equivalent recommendation for room=%s "
+                        "VentWise notification suppressed: %s for room=%s "
                         "action=%s reason_code=%s severity=%s cooldown_remaining_seconds=%d",
+                        "equivalent recommendation" if matches_marker else "non-urgent update",
                         recommendation.room_name,
                         recommendation.action.value,
                         recommendation.reason_code,
@@ -324,11 +333,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     )
                 continue
 
-            if room_marker is not None and not matches_marker:
+            if room_marker is not None and bypasses_cooldown:
+                bypass_reason = (
+                    "action changed"
+                    if room_marker.signature != room_signature
+                    else "urgent escalation"
+                )
                 _LOGGER.debug(
-                    "VentWise notification cooldown bypassed: changed recommendation for room=%s "
+                    "VentWise notification cooldown bypassed: %s for room=%s "
                     "previous_action=%s previous_reason_code=%s previous_severity=%s "
                     "action=%s reason_code=%s severity=%s",
+                    bypass_reason,
                     recommendation.room_name,
                     room_marker.signature[0],
                     room_marker.reason,
@@ -517,6 +532,24 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             marker.signature == self._notification_identity(recommendation)
             and marker.reason == recommendation.reason_code
             and marker.severity == self._notification_severity(recommendation.score)
+        )
+
+    def _should_bypass_notification_cooldown(
+        self,
+        marker: NotificationMarker,
+        recommendation,
+    ) -> bool:
+        """Allow only stable action changes and urgent escalations through a cooldown."""
+
+        if (
+            marker.signature != self._notification_identity(recommendation)
+            or marker.reason is None
+            or marker.severity is None
+        ):
+            return True
+        return (
+            self._notification_severity(recommendation.score) == "urgent"
+            and marker.severity != "urgent"
         )
 
     def _load_runtime_state(self) -> RuntimeState:

@@ -443,10 +443,20 @@ def test_coordinator_repeats_equivalent_notification_after_cooldown_expiry(
     coordinator.hass.states = SimpleNamespace(get=fake_states.get)
 
     first_snapshot = asyncio.run(coordinator._async_update_data())
+    first_marker = coordinator._notification_markers["Camera"]
+    coordinator._notification_markers["Camera"] = NotificationMarker(
+        first_marker.signature,
+        first_marker.notified_at,
+        "wind",
+        first_marker.severity,
+    )
+    suppressed_snapshot = asyncio.run(coordinator._async_update_data())
     current_now[0] += timedelta(minutes=61)
     second_snapshot = asyncio.run(coordinator._async_update_data())
 
     assert first_snapshot.notification_allowed is True
+    assert suppressed_snapshot.notification_allowed is False
+    assert suppressed_snapshot.cooldown_active is True
     assert second_snapshot.notification_allowed is True
     assert len(hass.services.calls) == 2
     assert hass.services.calls[0][2]["notification_id"] != hass.services.calls[1][2]["notification_id"]
@@ -512,6 +522,58 @@ def test_notification_marker_detects_action_reason_and_severity_changes() -> Non
             outdoor_perceived_c=20.0,
             suggested_comfort_temperature_c=22.0,
         ),
+    )
+
+
+def test_notification_cooldown_bypass_is_limited_to_actions_and_urgency() -> None:
+    coordinator = SimpleNamespace(
+        _notification_identity=VentWiseCoordinator._notification_identity,
+        _notification_severity=VentWiseCoordinator._notification_severity,
+    )
+    marker = NotificationMarker(
+        ("open", "Camera"),
+        datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc),
+        "comfort",
+        "normal",
+    )
+
+    def recommendation(
+        *,
+        action: RecommendationAction = RecommendationAction.OPEN,
+        score: float = 0.5,
+        reason_code: str = "comfort",
+    ) -> RoomRecommendation:
+        return RoomRecommendation(
+            room_name="Camera",
+            action=action,
+            score=score,
+            reason="Human-readable explanation.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=26.0,
+            outdoor_perceived_c=20.0,
+            suggested_comfort_temperature_c=22.0,
+            reason_code=reason_code,
+        )
+
+    assert not VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(),
+    )
+    assert not VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(reason_code="wind"),
+    )
+    assert VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(action=RecommendationAction.CLOSE),
+    )
+    assert VentWiseCoordinator._should_bypass_notification_cooldown(
+        coordinator,
+        marker,
+        recommendation(score=0.8),
     )
     assert not VentWiseCoordinator._matches_notification_marker(
         SimpleNamespace(
