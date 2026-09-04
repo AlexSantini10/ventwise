@@ -141,6 +141,8 @@ views:
       - type: entities
         title: VentWise results for Camera test
         entities:
+          - sensor.camera_test_effective_comfort_temperature
+          - sensor.camera_test_climate_adaptive_comfort_target
           - sensor.camera_test_recommendation
           - sensor.camera_test_recommendation_score
           - sensor.camera_test_recommendation_reason

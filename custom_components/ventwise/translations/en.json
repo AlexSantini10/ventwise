@@ -8,7 +8,7 @@
         "data": {
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
-          "auto_comfort_temperature": "Adapt comfort temperature automatically",
+          "auto_comfort_temperature": "Use a climate-adaptive comfort target",
           "target_humidity_percent": "Comfort humidity",
           "stability_minutes": "Wait before recommending (minutes)",
           "notification_device_id": "Notification devices"
@@ -16,7 +16,7 @@
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
           "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
-          "auto_comfort_temperature": "Turn this on to let VentWise adapt the active comfort temperature from current indoor and outdoor conditions.",
+          "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
           "stability_minutes": "How long the recommendation must stay unchanged before VentWise notifies you. If you are not sure, leave the default value.",
           "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications."
@@ -237,12 +237,12 @@
         "title": "Comfort settings",
         "description": "Fine-tune the comfort values used by VentWise.",
         "data": {
-          "auto_comfort_temperature": "Adapt comfort temperature automatically",
+          "auto_comfort_temperature": "Use a climate-adaptive comfort target",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Notification cooldown (minutes)"
         },
         "data_description": {
-          "auto_comfort_temperature": "Turn this on to let VentWise adapt the active comfort temperature from current indoor and outdoor conditions.",
+          "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending the same notification again."
         }
@@ -432,7 +432,7 @@
         "name": "Effective comfort temperature"
       },
       "suggested_comfort_temperature": {
-        "name": "Suggested comfort temperature"
+        "name": "Climate-adaptive comfort target"
       },
       "outdoor_temperature": {
         "name": "Outdoor temperature"

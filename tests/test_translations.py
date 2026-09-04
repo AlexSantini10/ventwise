@@ -58,3 +58,23 @@ def test_translation_files_reject_duplicate_keys() -> None:
             _load_translation(language)
         except ValueError as error:
             pytest.fail(f"{language}.json is invalid: {error}")
+
+
+def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -> None:
+    """Keep the in-context setup help specific and safe for users."""
+
+    english = _load_translation("en")
+    italian = _load_translation("it")
+    english_help = english["config"]["step"]["user"]["data_description"][
+        "auto_comfort_temperature"
+    ]
+    italian_help = italian["config"]["step"]["user"]["data_description"][
+        "auto_comfort_temperature"
+    ]
+
+    assert "±2°C" in english_help
+    assert "18–26°C" in english_help
+    assert "thermostat or HVAC" in english_help
+    assert "±2 °C" in italian_help
+    assert "18–26 °C" in italian_help
+    assert "termostato o HVAC" in italian_help

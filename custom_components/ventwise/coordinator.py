@@ -19,11 +19,12 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from .ventwise_core import (
+    ComfortRecommender,
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
+    suggested_comfort_temperature,
 )
-from .ventwise_core import ComfortRecommender
 
 from .runtime import (
     IntegrationConfig,
@@ -218,7 +219,26 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         now = dt_util.now()
-        summary = self._recommender.evaluate(
+        outdoor_perceived_c = outdoor.temperature_c + (
+            (outdoor.humidity_percent - self._config.target_humidity_percent)
+            * self._recommender.config.humidity_weight
+        )
+        suggested_target = suggested_comfort_temperature(
+            self._config.target_temperature_c,
+            outdoor_perceived_c,
+        )
+        effective_target_temperature_c = (
+            suggested_target
+            if self._config.auto_comfort_temperature_enabled
+            else self._config.target_temperature_c
+        )
+        scoring_config = build_scoring_config(
+            replace(
+                self._config,
+                target_temperature_c=effective_target_temperature_c,
+            )
+        )
+        summary = ComfortRecommender(scoring_config).evaluate(
             rooms=rooms,
             outdoor=outdoor,
             context=RecommendationContext(
@@ -227,27 +247,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 stable_for_seconds=10**6,
             ),
         )
-        effective_target_temperature_c = self._config.target_temperature_c
-        if self._config.auto_comfort_temperature_enabled:
-            suggested_target = _suggested_comfort_temperature(
-                self._config.target_temperature_c,
-                summary,
-            )
-            if suggested_target is not None:
-                effective_target_temperature_c = suggested_target
-                auto_config = replace(
-                    self._config,
-                    target_temperature_c=effective_target_temperature_c,
-                )
-                summary = ComfortRecommender(build_scoring_config(auto_config)).evaluate(
-                    rooms=rooms,
-                    outdoor=outdoor,
-                    context=RecommendationContext(
-                        quiet_hours_active=False,
-                        cooldown_active=False,
-                        stable_for_seconds=10**6,
-                    ),
-                )
+        summary = _with_suggested_comfort_temperature(summary, suggested_target)
         signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -290,10 +290,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 self._last_notification_at = now
 
         target_perceived_c = effective_target_temperature_c
-        outdoor_perceived_c = outdoor.temperature_c + (
-            (outdoor.humidity_percent - self._config.target_humidity_percent)
-            * self._recommender.config.humidity_weight
-        )
         active_indoor_perceived_c = _average_room_indoor_perceived_temperature(summary)
 
         snapshot = RuntimeSnapshot(
@@ -303,7 +299,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 self.hass.states.get,
             ),
             target_perceived_c=target_perceived_c,
-            suggested_comfort_temperature_c=summary.suggested_comfort_temperature_c,
+            suggested_comfort_temperature_c=suggested_target,
             outdoor_perceived_c=outdoor_perceived_c,
             active_indoor_perceived_c=active_indoor_perceived_c,
             outdoor_temperature_c=outdoor.temperature_c,
@@ -617,21 +613,24 @@ def _weather_condition(
     return text or None
 
 
-def _suggested_comfort_temperature(
-    target_temperature_c: float,
+def _with_suggested_comfort_temperature(
     summary: RecommendationSummary,
-) -> float | None:
-    if not summary.best_room:
-        return None
-    best_room = next(
-        (recommendation for recommendation in summary.room_recommendations if recommendation.room_name == summary.best_room),
-        None,
+    suggested_temperature_c: float,
+) -> RecommendationSummary:
+    """Keep the exposed adaptive target consistent across summary and rooms."""
+
+    room_recommendations = tuple(
+        replace(
+            recommendation,
+            suggested_comfort_temperature_c=suggested_temperature_c,
+        )
+        for recommendation in summary.room_recommendations
     )
-    if best_room is None:
-        return None
-    balance_point = (best_room.indoor_perceived_c + best_room.outdoor_perceived_c) / 2.0
-    suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
-    return round(max(10.0, min(30.0, suggestion)), 1)
+    return replace(
+        summary,
+        suggested_comfort_temperature_c=suggested_temperature_c,
+        room_recommendations=room_recommendations,
+    )
 
 
 def _average_room_indoor_perceived_temperature(
