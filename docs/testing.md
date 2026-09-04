@@ -79,6 +79,17 @@ The script keeps Home Assistant runtime data outside the repository under
 `custom_components\ventwise` read-only into the container. The repo tree stays
 clean for commits.
 
+The sandbox automatically provisions adjustable test fixtures:
+
+- `input_number.ventwise_test_bedroom_temperature` and `_humidity`
+- `input_number.ventwise_test_living_room_temperature` and `_humidity`
+- `input_number.ventwise_test_outdoor_temperature`, `_humidity`, and `_wind_speed`
+- `input_select.ventwise_test_weather_condition` (`sunny`, `rainy`, or `thunderstorm`)
+- `weather.ventwise_test_weather`, which reads the outdoor helpers
+
+Change the helpers from **Settings > Devices & services > Helpers** to create
+repeatable open, close, humidity, and wind scenarios without physical devices.
+
 ## Expectations
 
 - keep the reusable core fully testable without Home Assistant

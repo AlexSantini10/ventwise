@@ -14,6 +14,89 @@ from pathlib import Path
 DEFAULT_IMAGE = "ghcr.io/home-assistant/home-assistant:stable"
 DEFAULT_CONTAINER_NAME = "ventwise-ha-test"
 DEFAULT_PORT = 8123
+TEST_FIXTURES_MARKER = "# VentWise test fixtures"
+TEST_HELPERS_FILE = "ventwise_test_helpers.yaml"
+TEST_WEATHER_CONDITION_FILE = "ventwise_test_weather_condition.yaml"
+TEST_WEATHER_FILE = "ventwise_test_weather.yaml"
+
+TEST_HELPERS_YAML = """ventwise_test_bedroom_temperature:
+  name: VentWise Test Bedroom Temperature
+  min: 10
+  max: 35
+  step: 0.1
+  initial: 26
+  mode: box
+  unit_of_measurement: "°C"
+ventwise_test_bedroom_humidity:
+  name: VentWise Test Bedroom Humidity
+  min: 20
+  max: 90
+  step: 1
+  initial: 50
+  mode: box
+  unit_of_measurement: "%"
+ventwise_test_living_room_temperature:
+  name: VentWise Test Living Room Temperature
+  min: 10
+  max: 35
+  step: 0.1
+  initial: 19
+  mode: box
+  unit_of_measurement: "°C"
+ventwise_test_living_room_humidity:
+  name: VentWise Test Living Room Humidity
+  min: 20
+  max: 90
+  step: 1
+  initial: 65
+  mode: box
+  unit_of_measurement: "%"
+ventwise_test_outdoor_temperature:
+  name: VentWise Test Outdoor Temperature
+  min: -20
+  max: 45
+  step: 0.1
+  initial: 23
+  mode: box
+  unit_of_measurement: "°C"
+ventwise_test_outdoor_humidity:
+  name: VentWise Test Outdoor Humidity
+  min: 0
+  max: 100
+  step: 1
+  initial: 45
+  mode: box
+  unit_of_measurement: "%"
+ventwise_test_wind_speed:
+  name: VentWise Test Wind Speed
+  min: 0
+  max: 30
+  step: 0.1
+  initial: 2
+  mode: box
+  unit_of_measurement: "m/s"
+"""
+
+TEST_WEATHER_YAML = """- weather:
+    - name: VentWise Test Weather
+      unique_id: ventwise_test_weather
+      condition: "{{ states('input_select.ventwise_test_weather_condition') }}"
+      temperature: "{{ states('input_number.ventwise_test_outdoor_temperature') | float(23) }}"
+      temperature_unit: "°C"
+      humidity: "{{ states('input_number.ventwise_test_outdoor_humidity') | float(45) }}"
+      wind_speed: "{{ states('input_number.ventwise_test_wind_speed') | float(2) }}"
+      wind_speed_unit: "m/s"
+"""
+
+TEST_WEATHER_CONDITION_YAML = """ventwise_test_weather_condition:
+  name: VentWise Test Weather Condition
+  options:
+    - sunny
+    - rainy
+    - thunderstorm
+  initial: sunny
+  icon: mdi:weather-partly-cloudy
+"""
 
 
 def repo_root() -> Path:
@@ -54,7 +137,33 @@ def ensure_config(config_root: Path) -> Path:
             encoding="utf-8",
         )
 
+    ensure_test_fixtures(config_dir, config_file)
+
     return config_dir
+
+
+def ensure_test_fixtures(config_dir: Path, config_file: Path) -> None:
+    """Provision repeatable test helpers and a local weather entity."""
+
+    config_text = config_file.read_text(encoding="utf-8")
+    fixture_lines = (
+        f"input_number: !include {TEST_HELPERS_FILE}",
+        f"input_select: !include {TEST_WEATHER_CONDITION_FILE}",
+        f"template: !include {TEST_WEATHER_FILE}",
+    )
+    missing_lines = [line for line in fixture_lines if line not in config_text]
+    if missing_lines:
+        marker = f"{TEST_FIXTURES_MARKER}\n" if TEST_FIXTURES_MARKER not in config_text else ""
+        config_file.write_text(
+            f"{config_text.rstrip()}\n\n{marker}{'\n'.join(missing_lines)}\n",
+            encoding="utf-8",
+        )
+    (config_dir / TEST_HELPERS_FILE).write_text(TEST_HELPERS_YAML, encoding="utf-8")
+    (config_dir / TEST_WEATHER_CONDITION_FILE).write_text(
+        TEST_WEATHER_CONDITION_YAML,
+        encoding="utf-8",
+    )
+    (config_dir / TEST_WEATHER_FILE).write_text(TEST_WEATHER_YAML, encoding="utf-8")
 
 
 def integration_source() -> Path:
