@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -228,6 +229,50 @@ def integration_source() -> Path:
     return source
 
 
+def integration_version(integration_dir: Path) -> str:
+    """Read the version that will be mounted into Home Assistant."""
+
+    manifest_path = integration_dir / "manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"Could not read VentWise version from {manifest_path}: {error}") from error
+    version = manifest.get("version") if isinstance(manifest, dict) else None
+    if not isinstance(version, str) or not version.strip():
+        raise SystemExit(f"VentWise manifest has no usable version: {manifest_path}")
+    return version.strip()
+
+
+def mounted_integration_version(name: str) -> str:
+    """Read the version exposed by the integration mount inside a container."""
+
+    return docker_output(
+        [
+            "docker",
+            "exec",
+            name,
+            "python",
+            "-c",
+            (
+                "import json; from pathlib import Path; "
+                "print(json.loads(Path('/config/custom_components/ventwise/manifest.json')"
+                ".read_text(encoding='utf-8'))['version'])"
+            ),
+        ]
+    )
+
+
+def verify_mounted_integration_version(name: str, expected_version: str) -> None:
+    """Fail when Home Assistant cannot see the source version being tested."""
+
+    actual_version = mounted_integration_version(name)
+    if actual_version != expected_version:
+        raise SystemExit(
+            "VentWise source mount version mismatch: "
+            f"expected {expected_version}, container sees {actual_version}."
+        )
+
+
 def container_exists(name: str) -> bool:
     output = docker_output(
         [
@@ -254,6 +299,7 @@ def start_container(
     image: str,
     config_dir: Path,
     integration_dir: Path,
+    integration_version_value: str,
     port: int,
     timezone: str,
 ) -> None:
@@ -280,9 +326,12 @@ def start_container(
         ]
     )
 
+    verify_mounted_integration_version(name, integration_version_value)
+
     print(f"Home Assistant is starting at http://localhost:{port}")
     print(f"Runtime config: {config_dir}")
     print(f"Local integration: {integration_dir}")
+    print(f"VentWise version under test: {integration_version_value}")
 
 
 def run_user_journey_test(name: str) -> None:
@@ -346,6 +395,7 @@ def main() -> int:
 
     config_dir = ensure_config(args.config_root)
     integration_dir = integration_source()
+    version = integration_version(integration_dir)
 
     if args.action in {"up", "restart"}:
         start_container(
@@ -353,6 +403,7 @@ def main() -> int:
             image=args.image,
             config_dir=config_dir,
             integration_dir=integration_dir,
+            integration_version_value=version,
             port=args.port,
             timezone=args.timezone,
         )
