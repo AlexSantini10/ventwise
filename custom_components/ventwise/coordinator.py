@@ -40,7 +40,8 @@ from .runtime import (
 )
 from .notification import (
     async_send_notification,
-    build_notification_payload,
+    build_room_notification_payload,
+    home_assistant_notification_id_for_room,
     notification_entity_ids_for_device_ids,
 )
 from .const import (
@@ -265,24 +266,37 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             < timedelta(minutes=self._config.cooldown_minutes)
         )
 
-        notification_allowed = (
+        notification_channel_available = (
             self._config.notification_enabled
             and (
                 bool(notification_entity_ids)
                 or self._config.home_assistant_notification_enabled
             )
-            and summary.action != RecommendationAction.NONE
-            and summary.score >= self._config.minimum_score
             and not quiet_hours_active
-            and not cooldown_active
             and stable_for_seconds >= self._config.stability_minutes * 60
         )
+        notification_allowed = False
+        for recommendation in summary.room_recommendations:
+            room_signature = (recommendation.action.value, recommendation.room_name)
+            room_marker = self._notification_markers.get(recommendation.room_name)
+            room_cooldown_active = (
+                room_marker is not None
+                and room_marker.signature == room_signature
+                and (now - room_marker.notified_at)
+                < timedelta(minutes=self._config.cooldown_minutes)
+            )
+            room_notification_allowed = (
+                notification_channel_available
+                and recommendation.action != RecommendationAction.NONE
+                and recommendation.score >= self._config.minimum_score
+                and not room_cooldown_active
+                and (room_marker is None or room_marker.signature != room_signature)
+            )
+            if not room_notification_allowed:
+                continue
 
-        if notification_allowed and (
-            notification_marker is None or notification_marker.signature != signature
-        ):
-            title, message = build_notification_payload(
-                summary,
+            title, message = build_room_notification_payload(
+                recommendation,
                 language=getattr(getattr(self.hass, "config", None), "language", None),
             )
             delivered = await async_send_notification(
@@ -292,12 +306,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 message=message,
                 device_ids=self._config.notification_device_ids,
                 send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                home_assistant_notification_id=home_assistant_notification_id_for_room(
+                    recommendation,
+                    now,
+                ),
             )
             if delivered:
-                self._notification_markers[summary.best_room or ""] = NotificationMarker(
-                    signature,
+                self._notification_markers[recommendation.room_name] = NotificationMarker(
+                    room_signature,
                     now,
                 )
+                notification_allowed = True
 
         target_perceived_c = effective_target_temperature_c
         active_indoor_perceived_c = _average_room_indoor_perceived_temperature(summary)
