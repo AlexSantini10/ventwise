@@ -103,6 +103,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
 
     assert config.enabled is True
     assert config.auto_comfort_temperature_enabled is True
+    assert config.home_assistant_notification_enabled is False
     assert config.notification_device_ids == ("device-123", "device-456")
     assert config.rooms[0].name == "Camera"
     assert config.rooms[0].target_temperature_c_override_enabled is True

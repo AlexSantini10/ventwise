@@ -265,7 +265,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         notification_allowed = (
             self._config.notification_enabled
-            and bool(notification_entity_ids)
+            and (
+                bool(notification_entity_ids)
+                or self._config.home_assistant_notification_enabled
+            )
             and summary.action != RecommendationAction.NONE
             and summary.score >= self._config.minimum_score
             and not quiet_hours_active
@@ -284,6 +287,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 title=title,
                 message=message,
                 device_ids=self._config.notification_device_ids,
+                send_to_home_assistant=self._config.home_assistant_notification_enabled,
             )
             if delivered:
                 self._last_notification_signature = signature

@@ -14,7 +14,8 @@
           "auto_comfort_temperature": "Use a climate-adaptive comfort target",
           "target_humidity_percent": "Comfort humidity",
           "stability_minutes": "Wait before recommending (minutes)",
-          "notification_device_id": "Notification devices"
+          "notification_device_id": "Notification devices",
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
@@ -22,7 +23,8 @@
           "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
           "stability_minutes": "How long the recommendation must stay unchanged before VentWise notifies you. If you are not sure, leave the default value.",
-          "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications."
+          "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications.",
+          "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel."
         }
       },
       "outdoor": {
@@ -216,6 +218,7 @@
           "target_humidity_percent": "Comfort humidity",
           "stability_minutes": "Wait before recommending (minutes)",
           "notification_device_id": "Notification devices",
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Notification cooldown (minutes)",
           "outdoor_temperature_override": "Use manual outdoor temperature",
@@ -232,6 +235,7 @@
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
           "stability_minutes": "How long a recommendation must remain unchanged before VentWise notifies you.",
           "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
+          "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending the same notification again.",
           "outdoor_temperature_override": "Use the manual temperature entity below instead of the weather forecast.",

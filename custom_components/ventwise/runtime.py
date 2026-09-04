@@ -22,6 +22,7 @@ from .const import (
     CONF_MINIMUM_SCORE,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_NOTIFICATION_ENABLED,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
@@ -109,6 +110,7 @@ class IntegrationConfig:
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
     notification_enabled: bool = True
+    home_assistant_notification_enabled: bool = False
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -215,6 +217,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
         notification_enabled=bool(data.get(CONF_NOTIFICATION_ENABLED, True)),
+        home_assistant_notification_enabled=bool(
+            data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)
+        ),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
