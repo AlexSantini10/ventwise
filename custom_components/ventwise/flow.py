@@ -35,8 +35,6 @@ from .const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
-    CONF_ROOM_OPENING_ENTITY_IDS,
-    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -285,18 +283,6 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
             ),
-            vol.Optional(
-                CONF_ROOM_OPENING_ENTITY_IDS,
-                default=_normalize_entity_id_list(
-                    defaults.get(CONF_ROOM_OPENING_ENTITY_IDS),
-                    CONF_ROOM_OPENING_ENTITY_IDS,
-                    domain="binary_sensor",
-                ),
-            ): EntitySelector(EntitySelectorConfig(domain="binary_sensor", multiple=True)),
-            vol.Required(
-                CONF_ROOM_OPENINGS_COMPLETE,
-                default=bool(defaults.get(CONF_ROOM_OPENINGS_COMPLETE, False)),
-            ): cv.boolean,
             vol.Required(
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
                 default=_default_room_override_enabled(
@@ -499,11 +485,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     data[CONF_ROOM_ID] = _normalize_room_id(data.get(CONF_ROOM_ID))
     data[CONF_ROOM_KIND] = _normalize_room_kind(room_kind)
     data[CONF_ROOM_ENABLED] = _normalize_bool(data.get(CONF_ROOM_ENABLED), CONF_ROOM_ENABLED, default=True)
-    data[CONF_ROOM_OPENINGS_COMPLETE] = _normalize_bool(
-        data.get(CONF_ROOM_OPENINGS_COMPLETE),
-        CONF_ROOM_OPENINGS_COMPLETE,
-        default=False,
-    )
     data[CONF_ROOM_NAME] = str(data[CONF_ROOM_NAME]).strip()
     if not data[CONF_ROOM_NAME]:
         raise ConfigValidationError(CONF_ROOM_NAME)
@@ -574,14 +555,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
         domain="automation",
-    )
-    data[CONF_ROOM_OPENING_ENTITY_IDS] = _normalize_entity_id_list(
-        data.get(CONF_ROOM_OPENING_ENTITY_IDS),
-        CONF_ROOM_OPENING_ENTITY_IDS,
-        domain="binary_sensor",
-    )
-    data[CONF_ROOM_OPENINGS_COMPLETE] = bool(
-        data[CONF_ROOM_OPENINGS_COMPLETE] and data[CONF_ROOM_OPENING_ENTITY_IDS]
     )
     return data
 
@@ -671,27 +644,6 @@ def _normalize_notification_device_ids(value: object) -> list[str] | None:
         return items
     text = str(value).strip()
     return [text] if text else None
-
-
-def _normalize_entity_id_list(
-    value: object,
-    field: str,
-    *,
-    domain: str,
-) -> list[str]:
-    """Normalize a multi-entity selector without accepting duplicate IDs."""
-
-    if value is None:
-        return []
-    raw_values = [value] if isinstance(value, str) else value
-    if not isinstance(raw_values, (list, tuple, set)):
-        raise ConfigValidationError(field)
-    entity_ids: list[str] = []
-    for raw_value in raw_values:
-        entity_id = _normalize_required_entity_id(raw_value, field, domain=domain)
-        if entity_id not in entity_ids:
-            entity_ids.append(entity_id)
-    return entity_ids
 
 
 def _default_outdoor_override(

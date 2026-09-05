@@ -838,7 +838,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:
                 entity_ids.add(room.humidity_entity_id)
-            entity_ids.update(room.opening_entity_ids)
         return sorted(entity_ids)
 
     def _async_remove_listeners(self) -> None:
