@@ -912,6 +912,50 @@ def test_coordinator_keeps_global_outdoor_values_without_rooms(
     assert snapshot.wind_speed_m_s == 1.0
 
 
+def test_coordinator_logs_unavailable_required_data_once_and_recovery(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temperature",
+                }
+            ],
+        }
+    )
+    states: dict[str, object] = {}
+    coordinator.hass.states = SimpleNamespace(get=states.get)
+
+    with caplog.at_level("INFO"):
+        asyncio.run(coordinator._async_update_data())
+        asyncio.run(coordinator._async_update_data())
+        states.update(
+            {
+                "weather.home": SimpleNamespace(
+                    state="sunny",
+                    attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+                ),
+                "sensor.bedroom_temperature": SimpleNamespace(state="24.0"),
+            }
+        )
+        asyncio.run(coordinator._async_update_data())
+
+    assert caplog.text.count("required weather or room sensor data is unavailable") == 1
+    assert "VentWise has the required data again and resumed recommendations." in caplog.text
+    assert "weather.home" not in caplog.text
+    assert "sensor.bedroom_temperature" not in caplog.text
+
+
 def test_coordinator_averages_global_perceived_indoor_across_rooms(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

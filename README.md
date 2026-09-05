@@ -82,6 +82,7 @@ its indoor temperature and humidity sensors. See the
 ### For users
 
 - [Install, configure, update, and remove VentWise](docs/user-guide.md)
+- [Collect safe diagnostic logs and report a problem](docs/user-guide.md#get-help-or-report-a-problem)
 - [How the Home Assistant integration works](docs/home-assistant-integration.md)
 - [Safety, beta status, and reporting guidance](docs/NOTICE.md)
 

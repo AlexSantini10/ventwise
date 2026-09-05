@@ -94,7 +94,10 @@ def notification_entity_ids_for_device_ids(
             entity_ids.append(entity_id)
 
     if not entity_ids:
-        _LOGGER.debug("No notify entities resolved for device IDs: %s", list(device_ids))
+        _LOGGER.warning(
+            "No notification entities were resolved for %d configured device(s)",
+            len(device_ids),
+        )
     return tuple(entity_ids)
 
 
@@ -236,7 +239,7 @@ async def async_send_notification(
                 delivered_targets.append(entity_id)
             except Exception:
                 failed_targets.append(entity_id)
-                _LOGGER.exception("Failed to deliver VentWise notification to %s", entity_id)
+                _LOGGER.exception("Failed to deliver a VentWise notification")
 
         home_assistant_delivered = False
         if send_to_home_assistant:

@@ -211,6 +211,7 @@ def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytes
     assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
     assert hass.services.calls[-1][2]["notification_id"] == "ventwise_notification_delivery_failure"
     assert any(record.exc_info for record in caplog.records)
+    assert "notify.mobile_app_alice" not in caplog.text
 
 
 def test_async_send_notification_reports_missing_targets(caplog: pytest.LogCaptureFixture) -> None:
@@ -231,3 +232,4 @@ def test_async_send_notification_reports_missing_targets(caplog: pytest.LogCaptu
     assert hass.services.calls[-1][:2] == ("persistent_notification", "create")
     assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
     assert any(record.exc_info for record in caplog.records)
+    assert "device-1" not in caplog.text
