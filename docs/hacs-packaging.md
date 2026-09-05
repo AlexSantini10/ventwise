@@ -40,6 +40,18 @@ custom integration.
 - the repository root should stay clean and reproducible for releases
 - release artifacts should be produced automatically for installation in Home Assistant
 
+## Brand Assets
+
+VentWise ships its Home Assistant runtime icons in
+`custom_components/ventwise/brand/`. Home Assistant 2026.3 and later use this
+local directory for custom integration branding. The runtime icon is available
+as `icon.png` (256x256) and `icon@2x.png` (512x512); Home Assistant uses the
+icon as the logo fallback because VentWise has no separate logo mark.
+
+Repository marketing artwork is kept outside the packaged integration in
+`docs/assets/brand/`. See [Brand assets](brand-assets.md) for the asset map and
+maintenance rules.
+
 For user-facing installation, update, and removal instructions, see the
 [user guide](user-guide.md). This document is for maintainers and release work.
 
@@ -66,6 +78,7 @@ VentWise remains installable as a custom repository through its My Home
 Assistant link. To make it discoverable among HACS's available repositories,
 submit it to `hacs/default` only when the project is ready for public listing:
 
-- complete the required Home Assistant brand assets;
+- verify the current HACS/default branding requirement, including any required
+  `home-assistant/brands` submission;
 - publish a stable GitHub release after the CI checks pass; and
 - meet the current HACS publisher requirements before opening the external PR.
