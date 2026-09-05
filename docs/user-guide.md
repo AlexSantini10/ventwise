@@ -102,12 +102,44 @@ dashboards, or notifications that refer to VentWise entities after removal.
 
 ## Get Help or Report a Problem
 
+VentWise records setup failures, notification-delivery failures, and changes
+in the availability of the data it needs in the Home Assistant log. Normal
+recommendation changes, a disabled integration, and optional forecast data are
+not errors. Log entries are deliberately limited to diagnostic context and do
+not include credentials or sensor values, but Home Assistant logs can still
+contain personal information from other integrations.
+
+For a problem that is already visible, open **Settings > System > Logs** and
+look for `VentWise` or `custom_components.ventwise`. Home Assistant retains a
+short list of recent warnings and errors there, with a full raw log available
+from the same page.
+
+For a problem that needs more detail:
+
+1. Go to **Settings > Devices & services**, open the VentWise integration, and
+   use the three-dot menu to select **Enable debug logging**.
+2. Reproduce the problem once, noting the approximate time.
+3. Return to the same menu, select **Disable debug logging**, then download or
+   copy the relevant log entries from **Settings > System > Logs**.
+
+If the integration menu is unavailable, temporarily add this to
+`configuration.yaml`, restart Home Assistant, reproduce the problem, then
+remove the entry (or change it back to `warning`) and restart again:
+
+```yaml
+logger:
+  logs:
+    custom_components.ventwise: debug
+```
+
 Open a [GitHub issue](https://github.com/AlexSantini10/ventwise/issues) with:
 
 - VentWise and Home Assistant versions;
-- the weather and room sensor types involved;
-- clear steps to reproduce the problem; and
-- sanitized logs, if relevant.
+- the weather and room sensor types involved, without their real names;
+- clear steps to reproduce, expected behavior, actual behavior, and the time
+  it occurred; and
+- only the relevant, sanitized VentWise log lines and traceback.
 
-Never publish credentials, access tokens, exact address information, or other
-sensitive personal data.
+Never publish credentials, access tokens, exact address information, device
+identifiers, entity IDs that reveal personal details, complete configuration
+files, or an unfiltered full Home Assistant log.

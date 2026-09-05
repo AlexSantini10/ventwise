@@ -97,25 +97,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     from .coordinator import VentWiseCoordinator
 
-    coordinator = VentWiseCoordinator(
-        hass,
-        entry,
-        {**entry.data, **entry.options},
-    )
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = IntegrationRuntimeData(
-        coordinator=coordinator
-    )
-    await coordinator.async_config_entry_first_refresh()
-    await hass.config_entries.async_forward_entry_setups(
-        entry,
-        [
-            Platform.BINARY_SENSOR,
-            Platform.SENSOR,
-            Platform.NUMBER,
-            Platform.SWITCH,
-            Platform.TIME,
-        ],
-    )
+    try:
+        coordinator = VentWiseCoordinator(
+            hass,
+            entry,
+            {**entry.data, **entry.options},
+        )
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = IntegrationRuntimeData(
+            coordinator=coordinator
+        )
+        await coordinator.async_config_entry_first_refresh()
+        await hass.config_entries.async_forward_entry_setups(
+            entry,
+            [
+                Platform.BINARY_SENSOR,
+                Platform.SENSOR,
+                Platform.NUMBER,
+                Platform.SWITCH,
+                Platform.TIME,
+            ],
+        )
+    except Exception:
+        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+        _LOGGER.exception("Unable to set up VentWise")
+        raise
     return True
 
 
@@ -137,4 +142,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         domain_data = hass.data.get(DOMAIN, {})
         domain_data.pop(entry.entry_id, None)
+    else:
+        _LOGGER.error("VentWise could not unload all platforms")
     return unload_ok

@@ -89,6 +89,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._room_action_guards = dict(self._runtime_state.room_action_guards)
         self._forecast_temperature_c: float | None = None
         self._forecast_fetched_at: datetime | None = None
+        self._diagnostic_issue: str | None = None
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
         self._listeners_initialized = False
@@ -124,6 +125,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._recommender = ComfortRecommender(build_scoring_config(self._config))
 
         if not self._config.enabled:
+            self._set_diagnostic_issue(None)
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
@@ -167,6 +169,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             else ()
         )
         if outdoor is None:
+            self._set_diagnostic_issue(
+                "VentWise cannot calculate a recommendation because required weather "
+                "or room sensor data is unavailable."
+            )
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
@@ -199,6 +205,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         if not rooms:
+            self._set_diagnostic_issue(
+                "VentWise cannot calculate a recommendation because no enabled rooms "
+                "are configured."
+            )
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
@@ -231,6 +241,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             )
             self._refresh_time_listener(snapshot.last_updated, snapshot)
             return snapshot
+
+        self._set_diagnostic_issue(None)
 
         now = dt_util.now()
         outdoor_perceived_c = outdoor.temperature_c + (
@@ -453,7 +465,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 if isinstance(payload, dict):
                     forecasts = payload.get("forecast")
         except Exception:  # A provider may not expose hourly forecasts.
-            _LOGGER.debug("VentWise short-term forecast unavailable for %s", weather_entity_id)
+            _LOGGER.debug("VentWise short-term forecast request is unavailable", exc_info=True)
 
         if not isinstance(forecasts, list):
             state = self.hass.states.get(weather_entity_id)
@@ -461,6 +473,19 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             forecasts = attributes.get("forecast") if isinstance(attributes, dict) else None
         self._forecast_temperature_c = _first_forecast_temperature(forecasts, now)
         return self._forecast_temperature_c
+
+    def _set_diagnostic_issue(self, issue: str | None) -> None:
+        """Log changes to persistent diagnostic state without repeated log noise."""
+
+        if issue == self._diagnostic_issue:
+            return
+
+        previous_issue = self._diagnostic_issue
+        self._diagnostic_issue = issue
+        if issue is not None:
+            _LOGGER.warning("%s", issue)
+        elif previous_issue is not None:
+            _LOGGER.info("VentWise has the required data again and resumed recommendations.")
 
     async def async_set_notification_enabled(self, enabled: bool) -> None:
         """Persist the notification enable flag in config entry options."""
