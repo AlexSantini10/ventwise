@@ -247,7 +247,7 @@
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity used by VentWise.",
           "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
-          "auto_comfort_temperature": "Adapt the comfort target from current conditions. This affects VentWise recommendations, not a thermostat or HVAC system.",
+          "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
           "stability_minutes": "How long a recommendation must remain unchanged before VentWise notifies you.",
           "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
