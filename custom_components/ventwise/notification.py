@@ -166,7 +166,7 @@ def build_recommendation_explanation(
             if opening_state == "partial"
             else texts["open"]
         )
-        if recommendation.reason_code == "forecast":
+        if getattr(recommendation, "reason_code", None) == "forecast":
             return f"{prefix}{action_text} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
         return f"{prefix}{action_text} {reason}" if reason else f"{prefix}{action_text}"
@@ -176,7 +176,7 @@ def build_recommendation_explanation(
             if opening_state == "partial"
             else texts["close"]
         )
-        if recommendation.reason_code == "forecast":
+        if getattr(recommendation, "reason_code", None) == "forecast":
             return f"{prefix}{action_text} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
         return f"{prefix}{action_text} {reason}" if reason else f"{prefix}{action_text}"
