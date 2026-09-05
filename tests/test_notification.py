@@ -118,7 +118,7 @@ def test_recommendation_explanation_prefers_current_comfort_over_a_duplicate_for
 
     explanation = build_recommendation_explanation(recommendation, language="en")
 
-    assert "Inside is more comfortable now" in explanation
+    assert "Inside is more comfortable right now" in explanation
     assert "forecast" not in explanation
 
 
