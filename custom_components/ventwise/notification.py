@@ -20,8 +20,6 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
     "en": {
         "open": "open windows.",
         "close": "close windows.",
-        "open_partial": "check the room openings and ventilate if needed.",
-        "close_partial": "check and close any open room openings.",
         "none": "no action needed.",
         "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
         "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
@@ -32,8 +30,6 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
     "it": {
         "open": "apri le finestre.",
         "close": "chiudi le finestre.",
-        "open_partial": "controlla le aperture della stanza e arieggia se necessario.",
-        "close_partial": "controlla e chiudi le aperture della stanza che sono aperte.",
         "none": "nessuna azione necessaria.",
         "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
         "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
@@ -158,28 +154,17 @@ def build_recommendation_explanation(
 
     texts = _notification_texts(language)
     action = recommendation.action.value
-    opening_state = getattr(getattr(recommendation, "opening_state", None), "value", "unknown")
     prefix = f"{recommendation.room_name}: " if include_room_name else ""
     if action == "open":
-        action_text = (
-            texts.get("open_partial", texts["open"])
-            if opening_state == "partial"
-            else texts["open"]
-        )
         if getattr(recommendation, "reason_code", None) == "forecast":
-            return f"{prefix}{action_text} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
+            return f"{prefix}{texts['open']} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
-        return f"{prefix}{action_text} {reason}" if reason else f"{prefix}{action_text}"
+        return f"{prefix}{texts['open']} {reason}" if reason else f"{prefix}{texts['open']}"
     if action == "close":
-        action_text = (
-            texts.get("close_partial", texts["close"])
-            if opening_state == "partial"
-            else texts["close"]
-        )
         if getattr(recommendation, "reason_code", None) == "forecast":
-            return f"{prefix}{action_text} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
+            return f"{prefix}{texts['close']} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
-        return f"{prefix}{action_text} {reason}" if reason else f"{prefix}{action_text}"
+        return f"{prefix}{texts['close']} {reason}" if reason else f"{prefix}{texts['close']}"
     return f"{prefix}{texts['none']}"
 
 
