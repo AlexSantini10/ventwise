@@ -127,6 +127,28 @@ def test_recommender_closes_early_when_short_term_forecast_worsens_comfort() -> 
     assert result.room_recommendations[0].reason_code == "forecast"
 
 
+def test_recommender_prioritizes_current_comfort_over_a_duplicate_forecast_reason() -> None:
+    """A forecast must not hide a condition that already applies now."""
+
+    recommender = ComfortRecommender(ScoringConfig(target_temperature_c=22.0))
+    room = RoomProfile(
+        room_id="room-1",
+        name="Studio",
+        indoor=RoomObservation(temperature_c=22.0, humidity_percent=50.0),
+    )
+    outdoor = ComfortObservation(
+        temperature_c=26.0,
+        humidity_percent=50.0,
+        forecast_temperature_c=29.0,
+    )
+
+    result = recommender.evaluate([room], outdoor)
+
+    assert result.action == RecommendationAction.CLOSE
+    assert "short-term forecast" in result.reason
+    assert result.room_recommendations[0].reason_code == "comfort"
+
+
 def test_recommender_needs_a_minimum_perceived_gap() -> None:
     recommender = ComfortRecommender(
         ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)

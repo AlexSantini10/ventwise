@@ -275,6 +275,11 @@ class ComfortRecommender:
             reason_code=_recommendation_reason_code(
                 outdoor.weather_condition,
                 environment_notes,
+                forecast_is_primary=not _current_comfort_supports_action(
+                    action,
+                    inside_delta,
+                    outside_delta,
+                ),
             ),
         )
 
@@ -575,17 +580,35 @@ def _smoothstep(value: float, edge0: float, edge1: float) -> float:
 def _recommendation_reason_code(
     weather_condition: str | None,
     environment_notes: tuple[str, ...],
+    *,
+    forecast_is_primary: bool = True,
 ) -> str:
     """Return a stable semantic category for notification deduplication."""
 
     if any(note.startswith("weather condition") for note in environment_notes):
         normalized_weather = (weather_condition or "unknown").strip().lower()
         return f"weather:{normalized_weather or 'unknown'}"
-    if any(note.startswith("short-term forecast") for note in environment_notes):
+    if forecast_is_primary and any(
+        note.startswith("short-term forecast") for note in environment_notes
+    ):
         return "forecast"
     if any(note.startswith("wind ") for note in environment_notes):
         return "wind"
     return "comfort"
+
+
+def _current_comfort_supports_action(
+    action: RecommendationAction,
+    inside_delta: float,
+    outside_delta: float,
+) -> bool:
+    """Return whether current comfort already explains the recommendation."""
+
+    if action == RecommendationAction.OPEN:
+        return outside_delta < inside_delta
+    if action == RecommendationAction.CLOSE:
+        return inside_delta < outside_delta
+    return False
 
 
 def _weather_requires_close(weather_condition: str | None) -> bool:
