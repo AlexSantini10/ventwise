@@ -2,10 +2,29 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-from .const import DOMAIN, NAME
+from .const import (
+    CONF_RUNTIME_LAST_ACTION_SIGNATURE,
+    CONF_RUNTIME_LAST_ACTION_STARTED_AT,
+    CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
+    CONF_RUNTIME_STATE,
+    DOMAIN,
+    NAME,
+)
+
+_LOGGER = logging.getLogger(__name__)
+_CONFIG_ENTRY_VERSION = 2
+_LEGACY_RUNTIME_KEYS = (
+    CONF_RUNTIME_LAST_ACTION_SIGNATURE,
+    CONF_RUNTIME_LAST_ACTION_STARTED_AT,
+    CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
+    CONF_RUNTIME_LAST_NOTIFICATION_AT,
+)
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -24,6 +43,51 @@ class IntegrationRuntimeData:
     """Runtime storage for the integration."""
 
     coordinator: VentWiseCoordinator
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate persisted VentWise configuration without losing user settings."""
+
+    if entry.version > _CONFIG_ENTRY_VERSION:
+        _LOGGER.error(
+            "VentWise config entry %s uses unsupported future version %s (supported: %s)",
+            entry.entry_id,
+            entry.version,
+            _CONFIG_ENTRY_VERSION,
+        )
+        return False
+    if entry.version == _CONFIG_ENTRY_VERSION:
+        return True
+
+    merged_options = {**entry.data, **entry.options}
+    runtime_state = merged_options.get(CONF_RUNTIME_STATE)
+    if not isinstance(runtime_state, Mapping):
+        legacy_runtime_state = {
+            key: merged_options.pop(key)
+            for key in _LEGACY_RUNTIME_KEYS
+            if key in merged_options
+        }
+        if legacy_runtime_state:
+            merged_options[CONF_RUNTIME_STATE] = legacy_runtime_state
+
+    _LOGGER.info(
+        "Migrating VentWise config entry %s from version %s to %s",
+        entry.entry_id,
+        entry.version,
+        _CONFIG_ENTRY_VERSION,
+    )
+    _LOGGER.debug(
+        "VentWise config entry %s migration preserves %d option keys",
+        entry.entry_id,
+        len(merged_options),
+    )
+    hass.config_entries.async_update_entry(
+        entry,
+        data={},
+        options=merged_options,
+        version=_CONFIG_ENTRY_VERSION,
+    )
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
