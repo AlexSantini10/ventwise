@@ -1,9 +1,14 @@
 # Home Assistant Integration
 
-## Final Goal
+## What VentWise Does
 
-The project should become a Home Assistant custom integration distributed
-through HACS.
+VentWise is a Home Assistant custom integration that recommends whether opening
+or closing a window is likely to improve comfort. It is an advisory tool: it
+does not directly open windows, control shutters, or change a thermostat/HVAC
+setpoint.
+
+For installation, first setup, updates, and removal, use the
+[user guide](user-guide.md).
 
 ## User Configuration
 
@@ -16,7 +21,6 @@ The UI should allow the user to:
 - choose forecast or override independently for outdoor temperature, humidity,
   and wind speed
 - select temperature and humidity sensors per room
-- optionally attach room automations for open, close, and pause actions
 - define notification targets and the devices that should receive them
 - configure all entity references used by the integration
 - set notification cooldown
@@ -57,8 +61,8 @@ Expose one logical device that groups runtime state and controls:
 - detailed debug attributes for the recommendation sensors
 
 Use the config flow and options flow for all user-editable inputs such as room
-sensors, comfort temperature, notification target entities, and room
-open/close/pause automations.
+sensors, comfort temperature, notification target entities, quiet hours, and
+outdoor-data overrides.
 
 ## Storage
 

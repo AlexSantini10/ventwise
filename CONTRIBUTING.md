@@ -2,15 +2,22 @@
 
 Thanks for helping with VentWise.
 
+## Start Here
+
+1. Read the [README](README.md) and [documentation index](docs/INDEX.md).
+2. Search existing [issues](https://github.com/AlexSantini10/ventwise/issues) before proposing work.
+3. For code changes, set up the project with the [development guide](docs/development.md) and run `python -m pytest -q`.
+4. Open an issue before starting a new feature, bug fix, or documentation task that is not already tracked.
+
 ## How We Work
 
 - Check the existing GitHub issues before starting any new work.
 - If `dev` is behind `main`, sync `dev` with `main` before creating a task branch.
-- Create a short-lived branch from `dev` for each task.
+- Create a short-lived branch from `dev` for each feature task.
 - Keep each branch focused on one issue or one tightly related change.
 - Open a pull request into `dev` when the task is ready.
 - After merge, close the related issue and delete the branch.
-- If a release or mainline update is requested, merge `dev` into `main` after the task lands on `dev`.
+- For finished feature work, also open and merge the requested `dev` to `main` pull request.
 
 ## Issues
 
@@ -39,6 +46,7 @@ Thanks for helping with VentWise.
 - Update documentation when user-facing behavior changes.
 - Link the related issue in the PR description.
 - Mention any follow-up work explicitly.
+- Use real Markdown line breaks in PR descriptions; do not render literal `\n` text.
 
 ### Suggested PR template
 

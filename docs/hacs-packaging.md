@@ -18,9 +18,8 @@ custom integration.
 ## Suggested Repository Shape
 
 - `custom_components/ventwise/`
-- `src/`
+- `custom_components/ventwise/ventwise_core/`
 - `tests/`
-- `examples/`
 - `docs/`
 
 ## Release Principles
@@ -40,6 +39,9 @@ custom integration.
 - The final public name should remain readable and user-friendly.
 - the repository root should stay clean and reproducible for releases
 - release artifacts should be produced automatically for installation in Home Assistant
+
+For user-facing installation, update, and removal instructions, see the
+[user guide](user-guide.md). This document is for maintainers and release work.
 
 ## Discoverability
 

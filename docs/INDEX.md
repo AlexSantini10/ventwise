@@ -1,27 +1,29 @@
-# Development Index
+# VentWise Documentation
 
-This folder contains the development documentation for the project.
+Start with the document for your role.
 
-## Read First
+## Using VentWise
 
-0. `../README.md`
-1. `docs/overview.md`
-2. `docs/domain-model.md`
-3. `docs/scoring-model.md`
-4. `docs/home-assistant-integration.md`
-5. `docs/project-rules.md`
-6. `docs/testing.md`
-7. `docs/development.md`
-8. `docs/hacs-packaging.md`
-9. `docs/NOTICE.md`
+1. [README](../README.md) for the short introduction and HACS button.
+2. [User guide](user-guide.md) for installation, first setup, updates, and removal.
+3. [Home Assistant integration](home-assistant-integration.md) for the configured data and entities.
+4. [Notice](NOTICE.md) for beta status, safe use, and defect reporting.
+
+## Contributing to VentWise
+
+1. [Contributing guide](../CONTRIBUTING.md) for issues, branches, and pull requests.
+2. [Development workflow](development.md) for local setup and common commands.
+3. [Testing](testing.md) for the test layers and Home Assistant sandbox.
+4. [Architecture](ARCHITECTURE.md), [domain model](domain-model.md), and [scoring model](scoring-model.md) for design details.
+5. [HACS packaging](hacs-packaging.md) for releases, discovery, and packaging.
 
 ## Purpose
 
-The project is intended to become:
+The project is intended to provide:
 
 - a reusable Python comfort engine
 - a Home Assistant custom integration
-- a HACS-installable package
+- a HACS-installable custom integration
 
 ## Development Rules
 

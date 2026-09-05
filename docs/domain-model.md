@@ -58,5 +58,4 @@ The integration should keep a per-room structure with:
 - room name
 - temperature sensor entity
 - humidity sensor entity
-- optional room automations for open, close, and pause
 - no per-room weight, because each room is evaluated as an independent area

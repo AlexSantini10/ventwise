@@ -102,8 +102,7 @@ the implementation decisions agreed during development.
   data.
 - Room-level temperature and humidity sensors should be exposed when available.
 - Room-specific comfort overrides are allowed for temperature and humidity.
-- Room automations should be limited to opening and closing actions.
-- Do not keep old automation patterns that are no longer part of the product
+- Do not keep room automation patterns that are no longer part of the product
   model.
 
 ## Release Rules
