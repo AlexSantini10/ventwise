@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from typing import Sequence
 
 from .models import (
     ComfortObservation,
+    OpeningState,
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
@@ -33,14 +35,38 @@ def perceived_temperature(
 
 def suggested_comfort_temperature(
     target_temperature_c: float,
-    indoor_perceived_c: float,
     outdoor_perceived_c: float,
 ) -> float:
-    """Estimate a comfort temperature suggestion from the current conditions."""
+    """Return a stable, climate-adaptive indoor comfort target.
 
-    balance_point = (indoor_perceived_c + outdoor_perceived_c) / 2.0
-    suggestion = target_temperature_c + ((balance_point - target_temperature_c) * 0.25)
-    return _clamp_temperature(suggestion)
+    The configured target remains the resident's personal preference. The
+    recommendation is adjusted from that baseline only by the *perceived*
+    outdoor temperature: a warmer or cooler climate gradually changes what
+    normally feels comfortable indoors. Indoor readings deliberately do not
+    move the target; they are the condition to correct and letting them move
+    the target would make the recommendation chase a hot or cold room.
+    """
+
+    reference_outdoor_temperature_c = 20.0
+    adjustment_per_degree_c = 0.25
+    maximum_adjustment_c = 2.0
+    standard_minimum_c = 18.0
+    standard_maximum_c = 26.0
+
+    climate_adjustment = (
+        outdoor_perceived_c - reference_outdoor_temperature_c
+    ) * adjustment_per_degree_c
+    climate_adjustment = max(
+        -maximum_adjustment_c,
+        min(maximum_adjustment_c, climate_adjustment),
+    )
+    return round(
+        max(
+            standard_minimum_c,
+            min(standard_maximum_c, target_temperature_c + climate_adjustment),
+        ),
+        1,
+    )
 
 
 class ComfortRecommender:
@@ -99,7 +125,6 @@ class ComfortRecommender:
         )
         suggested_temperature = suggested_comfort_temperature(
             target_perceived,
-            indoor_perceived,
             outdoor_perceived,
         )
         inside_delta = abs(indoor_perceived - target_perceived)
@@ -121,7 +146,7 @@ class ComfortRecommender:
                 indoor_perceived,
                 outdoor_perceived,
             )
-            return RoomRecommendation(
+            return _apply_opening_state(RoomRecommendation(
                 room_id=room.room_id,
                 room_name=room.name,
                 action=RecommendationAction.CLOSE,
@@ -133,7 +158,11 @@ class ComfortRecommender:
                 suggested_comfort_temperature_c=suggested_temperature,
                 open_score=0.0,
                 close_score=close_score,
-            )
+                reason_code=_recommendation_reason_code(
+                    outdoor.weather_condition,
+                    ("weather condition",),
+                ),
+            ), room)
 
         open_score = self._direction_score(
             need_c=inside_delta,
@@ -148,6 +177,25 @@ class ComfortRecommender:
             direction=RecommendationAction.CLOSE,
         )
         open_score, close_score = self._apply_season_bias(open_score, close_score)
+        forecast_note = None
+        if outdoor.forecast_temperature_c is not None:
+            forecast_perceived = perceived_temperature(
+                outdoor.forecast_temperature_c,
+                outdoor.humidity_percent,
+                target_humidity,
+                self._config.humidity_weight,
+            )
+            forecast_delta = abs(forecast_perceived - target_perceived)
+            worsening = forecast_delta - outside_delta
+            if worsening >= 1.0:
+                forecast_note = (
+                    f"short-term forecast moves outside conditions further from comfort "
+                    f"({outdoor.temperature_c:.1f}C to {outdoor.forecast_temperature_c:.1f}C)."
+                )
+                if inside_delta <= self._config.decision_threshold_c:
+                    close_score = max(close_score, self._clamp(0.35 + (worsening * 0.12)))
+                elif outside_delta < inside_delta:
+                    open_score = max(open_score, self._clamp(0.35 + (worsening * 0.10)))
         target_penalty = self._target_reasonableness_factor(target_temperature, target_humidity)
         open_score = self._clamp(open_score * target_penalty)
         close_score = self._clamp(close_score * target_penalty)
@@ -160,6 +208,8 @@ class ComfortRecommender:
         ) = (
             self._environmental_adjustments(outdoor)
         )
+        if forecast_note is not None:
+            environment_notes = (*environment_notes, forecast_note)
         open_score = self._clamp(open_score * environmental_open_factor)
         close_score = self._clamp(
             (close_score * environmental_close_factor) + environmental_close_bonus
@@ -168,7 +218,10 @@ class ComfortRecommender:
             open_score = 0.0
             close_score = self._clamp(max(close_score, force_close_floor))
 
-        if max(inside_delta, outside_delta) < self._config.decision_threshold_c:
+        if (
+            max(inside_delta, outside_delta) < self._config.decision_threshold_c
+            and forecast_note is None
+        ):
             action = RecommendationAction.NONE
             score = 0.0
         elif open_score > close_score:
@@ -209,7 +262,7 @@ class ComfortRecommender:
             outside_delta,
         )
 
-        return RoomRecommendation(
+        return _apply_opening_state(RoomRecommendation(
             room_id=room.room_id,
             room_name=room.name,
             action=action,
@@ -221,7 +274,11 @@ class ComfortRecommender:
             suggested_comfort_temperature_c=suggested_temperature,
             open_score=open_score,
             close_score=close_score,
-        )
+            reason_code=_recommendation_reason_code(
+                outdoor.weather_condition,
+                environment_notes,
+            ),
+        ), room)
 
     def evaluate(
         self,
@@ -335,6 +392,7 @@ class ComfortRecommender:
             room_recommendations=room_recommendations,
             best_room=best_room.room_name,
         )
+
 
     def _direction_score(
         self,
@@ -510,8 +568,36 @@ class ComfortRecommender:
         return max(0.0, min(1.0, value))
 
 
-def _clamp_temperature(value: float) -> float:
-    return max(10.0, min(30.0, value))
+def _apply_opening_state(
+    recommendation: RoomRecommendation,
+    room: RoomProfile,
+) -> RoomRecommendation:
+    """Avoid advice that contradicts a known complete opening state."""
+
+    recommendation = replace(
+        recommendation,
+        opening_state=room.opening_state,
+        openings_complete=room.openings_complete,
+    )
+    if room.opening_state == OpeningState.OPEN and recommendation.action == RecommendationAction.OPEN:
+        return replace(
+            recommendation,
+            action=RecommendationAction.NONE,
+            score=0.0,
+            open_score=0.0,
+            reason=f"{room.name}: one or more monitored openings are already open.",
+            reason_code="already_open",
+        )
+    if room.opening_state == OpeningState.CLOSED and recommendation.action == RecommendationAction.CLOSE:
+        return replace(
+            recommendation,
+            action=RecommendationAction.NONE,
+            score=0.0,
+            close_score=0.0,
+            reason=f"{room.name}: all monitored openings are already closed.",
+            reason_code="already_closed",
+        )
+    return recommendation
 
 
 def _smoothstep(value: float, edge0: float, edge1: float) -> float:
@@ -519,6 +605,22 @@ def _smoothstep(value: float, edge0: float, edge1: float) -> float:
         return 1.0 if value >= edge1 else 0.0
     x = max(0.0, min(1.0, (value - edge0) / (edge1 - edge0)))
     return x * x * (3.0 - 2.0 * x)
+
+
+def _recommendation_reason_code(
+    weather_condition: str | None,
+    environment_notes: tuple[str, ...],
+) -> str:
+    """Return a stable semantic category for notification deduplication."""
+
+    if any(note.startswith("weather condition") for note in environment_notes):
+        normalized_weather = (weather_condition or "unknown").strip().lower()
+        return f"weather:{normalized_weather or 'unknown'}"
+    if any(note.startswith("short-term forecast") for note in environment_notes):
+        return "forecast"
+    if any(note.startswith("wind ") for note in environment_notes):
+        return "wind"
+    return "comfort"
 
 
 def _weather_requires_close(weather_condition: str | None) -> bool:

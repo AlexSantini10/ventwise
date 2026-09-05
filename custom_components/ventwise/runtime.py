@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
 
 from .ventwise_core import (
     ComfortObservation,
+    OpeningState,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
@@ -22,6 +23,7 @@ from .const import (
     CONF_MINIMUM_SCORE,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_NOTIFICATION_ENABLED,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
@@ -34,6 +36,8 @@ from .const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_OPENING_ENTITY_IDS,
+    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -42,12 +46,16 @@ from .const import (
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
+    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOMS,
     CONF_RUNTIME_STATE,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_RUNTIME_NOTIFICATION_MARKERS,
+    CONF_RUNTIME_ROOM_ACTION_GUARDS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
@@ -61,6 +69,8 @@ from .const import (
     DEFAULT_QUIET_HOURS_START,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
+    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
@@ -82,8 +92,12 @@ class RoomConfig:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
+    opening_entity_ids: tuple[str, ...] = ()
+    openings_complete: bool = False
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
+    action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
+    action_lockout_minutes: int = DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +123,7 @@ class IntegrationConfig:
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
     notification_enabled: bool = True
+    home_assistant_notification_enabled: bool = False
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -124,6 +139,7 @@ class RuntimeSnapshot:
     outdoor_perceived_c: float | None
     active_indoor_perceived_c: float | None
     outdoor_temperature_c: float | None
+    forecast_temperature_c: float | None
     outdoor_humidity_percent: float | None
     wind_speed_m_s: float | None
     wind_gust_m_s: float | None
@@ -141,8 +157,28 @@ class RuntimeState:
 
     last_action_signature: tuple[str, str] | None = None
     last_action_started_at: datetime | None = None
-    last_notification_signature: tuple[str, str] | None = None
-    last_notification_at: datetime | None = None
+    notification_markers: Mapping[str, "NotificationMarker"] = field(default_factory=dict)
+    room_action_guards: Mapping[str, "RoomActionGuard"] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class NotificationMarker:
+    """Last delivered recommendation for one room."""
+
+    signature: tuple[str, str]
+    notified_at: datetime
+    reason: str | None = None
+    severity: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RoomActionGuard:
+    """Persisted per-room action transition state."""
+
+    accepted_action: str
+    lockout_until: datetime | None = None
+    pending_action: str | None = None
+    pending_since: datetime | None = None
 
 
 def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
@@ -176,8 +212,22 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
+            opening_entity_ids=_string_list(room.get(CONF_ROOM_OPENING_ENTITY_IDS)),
+            openings_complete=bool(room.get(CONF_ROOM_OPENINGS_COMPLETE, False)),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
+            action_change_hold_minutes=int(
+                room.get(
+                    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                )
+            ),
+            action_lockout_minutes=int(
+                room.get(
+                    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+                    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
+                )
+            ),
         )
         for room in data.get(CONF_ROOMS, [])
     )
@@ -215,6 +265,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
         notification_enabled=bool(data.get(CONF_NOTIFICATION_ENABLED, True)),
+        home_assistant_notification_enabled=bool(
+            data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)
+        ),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -238,13 +291,23 @@ def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
     raw_state = data.get(CONF_RUNTIME_STATE)
     if not isinstance(raw_state, Mapping):
         return RuntimeState()
+    notification_markers = _load_notification_markers(
+        raw_state.get(CONF_RUNTIME_NOTIFICATION_MARKERS)
+    )
+    room_action_guards = _load_room_action_guards(raw_state.get(CONF_RUNTIME_ROOM_ACTION_GUARDS))
+    if not notification_markers:
+        legacy_signature = _load_signature(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE))
+        legacy_notified_at = _load_datetime(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_AT))
+        if legacy_signature is not None and legacy_notified_at is not None and legacy_signature[1]:
+            notification_markers = {
+                legacy_signature[1]: NotificationMarker(legacy_signature, legacy_notified_at)
+            }
+
     return RuntimeState(
         last_action_signature=_load_signature(raw_state.get(CONF_RUNTIME_LAST_ACTION_SIGNATURE)),
         last_action_started_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_ACTION_STARTED_AT)),
-        last_notification_signature=_load_signature(
-            raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE)
-        ),
-        last_notification_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_NOTIFICATION_AT)),
+        notification_markers=notification_markers,
+        room_action_guards=room_action_guards,
     )
 
 
@@ -257,10 +320,24 @@ def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
             if state.last_action_signature is not None
             else None,
             CONF_RUNTIME_LAST_ACTION_STARTED_AT: _dump_datetime(state.last_action_started_at),
-            CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE: list(state.last_notification_signature)
-            if state.last_notification_signature is not None
-            else None,
-            CONF_RUNTIME_LAST_NOTIFICATION_AT: _dump_datetime(state.last_notification_at),
+            CONF_RUNTIME_NOTIFICATION_MARKERS: {
+                room_name: {
+                    "signature": list(marker.signature),
+                    "notified_at": _dump_datetime(marker.notified_at),
+                    **({"reason": marker.reason} if marker.reason is not None else {}),
+                    **({"severity": marker.severity} if marker.severity is not None else {}),
+                }
+                for room_name, marker in state.notification_markers.items()
+            },
+            CONF_RUNTIME_ROOM_ACTION_GUARDS: {
+                room_key: {
+                    "accepted_action": guard.accepted_action,
+                    **({"lockout_until": _dump_datetime(guard.lockout_until)} if guard.lockout_until else {}),
+                    **({"pending_action": guard.pending_action} if guard.pending_action else {}),
+                    **({"pending_since": _dump_datetime(guard.pending_since)} if guard.pending_since else {}),
+                }
+                for room_key, guard in state.room_action_guards.items()
+            },
         }
     }
 
@@ -305,6 +382,7 @@ def is_quiet_hours_active(now: datetime, start_time: str, end_time: str) -> bool
 def build_room_profiles(
     config: IntegrationConfig,
     state_getter: Callable[[str], Any],
+    forecast_temperature_c: float | None = None,
 ) -> tuple[list[RoomProfile], ComfortObservation | None]:
     """Build room profiles and the outdoor observation from Home Assistant state."""
 
@@ -350,6 +428,7 @@ def build_room_profiles(
             wind_speed_m_s=wind_speed,
             wind_gust_m_s=wind_gust,
             weather_condition=weather_condition,
+            forecast_temperature_c=forecast_temperature_c,
         )
 
     rooms: list[RoomProfile] = []
@@ -360,6 +439,7 @@ def build_room_profiles(
             continue
         if humidity is None:
             humidity = 50.0
+        opening_state = room_opening_state(room, state_getter)
         rooms.append(
             RoomProfile(
                 room_id=room.room_id,
@@ -374,10 +454,28 @@ def build_room_profiles(
                 target_temperature_c_override=room.target_temperature_c_override,
                 target_humidity_percent_override_enabled=room.target_humidity_percent_override_enabled,
                 target_humidity_percent_override=room.target_humidity_percent_override,
+                opening_state=opening_state,
+                openings_complete=room.openings_complete,
             )
         )
 
     return rooms, outdoor
+
+
+def room_opening_state(
+    room: RoomConfig,
+    state_getter: Callable[[str], Any],
+) -> OpeningState:
+    """Return a conservative aggregate of the configured opening sensors."""
+
+    if not room.opening_entity_ids:
+        return OpeningState.UNKNOWN
+    states = [state_to_bool(state_getter(entity_id)) for entity_id in room.opening_entity_ids]
+    if any(state is True for state in states):
+        return OpeningState.OPEN
+    if not room.openings_complete:
+        return OpeningState.PARTIAL
+    return OpeningState.CLOSED if all(state is False for state in states) else OpeningState.UNKNOWN
 
 
 def build_debug_attributes(
@@ -413,6 +511,7 @@ def build_debug_attributes(
         "cooldown_active": snapshot.cooldown_active,
         "stable_for_seconds": snapshot.stable_for_seconds,
         "outdoor_temperature_c": snapshot.outdoor_temperature_c,
+        "forecast_temperature_c": snapshot.forecast_temperature_c,
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "wind_gust_m_s": snapshot.wind_gust_m_s,
@@ -534,6 +633,51 @@ def _load_signature(value: Any) -> tuple[str, str] | None:
     return str(first), str(second)
 
 
+def _load_notification_markers(value: Any) -> dict[str, NotificationMarker]:
+    """Load valid per-room notification markers from persisted data."""
+
+    if not isinstance(value, Mapping):
+        return {}
+    markers: dict[str, NotificationMarker] = {}
+    for room_name, raw_marker in value.items():
+        if not isinstance(room_name, str) or not room_name.strip() or not isinstance(raw_marker, Mapping):
+            continue
+        signature = _load_signature(raw_marker.get("signature"))
+        notified_at = _load_datetime(raw_marker.get("notified_at"))
+        if signature is not None and notified_at is not None:
+            markers[room_name] = NotificationMarker(
+                signature,
+                notified_at,
+                _string_or_none(raw_marker.get("reason")),
+                _string_or_none(raw_marker.get("severity")),
+            )
+    return markers
+
+
+def _load_room_action_guards(value: Any) -> dict[str, RoomActionGuard]:
+    """Load valid per-room action guardrails from persisted data."""
+
+    if not isinstance(value, Mapping):
+        return {}
+    guards: dict[str, RoomActionGuard] = {}
+    for room_key, raw_guard in value.items():
+        if not isinstance(room_key, str) or not room_key.strip() or not isinstance(raw_guard, Mapping):
+            continue
+        accepted_action = raw_guard.get("accepted_action")
+        if accepted_action not in {"open", "close"}:
+            continue
+        pending_action = raw_guard.get("pending_action")
+        if pending_action not in {"open", "close"}:
+            pending_action = None
+        guards[room_key] = RoomActionGuard(
+            accepted_action,
+            _load_datetime(raw_guard.get("lockout_until")),
+            pending_action,
+            _load_datetime(raw_guard.get("pending_since")),
+        )
+    return guards
+
+
 def _load_datetime(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value.strip():
         return None
@@ -561,6 +705,8 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "suggested_comfort_temperature_c": recommendation.suggested_comfort_temperature_c,
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
+        "opening_state": recommendation.opening_state.value,
+        "openings_complete": recommendation.openings_complete,
     }
 
 

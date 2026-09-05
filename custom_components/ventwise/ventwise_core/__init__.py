@@ -2,6 +2,7 @@
 
 from .models import (
     ComfortObservation,
+    OpeningState,
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
@@ -10,11 +11,12 @@ from .models import (
     SeasonMode,
     ScoringConfig,
 )
-from .scoring import ComfortRecommender, perceived_temperature
+from .scoring import ComfortRecommender, perceived_temperature, suggested_comfort_temperature
 
 __all__ = [
     "ComfortObservation",
     "ComfortRecommender",
+    "OpeningState",
     "RecommendationAction",
     "RecommendationContext",
     "RecommendationSummary",
@@ -23,4 +25,5 @@ __all__ = [
     "SeasonMode",
     "ScoringConfig",
     "perceived_temperature",
+    "suggested_comfort_temperature",
 ]

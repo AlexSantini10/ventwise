@@ -23,6 +23,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -34,6 +35,8 @@ from .const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_OPENING_ENTITY_IDS,
+    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -42,6 +45,8 @@ from .const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
+    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
@@ -53,6 +58,8 @@ from .const import (
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
+    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
@@ -129,6 +136,10 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 default=_normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID))
                 or [],
             ): DeviceSelector(DeviceSelectorConfig(multiple=True)),
+            vol.Required(
+                CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+                default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
+            ): cv.boolean,
         }
     )
 
@@ -229,6 +240,23 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     )
 
 
+def build_settings_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the single-screen schema for everyday VentWise settings."""
+
+    fields = dict(build_config_schema(defaults).schema)
+    fields.update(build_advanced_options_schema(defaults).schema)
+    fields.update(build_outdoor_source_schema(defaults).schema)
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        fields.update(
+            _optional_selector_field(
+                entity_field,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(entity_field),
+            )
+        )
+    return vol.Schema(fields)
+
+
 def build_room_schema(
     defaults: Mapping[str, object],
     room_number: int,
@@ -257,6 +285,18 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
             ),
+            vol.Optional(
+                CONF_ROOM_OPENING_ENTITY_IDS,
+                default=_normalize_entity_id_list(
+                    defaults.get(CONF_ROOM_OPENING_ENTITY_IDS),
+                    CONF_ROOM_OPENING_ENTITY_IDS,
+                    domain="binary_sensor",
+                ),
+            ): EntitySelector(EntitySelectorConfig(domain="binary_sensor", multiple=True)),
+            vol.Required(
+                CONF_ROOM_OPENINGS_COMPLETE,
+                default=bool(defaults.get(CONF_ROOM_OPENINGS_COMPLETE, False)),
+            ): cv.boolean,
             vol.Required(
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
                 default=_default_room_override_enabled(
@@ -293,6 +333,20 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain="automation")),
                 defaults.get(CONF_ROOM_STOP_ENTITY_ID),
             ),
+            vol.Required(
+                CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                default=defaults.get(
+                    CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                    DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            vol.Required(
+                CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+                default=defaults.get(
+                    CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+                    DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
         }
     )
 
@@ -333,9 +387,12 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     notification_device_ids = _normalize_notification_device_ids(
         data.get(CONF_NOTIFICATION_DEVICE_ID)
     )
-    if not notification_device_ids:
-        raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID)
     data[CONF_NOTIFICATION_DEVICE_ID] = notification_device_ids
+    data[CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED] = _normalize_bool(
+        data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED),
+        CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+        default=False,
+    )
     return data
 
 
@@ -422,6 +479,19 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     return data
 
 
+def normalize_settings_config(
+    user_input: Mapping[str, object],
+    defaults: Mapping[str, object],
+) -> dict[str, object]:
+    """Normalize every field shown in the single-screen options form."""
+
+    data = dict(defaults)
+    data.update(normalize_basic_config(user_input))
+    data.update(normalize_advanced_config(user_input))
+    data.update(normalize_outdoor_source_config(user_input))
+    return normalize_outdoor_override_config(data, data)
+
+
 def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> dict[str, object]:
     """Normalize room flow data for storage."""
 
@@ -429,6 +499,11 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     data[CONF_ROOM_ID] = _normalize_room_id(data.get(CONF_ROOM_ID))
     data[CONF_ROOM_KIND] = _normalize_room_kind(room_kind)
     data[CONF_ROOM_ENABLED] = _normalize_bool(data.get(CONF_ROOM_ENABLED), CONF_ROOM_ENABLED, default=True)
+    data[CONF_ROOM_OPENINGS_COMPLETE] = _normalize_bool(
+        data.get(CONF_ROOM_OPENINGS_COMPLETE),
+        CONF_ROOM_OPENINGS_COMPLETE,
+        default=False,
+    )
     data[CONF_ROOM_NAME] = str(data[CONF_ROOM_NAME]).strip()
     if not data[CONF_ROOM_NAME]:
         raise ConfigValidationError(CONF_ROOM_NAME)
@@ -477,6 +552,18 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         raise ConfigValidationError(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
     if data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED] and data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE] is None:
         raise ConfigValidationError(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
+    data[CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES] = _normalize_int(
+        data.get(CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES, DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES),
+        CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
+        0,
+        24 * 60,
+    )
+    data[CONF_ROOM_ACTION_LOCKOUT_MINUTES] = _normalize_int(
+        data.get(CONF_ROOM_ACTION_LOCKOUT_MINUTES, DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES),
+        CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+        0,
+        24 * 60,
+    )
     _normalize_optional_entity_ids(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
@@ -487,6 +574,14 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
         domain="automation",
+    )
+    data[CONF_ROOM_OPENING_ENTITY_IDS] = _normalize_entity_id_list(
+        data.get(CONF_ROOM_OPENING_ENTITY_IDS),
+        CONF_ROOM_OPENING_ENTITY_IDS,
+        domain="binary_sensor",
+    )
+    data[CONF_ROOM_OPENINGS_COMPLETE] = bool(
+        data[CONF_ROOM_OPENINGS_COMPLETE] and data[CONF_ROOM_OPENING_ENTITY_IDS]
     )
     return data
 
@@ -573,9 +668,30 @@ def _normalize_notification_device_ids(value: object) -> list[str] | None:
             text = str(item).strip()
             if text:
                 items.append(text)
-        return items or None
+        return items
     text = str(value).strip()
     return [text] if text else None
+
+
+def _normalize_entity_id_list(
+    value: object,
+    field: str,
+    *,
+    domain: str,
+) -> list[str]:
+    """Normalize a multi-entity selector without accepting duplicate IDs."""
+
+    if value is None:
+        return []
+    raw_values = [value] if isinstance(value, str) else value
+    if not isinstance(raw_values, (list, tuple, set)):
+        raise ConfigValidationError(field)
+    entity_ids: list[str] = []
+    for raw_value in raw_values:
+        entity_id = _normalize_required_entity_id(raw_value, field, domain=domain)
+        if entity_id not in entity_ids:
+            entity_ids.append(entity_id)
+    return entity_ids
 
 
 def _default_outdoor_override(

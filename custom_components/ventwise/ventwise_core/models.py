@@ -15,6 +15,15 @@ class RecommendationAction(str, Enum):
     NONE = "none"
 
 
+class OpeningState(str, Enum):
+    """Aggregated state of the configured room openings."""
+
+    UNKNOWN = "unknown"
+    OPEN = "open"
+    CLOSED = "closed"
+    PARTIAL = "partial"
+
+
 class SeasonMode(str, Enum):
     """High-level season hint for optional scoring bias."""
 
@@ -44,6 +53,8 @@ class RoomProfile:
     target_temperature_c_override: float | None = None
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
+    opening_state: OpeningState = OpeningState.UNKNOWN
+    openings_complete: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +66,7 @@ class ComfortObservation:
     wind_speed_m_s: float | None = None
     wind_gust_m_s: float | None = None
     weather_condition: str | None = None
+    forecast_temperature_c: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,6 +142,9 @@ class RoomRecommendation:
     room_id: str | None = None
     open_score: float = 0.0
     close_score: float = 0.0
+    reason_code: str = "comfort"
+    opening_state: OpeningState = OpeningState.UNKNOWN
+    openings_complete: bool = False
 
 
 @dataclass(frozen=True, slots=True)

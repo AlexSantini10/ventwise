@@ -18,6 +18,8 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_OPENING_ENTITY_IDS,
+    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -36,6 +38,7 @@ from custom_components.ventwise.runtime import (
     is_quiet_hours_active,
     load_runtime_state,
     room_target_temperature_c,
+    room_opening_state,
     state_to_bool,
     state_to_float,
 )
@@ -45,6 +48,7 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
+    CONF_RUNTIME_NOTIFICATION_MARKERS,
 )
 from custom_components.ventwise.runtime import RuntimeSnapshot
 from ventwise_core import (
@@ -53,6 +57,7 @@ from ventwise_core import (
     RecommendationContext,
     RoomObservation,
     RoomProfile,
+    OpeningState,
 )
 
 
@@ -92,6 +97,11 @@ def test_build_runtime_config_and_room_profiles() -> None:
                     CONF_ROOM_NAME: "Camera",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
                     CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+                    CONF_ROOM_OPENING_ENTITY_IDS: [
+                        "binary_sensor.room_window",
+                        "binary_sensor.room_door",
+                    ],
+                    CONF_ROOM_OPENINGS_COMPLETE: True,
                     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
                     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: 23.0,
                     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: True,
@@ -103,18 +113,26 @@ def test_build_runtime_config_and_room_profiles() -> None:
 
     assert config.enabled is True
     assert config.auto_comfort_temperature_enabled is True
+    assert config.home_assistant_notification_enabled is False
     assert config.notification_device_ids == ("device-123", "device-456")
     assert config.rooms[0].name == "Camera"
     assert config.rooms[0].target_temperature_c_override_enabled is True
     assert config.rooms[0].target_temperature_c_override == 23.0
     assert config.rooms[0].target_humidity_percent_override_enabled is True
     assert config.rooms[0].target_humidity_percent_override == 55.0
+    assert config.rooms[0].opening_entity_ids == (
+        "binary_sensor.room_window",
+        "binary_sensor.room_door",
+    )
+    assert config.rooms[0].openings_complete is True
 
     fake_states = {
         "sensor.outdoor_temp": SimpleNamespace(state="20.0"),
         "sensor.outdoor_humidity": SimpleNamespace(state="55"),
         "sensor.room_temp": SimpleNamespace(state="26.0"),
         "sensor.room_humidity": SimpleNamespace(state="60"),
+        "binary_sensor.room_window": SimpleNamespace(state="off"),
+        "binary_sensor.room_door": SimpleNamespace(state="on"),
     }
 
     rooms, outdoor = build_room_profiles(config, fake_states.get)
@@ -123,6 +141,41 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert outdoor.temperature_c == 20.0
     assert len(rooms) == 1
     assert rooms[0].name == "Camera"
+    assert rooms[0].opening_state == OpeningState.OPEN
+
+
+def test_room_opening_state_is_conservative_when_sensor_coverage_is_partial() -> None:
+    complete_room = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                    CONF_ROOM_OPENING_ENTITY_IDS: ["binary_sensor.bedroom_window"],
+                    CONF_ROOM_OPENINGS_COMPLETE: True,
+                }
+            ]
+        }
+    ).rooms[0]
+    partial_room = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                    CONF_ROOM_OPENING_ENTITY_IDS: ["binary_sensor.bedroom_window"],
+                    CONF_ROOM_OPENINGS_COMPLETE: False,
+                }
+            ]
+        }
+    ).rooms[0]
+
+    closed_state = {"binary_sensor.bedroom_window": SimpleNamespace(state="off")}.get
+    open_state = {"binary_sensor.bedroom_window": SimpleNamespace(state="on")}.get
+
+    assert room_opening_state(complete_room, closed_state) == OpeningState.CLOSED
+    assert room_opening_state(partial_room, closed_state) == OpeningState.PARTIAL
+    assert room_opening_state(partial_room, open_state) == OpeningState.OPEN
 
 
 def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
@@ -316,10 +369,11 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         summary=summary,
         weather_condition="sunny",
         target_perceived_c=22.0,
-        suggested_comfort_temperature_c=22.275,
+        suggested_comfort_temperature_c=summary.suggested_comfort_temperature_c,
         outdoor_perceived_c=20.0,
         active_indoor_perceived_c=23.2,
         outdoor_temperature_c=20.0,
+        forecast_temperature_c=24.0,
         outdoor_humidity_percent=45.0,
         wind_speed_m_s=None,
         wind_gust_m_s=None,
@@ -337,14 +391,18 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     assert attributes["summary_best_room"] == "Camera"
     assert attributes["weather_condition"] == "sunny"
     assert attributes["target_perceived_c"] == 22.0
-    assert attributes["suggested_comfort_temperature_c"] == 22.275
+    assert attributes["forecast_temperature_c"] == 24.0
+    assert attributes["suggested_comfort_temperature_c"] == summary.suggested_comfort_temperature_c
     assert attributes["auto_comfort_temperature_enabled"] is False
     assert attributes["outdoor_perceived_c"] == 20.0
     assert attributes["active_indoor_perceived_c"] == 23.2
     assert attributes["notification_allowed"] is True
     assert attributes["room_recommendations"][0]["room_name"] == "Camera"
     assert attributes["room_recommendations"][0]["indoor_perceived_c"] > 0
-    assert attributes["room_recommendations"][0]["suggested_comfort_temperature_c"] == 22.275
+    assert (
+        attributes["room_recommendations"][0]["suggested_comfort_temperature_c"]
+        == summary.room_recommendations[0].suggested_comfort_temperature_c
+    )
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
 
 
@@ -403,8 +461,12 @@ def test_runtime_state_round_trips_through_storage() -> None:
     runtime_state = stored[CONF_RUNTIME_STATE]
     assert runtime_state[CONF_RUNTIME_LAST_ACTION_SIGNATURE] == ["open", "Camera"]
     assert runtime_state[CONF_RUNTIME_LAST_ACTION_STARTED_AT] == started_at.isoformat()
-    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE] == ["open", "Camera"]
-    assert runtime_state[CONF_RUNTIME_LAST_NOTIFICATION_AT] == notification_at.isoformat()
+    assert runtime_state[CONF_RUNTIME_NOTIFICATION_MARKERS] == {
+        "Camera": {
+            "signature": ["open", "Camera"],
+            "notified_at": notification_at.isoformat(),
+        }
+    }
 
 
 def test_load_runtime_state_ignores_corrupted_markers() -> None:
@@ -421,5 +483,6 @@ def test_load_runtime_state_ignores_corrupted_markers() -> None:
 
     assert loaded.last_action_signature is None
     assert loaded.last_action_started_at is None
-    assert loaded.last_notification_signature == ("open", "Camera")
-    assert loaded.last_notification_at == datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)
+    marker = loaded.notification_markers["Camera"]
+    assert marker.signature == ("open", "Camera")
+    assert marker.notified_at == datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)

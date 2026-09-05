@@ -32,6 +32,7 @@ def _coordinator() -> SimpleNamespace:
     return SimpleNamespace(
         config_entry=SimpleNamespace(entry_id="entry-1", title="VentWise"),
         config=SimpleNamespace(target_temperature_c=22.0, rooms=[]),
+        hass=SimpleNamespace(config=SimpleNamespace(language="en")),
     )
 
 
@@ -49,29 +50,30 @@ def test_celsius_sensor_units_are_consistent() -> None:
     room = _room()
 
     assert UNIT_CELSIUS == "°C"
-    assert PerceivedIndoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert PerceivedOutdoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert PerceivedComfortTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert SuggestedComfortTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert OutdoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomPerceivedIndoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomPerceivedOutdoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomPerceivedComfortTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomSuggestedComfortTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomIndoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomOutdoorTemperatureSensor._attr_native_unit_of_measurement == UNIT_CELSIUS
+    sensors = [
+        PerceivedIndoorTemperatureSensor(coordinator),
+        PerceivedOutdoorTemperatureSensor(coordinator),
+        PerceivedComfortTemperatureSensor(coordinator),
+        SuggestedComfortTemperatureSensor(coordinator),
+        OutdoorTemperatureSensor(coordinator),
+        RoomPerceivedIndoorTemperatureSensor(coordinator, room),
+        RoomPerceivedOutdoorTemperatureSensor(coordinator, room),
+        RoomPerceivedComfortTemperatureSensor(coordinator, room),
+        RoomSuggestedComfortTemperatureSensor(coordinator, room),
+        RoomIndoorTemperatureSensor(coordinator, room),
+        RoomOutdoorTemperatureSensor(coordinator, room),
+    ]
 
-    assert PerceivedIndoorTemperatureSensor(coordinator)._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert SuggestedComfortTemperatureSensor(coordinator)._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomIndoorTemperatureSensor(coordinator, room)._attr_native_unit_of_measurement == UNIT_CELSIUS
+    assert all(sensor.native_unit_of_measurement == UNIT_CELSIUS for sensor in sensors)
 
 
 def test_celsius_number_units_are_consistent() -> None:
     coordinator = _coordinator()
     room = _room()
 
-    assert ComfortTemperatureNumber._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomTargetTemperatureOverrideNumber._attr_native_unit_of_measurement == UNIT_CELSIUS
+    numbers = [
+        ComfortTemperatureNumber(coordinator),
+        RoomTargetTemperatureOverrideNumber(coordinator, room),
+    ]
 
-    assert ComfortTemperatureNumber(coordinator)._attr_native_unit_of_measurement == UNIT_CELSIUS
-    assert RoomTargetTemperatureOverrideNumber(coordinator, room)._attr_native_unit_of_measurement == UNIT_CELSIUS
+    assert all(number.native_unit_of_measurement == UNIT_CELSIUS for number in numbers)
