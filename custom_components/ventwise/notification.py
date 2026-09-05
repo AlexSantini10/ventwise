@@ -223,7 +223,7 @@ async def async_send_notification(
     texts = _notification_texts(getattr(getattr(hass, "config", None), "language", None))
     try:
         if not targets and not send_to_home_assistant:
-            raise RuntimeError(f"No notify entities resolved for device IDs: {list(device_ids or [])}")
+            raise RuntimeError("No notification entities resolved for configured devices")
 
         delivered_targets: list[str] = []
         failed_targets: list[str] = []
