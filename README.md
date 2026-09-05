@@ -15,7 +15,8 @@
   <img src="https://img.shields.io/github/stars/AlexSantini10/ventwise?label=Stars&color=darkgoldenrod&style=for-the-badge" alt="Stars" />
 </p>
 
-**A Home Assistant custom integration for comfort-based window recommendations.**
+**A Home Assistant custom integration for weather-aware window ventilation and
+indoor-comfort recommendations.**
 
 VentWise helps users decide when opening or closing windows is likely to improve indoor comfort. It evaluates a standard weather source, optional outdoor temperature, humidity, and wind overrides, and the configured comfort target, then exposes a clear recommendation back to Home Assistant.
 
