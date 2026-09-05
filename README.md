@@ -19,6 +19,16 @@
 
 VentWise helps users decide when opening or closing windows is likely to improve indoor comfort. It evaluates a standard weather source, optional outdoor temperature, humidity, and wind overrides, and the configured comfort target, then exposes a clear recommendation back to Home Assistant.
 
+> [!WARNING]
+> **Beta software — use recommendations with care.** VentWise has automated CI
+> coverage and limited real-world use, but it has not been exhaustively tested
+> across all homes, sensors, weather conditions, or hardware. It provides
+> informational recommendations only; it is not a safety, security, weather-
+> protection, or automation-control system. Always assess the actual conditions
+> before opening or closing anything, and do not rely on VentWise to prevent
+> injury, property damage, intrusion, rain exposure, or equipment damage. See
+> the full [license, disclaimer, and reporting guidance](docs/NOTICE.md).
+
 ## At a glance
 
 - Comfort-based recommendation engine
