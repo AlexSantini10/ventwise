@@ -8,13 +8,43 @@ on:
       - test
       - "test/**"
       - "test-*"
+    paths:
+      - ".github/workflows/ci.yml"
+      - "custom_components/**"
+      - "src/**"
+      - "tests/**"
+      - "scripts/build_release_package.ps1"
+      - "pyproject.toml"
+      - "requirements-ci.txt"
+      - "requirements-dev.txt"
+      - "hacs.json"
+      - "README.md"
+      - "LICENSE"
+      - "NOTICE"
   pull_request:
+    paths:
+      - ".github/workflows/ci.yml"
+      - "custom_components/**"
+      - "src/**"
+      - "tests/**"
+      - "scripts/build_release_package.ps1"
+      - "pyproject.toml"
+      - "requirements-ci.txt"
+      - "requirements-dev.txt"
+      - "hacs.json"
+      - "README.md"
+      - "LICENSE"
+      - "NOTICE"
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -28,6 +58,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.14.2"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-dev.txt
 
       - name: Install dependencies
         run: python -m pip install -e .[dev]
@@ -50,12 +84,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.14.2"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-dev.txt
+            requirements-ci.txt
 
       - name: Install dependencies
         run: python -m pip install -e .[dev]
 
       - name: Install Home Assistant 2026.7.2
-        run: python -m pip install --upgrade homeassistant==2026.7.2
+        run: python -m pip install --upgrade -r requirements-ci.txt
 
       - name: Run Home Assistant tests on 2026.7.2
         run: python -m pytest tests/test_flow.py tests/test_options_flow.py tests/test_coordinator_runtime_state.py tests/test_notification.py tests/test_entity_units.py tests/test_user_journey.py -q
