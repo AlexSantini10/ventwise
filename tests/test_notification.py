@@ -106,6 +106,22 @@ def test_recommendation_explanation_is_concise_and_localized() -> None:
     assert explanation == "chiudi le finestre. Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
 
 
+def test_recommendation_explanation_prefers_current_comfort_over_a_duplicate_forecast() -> None:
+    recommendation = SimpleNamespace(
+        room_name="Camera",
+        action=SimpleNamespace(value="close"),
+        reason_code="comfort",
+        indoor_perceived_c=22.0,
+        outdoor_perceived_c=26.0,
+        target_perceived_c=22.0,
+    )
+
+    explanation = build_recommendation_explanation(recommendation, language="en")
+
+    assert "Inside is more comfortable right now" in explanation
+    assert "forecast" not in explanation
+
+
 def test_home_assistant_notification_id_is_distinct_per_delivery_and_room() -> None:
     camera = SimpleNamespace(room_name="Camera", room_id="camera-1")
     living_room = SimpleNamespace(room_name="Salotto", room_id="living-1")
