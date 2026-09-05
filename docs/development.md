@@ -7,26 +7,34 @@ Assistant integration depend on the development setup.
 
 ## Local Setup
 
-- install Python 3.11 or newer
-- create a virtual environment
-- install the project in editable mode
+Install Python 3.11 or newer and Git. From a clone of the repository, create a
+virtual environment and install the development dependencies.
 
 ```bash
-python -m pip install -e .[dev]
+python -m venv .venv
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 ```
 
 ## Common Commands
 
 ```bash
-pytest
+python -m pytest -q
+python -m pytest tests/test_scoring_model.py -q
 coverage run -m pytest
 coverage report
 ```
 
+The lightweight suite runs without Home Assistant installed; Home
+Assistant-specific tests are exercised by CI. Use `python ha-local-docker-test.py`
+when you need to inspect the integration in a local Home Assistant environment.
+
 ## Repository Layout
 
-- `src/` for the reusable scoring core
-- `custom_components/ventwise/` for the Home Assistant integration
+- `custom_components/ventwise/ventwise_core/` for the reusable scoring core
+- `custom_components/ventwise/` for the Home Assistant integration layer
 - `tests/` for unit and runtime coverage
 - `docs/` for architecture and packaging notes
 

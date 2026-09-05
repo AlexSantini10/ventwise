@@ -2,8 +2,8 @@
 
 ## Purpose
 
-This project will become a Home Assistant custom integration distributed through
-HACS. The goal is to help users decide when opening or closing windows improves
+This project is a Home Assistant custom integration distributed through HACS.
+The goal is to help users decide when opening or closing windows improves
 comfort, while keeping the configuration simple from the Home Assistant UI.
 
 ## Final Delivery Model
@@ -48,8 +48,6 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
   config entry, surfaced through the UI.
 - Collects the weather source during setup and lets each outdoor metric
   choose between the forecast value and a numeric override.
-- Lets each room optionally link automations for `open`, `close`, and
-  `pause`, so VentWise can trigger them when it asks to open or close a room.
 - Lets the user skip room creation entirely during initial setup.
 - Falls back to the standard weather forecast whenever a metric is left on
   forecast.
@@ -95,13 +93,14 @@ The user should be able to:
 
 ## Current Repo Mapping
 
-- `src/`: core engine experiments and reusable logic.
-- `custom_components/ventwise/`: future Home Assistant integration code.
+- `custom_components/ventwise/ventwise_core/`: reusable scoring logic.
+- `custom_components/ventwise/`: Home Assistant integration code.
 - `tests/`: scoring and behavior tests.
 - `examples/`: sample configurations and scenarios.
 - `docs/`: design and usage notes.
 
-## Future Direction
+## Distribution Direction
 
-Once the architecture is stable, the project can be moved into a new standalone
-repository and packaged for HACS publication.
+VentWise is installable now as a HACS custom repository. Inclusion in HACS's
+public catalogue is a separate publication step; see
+[HACS packaging](hacs-packaging.md).

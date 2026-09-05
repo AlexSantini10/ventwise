@@ -51,36 +51,53 @@ VentWise helps users decide when opening or closing windows is likely to improve
 
 ### Via HACS
 
-<!-- Placeholder: add the final HACS install badge/button here once the packaging and release flow are finalized. -->
+[![Add VentWise to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AlexSantini10&repository=ventwise&category=integration)
 
-[Open VentWise in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=AlexSantini10&repository=ventwise&category=integration)
+The button opens VentWise in HACS as a **custom repository**. It works before
+VentWise is listed in the public HACS catalogue; HACS must already be installed
+and will ask the user to confirm the download. Select **Download**, restart
+Home Assistant when prompted, then add **VentWise** from **Settings > Devices
+& services > Add integration**.
 
-Stable releases are published from `main` and remain the default latest version in HACS.
-Experimental builds are published as GitHub prereleases from the `test` branch family.
-Experimental builds are for testing only.
+Stable releases are published from `main`. Experimental prereleases from the
+`test` branch family are for testing only.
 
 ### Manual install
 
-<!-- Placeholder: add the final manual-install instructions or release artifact badge here. -->
+Download `ventwise.zip` from the latest GitHub release, extract it into
+`<Home Assistant configuration>/custom_components/ventwise/`, and restart
+Home Assistant. The complete steps, including update and removal instructions,
+are in the [user guide](docs/user-guide.md#manual-installation).
 
-Coming soon.
+### First setup
+
+After installation, open **Settings > Devices & services > Add integration**
+and select **VentWise**. Choose a Home Assistant weather entity, set your
+comfort values, optionally choose notification devices, and add a room with
+its indoor temperature and humidity sensors. See the
+[first setup guide](docs/user-guide.md#first-setup).
 
 ## Documentation
 
-- [Project overview](docs/overview.md)
-- [Domain model](docs/domain-model.md)
-- [Scoring model](docs/scoring-model.md)
-- [Home Assistant integration](docs/home-assistant-integration.md)
-- [Project rules](docs/project-rules.md)
-- [Testing](docs/testing.md)
+### For users
+
+- [Install, configure, update, and remove VentWise](docs/user-guide.md)
+- [How the Home Assistant integration works](docs/home-assistant-integration.md)
+- [Safety, beta status, and reporting guidance](docs/NOTICE.md)
+
+### For contributors
+
+- [Contributing guide](CONTRIBUTING.md)
+- [Documentation index](docs/INDEX.md)
 - [Development workflow](docs/development.md)
-- [HACS packaging](docs/hacs-packaging.md)
-- [Contributing](CONTRIBUTING.md)
+- [Testing](docs/testing.md)
+- [Scoring model](docs/scoring-model.md)
+- [HACS packaging and discoverability](docs/hacs-packaging.md)
 
 ## Project structure
 
 - `docs/`: development and design documentation
-- `src/`: reusable Python comfort engine
+- `custom_components/ventwise/ventwise_core/`: reusable Python comfort engine
 - `custom_components/ventwise/`: Home Assistant custom integration
 - `tests/`: scoring and behavior tests
 - `brand/`: repo banner and icon assets
