@@ -16,6 +16,7 @@ Start with the document for your role.
 3. [Testing](testing.md) for the test layers and Home Assistant sandbox.
 4. [Architecture](ARCHITECTURE.md), [domain model](domain-model.md), and [scoring model](scoring-model.md) for design details.
 5. [HACS packaging](hacs-packaging.md) for releases, discovery, and packaging.
+6. [Brand assets](brand-assets.md) for Home Assistant and repository artwork.
 
 ## Purpose
 
