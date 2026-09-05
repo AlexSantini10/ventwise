@@ -1,7 +1,7 @@
 # VentWise
 
 <p align="center">
-  <img src="brand/banner.png" alt="VentWise banner" width="960" />
+  <img src="docs/assets/brand/banner.png" alt="VentWise banner" width="960" />
 </p>
 
 <p align="center">
@@ -101,7 +101,8 @@ its indoor temperature and humidity sensors. See the
 - `custom_components/ventwise/ventwise_core/`: reusable Python comfort engine
 - `custom_components/ventwise/`: Home Assistant custom integration
 - `tests/`: scoring and behavior tests
-- `brand/`: repo banner and icon assets
+- `docs/assets/brand/`: repository banner and marketing assets
+- `custom_components/ventwise/brand/`: Home Assistant runtime brand assets
 
 ## Development
 
