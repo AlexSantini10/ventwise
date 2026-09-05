@@ -21,8 +21,6 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
-    CONF_ROOM_OPENING_ENTITY_IDS,
-    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_ENABLED,
@@ -151,21 +149,17 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
-    assert room_schema.schema[CONF_ROOM_OPENING_ENTITY_IDS].__class__.__name__ == "EntitySelector"
-    assert callable(room_schema.schema[CONF_ROOM_OPENINGS_COMPLETE])
     assert callable(room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C].__class__.__name__ == "Any"
     assert callable(room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
-    assert list(room_schema.schema.keys())[:10] == [
+    assert list(room_schema.schema.keys())[:8] == [
         CONF_ROOM_ENABLED,
         CONF_ROOM_NAME,
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
-        CONF_ROOM_OPENING_ENTITY_IDS,
-        CONF_ROOM_OPENINGS_COMPLETE,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
         CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -473,28 +467,6 @@ def test_normalize_room_config_accepts_input_number_temperature_and_humidity() -
 
     assert data[CONF_ROOM_TEMPERATURE_ENTITY_ID] == "input_number.bedroom_temp"
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] == "input_number.bedroom_humidity"
-
-
-def test_normalize_room_config_accepts_multiple_opening_sensors() -> None:
-    data = normalize_room_config(
-        {
-            CONF_ROOM_NAME: "Bedroom",
-            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-            CONF_ROOM_OPENING_ENTITY_IDS: [
-                "binary_sensor.bedroom_window",
-                "binary_sensor.bedroom_door",
-                "binary_sensor.bedroom_window",
-            ],
-            CONF_ROOM_OPENINGS_COMPLETE: True,
-        },
-        "room",
-    )
-
-    assert data[CONF_ROOM_OPENING_ENTITY_IDS] == [
-        "binary_sensor.bedroom_window",
-        "binary_sensor.bedroom_door",
-    ]
-    assert data[CONF_ROOM_OPENINGS_COMPLETE] is True
 
 
 def test_normalize_room_config_rejects_non_automation_room_actions() -> None:

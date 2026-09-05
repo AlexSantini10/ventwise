@@ -9,7 +9,6 @@ from typing import Any
 
 from .ventwise_core import (
     ComfortObservation,
-    OpeningState,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
@@ -36,8 +35,6 @@ from .const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
-    CONF_ROOM_OPENING_ENTITY_IDS,
-    CONF_ROOM_OPENINGS_COMPLETE,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -92,8 +89,6 @@ class RoomConfig:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
-    opening_entity_ids: tuple[str, ...] = ()
-    openings_complete: bool = False
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
     action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
@@ -212,8 +207,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
-            opening_entity_ids=_string_list(room.get(CONF_ROOM_OPENING_ENTITY_IDS)),
-            openings_complete=bool(room.get(CONF_ROOM_OPENINGS_COMPLETE, False)),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
             action_change_hold_minutes=int(
@@ -439,7 +432,6 @@ def build_room_profiles(
             continue
         if humidity is None:
             humidity = 50.0
-        opening_state = room_opening_state(room, state_getter)
         rooms.append(
             RoomProfile(
                 room_id=room.room_id,
@@ -454,28 +446,10 @@ def build_room_profiles(
                 target_temperature_c_override=room.target_temperature_c_override,
                 target_humidity_percent_override_enabled=room.target_humidity_percent_override_enabled,
                 target_humidity_percent_override=room.target_humidity_percent_override,
-                opening_state=opening_state,
-                openings_complete=room.openings_complete,
             )
         )
 
     return rooms, outdoor
-
-
-def room_opening_state(
-    room: RoomConfig,
-    state_getter: Callable[[str], Any],
-) -> OpeningState:
-    """Return a conservative aggregate of the configured opening sensors."""
-
-    if not room.opening_entity_ids:
-        return OpeningState.UNKNOWN
-    states = [state_to_bool(state_getter(entity_id)) for entity_id in room.opening_entity_ids]
-    if any(state is True for state in states):
-        return OpeningState.OPEN
-    if not room.openings_complete:
-        return OpeningState.PARTIAL
-    return OpeningState.CLOSED if all(state is False for state in states) else OpeningState.UNKNOWN
 
 
 def build_debug_attributes(
@@ -705,8 +679,6 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "suggested_comfort_temperature_c": recommendation.suggested_comfort_temperature_c,
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
-        "opening_state": recommendation.opening_state.value,
-        "openings_complete": recommendation.openings_complete,
     }
 
 
