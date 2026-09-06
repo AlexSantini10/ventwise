@@ -565,7 +565,7 @@ def test_coordinator_delivers_changed_recommendation_after_cooldown_expiry(
     coordinator._notification_markers["Camera"] = NotificationMarker(
         first_marker.signature,
         first_marker.notified_at,
-        "wind",
+        "comfort" if first_marker.reason != "comfort" else "wind",
         first_marker.severity,
     )
     suppressed_snapshot = asyncio.run(coordinator._async_update_data())
