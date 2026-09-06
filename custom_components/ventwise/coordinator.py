@@ -337,14 +337,24 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 notification_channel_available
                 and recommendation.action != RecommendationAction.NONE
                 and recommendation.score >= self._config.minimum_score
+                and not matches_marker
                 and not room_cooldown_active
             )
             if not room_notification_allowed:
-                if room_cooldown_active:
+                if matches_marker:
                     _LOGGER.debug(
-                        "VentWise notification suppressed: %s for room=%s "
-                        "action=%s reason_code=%s severity=%s cooldown_remaining_seconds=%d",
-                        "equivalent recommendation" if matches_marker else "non-urgent update",
+                        "VentWise notification suppressed: equivalent recommendation "
+                        "for room=%s action=%s reason_code=%s severity=%s",
+                        recommendation.room_name,
+                        recommendation.action.value,
+                        recommendation.reason_code,
+                        self._notification_severity(recommendation.score),
+                    )
+                elif room_cooldown_active:
+                    _LOGGER.debug(
+                        "VentWise notification suppressed: non-urgent update "
+                        "for room=%s action=%s reason_code=%s severity=%s "
+                        "cooldown_remaining_seconds=%d",
                         recommendation.room_name,
                         recommendation.action.value,
                         recommendation.reason_code,
