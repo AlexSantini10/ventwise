@@ -232,7 +232,7 @@
         },
         "data_description": {
           "soft_outdoor_threshold_c": "高于这个室外温度时，开窗的价值会更低。",
-          "cooldown_minutes": "VentWise 在再次发送相同通知前等待的时间。"
+          "cooldown_minutes": "VentWise 发送更新通知前等待的时间；相同的建议会一直被抑制。"
         }
       },
       "rooms": {

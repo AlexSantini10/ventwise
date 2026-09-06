@@ -253,7 +253,7 @@
           "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
           "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
-          "cooldown_minutes": "How long VentWise waits before sending the same recommendation again for each room.",
+          "cooldown_minutes": "How long VentWise waits before sending an updated recommendation for each room. Identical recommendations stay suppressed.",
           "outdoor_temperature_override": "Use the manual temperature entity below instead of the weather forecast.",
           "outdoor_humidity_override": "Use the manual humidity entity below instead of the weather forecast.",
           "wind_speed_override": "Use the manual wind-speed entity below instead of the weather forecast.",
@@ -299,7 +299,7 @@
         "data_description": {
           "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
-          "cooldown_minutes": "How long VentWise waits before sending the same notification again."
+          "cooldown_minutes": "How long VentWise waits before sending an updated notification. Identical recommendations stay suppressed."
         }
       },
       "rooms": {

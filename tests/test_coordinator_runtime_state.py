@@ -479,7 +479,54 @@ def test_coordinator_applies_cooldown_independently_per_room(
     assert len(hass.services.calls) == 1
 
 
-def test_coordinator_repeats_equivalent_notification_after_cooldown_expiry(
+def test_coordinator_suppresses_equivalent_notification_after_cooldown_expiry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current_now = [datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)]
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: current_now[0])
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: current_now[0])
+    fake_states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="28.0"),
+    }
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_NOTIFICATION_ENABLED: True,
+            CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
+            CONF_COOLDOWN_MINUTES: 60,
+            CONF_STABILITY_MINUTES: 0,
+            CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                }
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(get=fake_states.get)
+
+    first_snapshot = asyncio.run(coordinator._async_update_data())
+    suppressed_snapshot = asyncio.run(coordinator._async_update_data())
+    current_now[0] += timedelta(minutes=61)
+    duplicate_snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert first_snapshot.notification_allowed is True
+    assert suppressed_snapshot.notification_allowed is False
+    assert suppressed_snapshot.cooldown_active is True
+    assert duplicate_snapshot.notification_allowed is False
+    assert duplicate_snapshot.cooldown_active is False
+    assert len(hass.services.calls) == 1
+
+
+def test_coordinator_delivers_changed_recommendation_after_cooldown_expiry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     current_now = [datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)]
@@ -518,19 +565,18 @@ def test_coordinator_repeats_equivalent_notification_after_cooldown_expiry(
     coordinator._notification_markers["Camera"] = NotificationMarker(
         first_marker.signature,
         first_marker.notified_at,
-        "wind",
+        "comfort" if first_marker.reason != "comfort" else "wind",
         first_marker.severity,
     )
     suppressed_snapshot = asyncio.run(coordinator._async_update_data())
     current_now[0] += timedelta(minutes=61)
-    second_snapshot = asyncio.run(coordinator._async_update_data())
+    changed_snapshot = asyncio.run(coordinator._async_update_data())
 
     assert first_snapshot.notification_allowed is True
     assert suppressed_snapshot.notification_allowed is False
     assert suppressed_snapshot.cooldown_active is True
-    assert second_snapshot.notification_allowed is True
+    assert changed_snapshot.notification_allowed is True
     assert len(hass.services.calls) == 2
-    assert hass.services.calls[0][2]["notification_id"] != hass.services.calls[1][2]["notification_id"]
 
 
 def test_notification_marker_detects_action_reason_and_severity_changes() -> None:
