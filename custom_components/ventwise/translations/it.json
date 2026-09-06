@@ -253,7 +253,7 @@
           "notification_device_id": "Facoltativo. Seleziona i dispositivi che riceveranno le notifiche VentWise.",
           "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant.",
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
-          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo la stessa raccomandazione per ciascuna stanza.",
+          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare una raccomandazione aggiornata per ciascuna stanza. Le raccomandazioni identiche restano soppresse.",
           "outdoor_temperature_override": "Usa l'entità manuale sotto invece del forecast meteo.",
           "outdoor_humidity_override": "Usa l'entità manuale sotto invece del forecast meteo.",
           "wind_speed_override": "Usa l'entità manuale sotto invece del forecast meteo.",
@@ -299,7 +299,7 @@
         "data_description": {
           "auto_comfort_temperature": "Usa la tua temperatura di comfort come base e la corregge gradualmente in base alla temperatura esterna percepita. Lo scostamento è limitato a ±2 °C nel range domestico di sicurezza 18–26 °C. I sensori della stanza determinano il consiglio, ma non spostano il target. Non controlla termostato o HVAC.",
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
-          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare di nuovo la stessa notifica."
+          "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare una notifica aggiornata. Le raccomandazioni identiche restano soppresse."
         }
       },
       "rooms": {

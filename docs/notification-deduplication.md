@@ -13,18 +13,19 @@ the same room:
 - severity band: `normal` below 0.55, `elevated` from 0.55 to below 0.75, or
   `urgent` at 0.75 and above.
 
-During a room's configured cooldown, VentWise suppresses equivalent
-recommendations and non-urgent updates to their reason category or severity.
-This prevents short sensor fluctuations from becoming a stream of alerts.
+VentWise always suppresses equivalent recommendations, including after a room's
+configured cooldown expires. During the cooldown, it also suppresses
+non-urgent updates to a recommendation's reason category or severity. This
+prevents short sensor fluctuations from becoming a stream of alerts.
 
 Only these changes bypass the cooldown:
 
 - a different action (`open` or `close`), after the normal stability window;
 - an escalation to `urgent` severity, which is delivered immediately.
 
-After the cooldown expires, VentWise may deliver the same recommendation
-again. This makes persistent room conditions visible without permanently
-silencing them.
+After the cooldown expires, VentWise can deliver a recommendation only when
+its reason category or severity has changed. Small changes to sensor values or
+the human-readable explanation do not create a new notification.
 
 Suppressed equivalent recommendations and cooldown bypasses are logged at
 debug level with the room, action, reason, severity, and suppression decision.
