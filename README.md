@@ -6,11 +6,21 @@
 
 <p align="center">
   <a href="https://github.com/AlexSantini10/ventwise/releases/latest">
-    <img src="https://img.shields.io/github/v/release/AlexSantini10/ventwise?display_name=tag&style=for-the-badge" alt="Latest release" />
+    <img src="https://img.shields.io/github/v/release/AlexSantini10/ventwise?display_name=tag&logo=git&logoColor=white&style=for-the-badge" alt="Latest release" />
+  </a>
+  <a href="https://github.com/AlexSantini10/ventwise/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/AlexSantini10/ventwise/ci.yml?branch=main&label=CI&logo=githubactions&style=for-the-badge" alt="CI status" />
   </a>
   <a href="https://hacs.xyz/">
     <img src="https://img.shields.io/badge/HACS-Compatible-orange.svg?logo=HomeAssistantCommunityStore&logoColor=white&style=for-the-badge" alt="HACS compatible" />
   </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/AlexSantini10/ventwise?logo=apache&logoColor=white&style=for-the-badge" alt="Apache-2.0 license" />
+  </a>
+  <a href="https://www.home-assistant.io/integrations/">
+    <img src="https://img.shields.io/badge/Home%20Assistant-Integration-41BDF5?logo=homeassistant&logoColor=white&style=for-the-badge" alt="Home Assistant integration" />
+  </a>
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white&style=for-the-badge" alt="Python 3.11 or later" />
   <img src="https://img.shields.io/github/downloads/AlexSantini10/ventwise/total?label=Downloads&style=for-the-badge" alt="Downloads" />
   <img src="https://img.shields.io/github/stars/AlexSantini10/ventwise?label=Stars&color=darkgoldenrod&style=for-the-badge" alt="Stars" />
 </p>
