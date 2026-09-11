@@ -79,7 +79,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
 
         return self.async_show_form(
             step_id="settings",
-            data_schema=build_settings_schema(self._current_config),
+            data_schema=build_settings_schema(self._current_config, self.hass),
             errors=errors,
         )
 
