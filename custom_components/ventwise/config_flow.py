@@ -72,7 +72,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_config_schema(self._setup_data),
+            data_schema=build_config_schema(self._setup_data, self.hass),
             errors=errors,
         )
 

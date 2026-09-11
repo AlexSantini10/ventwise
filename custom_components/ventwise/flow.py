@@ -10,11 +10,13 @@ from typing import Sequence
 
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.selector import (
-    DeviceSelector,
-    DeviceSelectorConfig,
     EntitySelector,
     EntitySelectorConfig,
+    SelectSelector,
+    SelectSelectorConfig,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -102,7 +104,63 @@ class ConfigValidationError(ValueError):
     message: str = "invalid_input"
 
 
-def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
+def _notification_device_selector(hass) -> SelectSelector:
+    """Return a selector containing only devices with notify entities.
+
+    VentWise stores device IDs, then resolves the matching ``notify.*`` entities
+    at delivery time. Selecting devices here (rather than notification entities)
+    preserves that relationship while preventing invalid notification targets.
+    """
+
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=_notification_device_options(hass),
+            multiple=True,
+        )
+    )
+
+
+def _notification_device_defaults(
+    defaults: Mapping[str, object], hass,
+) -> list[str]:
+    """Return saved notification devices which can still receive notifications."""
+
+    configured_ids = _normalize_notification_device_ids(
+        defaults.get(CONF_NOTIFICATION_DEVICE_ID)
+    ) or []
+    if hass is None:
+        return configured_ids
+
+    available_ids = {
+        option["value"] for option in _notification_device_options(hass)
+    }
+    return [device_id for device_id in configured_ids if device_id in available_ids]
+
+
+def _notification_device_options(hass) -> list[dict[str, str]]:
+    """List registered devices that expose one or more notify entities."""
+
+    if hass is None:
+        return []
+
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+    device_ids = {
+        entry.device_id
+        for entry in entity_registry.entities.values()
+        if entry.device_id and entry.entity_id.startswith("notify.")
+    }
+    options: list[dict[str, str]] = []
+    for device_id in device_ids:
+        device = device_registry.async_get(device_id)
+        if device is None:
+            continue
+        label = device.name_by_user or device.name or device_id
+        options.append({"value": device_id, "label": label})
+    return sorted(options, key=lambda option: option["label"].casefold())
+
+
+def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
     """Create the minimal setup schema."""
 
     return vol.Schema(
@@ -131,9 +189,8 @@ def build_config_schema(defaults: Mapping[str, object]) -> vol.Schema:
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
             vol.Required(
                 CONF_NOTIFICATION_DEVICE_ID,
-                default=_normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID))
-                or [],
-            ): DeviceSelector(DeviceSelectorConfig(multiple=True)),
+                default=_notification_device_defaults(defaults, hass),
+            ): _notification_device_selector(hass),
             vol.Required(
                 CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
                 default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
@@ -195,7 +252,7 @@ def build_outdoor_override_schema(defaults: Mapping[str, object]) -> vol.Schema:
     return vol.Schema(fields)
 
 
-def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+def build_basic_options_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
     """Create the user-facing basic options schema."""
 
     return vol.Schema(
@@ -206,9 +263,8 @@ def build_basic_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
             vol.Required(
                 CONF_NOTIFICATION_DEVICE_ID,
-                default=_normalize_notification_device_ids(defaults.get(CONF_NOTIFICATION_DEVICE_ID))
-                or [],
-            ): DeviceSelector(DeviceSelectorConfig(multiple=True)),
+                default=_notification_device_defaults(defaults, hass),
+            ): _notification_device_selector(hass),
         }
     )
 
@@ -238,10 +294,10 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     )
 
 
-def build_settings_schema(defaults: Mapping[str, object]) -> vol.Schema:
+def build_settings_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
     """Create the single-screen schema for everyday VentWise settings."""
 
-    fields = dict(build_config_schema(defaults).schema)
+    fields = dict(build_config_schema(defaults, hass).schema)
     fields.update(build_advanced_options_schema(defaults).schema)
     fields.update(build_outdoor_source_schema(defaults).schema)
     for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:

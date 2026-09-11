@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 pytest.importorskip("voluptuous")
@@ -50,6 +52,8 @@ from custom_components.ventwise.flow import (
     build_outdoor_source_schema,
     build_config_schema,
     build_room_schema,
+    _notification_device_defaults,
+    _notification_device_options,
     normalize_advanced_config,
     normalize_basic_config,
     normalize_outdoor_override_config,
@@ -79,7 +83,7 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
-    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
+    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "SelectSelector"
 
 
 def test_setup_overrides_schema_is_checkbox_based() -> None:
@@ -122,7 +126,45 @@ def test_basic_options_schema_covers_simple_controls() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
-    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "DeviceSelector"
+    assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "SelectSelector"
+
+
+def test_notification_device_options_include_only_devices_with_notify_entities(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The notification picker must store devices, limited to notify-capable ones."""
+
+    from custom_components.ventwise import flow
+
+    entity_registry = SimpleNamespace(
+        entities={
+            "notify.alex": SimpleNamespace(
+                entity_id="notify.alex", device_id="phone-alex"
+            ),
+            "sensor.alex_battery": SimpleNamespace(
+                entity_id="sensor.alex_battery", device_id="phone-alex"
+            ),
+            "sensor.living_room_temperature": SimpleNamespace(
+                entity_id="sensor.living_room_temperature", device_id="sensor-1"
+            ),
+        }
+    )
+    device_registry = SimpleNamespace(
+        async_get=lambda device_id: {
+            "phone-alex": SimpleNamespace(name="iPhone di Alex", name_by_user=None),
+            "sensor-1": SimpleNamespace(name="Sensore soggiorno", name_by_user=None),
+        }.get(device_id)
+    )
+    monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
+    monkeypatch.setattr(flow.dr, "async_get", lambda _hass: device_registry)
+
+    hass = object()
+    assert _notification_device_options(hass) == [
+        {"value": "phone-alex", "label": "iPhone di Alex"}
+    ]
+    assert _notification_device_defaults(
+        {CONF_NOTIFICATION_DEVICE_ID: ["sensor-1", "phone-alex"]}, hass
+    ) == ["phone-alex"]
 
 
 def test_advanced_options_schema_contains_the_technical_overrides() -> None:
