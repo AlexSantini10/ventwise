@@ -164,6 +164,8 @@ class NotificationMarker:
     notified_at: datetime
     reason: str | None = None
     severity: str | None = None
+    title: str | None = None
+    message: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -319,6 +321,8 @@ def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
                     "notified_at": _dump_datetime(marker.notified_at),
                     **({"reason": marker.reason} if marker.reason is not None else {}),
                     **({"severity": marker.severity} if marker.severity is not None else {}),
+                    **({"title": marker.title} if marker.title is not None else {}),
+                    **({"message": marker.message} if marker.message is not None else {}),
                 }
                 for room_name, marker in state.notification_markers.items()
             },
@@ -624,6 +628,8 @@ def _load_notification_markers(value: Any) -> dict[str, NotificationMarker]:
                 notified_at,
                 _string_or_none(raw_marker.get("reason")),
                 _string_or_none(raw_marker.get("severity")),
+                _string_or_none(raw_marker.get("title")),
+                _string_or_none(raw_marker.get("message")),
             )
     return markers
 
