@@ -113,8 +113,8 @@ def build_notification_payload(
         return build_room_notification_payload(recommendation, language=language)
     else:
         room_name = summary.best_room or "VentWise"
-        title = "VentWise" if room_name == "VentWise" else f"VentWise · {room_name}"
-        body = f"{room_name}: {_notification_texts(language).get(summary.action.value, _notification_texts(language)['none'])}"
+        title = _notification_action_title(summary.action.value, language)
+        body = f"VentWise · {room_name}"
     return title, body
 
 
@@ -126,11 +126,11 @@ def build_room_notification_payload(
     """Build a notification payload for one specific room."""
 
     return (
-        f"VentWise · {recommendation.room_name}",
+        _notification_action_title(recommendation.action.value, language),
         build_recommendation_explanation(
             recommendation,
             language=language,
-            include_room_name=False,
+            include_room_name=True,
         ),
     )
 
@@ -157,17 +157,17 @@ def build_recommendation_explanation(
 
     texts = _notification_texts(language)
     action = recommendation.action.value
-    prefix = f"{recommendation.room_name}: " if include_room_name else ""
+    prefix = f"VentWise · {recommendation.room_name}: " if include_room_name else ""
     if action == "open":
         if getattr(recommendation, "reason_code", None) == "forecast":
-            return f"{prefix}{texts['open']} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
+            return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
-        return f"{prefix}{texts['open']} {reason}" if reason else f"{prefix}{texts['open']}"
+        return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     if action == "close":
         if getattr(recommendation, "reason_code", None) == "forecast":
-            return f"{prefix}{texts['close']} {texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
+            return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
-        return f"{prefix}{texts['close']} {reason}" if reason else f"{prefix}{texts['close']}"
+        return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     return f"{prefix}{texts['none']}"
 
 
@@ -303,6 +303,13 @@ def _notification_texts(language: str | None) -> dict[str, str]:
 
     language_key = _normalize_language_key(language)
     return _NOTIFICATION_TEXTS.get(language_key, _NOTIFICATION_TEXTS["en"])
+
+
+def _notification_action_title(action: str, language: str | None) -> str:
+    """Return the action text formatted as a notification title."""
+
+    texts = _notification_texts(language)
+    return texts.get(action, texts["none"]).rstrip(".。 ").capitalize()
 
 
 def _normalize_language_key(language: str | None) -> str:

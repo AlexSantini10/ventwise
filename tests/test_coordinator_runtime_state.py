@@ -164,6 +164,8 @@ def test_coordinator_persists_notification_reason_and_severity() -> None:
             timestamp,
             "Outside is more comfortable.",
             "urgent",
+            "Open windows",
+            "VentWise · Camera: Outside is more comfortable.",
         )
     }
 
@@ -174,6 +176,8 @@ def test_coordinator_persists_notification_reason_and_severity() -> None:
     ]["Camera"]
     assert marker["reason"] == "Outside is more comfortable."
     assert marker["severity"] == "urgent"
+    assert marker["title"] == "Open windows"
+    assert marker["message"] == "VentWise · Camera: Outside is more comfortable."
 
 
 def test_room_action_guard_holds_reversals_and_survives_restart() -> None:
@@ -642,6 +646,38 @@ def test_notification_marker_detects_action_reason_and_severity_changes() -> Non
     )
 
 
+def test_notification_marker_suppresses_an_unchanged_visible_payload() -> None:
+    marker = NotificationMarker(
+        ("open", "Camera"),
+        datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc),
+        "comfort",
+        "normal",
+        "Apri le finestre",
+        "VentWise · Camera: Fuori è più confortevole adesso: 2.3°C più vicino al comfort.",
+    )
+    recommendation = RoomRecommendation(
+        room_name="Camera",
+        action=RecommendationAction.OPEN,
+        score=0.8,
+        reason="Outside is more comfortable.",
+        target_perceived_c=22.0,
+        indoor_perceived_c=25.3,
+        outdoor_perceived_c=23.0,
+        suggested_comfort_temperature_c=22.0,
+    )
+
+    assert VentWiseCoordinator._matches_notification_marker(
+        SimpleNamespace(
+            _notification_identity=VentWiseCoordinator._notification_identity,
+            _notification_severity=VentWiseCoordinator._notification_severity,
+        ),
+        marker,
+        recommendation,
+        title="Apri le finestre",
+        message="VentWise · Camera: Fuori è più confortevole adesso: 2.3°C più vicino al comfort.",
+    )
+
+
 def test_notification_cooldown_bypass_is_limited_to_actions_and_urgency() -> None:
     coordinator = SimpleNamespace(
         _notification_identity=VentWiseCoordinator._notification_identity,
@@ -775,10 +811,7 @@ def test_coordinator_notifies_each_eligible_room(
         "ventwise_recommendation_camera_20260723t120000000000",
         "ventwise_recommendation_salotto_20260723t120000000000",
     }
-    assert {call[2]["title"] for call in hass.services.calls} == {
-        "VentWise · Camera",
-        "VentWise · Salotto",
-    }
+    assert {call[2]["title"] for call in hass.services.calls} == {"Open windows"}
 
 
 def test_coordinator_sends_notification_to_selected_devices(
@@ -831,8 +864,8 @@ def test_coordinator_sends_notification_to_selected_devices(
     assert len(hass.services.calls) == 2
     assert hass.services.calls[0][0] == "notify"
     assert hass.services.calls[0][1] == "send_message"
-    assert hass.services.calls[0][2]["title"] == "VentWise · Camera"
-    assert hass.services.calls[0][2]["message"].startswith("open windows.")
+    assert hass.services.calls[0][2]["title"] == "Open windows"
+    assert hass.services.calls[0][2]["message"].startswith("VentWise · Camera:")
     assert "Outside is more comfortable" in hass.services.calls[0][2]["message"] or "Fuori è più confortevole" in hass.services.calls[0][2]["message"]
     assert hass.services.calls[0][3] == {"entity_id": "notify.mobile_app_alice"}
     assert hass.services.calls[1][3] == {"entity_id": "notify.mobile_app_bob"}
