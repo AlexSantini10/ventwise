@@ -88,8 +88,8 @@ def test_build_notification_payload_uses_requested_language() -> None:
 
     title, message = build_notification_payload(summary, language="it-IT")
 
-    assert title == "VentWise · Salotto"
-    assert message == "apri le finestre. Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
+    assert title == "Apri le finestre"
+    assert message == "VentWise · Salotto: Fuori è più confortevole adesso: 3.4°C più vicino al comfort."
 
 
 def test_recommendation_explanation_is_concise_and_localized() -> None:
@@ -103,7 +103,7 @@ def test_recommendation_explanation_is_concise_and_localized() -> None:
 
     explanation = build_recommendation_explanation(recommendation, language="it-IT")
 
-    assert explanation == "chiudi le finestre. Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
+    assert explanation == "Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
 
 
 def test_recommendation_explanation_prefers_current_comfort_over_a_duplicate_forecast() -> None:
