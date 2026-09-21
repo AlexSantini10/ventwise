@@ -7,10 +7,9 @@ from types import SimpleNamespace
 
 import pytest
 
-pytest.importorskip("homeassistant")
-
 from custom_components.ventwise import async_migrate_entry
 from custom_components.ventwise.const import (
+    CONF_NOTIFICATION_DEVICE_ID,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_STATE,
@@ -36,12 +35,13 @@ def _entry(*, version: int, data: dict[str, object], options: dict[str, object])
     )
 
 
-def test_migration_preserves_settings_and_nests_legacy_runtime_state() -> None:
+def test_migration_preserves_settings_and_notification_devices() -> None:
     hass = SimpleNamespace(config_entries=_FakeConfigEntries())
     entry = _entry(
         version=1,
         data={
             "target_temperature_c": 21.0,
+            CONF_NOTIFICATION_DEVICE_ID: ["device-alice", "device-bob"],
             CONF_RUNTIME_LAST_ACTION_SIGNATURE: ["open", "Bedroom"],
         },
         options={
@@ -52,7 +52,10 @@ def test_migration_preserves_settings_and_nests_legacy_runtime_state() -> None:
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
     assert entry.version == 2
-    assert entry.data == {}
+    assert entry.data == {
+        "target_temperature_c": 21.0,
+        CONF_NOTIFICATION_DEVICE_ID: ["device-alice", "device-bob"],
+    }
     assert entry.options["target_temperature_c"] == 22.0
     assert entry.options[CONF_RUNTIME_STATE] == {
         CONF_RUNTIME_LAST_ACTION_SIGNATURE: ["open", "Bedroom"],
