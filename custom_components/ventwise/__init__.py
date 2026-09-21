@@ -59,16 +59,20 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.version == _CONFIG_ENTRY_VERSION:
         return True
 
-    merged_options = {**entry.data, **entry.options}
-    runtime_state = merged_options.get(CONF_RUNTIME_STATE)
+    migrated_data = dict(entry.data)
+    migrated_options = dict(entry.options)
+    runtime_state = migrated_options.get(
+        CONF_RUNTIME_STATE, migrated_data.get(CONF_RUNTIME_STATE)
+    )
     if not isinstance(runtime_state, Mapping):
-        legacy_runtime_state = {
-            key: merged_options.pop(key)
-            for key in _LEGACY_RUNTIME_KEYS
-            if key in merged_options
-        }
+        legacy_runtime_state: dict[str, Any] = {}
+        for key in _LEGACY_RUNTIME_KEYS:
+            if key in migrated_data:
+                legacy_runtime_state[key] = migrated_data.pop(key)
+            elif key in migrated_options:
+                legacy_runtime_state[key] = migrated_options.pop(key)
         if legacy_runtime_state:
-            merged_options[CONF_RUNTIME_STATE] = legacy_runtime_state
+            migrated_options[CONF_RUNTIME_STATE] = legacy_runtime_state
 
     _LOGGER.info(
         "Migrating VentWise config entry %s from version %s to %s",
@@ -79,12 +83,12 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug(
         "VentWise config entry %s migration preserves %d option keys",
         entry.entry_id,
-        len(merged_options),
+        len(migrated_data) + len(migrated_options),
     )
     hass.config_entries.async_update_entry(
         entry,
-        data={},
-        options=merged_options,
+        data=migrated_data,
+        options=migrated_options,
         version=_CONFIG_ENTRY_VERSION,
     )
     return True
