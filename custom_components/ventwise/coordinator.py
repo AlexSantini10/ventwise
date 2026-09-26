@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from .ventwise_core import (
     ComfortRecommender,
+    ForecastObservation,
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
@@ -92,7 +93,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._last_action_started_at = self._runtime_state.last_action_started_at or dt_util.utcnow()
         self._notification_markers = dict(self._runtime_state.notification_markers)
         self._room_action_guards = dict(self._runtime_state.room_action_guards)
-        self._forecast_temperature_c: float | None = None
+        self._forecast: ForecastObservation | None = None
         self._forecast_fetched_at: datetime | None = None
         self._diagnostic_issue = self._runtime_state.diagnostic_issue
         self._last_diagnostic_log_issue: str | None = None
@@ -160,11 +161,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._refresh_time_listener(snapshot.last_updated, snapshot)
             return snapshot
 
-        forecast_temperature_c = await self._async_forecast_temperature(now=dt_util.now())
+        forecast = await self._async_forecast(now=dt_util.now())
         rooms, outdoor = build_room_profiles(
             self._config,
             self.hass.states.get,
-            forecast_temperature_c=forecast_temperature_c,
+            forecast=forecast,
         )
         notification_entity_ids = (
             notification_entity_ids_for_device_ids(
@@ -193,7 +194,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_perceived_c=None,
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=None,
-                forecast_temperature_c=forecast_temperature_c,
+                forecast_temperature_c=forecast.temperature_c if forecast else None,
                 outdoor_humidity_percent=None,
                 wind_speed_m_s=None,
                 wind_gust_m_s=None,
@@ -228,7 +229,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 ),
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=outdoor.temperature_c,
-                forecast_temperature_c=forecast_temperature_c,
+                forecast_temperature_c=forecast.temperature_c if forecast else None,
                 outdoor_humidity_percent=outdoor.humidity_percent,
                 wind_speed_m_s=outdoor.wind_speed_m_s,
                 wind_gust_m_s=outdoor.wind_gust_m_s,
@@ -430,7 +431,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             outdoor_perceived_c=outdoor_perceived_c,
             active_indoor_perceived_c=active_indoor_perceived_c,
             outdoor_temperature_c=outdoor.temperature_c,
-            forecast_temperature_c=forecast_temperature_c,
+            forecast_temperature_c=forecast.temperature_c if forecast else None,
             outdoor_humidity_percent=outdoor.humidity_percent,
             wind_speed_m_s=outdoor.wind_speed_m_s,
             wind_gust_m_s=outdoor.wind_gust_m_s,
@@ -451,8 +452,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._update_entry_options({"enabled": enabled})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
-    async def _async_forecast_temperature(self, now: datetime) -> float | None:
-        """Return the first short-term hourly forecast temperature when available."""
+    async def _async_forecast(self, now: datetime) -> ForecastObservation | None:
+        """Return the most relevant hourly forecast within the next two hours."""
 
         weather_entity_id = self._config.outdoor_weather_entity_id
         if weather_entity_id is None:
@@ -461,7 +462,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._forecast_fetched_at is not None
             and now - self._forecast_fetched_at < timedelta(minutes=15)
         ):
-            return self._forecast_temperature_c
+            return self._forecast
 
         self._forecast_fetched_at = now
         forecasts = None
@@ -484,8 +485,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             state = self.hass.states.get(weather_entity_id)
             attributes = getattr(state, "attributes", {}) if state is not None else {}
             forecasts = attributes.get("forecast") if isinstance(attributes, dict) else None
-        self._forecast_temperature_c = _first_forecast_temperature(forecasts, now)
-        return self._forecast_temperature_c
+        self._forecast = _near_term_forecast(forecasts, now)
+        return self._forecast
 
     async def _set_diagnostic_issue(self, issue: str | None) -> None:
         """Synchronise the optional persistent diagnostic notification."""
@@ -1029,25 +1030,50 @@ def _diagnostic_issue_log_message(issue: str) -> str:
     return messages.get(issue, f"VentWise diagnostic issue: {issue}")
 
 
-def _first_forecast_temperature(forecasts: Any, now: datetime) -> float | None:
-    """Pick the nearest upcoming numeric temperature from a forecast response."""
+def _near_term_forecast(forecasts: Any, now: datetime) -> ForecastObservation | None:
+    """Pick the most adverse usable hourly forecast in the next two hours."""
 
     if not isinstance(forecasts, list):
         return None
-    candidates: list[tuple[datetime, float]] = []
+    candidates: list[tuple[datetime, ForecastObservation]] = []
     for forecast in forecasts:
         if not isinstance(forecast, dict):
             continue
         try:
-            temperature = float(forecast["temperature"])
             forecast_at = datetime.fromisoformat(str(forecast["datetime"]))
         except (KeyError, TypeError, ValueError):
             continue
         if forecast_at.tzinfo is None:
             forecast_at = forecast_at.replace(tzinfo=now.tzinfo)
-        if forecast_at >= now:
-            candidates.append((forecast_at, temperature))
-    return min(candidates, default=(None, None), key=lambda item: item[0])[1]
+        if now <= forecast_at <= now + timedelta(hours=2):
+            candidates.append((forecast_at, ForecastObservation(
+                temperature_c=_optional_float(forecast.get("temperature")),
+                humidity_percent=_optional_float(forecast.get("humidity")),
+                wind_speed_m_s=_optional_float(forecast.get("wind_speed")),
+                wind_gust_m_s=_optional_float(forecast.get("wind_gust_speed")),
+                weather_condition=_optional_string(forecast.get("condition")),
+                precipitation_probability=_optional_float(forecast.get("precipitation_probability")),
+            )))
+    return max(candidates, default=(None, None), key=lambda item: _forecast_risk(item[1]))[1]
+
+
+def _optional_float(value: Any) -> float | None:
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_string(value: Any) -> str | None:
+    text = str(value).strip() if value is not None else ""
+    return text or None
+
+
+def _forecast_risk(forecast: ForecastObservation) -> float:
+    return max(
+        forecast.precipitation_probability or 0.0,
+        forecast.wind_gust_m_s or forecast.wind_speed_m_s or 0.0,
+    )
 
 
 def _with_suggested_comfort_temperature(

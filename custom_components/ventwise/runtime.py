@@ -9,6 +9,7 @@ from typing import Any
 
 from .ventwise_core import (
     ComfortObservation,
+    ForecastObservation,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
@@ -17,6 +18,9 @@ from .ventwise_core import (
 
 from .const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
+    CONF_CO2_THRESHOLD_PPM,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_MINIMUM_SCORE,
@@ -36,6 +40,7 @@ from .const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -62,6 +67,7 @@ from .const import (
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_CO2_THRESHOLD_PPM,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
     DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
@@ -93,6 +99,7 @@ class RoomConfig:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
+    co2_entity_id: str | None = None
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
     action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
@@ -124,6 +131,9 @@ class IntegrationConfig:
     notification_enabled: bool = True
     home_assistant_notification_enabled: bool = False
     diagnostic_notification_level: str = DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
+    co2_enabled: bool = False
+    co2_entity_id: str | None = None
+    co2_threshold_ppm: float = DEFAULT_CO2_THRESHOLD_PPM
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -215,6 +225,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
+            co2_entity_id=_string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID)),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
             action_change_hold_minutes=int(
@@ -272,6 +283,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         diagnostic_notification_level=_diagnostic_notification_level(
             data.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
         ),
+        co2_enabled=bool(data.get(CONF_CO2_ENABLED, False)),
+        co2_entity_id=_string_or_none(data.get(CONF_CO2_ENTITY_ID)),
+        co2_threshold_ppm=float(data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -286,6 +300,8 @@ def build_scoring_config(config: IntegrationConfig) -> ScoringConfig:
         soft_outdoor_threshold_c=config.soft_outdoor_threshold_c,
         minimum_score=config.minimum_score,
         minimum_stability_seconds=config.stability_minutes * 60,
+        co2_enabled=config.co2_enabled,
+        co2_threshold_ppm=config.co2_threshold_ppm,
     )
 
 
@@ -391,6 +407,7 @@ def build_room_profiles(
     config: IntegrationConfig,
     state_getter: Callable[[str], Any],
     forecast_temperature_c: float | None = None,
+    forecast: ForecastObservation | None = None,
 ) -> tuple[list[RoomProfile], ComfortObservation | None]:
     """Build room profiles and the outdoor observation from Home Assistant state."""
 
@@ -437,12 +454,14 @@ def build_room_profiles(
             wind_gust_m_s=wind_gust,
             weather_condition=weather_condition,
             forecast_temperature_c=forecast_temperature_c,
+            forecast=forecast,
         )
 
     rooms: list[RoomProfile] = []
     for room in config.rooms:
         temperature = state_to_float(state_getter(room.temperature_entity_id))
         humidity = state_to_float(state_getter(room.humidity_entity_id)) if room.humidity_entity_id else None
+        co2 = state_to_float(state_getter(room.co2_entity_id or config.co2_entity_id)) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None
         if temperature is None:
             continue
         if humidity is None:
@@ -461,6 +480,7 @@ def build_room_profiles(
                 target_temperature_c_override=room.target_temperature_c_override,
                 target_humidity_percent_override_enabled=room.target_humidity_percent_override_enabled,
                 target_humidity_percent_override=room.target_humidity_percent_override,
+                co2_ppm=co2,
             )
         )
 
@@ -501,6 +521,8 @@ def build_debug_attributes(
         "stable_for_seconds": snapshot.stable_for_seconds,
         "outdoor_temperature_c": snapshot.outdoor_temperature_c,
         "forecast_temperature_c": snapshot.forecast_temperature_c,
+        "co2_enabled": config.co2_enabled,
+        "co2_threshold_ppm": config.co2_threshold_ppm,
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "wind_gust_m_s": snapshot.wind_gust_m_s,
@@ -706,6 +728,8 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "suggested_comfort_temperature_c": recommendation.suggested_comfort_temperature_c,
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
+        "co2_ppm": recommendation.co2_ppm,
+        "co2_influence": recommendation.co2_influence,
     }
 
 
