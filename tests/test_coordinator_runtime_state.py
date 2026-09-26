@@ -473,7 +473,7 @@ def test_coordinator_applies_cooldown_independently_per_room(
     assert living_snapshot.summary.best_room == "Camera"
     assert living_snapshot.notification_allowed is True
     assert len(hass.services.calls) == 1
-    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation_salotto_20260723t120000000000"
+    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation_salotto"
 
     camera_snapshot = asyncio.run(coordinator._async_update_data())
 
@@ -808,8 +808,8 @@ def test_coordinator_notifies_each_eligible_room(
     assert snapshot.notification_allowed is True
     assert len(hass.services.calls) == 2
     assert {call[2]["notification_id"] for call in hass.services.calls} == {
-        "ventwise_recommendation_camera_20260723t120000000000",
-        "ventwise_recommendation_salotto_20260723t120000000000",
+        "ventwise_recommendation_camera",
+        "ventwise_recommendation_salotto",
     }
     assert {call[2]["title"] for call in hass.services.calls} == {"Open windows"}
 

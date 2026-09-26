@@ -517,7 +517,19 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 message=message,
                 notification_id=home_assistant_diagnostic_notification_id(issue),
             )
-            _LOGGER.warning("VentWise diagnostic issue: %s", issue)
+            _LOGGER.warning(
+                "%s",
+                {
+                    "unavailable_data": (
+                        "VentWise cannot calculate a recommendation because required "
+                        "weather or room sensor data is unavailable."
+                    ),
+                    "no_enabled_rooms": (
+                        "VentWise cannot calculate a recommendation because no enabled "
+                        "rooms are configured."
+                    ),
+                }.get(issue, f"VentWise diagnostic issue: {issue}"),
+            )
         elif previous_issue is not None:
             _LOGGER.info("VentWise has the required data again and resumed recommendations.")
 
