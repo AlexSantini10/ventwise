@@ -1060,8 +1060,22 @@ def _near_term_forecast(forecasts: Any, now: datetime) -> ForecastObservation | 
 def _first_forecast_temperature(forecasts: Any, now: datetime) -> float | None:
     """Return the legacy temperature view of the near-term forecast."""
 
-    forecast = _near_term_forecast(forecasts, now)
-    return forecast.temperature_c if forecast is not None else None
+    if not isinstance(forecasts, list):
+        return None
+    candidates: list[tuple[datetime, float]] = []
+    for forecast in forecasts:
+        if not isinstance(forecast, dict):
+            continue
+        try:
+            forecast_at = datetime.fromisoformat(str(forecast["datetime"]))
+            temperature = float(forecast["temperature"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if forecast_at.tzinfo is None:
+            forecast_at = forecast_at.replace(tzinfo=now.tzinfo)
+        if forecast_at >= now:
+            candidates.append((forecast_at, temperature))
+    return min(candidates, default=(None, None), key=lambda item: item[0])[1]
 
 
 def _optional_float(value: Any) -> float | None:
