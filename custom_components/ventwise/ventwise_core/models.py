@@ -44,6 +44,19 @@ class RoomProfile:
     target_temperature_c_override: float | None = None
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
+    co2_ppm: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ForecastObservation:
+    """A near-term outdoor forecast used to avoid imminent deterioration."""
+
+    temperature_c: float | None = None
+    humidity_percent: float | None = None
+    wind_speed_m_s: float | None = None
+    wind_gust_m_s: float | None = None
+    weather_condition: str | None = None
+    precipitation_probability: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +69,7 @@ class ComfortObservation:
     wind_gust_m_s: float | None = None
     weather_condition: str | None = None
     forecast_temperature_c: float | None = None
+    forecast: ForecastObservation | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +119,8 @@ class ScoringConfig:
     season_mode: SeasonMode = SeasonMode.AUTO
     open_bias: float = 0.0
     close_bias: float = 0.0
+    co2_enabled: bool = False
+    co2_threshold_ppm: float = 1000.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +148,8 @@ class RoomRecommendation:
     open_score: float = 0.0
     close_score: float = 0.0
     reason_code: str = "comfort"
+    co2_ppm: float | None = None
+    co2_influence: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)

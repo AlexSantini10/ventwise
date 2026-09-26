@@ -25,6 +25,9 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
+    CONF_CO2_THRESHOLD_PPM,
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
@@ -38,6 +41,7 @@ from .const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -58,6 +62,7 @@ from .const import (
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_CO2_THRESHOLD_PPM,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
@@ -213,6 +218,16 @@ def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema
                     ]
                 )
             ),
+            vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
+            **_optional_selector_field(
+                CONF_CO2_ENTITY_ID,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_CO2_ENTITY_ID),
+            ),
+            vol.Required(
+                CONF_CO2_THRESHOLD_PPM,
+                default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
+            ): vol.All(vol.Coerce(float), vol.Range(min=400.0, max=5000.0)),
         }
     )
 
@@ -384,6 +399,11 @@ def build_room_schema(
                 maximum=80.0,
             ),
             **_optional_selector_field(
+                CONF_ROOM_CO2_ENTITY_ID,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_ROOM_CO2_ENTITY_ID),
+            ),
+            **_optional_selector_field(
                 CONF_ROOM_START_ENTITY_ID,
                 EntitySelector(EntitySelectorConfig(domain="automation")),
                 defaults.get(CONF_ROOM_START_ENTITY_ID),
@@ -463,6 +483,17 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     }:
         raise ConfigValidationError(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
     data[CONF_DIAGNOSTIC_NOTIFICATION_LEVEL] = level
+    data[CONF_CO2_ENABLED] = _normalize_bool(
+        data.get(CONF_CO2_ENABLED), CONF_CO2_ENABLED, default=False
+    )
+    _normalize_optional_entities(data, CONF_CO2_ENTITY_ID)
+    _normalize_optional_entity_ids(data, CONF_CO2_ENTITY_ID, domains=NUMERIC_ENTITY_DOMAINS)
+    data[CONF_CO2_THRESHOLD_PPM] = _normalize_float(
+        data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
+        CONF_CO2_THRESHOLD_PPM,
+        400.0,
+        5000.0,
+    )
     return data
 
 
@@ -559,7 +590,12 @@ def normalize_settings_config(
     data.update(normalize_basic_config(user_input))
     data.update(normalize_advanced_config(user_input))
     data.update(normalize_outdoor_source_config(user_input))
-    return normalize_outdoor_override_config(data, data)
+    data = normalize_outdoor_override_config(data, data)
+    if data[CONF_CO2_ENABLED] and not data.get(CONF_CO2_ENTITY_ID):
+        rooms = data.get(CONF_ROOMS, [])
+        if not any(room.get(CONF_ROOM_CO2_ENTITY_ID) for room in rooms):
+            raise ConfigValidationError(CONF_CO2_ENTITY_ID)
+    return data
 
 
 def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> dict[str, object]:
@@ -575,6 +611,7 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     _normalize_optional_entities(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
+        CONF_ROOM_CO2_ENTITY_ID,
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
     )
@@ -632,6 +669,7 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     _normalize_optional_entity_ids(
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
+        CONF_ROOM_CO2_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
     _normalize_optional_entity_ids(

@@ -6,6 +6,7 @@ import pytest
 from ventwise_core import (
     ComfortObservation,
     ComfortRecommender,
+    ForecastObservation,
     RecommendationAction,
     RecommendationContext,
     RoomObservation,
@@ -511,3 +512,51 @@ def test_recommender_emits_diagnostic_debug_logs(caplog) -> None:
     assert result.action == RecommendationAction.OPEN
     assert any("Recommendation decision for room Camera" in message for message in caplog.messages)
     assert any("Recommendation summary decision" in message for message in caplog.messages)
+
+
+def test_recommender_prioritizes_opening_for_high_co2() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(co2_enabled=True, co2_threshold_ppm=1000.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        name="Camera",
+        indoor=RoomObservation(temperature_c=22.0, humidity_percent=50.0),
+        co2_ppm=1600.0,
+    )
+    result = recommender.evaluate([room], ComfortObservation(temperature_c=21.0, humidity_percent=50.0))
+
+    assert result.action == RecommendationAction.OPEN
+    assert result.room_recommendations[0].co2_influence == pytest.approx(0.8)
+
+
+def test_recommender_keeps_weather_safety_over_high_co2() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(co2_enabled=True, co2_threshold_ppm=1000.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        name="Camera",
+        indoor=RoomObservation(temperature_c=22.0, humidity_percent=50.0),
+        co2_ppm=1600.0,
+    )
+    result = recommender.evaluate(
+        [room], ComfortObservation(temperature_c=21.0, humidity_percent=50.0, weather_condition="stormy")
+    )
+
+    assert result.action == RecommendationAction.CLOSE
+    assert "Fresh air is needed" in result.reason
+
+
+def test_recommender_uses_rich_forecast_precipitation_to_act_early() -> None:
+    recommender = ComfortRecommender(ScoringConfig(minimum_score=0.0))
+    room = RoomProfile(name="Camera", indoor=RoomObservation(temperature_c=28.0, humidity_percent=50.0))
+    result = recommender.evaluate(
+        [room],
+        ComfortObservation(
+            temperature_c=20.0,
+            humidity_percent=50.0,
+            forecast=ForecastObservation(precipitation_probability=80.0),
+        ),
+    )
+
+    assert result.action == RecommendationAction.OPEN
+    assert "forecast" in result.reason

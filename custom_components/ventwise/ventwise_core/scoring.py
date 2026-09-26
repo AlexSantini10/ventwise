@@ -130,9 +130,12 @@ class ComfortRecommender:
 
         if _weather_requires_close(outdoor.weather_condition):
             close_score = self._clamp(max(self._config.minimum_score, 0.75))
+            co2_influence = self._co2_influence(room.co2_ppm)
             reason = (
                 f"{room.name}: weather condition {outdoor.weather_condition} suggests closing windows."
             )
+            if co2_influence > 0.0:
+                reason = f"{reason} Fresh air is needed, but current weather makes opening unsafe."
             _LOGGER.debug(
                 "Recommendation decision for room %s: action=%s score=%.2f reason=%s "
                 "target_perceived=%.2f indoor_perceived=%.2f outdoor_perceived=%.2f",
@@ -160,6 +163,8 @@ class ComfortRecommender:
                     outdoor.weather_condition,
                     ("weather condition",),
                 ),
+                co2_ppm=room.co2_ppm,
+                co2_influence=co2_influence,
             )
 
         open_score = self._direction_score(
@@ -176,10 +181,15 @@ class ComfortRecommender:
         )
         open_score, close_score = self._apply_season_bias(open_score, close_score)
         forecast_note = None
-        if outdoor.forecast_temperature_c is not None:
+        forecast = outdoor.forecast
+        if forecast is None and outdoor.forecast_temperature_c is not None:
+            from .models import ForecastObservation
+
+            forecast = ForecastObservation(temperature_c=outdoor.forecast_temperature_c)
+        if forecast is not None and forecast.temperature_c is not None:
             forecast_perceived = perceived_temperature(
-                outdoor.forecast_temperature_c,
-                outdoor.humidity_percent,
+                forecast.temperature_c,
+                forecast.humidity_percent or outdoor.humidity_percent,
                 target_humidity,
                 self._config.humidity_weight,
             )
@@ -188,12 +198,21 @@ class ComfortRecommender:
             if worsening >= 1.0:
                 forecast_note = (
                     f"short-term forecast moves outside conditions further from comfort "
-                    f"({outdoor.temperature_c:.1f}C to {outdoor.forecast_temperature_c:.1f}C)."
+                    f"({outdoor.temperature_c:.1f}C to {forecast.temperature_c:.1f}C)."
                 )
                 if inside_delta <= self._config.decision_threshold_c:
                     close_score = max(close_score, self._clamp(0.35 + (worsening * 0.12)))
                 elif outside_delta < inside_delta:
                     open_score = max(open_score, self._clamp(0.35 + (worsening * 0.10)))
+        if forecast is not None and _forecast_blocks_opening(forecast):
+            forecast_note = "short-term forecast is likely to make opening less practical."
+            if inside_delta <= self._config.decision_threshold_c:
+                close_score = max(close_score, 0.45)
+            elif outside_delta < inside_delta:
+                open_score = max(open_score, 0.5)
+        co2_influence = self._co2_influence(room.co2_ppm)
+        if co2_influence > 0.0:
+            open_score = max(open_score, co2_influence)
         target_penalty = self._target_reasonableness_factor(target_temperature, target_humidity)
         open_score = self._clamp(open_score * target_penalty)
         close_score = self._clamp(close_score * target_penalty)
@@ -208,17 +227,22 @@ class ComfortRecommender:
         )
         if forecast_note is not None:
             environment_notes = (*environment_notes, forecast_note)
+        if co2_influence > 0.0:
+            environment_notes = (*environment_notes, f"CO2 {room.co2_ppm:.0f}ppm needs fresh air.")
         open_score = self._clamp(open_score * environmental_open_factor)
         close_score = self._clamp(
             (close_score * environmental_close_factor) + environmental_close_bonus
         )
         if force_close_floor > 0.0:
+            if co2_influence > 0.0:
+                environment_notes = (*environment_notes, "Fresh air is needed, but current weather makes opening unsafe.")
             open_score = 0.0
             close_score = self._clamp(max(close_score, force_close_floor))
 
         if (
             max(inside_delta, outside_delta) < self._config.decision_threshold_c
             and forecast_note is None
+            and co2_influence == 0.0
         ):
             action = RecommendationAction.NONE
             score = 0.0
@@ -281,6 +305,8 @@ class ComfortRecommender:
                     outside_delta,
                 ),
             ),
+            co2_ppm=room.co2_ppm,
+            co2_influence=co2_influence,
         )
 
     def evaluate(
@@ -406,6 +432,13 @@ class ComfortRecommender:
         need_score = _smoothstep(need_c, 0.0, 4.0)
         benefit_score = _smoothstep(benefit_c, 0.4, 1.5)
         return self._clamp(need_score * benefit_score)
+
+    def _co2_influence(self, co2_ppm: float | None) -> float:
+        if not self._config.co2_enabled or co2_ppm is None:
+            return 0.0
+        return self._clamp(
+            0.8 * _smoothstep(co2_ppm, self._config.co2_threshold_ppm, 1600.0)
+        )
 
     def _build_reason(
         self,
@@ -616,6 +649,17 @@ def _weather_requires_close(weather_condition: str | None) -> bool:
         return False
     lowered = weather_condition.strip().lower()
     return any(token in lowered for token in ("thunder", "lightning", "storm", "hail"))
+
+
+def _forecast_blocks_opening(forecast) -> bool:
+    """Return whether a near-term forecast adds a practical opening risk."""
+
+    if forecast.precipitation_probability is not None and forecast.precipitation_probability >= 40:
+        return True
+    if _weather_requires_close(forecast.weather_condition):
+        return True
+    wind = _effective_wind_speed(forecast.wind_speed_m_s, forecast.wind_gust_m_s)
+    return wind is not None and wind >= 12.0
 
 
 def _effective_wind_speed(
