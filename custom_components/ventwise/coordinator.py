@@ -95,6 +95,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._forecast_temperature_c: float | None = None
         self._forecast_fetched_at: datetime | None = None
         self._diagnostic_issue = self._runtime_state.diagnostic_issue
+        self._last_diagnostic_log_issue: str | None = None
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
         self._listeners_initialized = False
@@ -489,6 +490,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     async def _set_diagnostic_issue(self, issue: str | None) -> None:
         """Synchronise the optional persistent diagnostic notification."""
 
+        reported_issue = issue
+        if reported_issue != self._last_diagnostic_log_issue:
+            previous_logged_issue = self._last_diagnostic_log_issue
+            self._last_diagnostic_log_issue = reported_issue
+            if reported_issue is not None:
+                _LOGGER.warning("%s", _diagnostic_issue_log_message(reported_issue))
+            elif previous_logged_issue is not None:
+                _LOGGER.info(
+                    "VentWise has the required data again and resumed recommendations."
+                )
+
         if (
             self._config.diagnostic_notification_level
             != DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
@@ -517,21 +529,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 message=message,
                 notification_id=home_assistant_diagnostic_notification_id(issue),
             )
-            _LOGGER.warning(
-                "%s",
-                {
-                    "unavailable_data": (
-                        "VentWise cannot calculate a recommendation because required "
-                        "weather or room sensor data is unavailable."
-                    ),
-                    "no_enabled_rooms": (
-                        "VentWise cannot calculate a recommendation because no enabled "
-                        "rooms are configured."
-                    ),
-                }.get(issue, f"VentWise diagnostic issue: {issue}"),
-            )
-        elif previous_issue is not None:
-            _LOGGER.info("VentWise has the required data again and resumed recommendations.")
 
     async def async_set_notification_enabled(self, enabled: bool) -> None:
         """Persist the notification enable flag in config entry options."""
@@ -1014,6 +1011,22 @@ def _weather_condition(
         return None
     text = str(raw_state).strip()
     return text or None
+
+
+def _diagnostic_issue_log_message(issue: str) -> str:
+    """Return the stable, non-sensitive log message for a diagnostic issue."""
+
+    messages = {
+        "unavailable_data": (
+            "VentWise cannot calculate a recommendation because required weather or "
+            "room sensor data is unavailable."
+        ),
+        "no_enabled_rooms": (
+            "VentWise cannot calculate a recommendation because no enabled rooms are "
+            "configured."
+        ),
+    }
+    return messages.get(issue, f"VentWise diagnostic issue: {issue}")
 
 
 def _first_forecast_temperature(forecasts: Any, now: datetime) -> float | None:
