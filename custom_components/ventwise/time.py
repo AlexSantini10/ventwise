@@ -36,7 +36,7 @@ class QuietHoursStartTime(VentWiseEntity, TimeEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours_start", "Quiet hours start time")
+        super().__init__(coordinator, "quiet_hours_start", "quiet_hours_start_time")
 
     @property
     def native_value(self) -> time | None:
@@ -53,7 +53,7 @@ class QuietHoursEndTime(VentWiseEntity, TimeEntity):
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
-        super().__init__(coordinator, "quiet_hours_end", "Quiet hours end time")
+        super().__init__(coordinator, "quiet_hours_end", "quiet_hours_end_time")
 
     @property
     def native_value(self) -> time | None:
