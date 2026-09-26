@@ -15,7 +15,8 @@
           "target_humidity_percent": "Comfort humidity",
           "stability_minutes": "Wait before recommending (minutes)",
           "notification_device_id": "Notification devices",
-          "home_assistant_notification_enabled": "Show notifications in Home Assistant"
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "diagnostic_notification_level": "Diagnostic notifications"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
@@ -24,7 +25,8 @@
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
           "stability_minutes": "How long the recommendation must stay unchanged before VentWise notifies you. If you are not sure, leave the default value.",
           "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications.",
-          "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel."
+          "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
+          "diagnostic_notification_level": "Choose whether Home Assistant shows extra notifications for configuration or sensor-data problems."
         }
       },
       "outdoor": {
@@ -235,6 +237,7 @@
           "stability_minutes": "Wait before recommending (minutes)",
           "notification_device_id": "Notification devices",
           "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "diagnostic_notification_level": "Diagnostic notifications",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Per-room notification cooldown (minutes)",
           "outdoor_temperature_override": "Use manual outdoor temperature",
@@ -252,6 +255,7 @@
           "stability_minutes": "How long a recommendation must remain unchanged before VentWise notifies you.",
           "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
           "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
+          "diagnostic_notification_level": "Choose whether Home Assistant shows extra notifications for configuration or sensor-data problems.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending an updated recommendation for each room. Identical recommendations stay suppressed.",
           "outdoor_temperature_override": "Use the manual temperature entity below instead of the weather forecast.",
@@ -455,6 +459,14 @@
     },
     "error": {
       "invalid_input": "One or more values are invalid."
+    }
+  },
+  "selector": {
+    "diagnostic_notification_level": {
+      "options": {
+        "essential": "Essential",
+        "diagnostic": "Diagnostic"
+      }
     }
   },
   "entity": {

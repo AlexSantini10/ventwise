@@ -10,7 +10,8 @@
           "target_temperature_c": "Комфортная температура в помещении",
           "target_humidity_percent": "Комфортная влажность в помещении",
           "stability_minutes": "Окно стабильности (минуты)",
-          "notification_device_id": "Устройства для уведомлений"
+          "notification_device_id": "Устройства для уведомлений",
+          "diagnostic_notification_level": "Диагностические уведомления"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Выберите стандартную сущность погоды Home Assistant, которую VentWise может использовать сейчас. Если нужного источника нет, откройте issue на GitHub.",
@@ -216,7 +217,8 @@
         "description": "Оставьте здесь повседневные настройки.",
         "data": {
           "outdoor_weather_entity_id": "Источник погоды",
-          "notification_device_id": "Устройства для уведомлений"
+          "notification_device_id": "Устройства для уведомлений",
+          "diagnostic_notification_level": "Диагностические уведомления"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Выберите стандартную сущность погоды Home Assistant, которую VentWise может использовать сейчас. Если нужного источника нет, откройте issue на GitHub.",
@@ -371,6 +373,12 @@
       "options": {
         "forecast": "Использовать прогноз",
         "override": "Использовать override"
+      }
+    },
+    "diagnostic_notification_level": {
+      "options": {
+        "essential": "Основной",
+        "diagnostic": "Диагностический"
       }
     }
   },

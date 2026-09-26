@@ -40,8 +40,12 @@ from .runtime import (
     is_quiet_hours_active,
 )
 from .notification import (
+    async_dismiss_persistent_notification,
+    async_create_persistent_notification,
     async_send_notification,
+    build_diagnostic_notification_payload,
     build_room_notification_payload,
+    home_assistant_diagnostic_notification_id,
     home_assistant_notification_id_for_room,
     notification_entity_ids_for_device_ids,
 )
@@ -63,6 +67,7 @@ from .const import (
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from .const import CONF_NOTIFICATION_ENABLED
+from .const import DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,7 +94,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._room_action_guards = dict(self._runtime_state.room_action_guards)
         self._forecast_temperature_c: float | None = None
         self._forecast_fetched_at: datetime | None = None
-        self._diagnostic_issue: str | None = None
+        self._diagnostic_issue = self._runtime_state.diagnostic_issue
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
         self._listeners_initialized = False
@@ -125,7 +130,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._recommender = ComfortRecommender(build_scoring_config(self._config))
 
         if not self._config.enabled:
-            self._set_diagnostic_issue(None)
+            await self._set_diagnostic_issue(None)
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
@@ -169,10 +174,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             else ()
         )
         if outdoor is None:
-            self._set_diagnostic_issue(
-                "VentWise cannot calculate a recommendation because required weather "
-                "or room sensor data is unavailable."
-            )
+            await self._set_diagnostic_issue("unavailable_data")
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
@@ -205,10 +207,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         if not rooms:
-            self._set_diagnostic_issue(
-                "VentWise cannot calculate a recommendation because no enabled rooms "
-                "are configured."
-            )
+            await self._set_diagnostic_issue("no_enabled_rooms")
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
                     action=RecommendationAction.NONE,
@@ -242,7 +241,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._refresh_time_listener(snapshot.last_updated, snapshot)
             return snapshot
 
-        self._set_diagnostic_issue(None)
+        await self._set_diagnostic_issue(None)
 
         now = dt_util.now()
         outdoor_perceived_c = outdoor.temperature_c + (
@@ -402,8 +401,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 device_ids=self._config.notification_device_ids,
                 send_to_home_assistant=self._config.home_assistant_notification_enabled,
                 home_assistant_notification_id=home_assistant_notification_id_for_room(
-                    recommendation,
-                    now,
+                    recommendation
                 ),
             )
             if delivered:
@@ -488,16 +486,38 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._forecast_temperature_c = _first_forecast_temperature(forecasts, now)
         return self._forecast_temperature_c
 
-    def _set_diagnostic_issue(self, issue: str | None) -> None:
-        """Log changes to persistent diagnostic state without repeated log noise."""
+    async def _set_diagnostic_issue(self, issue: str | None) -> None:
+        """Synchronise the optional persistent diagnostic notification."""
+
+        if (
+            self._config.diagnostic_notification_level
+            != DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
+        ):
+            issue = None
 
         if issue == self._diagnostic_issue:
             return
 
         previous_issue = self._diagnostic_issue
         self._diagnostic_issue = issue
+        self._persist_runtime_state()
+        if previous_issue is not None:
+            await async_dismiss_persistent_notification(
+                self.hass,
+                home_assistant_diagnostic_notification_id(previous_issue),
+            )
         if issue is not None:
-            _LOGGER.warning("%s", issue)
+            title, message = build_diagnostic_notification_payload(
+                issue,
+                language=getattr(getattr(self.hass, "config", None), "language", None),
+            )
+            await async_create_persistent_notification(
+                self.hass,
+                title=title,
+                message=message,
+                notification_id=home_assistant_diagnostic_notification_id(issue),
+            )
+            _LOGGER.warning("VentWise diagnostic issue: %s", issue)
         elif previous_issue is not None:
             _LOGGER.info("VentWise has the required data again and resumed recommendations.")
 
@@ -904,6 +924,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             last_action_started_at=self._last_action_started_at,
             notification_markers=dict(self._notification_markers),
             room_action_guards=dict(self._room_action_guards),
+            diagnostic_issue=self._diagnostic_issue,
         )
         if runtime_state == self._runtime_state:
             return

@@ -25,6 +25,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
@@ -57,6 +58,7 @@ from .const import (
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
@@ -64,6 +66,8 @@ from .const import (
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
+    DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
+    DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
@@ -195,6 +199,20 @@ def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema
                 CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
                 default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
             ): cv.boolean,
+            vol.Required(
+                CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+                default=defaults.get(
+                    CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+                    DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
+                        DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
+                    ]
+                )
+            ),
         }
     )
 
@@ -435,6 +453,16 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
         default=False,
     )
+    level = data.get(
+        CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+        DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    )
+    if level not in {
+        DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
+        DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
+    }:
+        raise ConfigValidationError(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
+    data[CONF_DIAGNOSTIC_NOTIFICATION_LEVEL] = level
     return data
 
 

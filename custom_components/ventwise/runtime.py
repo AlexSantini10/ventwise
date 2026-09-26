@@ -23,6 +23,7 @@ from .const import (
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_NOTIFICATION_ENABLED,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+    CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
@@ -53,6 +54,7 @@ from .const import (
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_RUNTIME_ROOM_ACTION_GUARDS,
+    CONF_RUNTIME_DIAGNOSTIC_ISSUE,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
@@ -60,6 +62,8 @@ from .const import (
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
@@ -119,6 +123,7 @@ class IntegrationConfig:
     wind_speed_entity_id: str | None = None
     notification_enabled: bool = True
     home_assistant_notification_enabled: bool = False
+    diagnostic_notification_level: str = DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -154,6 +159,7 @@ class RuntimeState:
     last_action_started_at: datetime | None = None
     notification_markers: Mapping[str, "NotificationMarker"] = field(default_factory=dict)
     room_action_guards: Mapping[str, "RoomActionGuard"] = field(default_factory=dict)
+    diagnostic_issue: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,6 +269,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         home_assistant_notification_enabled=bool(
             data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)
         ),
+        diagnostic_notification_level=_diagnostic_notification_level(
+            data.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
+        ),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -303,6 +312,7 @@ def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
         last_action_started_at=_load_datetime(raw_state.get(CONF_RUNTIME_LAST_ACTION_STARTED_AT)),
         notification_markers=notification_markers,
         room_action_guards=room_action_guards,
+        diagnostic_issue=_string_or_none(raw_state.get(CONF_RUNTIME_DIAGNOSTIC_ISSUE)),
     )
 
 
@@ -335,6 +345,7 @@ def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
                 }
                 for room_key, guard in state.room_action_guards.items()
             },
+            CONF_RUNTIME_DIAGNOSTIC_ISSUE: state.diagnostic_issue,
         }
     }
 
@@ -557,6 +568,16 @@ def _string_list(value: Any) -> tuple[str, ...]:
         return tuple(items)
     text = str(value).strip()
     return (text,) if text else ()
+
+
+def _diagnostic_notification_level(value: Any) -> str:
+    """Return a supported diagnostic notification level."""
+
+    return (
+        DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
+        if value == DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
+        else DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
+    )
 
 
 def _outdoor_value(

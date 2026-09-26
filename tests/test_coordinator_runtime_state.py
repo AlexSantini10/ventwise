@@ -915,7 +915,7 @@ def test_coordinator_sends_notification_to_home_assistant_when_selected(
     assert snapshot.notification_allowed is True
     assert len(hass.services.calls) == 1
     assert hass.services.calls[0][0:2] == ("persistent_notification", "create")
-    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation_camera_20260723t120000000000"
+    assert hass.services.calls[0][2]["notification_id"] == "ventwise_recommendation_camera"
 
 
 def test_coordinator_uses_automatic_comfort_temperature_when_enabled(

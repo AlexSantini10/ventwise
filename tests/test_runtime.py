@@ -137,6 +137,7 @@ def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
 
     assert config.quiet_hours_start == "22:00:00"
     assert config.quiet_hours_end == "07:00:00"
+    assert config.diagnostic_notification_level == "essential"
 
     config = build_integration_config(
         {

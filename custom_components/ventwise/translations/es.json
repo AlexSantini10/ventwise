@@ -10,7 +10,8 @@
           "target_temperature_c": "Temperatura de confort interior",
           "target_humidity_percent": "Humedad de confort interior",
           "stability_minutes": "Ventana de estabilidad (minutos)",
-          "notification_device_id": "Dispositivos de notificación"
+          "notification_device_id": "Dispositivos de notificación",
+          "diagnostic_notification_level": "Notificaciones de diagnóstico"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
@@ -216,7 +217,8 @@
         "description": "Mantén aquí los controles de uso diario.",
         "data": {
           "outdoor_weather_entity_id": "Fuente meteorológica",
-          "notification_device_id": "Dispositivos de notificación"
+          "notification_device_id": "Dispositivos de notificación",
+          "diagnostic_notification_level": "Notificaciones de diagnóstico"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
@@ -371,6 +373,12 @@
       "options": {
         "forecast": "Usar pronóstico",
         "override": "Usar override"
+      }
+    },
+    "diagnostic_notification_level": {
+      "options": {
+        "essential": "Esencial",
+        "diagnostic": "Diagnóstico"
       }
     }
   },
