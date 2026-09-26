@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -13,9 +12,11 @@ pytest.importorskip("homeassistant")
 from custom_components.ventwise.notification import (
     async_send_notification,
     build_notification_payload,
+    build_diagnostic_notification_payload,
     home_assistant_notification_id_for_room,
     build_recommendation_explanation,
     build_recommendation_status,
+    home_assistant_delivery_failure_id_for_target,
     notification_entity_ids_for_device_ids,
 )
 
@@ -26,16 +27,18 @@ class _FakeEntry:
 
 
 class _FakeServices:
-    def __init__(self, *, failing_target: str | None = None) -> None:
+    def __init__(self, *, failing_target: str | None = None, failing_targets: set[str] | None = None) -> None:
         self.calls: list[tuple[str, str, dict[str, object], dict[str, object] | None]] = []
-        self._failing_target = failing_target
+        self._failing_targets = set(failing_targets or ())
+        if failing_target is not None:
+            self._failing_targets.add(failing_target)
 
     async def async_call(self, domain, service, service_data, *, target=None, blocking=False):
         self.calls.append((domain, service, service_data, target))
         if (
             domain == "notify"
             and target is not None
-            and target.get("entity_id") == self._failing_target
+            and target.get("entity_id") in self._failing_targets
         ):
             raise RuntimeError("delivery failed")
 
@@ -122,21 +125,31 @@ def test_recommendation_explanation_prefers_current_comfort_over_a_duplicate_for
     assert "forecast" not in explanation
 
 
-def test_home_assistant_notification_id_is_distinct_per_delivery_and_room() -> None:
+def test_home_assistant_notification_id_is_stable_per_room() -> None:
     camera = SimpleNamespace(room_name="Camera", room_id="camera-1")
     living_room = SimpleNamespace(room_name="Salotto", room_id="living-1")
-    first_delivery = datetime(2026, 9, 4, 10, 15, 30, tzinfo=timezone.utc)
-    second_delivery = datetime(2026, 9, 4, 11, 15, 30, tzinfo=timezone.utc)
+    assert home_assistant_notification_id_for_room(camera) == "ventwise_recommendation_camera-1"
+    assert home_assistant_notification_id_for_room(living_room) == "ventwise_recommendation_living-1"
+    assert home_assistant_notification_id_for_room(camera) == "ventwise_recommendation_camera-1"
 
-    assert home_assistant_notification_id_for_room(
-        camera, first_delivery
-    ) == "ventwise_recommendation_camera-1_20260904t101530000000"
-    assert home_assistant_notification_id_for_room(
-        living_room, first_delivery
-    ) == "ventwise_recommendation_living-1_20260904t101530000000"
-    assert home_assistant_notification_id_for_room(
-        camera, second_delivery
-    ) == "ventwise_recommendation_camera-1_20260904t111530000000"
+
+def test_delivery_failure_notification_id_is_stable_per_target() -> None:
+    assert home_assistant_delivery_failure_id_for_target("notify.mobile_app_alice") == (
+        "ventwise_notification_delivery_failure_notify_mobile_app_alice"
+    )
+    assert home_assistant_delivery_failure_id_for_target("notify.mobile_app_bob") == (
+        "ventwise_notification_delivery_failure_notify_mobile_app_bob"
+    )
+    assert home_assistant_delivery_failure_id_for_target(None) == (
+        "ventwise_notification_delivery_failure_general"
+    )
+
+
+def test_diagnostic_payload_is_localized() -> None:
+    assert build_diagnostic_notification_payload("no_enabled_rooms", language="it") == (
+        "VentWise richiede una stanza attiva",
+        "Non sono configurate stanze attive.",
+    )
 
 
 def test_recommendation_status_is_localized() -> None:
@@ -209,9 +222,44 @@ def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytes
     assert result is False
     assert hass.services.calls[-1][:2] == ("persistent_notification", "create")
     assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
-    assert hass.services.calls[-1][2]["notification_id"] == "ventwise_notification_delivery_failure"
+    assert hass.services.calls[-1][2]["notification_id"] == (
+        "ventwise_notification_delivery_failure_notify_mobile_app_alice"
+    )
     assert any(record.exc_info for record in caplog.records)
     assert "notify.mobile_app_alice" not in caplog.text
+
+
+def test_async_send_notification_keeps_failures_separate_per_target() -> None:
+    hass = type(
+        "Hass",
+        (),
+        {
+            "services": _FakeServices(
+                failing_targets={"notify.mobile_app_alice", "notify.mobile_app_bob"}
+            ),
+            "config": type("Config", (), {"language": "en"})(),
+        },
+    )()
+
+    result = asyncio.run(
+        async_send_notification(
+            hass,
+            ["notify.mobile_app_alice", "notify.mobile_app_bob"],
+            title="VentWise",
+            message="Camera: open windows.",
+        )
+    )
+
+    assert result is False
+    failure_ids = [
+        call[2]["notification_id"]
+        for call in hass.services.calls
+        if call[0:2] == ("persistent_notification", "create")
+    ]
+    assert failure_ids == [
+        "ventwise_notification_delivery_failure_notify_mobile_app_alice",
+        "ventwise_notification_delivery_failure_notify_mobile_app_bob",
+    ]
 
 
 def test_async_send_notification_reports_missing_targets(caplog: pytest.LogCaptureFixture) -> None:
@@ -231,5 +279,8 @@ def test_async_send_notification_reports_missing_targets(caplog: pytest.LogCaptu
     assert result is False
     assert hass.services.calls[-1][:2] == ("persistent_notification", "create")
     assert hass.services.calls[-1][2]["title"] == "Consegna notifica VentWise fallita"
+    assert hass.services.calls[-1][2]["notification_id"] == (
+        "ventwise_notification_delivery_failure_general"
+    )
     assert any(record.exc_info for record in caplog.records)
     assert "device-1" not in caplog.text

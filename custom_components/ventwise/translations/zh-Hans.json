@@ -10,7 +10,8 @@
           "target_temperature_c": "室内舒适温度",
           "target_humidity_percent": "室内舒适湿度",
           "stability_minutes": "稳定窗口（分钟）",
-          "notification_device_id": "通知设备"
+          "notification_device_id": "通知设备",
+          "diagnostic_notification_level": "诊断通知"
         },
         "data_description": {
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
@@ -216,7 +217,8 @@
         "description": "把日常控制放在这里。",
         "data": {
           "outdoor_weather_entity_id": "天气来源",
-          "notification_device_id": "通知设备"
+          "notification_device_id": "通知设备",
+          "diagnostic_notification_level": "诊断通知"
         },
         "data_description": {
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
@@ -371,6 +373,12 @@
       "options": {
         "forecast": "使用预报",
         "override": "使用覆盖值"
+      }
+    },
+    "diagnostic_notification_level": {
+      "options": {
+        "essential": "基本",
+        "diagnostic": "诊断"
       }
     }
   },

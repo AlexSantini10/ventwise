@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Iterable, Sequence
-from datetime import datetime
 
 from homeassistant.helpers import entity_registry as er
 
@@ -15,6 +14,7 @@ from .ventwise_core.models import RoomRecommendation
 _LOGGER = logging.getLogger(__name__)
 _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
 _PERSISTENT_DELIVERY_FAILURE_ID = "ventwise_notification_delivery_failure"
+_PERSISTENT_DIAGNOSTIC_ID = "ventwise_diagnostic"
 _LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "ru", "zh-hans")
 _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
     "en": {
@@ -137,14 +137,53 @@ def build_room_notification_payload(
 
 def home_assistant_notification_id_for_room(
     recommendation: RoomRecommendation,
-    delivered_at: datetime,
 ) -> str:
-    """Return a distinct persistent-notification ID for one delivery."""
+    """Return a stable persistent-notification ID for one room."""
 
     identifier = recommendation.room_id or recommendation.room_name
-    safe_identifier = re.sub(r"[^a-z0-9_-]+", "_", identifier.lower()).strip("_")
-    delivered_stamp = delivered_at.strftime("%Y%m%dT%H%M%S%f").lower()
-    return f"{_PERSISTENT_RECOMMENDATION_ID}_{safe_identifier or 'room'}_{delivered_stamp}"
+    return f"{_PERSISTENT_RECOMMENDATION_ID}_{_safe_identifier(identifier, 'room')}"
+
+
+def home_assistant_delivery_failure_id_for_target(target: str | None) -> str:
+    """Return the persistent-notification ID for a delivery failure target."""
+
+    if target is None:
+        return f"{_PERSISTENT_DELIVERY_FAILURE_ID}_general"
+    return f"{_PERSISTENT_DELIVERY_FAILURE_ID}_{_safe_identifier(target, 'target')}"
+
+
+def home_assistant_diagnostic_notification_id(issue: str) -> str:
+    """Return the stable persistent-notification ID for a diagnostic issue."""
+
+    return f"{_PERSISTENT_DIAGNOSTIC_ID}_{_safe_identifier(issue, 'issue')}"
+
+
+def build_diagnostic_notification_payload(
+    issue: str,
+    *,
+    language: str | None = None,
+) -> tuple[str, str]:
+    """Build localised persistent-notification content for a diagnostic issue."""
+
+    diagnostics = {
+        "unavailable_data": {
+            "en": ("VentWise data unavailable", "Required weather or room sensor data is unavailable."),
+            "it": ("Dati VentWise non disponibili", "I dati meteo o dei sensori della stanza richiesti non sono disponibili."),
+            "es": ("Datos de VentWise no disponibles", "Los datos meteorol\u00f3gicos o de sensores de habitaci\u00f3n necesarios no est\u00e1n disponibles."),
+            "ru": ("\u0414\u0430\u043d\u043d\u044b\u0435 VentWise \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b", "\u041d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u043e\u0433\u043e\u0434\u044b \u0438\u043b\u0438 \u0434\u0430\u0442\u0447\u0438\u043a\u043e\u0432 \u043a\u043e\u043c\u043d\u0430\u0442\u044b."),
+            "zh-hans": ("VentWise \u6570\u636e\u4e0d\u53ef\u7528", "\u65e0\u6cd5\u83b7\u53d6\u5fc5\u9700\u7684\u5929\u6c14\u6216\u623f\u95f4\u4f20\u611f\u5668\u6570\u636e\u3002"),
+        },
+        "no_enabled_rooms": {
+            "en": ("VentWise needs an enabled room", "No enabled rooms are configured."),
+            "it": ("VentWise richiede una stanza attiva", "Non sono configurate stanze attive."),
+            "es": ("VentWise necesita una habitaci\u00f3n activa", "No hay habitaciones activas configuradas."),
+            "ru": ("VentWise \u043d\u0443\u0436\u043d\u0430 \u0430\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u043a\u043e\u043c\u043d\u0430\u0442\u0430", "\u041d\u0435\u0442 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0445 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043a\u043e\u043c\u043d\u0430\u0442."),
+            "zh-hans": ("VentWise \u9700\u8981\u542f\u7528\u7684\u623f\u95f4", "\u672a\u914d\u7f6e\u542f\u7528\u7684\u623f\u95f4\u3002"),
+        },
+    }
+    return diagnostics.get(issue, diagnostics["unavailable_data"]).get(
+        _normalize_language_key(language), diagnostics["unavailable_data"]["en"]
+    )
 
 
 def build_recommendation_explanation(
@@ -251,15 +290,18 @@ async def async_send_notification(
             )
 
         if failed_targets:
-            await _async_create_persistent_notification(
-                hass,
-                title=texts["failed_title"],
-                message=(
-                    f"{title}: {message}\n\n"
-                    f"{texts['failed_targets']}: {', '.join(failed_targets)}"
-                ),
-                notification_id=_PERSISTENT_DELIVERY_FAILURE_ID,
-            )
+            for failed_target in failed_targets:
+                await _async_create_persistent_notification(
+                    hass,
+                    title=texts["failed_title"],
+                    message=(
+                        f"{title}: {message}\n\n"
+                        f"{texts['failed_targets']}: {failed_target}"
+                    ),
+                    notification_id=home_assistant_delivery_failure_id_for_target(
+                        failed_target
+                    ),
+                )
         return bool(delivered_targets) or home_assistant_delivered
     except Exception:
         _LOGGER.exception("VentWise notification delivery failed")
@@ -267,7 +309,7 @@ async def async_send_notification(
             hass,
             title=texts["failed_title"],
             message=f"{title}: {message}",
-            notification_id=_PERSISTENT_DELIVERY_FAILURE_ID,
+            notification_id=home_assistant_delivery_failure_id_for_target(None),
         )
         return False
 
@@ -298,6 +340,39 @@ async def _async_create_persistent_notification(
         return False
 
 
+async def async_create_persistent_notification(
+    hass,
+    *,
+    title: str,
+    message: str,
+    notification_id: str,
+) -> bool:
+    """Create or update a persistent notification without propagating service failures."""
+
+    return await _async_create_persistent_notification(
+        hass,
+        title=title,
+        message=message,
+        notification_id=notification_id,
+    )
+
+
+async def async_dismiss_persistent_notification(hass, notification_id: str) -> bool:
+    """Dismiss a persistent notification, returning whether Home Assistant accepted it."""
+
+    try:
+        await hass.services.async_call(
+            "persistent_notification",
+            "dismiss",
+            {"notification_id": notification_id},
+            blocking=True,
+        )
+        return True
+    except Exception:
+        _LOGGER.exception("Failed to dismiss VentWise persistent notification")
+        return False
+
+
 def _notification_texts(language: str | None) -> dict[str, str]:
     """Return localized notification text snippets."""
 
@@ -320,6 +395,12 @@ def _normalize_language_key(language: str | None) -> str:
         if normalized.startswith(prefix):
             return prefix
     return "en"
+
+
+def _safe_identifier(value: str, fallback: str) -> str:
+    """Convert a user or entity identifier into a stable notification suffix."""
+
+    return re.sub(r"[^a-z0-9_-]+", "_", value.lower()).strip("_") or fallback
 
 
 def _localized_temperature_reason(
