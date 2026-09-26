@@ -1057,6 +1057,13 @@ def _near_term_forecast(forecasts: Any, now: datetime) -> ForecastObservation | 
     return max(candidates, default=(None, None), key=lambda item: _forecast_risk(item[1]))[1]
 
 
+def _first_forecast_temperature(forecasts: Any, now: datetime) -> float | None:
+    """Return the legacy temperature view of the near-term forecast."""
+
+    forecast = _near_term_forecast(forecasts, now)
+    return forecast.temperature_c if forecast is not None else None
+
+
 def _optional_float(value: Any) -> float | None:
     try:
         return float(value) if value is not None else None
