@@ -11,14 +11,19 @@
           "target_humidity_percent": "Humedad de confort interior",
           "stability_minutes": "Ventana de estabilidad (minutos)",
           "notification_device_id": "Dispositivos de notificación",
-          "diagnostic_notification_level": "Notificaciones de diagnóstico"
+          "diagnostic_notification_level": "Notificaciones de diagnóstico",
+          "auto_comfort_temperature": "Utilice un objetivo de confort adaptativo al clima",
+          "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
           "target_temperature_c": "Define la temperatura interior que te resulta cómoda cuando estás en casa.",
           "target_humidity_percent": "Define la humedad interior que te resulta cómoda cuando estás en casa.",
           "stability_minutes": "Cuánto tiempo debe mantenerse igual la recomendación antes de que VentWise actúe. Si no estás seguro, deja el valor predeterminado.",
-          "notification_device_id": "Elige uno o más dispositivos que recibirán las notificaciones de VentWise."
+          "notification_device_id": "Elige uno o más dispositivos que recibirán las notificaciones de VentWise.",
+          "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de seguridad interior de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla un termostato ni un sistema HVAC.",
+          "home_assistant_notification_enabled": "Muestra cada recomendación de VentWise en el panel de notificaciones de Home Assistant.",
+          "diagnostic_notification_level": "Elija si Home Assistant muestra notificaciones adicionales para problemas de configuración o de datos del sensor."
         }
       },
       "outdoor": {
@@ -97,7 +102,11 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "humidity_entity_id": "Sensor de humedad interior",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "target_temperature_c_override_enabled": "Habilitar anulación de temperatura ambiente",
+          "target_humidity_percent_override_enabled": "Habilitar anulación de humedad ambiental",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta habitación.",
@@ -106,7 +115,11 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
           "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de la habitación.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación.",
+          "target_temperature_c_override_enabled": "Active esta opción si desea que VentWise utilice una temperatura de confort específica de la habitación.",
+          "target_humidity_percent_override_enabled": "Actívelo si desea que VentWise utilice una humedad de confort específica de la habitación.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       },
       "edit_room_form": {
@@ -119,7 +132,9 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "humidity_entity_id": "Sensor de humedad interior",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta habitación.",
@@ -128,7 +143,9 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
           "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de la habitación.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       },
       "add_macro_room": {
@@ -141,7 +158,11 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "humidity_entity_id": "Sensor de humedad interior",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "target_temperature_c_override_enabled": "Habilitar anulación de temperatura ambiente",
+          "target_humidity_percent_override_enabled": "Habilitar anulación de humedad ambiental",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta área.",
@@ -150,7 +171,11 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
           "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de esta área.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área.",
+          "target_temperature_c_override_enabled": "Actívelo si desea que VentWise use una temperatura de confort específica del área.",
+          "target_humidity_percent_override_enabled": "Actívelo si desea que VentWise utilice una humedad de confort específica del área.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       },
       "edit_macro_room_form": {
@@ -163,7 +188,9 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "humidity_entity_id": "Sensor de humedad interior",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "enabled": "Desactiva esto si no quieres que VentWise tenga en cuenta esta área.",
@@ -172,12 +199,17 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
           "humidity_entity_id": "Opcional. Selecciona el sensor de humedad de esta área.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       }
     },
     "error": {
       "invalid_input": "Uno o más valores no son válidos."
+    },
+    "abort": {
+      "single_instance_allowed": "VentWise ya está configurado. Utilice Configurar para actualizarlo."
     }
   },
   "options": {
@@ -186,16 +218,12 @@
         "title": "Ajustar VentWise",
         "description": "Elige qué quieres editar.",
         "menu_options": {
-          "basic": "Ajustes básicos",
-          "outdoor": "Datos exteriores",
-          "advanced": "Ajustes de confort",
-          "rooms": "Habitaciones"
+          "rooms": "Habitaciones",
+          "settings": "Ajustes"
         },
         "menu_option_descriptions": {
-          "basic": "Fuente meteorológica y dispositivos de notificación.",
-          "outdoor": "Elige pronóstico o valores manuales para cada dato exterior usando casillas.",
-          "advanced": "Valores de confort y ajuste fino.",
-          "rooms": "Añadir habitaciones y macrohabitaciones."
+          "rooms": "Añadir habitaciones y macrohabitaciones.",
+          "settings": "Clima, comodidad, notificaciones y datos exteriores en una sola pantalla."
         }
       },
       "outdoor": {
@@ -217,8 +245,7 @@
         "description": "Mantén aquí los controles de uso diario.",
         "data": {
           "outdoor_weather_entity_id": "Fuente meteorológica",
-          "notification_device_id": "Dispositivos de notificación",
-          "diagnostic_notification_level": "Notificaciones de diagnóstico"
+          "notification_device_id": "Dispositivos de notificación"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
@@ -230,11 +257,13 @@
         "description": "Ajusta los valores de confort usados por VentWise.",
         "data": {
           "soft_outdoor_threshold_c": "Umbral de confort exterior",
-          "cooldown_minutes": "Pausa de notificaciones (minutos)"
+          "cooldown_minutes": "Pausa de notificaciones (minutos)",
+          "auto_comfort_temperature": "Utilice un objetivo de confort adaptativo al clima"
         },
         "data_description": {
           "soft_outdoor_threshold_c": "Por encima de esta temperatura exterior, abrir las ventanas es menos útil.",
-          "cooldown_minutes": "Cuánto espera VentWise antes de enviar una notificación actualizada. Las recomendaciones idénticas permanecen suprimidas."
+          "cooldown_minutes": "Cuánto espera VentWise antes de enviar una notificación actualizada. Las recomendaciones idénticas permanecen suprimidas.",
+          "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de seguridad interior de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla un termostato ni un sistema HVAC."
         }
       },
       "rooms": {
@@ -285,7 +314,11 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "target_temperature_c_override_enabled": "Habilitar anulación de temperatura ambiente",
+          "target_humidity_percent_override_enabled": "Habilitar anulación de humedad ambiental",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "name": "Un nombre fácil de reconocer, como Dormitorio, Estudio u Oficina.",
@@ -294,7 +327,11 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
           "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta habitación en lugar del global.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación.",
+          "target_temperature_c_override_enabled": "Active esta opción si desea que VentWise utilice una temperatura de confort específica de la habitación.",
+          "target_humidity_percent_override_enabled": "Actívelo si desea que VentWise utilice una humedad de confort específica de la habitación.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       },
       "edit_room_form": {
@@ -307,7 +344,9 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "name": "Un nombre fácil de reconocer, como Dormitorio, Estudio u Oficina.",
@@ -316,7 +355,9 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta habitación en lugar de la global.",
           "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta habitación en lugar del global.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta habitación.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta habitación.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       },
       "add_macro_room": {
@@ -329,7 +370,11 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "target_temperature_c_override_enabled": "Habilitar anulación de temperatura ambiente",
+          "target_humidity_percent_override_enabled": "Habilitar anulación de humedad ambiental",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "name": "Un nombre fácil de reconocer, como Planta superior o Zona de estar.",
@@ -338,7 +383,11 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
           "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta área en lugar del global.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área.",
+          "target_temperature_c_override_enabled": "Actívelo si desea que VentWise use una temperatura de confort específica del área.",
+          "target_humidity_percent_override_enabled": "Actívelo si desea que VentWise utilice una humedad de confort específica del área.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       },
       "edit_macro_room_form": {
@@ -351,7 +400,9 @@
           "target_temperature_c_override": "Override de temperatura de confort de la habitación",
           "target_humidity_percent_override": "Override de humedad de confort (%) de la habitación",
           "start_entity_id": "Automatización de apertura de ventanas",
-          "stop_entity_id": "Automatización de cierre de ventanas"
+          "stop_entity_id": "Automatización de cierre de ventanas",
+          "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
+          "action_lockout_minutes": "Mantener aviso de habitación durante (minutos)"
         },
         "data_description": {
           "name": "Un nombre fácil de reconocer, como Planta superior o Zona de estar.",
@@ -360,7 +411,55 @@
           "target_temperature_c_override": "Opcional. Usa una temperatura de confort específica para esta área en lugar de la global.",
           "target_humidity_percent_override": "Opcional. Usa un porcentaje de humedad de confort específico para esta área en lugar del global.",
           "start_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida abrir las ventanas de esta área.",
-          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área."
+          "stop_entity_id": "Opcional. Selecciona la automatización que VentWise debe ejecutar cuando pida cerrar las ventanas de esta área.",
+          "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
+          "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
+        }
+      },
+      "settings": {
+        "title": "Configuración de VentWise",
+        "description": "Configure aquí la comodidad diaria, las notificaciones y los datos exteriores. Las entidades exteriores manuales solo se requieren cuando su interruptor correspondiente está habilitado.",
+        "data": {
+          "outdoor_weather_entity_id": "Fuente meteorológica",
+          "target_temperature_c": "Temperatura de confort",
+          "auto_comfort_temperature": "Adaptar la temperatura de confort automáticamente",
+          "target_humidity_percent": "Humedad de confort",
+          "stability_minutes": "Esperar antes de recomendar (minutos)",
+          "notification_device_id": "Dispositivos de notificación",
+          "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant",
+          "diagnostic_notification_level": "Notificaciones de diagnóstico",
+          "co2_enabled": "Considere el CO₂ en las recomendaciones",
+          "co2_entity_id": "Inicio Sensor de CO₂",
+          "co2_threshold_ppm": "Umbral de CO₂ (ppm)",
+          "soft_outdoor_threshold_c": "Umbral de confort exterior",
+          "cooldown_minutes": "Tiempo de reutilización de notificaciones por habitación (minutos)",
+          "outdoor_temperature_override": "Usar temperatura exterior manual",
+          "outdoor_humidity_override": "Utilice humedad exterior manual.",
+          "wind_speed_override": "Utilice la velocidad del viento exterior manual",
+          "outdoor_temperature_entity_id": "Temperatura exterior manual",
+          "outdoor_humidity_entity_id": "Humedad exterior manual",
+          "wind_speed_entity_id": "Velocidad del viento exterior manual"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Elija la entidad meteorológica estándar de Home Assistant utilizada por VentWise.",
+          "target_temperature_c": "Establezca la temperatura interior que le resulte cómoda cuando esté en casa.",
+          "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de seguridad interior de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla un termostato ni un sistema HVAC.",
+          "target_humidity_percent": "Establezca la humedad interior que le resulte cómoda cuando esté en casa.",
+          "stability_minutes": "Cuánto tiempo debe permanecer sin cambios una recomendación antes de que VentWise le notifique.",
+          "notification_device_id": "Opcional. Elija los dispositivos que deberían recibir notificaciones VentWise.",
+          "home_assistant_notification_enabled": "Muestra cada recomendación de VentWise en el panel de notificaciones de Home Assistant.",
+          "diagnostic_notification_level": "Elija si Home Assistant muestra notificaciones adicionales para problemas de configuración o de datos del sensor.",
+          "co2_enabled": "Recomendado cuando hay un sensor de CO₂ disponible. Da prioridad al aire fresco cuando el CO₂ es alto.",
+          "co2_entity_id": "Sensor de CO₂ predeterminado opcional utilizado en habitaciones sin sensor propio.",
+          "co2_threshold_ppm": "Nivel de CO₂ en el que VentWise comienza a priorizar el aire fresco.",
+          "soft_outdoor_threshold_c": "Por encima de esta temperatura exterior, abrir las ventanas resulta menos útil.",
+          "cooldown_minutes": "Cuánto tiempo espera VentWise antes de enviar una recomendación actualizada para cada habitación. Las mismas recomendaciones permanecen suprimidas.",
+          "outdoor_temperature_override": "Utilice la entidad de temperatura manual a continuación en lugar del pronóstico del tiempo.",
+          "outdoor_humidity_override": "Utilice la entidad de humedad manual a continuación en lugar del pronóstico del tiempo.",
+          "wind_speed_override": "Utilice la entidad de velocidad del viento manual a continuación en lugar del pronóstico del tiempo.",
+          "outdoor_temperature_entity_id": "Se requiere solo cuando la temperatura exterior manual está habilitada.",
+          "outdoor_humidity_entity_id": "Se requiere solo cuando la humedad exterior manual está habilitada.",
+          "wind_speed_entity_id": "Se requiere solo cuando la velocidad manual del viento exterior está habilitada."
         }
       }
     },
@@ -370,10 +469,7 @@
   },
   "selector": {
     "outdoor_source": {
-      "options": {
-        "forecast": "Usar pronóstico",
-        "override": "Usar override"
-      }
+      "options": {}
     },
     "diagnostic_notification_level": {
       "options": {

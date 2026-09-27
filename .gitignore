@@ -13,3 +13,5 @@ build/
 *.egg-info/
 *.log
 AGENTS.md
+
+.idea
