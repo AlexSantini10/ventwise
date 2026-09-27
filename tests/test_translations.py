@@ -41,23 +41,27 @@ def _leaf_paths(value: Any, prefix: str = "") -> set[str]:
     }
 
 
-def test_translation_files_are_valid_and_have_matching_keys() -> None:
-    """Keep the Italian UI aligned with the English source of truth."""
+REVIEWED_LANGUAGES = ("it", "ru")
+
+
+@pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
+def test_translation_files_are_valid_and_have_matching_keys(language: str) -> None:
+    """Keep each reviewed locale aligned with the English source of truth."""
 
     english = _load_translation("en")
-    italian = _load_translation("it")
+    localized = _load_translation(language)
 
-    assert _leaf_paths(italian) == _leaf_paths(english)
+    assert _leaf_paths(localized) == _leaf_paths(english)
 
 
-def test_translation_files_reject_duplicate_keys() -> None:
+@pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
+def test_translation_files_reject_duplicate_keys(language: str) -> None:
     """Make a duplicate key a visible test failure instead of silently overriding it."""
 
-    for language in ("en", "it"):
-        try:
-            _load_translation(language)
-        except ValueError as error:
-            pytest.fail(f"{language}.json is invalid: {error}")
+    try:
+        _load_translation(language)
+    except ValueError as error:
+        pytest.fail(f"{language}.json is invalid: {error}")
 
 
 def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -> None:
@@ -65,6 +69,7 @@ def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -
 
     english = _load_translation("en")
     italian = _load_translation("it")
+    russian = _load_translation("ru")
     english_help = (
         english["config"]["step"]["user"]["data_description"]["auto_comfort_temperature"],
         english["options"]["step"]["settings"]["data_description"][
@@ -78,6 +83,13 @@ def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -
         ],
     )
 
+    russian_help = (
+        russian["config"]["step"]["user"]["data_description"]["auto_comfort_temperature"],
+        russian["options"]["step"]["settings"]["data_description"][
+            "auto_comfort_temperature"
+        ],
+    )
+
     for description in english_help:
         assert "±2°C" in description
         assert "18–26°C" in description
@@ -86,3 +98,8 @@ def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -
         assert "±2 °C" in description
         assert "18–26 °C" in description
         assert "termostato o HVAC" in description
+    for description in russian_help:
+        assert "±2 °C" in description
+        assert "18–26 °C" in description
+        assert "термостатом" in description
+        assert "HVAC" in description
