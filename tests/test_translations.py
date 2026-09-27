@@ -41,7 +41,7 @@ def _leaf_paths(value: Any, prefix: str = "") -> set[str]:
     }
 
 
-REVIEWED_LANGUAGES = ("it", "ru")
+REVIEWED_LANGUAGES = ("it", "es", "ru", "zh-Hans", "fr", "de")
 
 
 @pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
