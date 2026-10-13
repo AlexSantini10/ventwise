@@ -687,10 +687,10 @@ def _load_room_action_guards(value: Any) -> dict[str, RoomActionGuard]:
         if not isinstance(room_key, str) or not room_key.strip() or not isinstance(raw_guard, Mapping):
             continue
         accepted_action = raw_guard.get("accepted_action")
-        if accepted_action not in {"open", "close"}:
+        if accepted_action not in {"open", "ventilate", "close"}:
             continue
         pending_action = raw_guard.get("pending_action")
-        if pending_action not in {"open", "close"}:
+        if pending_action not in {"open", "ventilate", "close"}:
             pending_action = None
         guards[room_key] = RoomActionGuard(
             accepted_action,
@@ -728,6 +728,9 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "suggested_comfort_temperature_c": recommendation.suggested_comfort_temperature_c,
         "open_score": recommendation.open_score,
         "close_score": recommendation.close_score,
+        "ventilation_duration_minutes": recommendation.ventilation_duration_minutes,
+        "indoor_comfort_severity": recommendation.indoor_comfort_severity,
+        "outdoor_comfort_severity": recommendation.outdoor_comfort_severity,
         "co2_ppm": recommendation.co2_ppm,
         "co2_influence": recommendation.co2_influence,
     }
