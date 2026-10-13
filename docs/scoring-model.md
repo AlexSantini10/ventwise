@@ -46,6 +46,27 @@ changes a thermostat or HVAC setpoint.
 - If the inside condition is already better, closing should be favored.
 - If the difference is small, return `none`.
 
+## Health-Aware Comfort and Brief Ventilation
+
+VentWise evaluates the configured comfort temperature as a personal band of
+plus or minus 1 C, rather than treating the target as a single exact point.
+It then adds a stronger habitability penalty when perceived indoor temperature
+falls below 18 C or rises above 26 C. This means a personal target never makes
+an unsafe cold or hot room look comfortable.
+
+When outdoor air sits on the opposite side of the personal band, it may still
+be useful even though it would be a poor permanent endpoint. For example, with
+a 22 C target, a room at 25 C and outdoor air at 18 C receives a `ventilate`
+recommendation: air the room for about 10 minutes, then close the window and
+check again. The duration is intentionally a conservative prompt, not a
+thermal prediction: window area, wind, air paths, insulation, and building
+mass determine the actual cooling or warming rate.
+
+`ventilate` remains advisory only. VentWise does not measure window position,
+operate covers, or schedule a physical close action. Weather and wind safety
+blocks still override ventilation, and elevated CO2 never overrides a safety
+block.
+
 ## Soft Threshold
 
 - A soft outside threshold of `22 C` is used to suppress pointless alerts.
