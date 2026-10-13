@@ -11,6 +11,7 @@ class RecommendationAction(str, Enum):
     """Action that the recommender can return."""
 
     OPEN = "open"
+    VENTILATE = "ventilate"
     CLOSE = "close"
     NONE = "none"
 
@@ -150,6 +151,9 @@ class RoomRecommendation:
     reason_code: str = "comfort"
     co2_ppm: float | None = None
     co2_influence: float = 0.0
+    ventilation_duration_minutes: int | None = None
+    indoor_comfort_severity: float = 0.0
+    outdoor_comfort_severity: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)

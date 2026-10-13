@@ -11,6 +11,7 @@ pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.notification import (
     async_send_notification,
+    build_room_notification_payload,
     build_notification_payload,
     build_diagnostic_notification_payload,
     home_assistant_notification_id_for_room,
@@ -107,6 +108,19 @@ def test_recommendation_explanation_is_concise_and_localized() -> None:
     explanation = build_recommendation_explanation(recommendation, language="it-IT")
 
     assert explanation == "Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
+
+
+def test_brief_ventilation_notification_is_localized_and_includes_duration() -> None:
+    recommendation = SimpleNamespace(
+        room_name="Camera",
+        action=SimpleNamespace(value="ventilate"),
+        ventilation_duration_minutes=10,
+    )
+
+    title, message = build_room_notification_payload(recommendation, language="it")
+
+    assert title == "Arieggia brevemente"
+    assert message == "VentWise · Camera: Arieggia per circa 10 minuti, poi richiudi e ricontrolla."
 
 
 def test_recommendation_explanation_prefers_current_comfort_over_a_duplicate_forecast() -> None:

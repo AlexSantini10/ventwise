@@ -76,6 +76,57 @@ def test_recommender_opens_when_outside_is_only_one_degree_closer_to_target() ->
     assert result.score >= 0.35
 
 
+def test_recommender_recommends_brief_ventilation_when_air_crosses_comfort_band() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    room = RoomProfile(
+        name="Salotto",
+        indoor=RoomObservation(temperature_c=25.0, humidity_percent=50.0),
+    )
+
+    result = recommender.evaluate(
+        [room], ComfortObservation(temperature_c=18.0, humidity_percent=50.0)
+    )
+    recommendation = result.room_recommendations[0]
+
+    assert result.action is RecommendationAction.VENTILATE
+    assert recommendation.ventilation_duration_minutes == 10
+
+
+def test_recommender_prioritizes_health_risk_over_personal_target_distance() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
+    )
+    rooms = [
+        RoomProfile("Cold", RoomObservation(temperature_c=15.0, humidity_percent=50.0)),
+        RoomProfile("Warm", RoomObservation(temperature_c=27.0, humidity_percent=50.0)),
+    ]
+
+    result = recommender.evaluate(
+        rooms, ComfortObservation(temperature_c=20.0, humidity_percent=50.0)
+    )
+    cold, warm = result.room_recommendations
+
+    assert cold.indoor_comfort_severity > warm.indoor_comfort_severity
+    assert cold.score >= warm.score
+    assert result.best_room == "Cold"
+
+
+def test_health_guardrails_override_an_unsafe_personal_target() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=15.0, minimum_score=0.0)
+    )
+    room = RoomProfile("Studio", RoomObservation(temperature_c=15.0, humidity_percent=50.0))
+
+    result = recommender.evaluate(
+        [room], ComfortObservation(temperature_c=20.0, humidity_percent=50.0)
+    )
+
+    assert result.room_recommendations[0].indoor_comfort_severity > 0.0
+    assert result.action is RecommendationAction.OPEN
+
+
 def test_recommender_prefers_close_when_inside_is_more_comfortable() -> None:
     recommender = ComfortRecommender()
     room = RoomProfile(

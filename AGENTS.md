@@ -1,0 +1,26 @@
+# Agent Rules
+
+- Track every TODO as a GitHub issue.
+- If you need a TODO list, check the existing GitHub issues first.
+- Keep each issue tagged, assigned to `@AlexSantini10`, and written with a minimal structure:
+  - `Goal`
+  - `Scope`
+  - `Acceptance`
+- Update each active issue's checklist and scope as work progresses, and update its status in the VentWise GitHub Project; the Project is the source of truth for task status and remaining work.
+- Describe issues accurately, but as minimally as possible.
+- Before starting any task (only for feature tasks), create a new branch from `dev` and work on that branch only.
+- Before creating the task branch, ask whether `dev` should be aligned with `main` only if `dev` is behind `main`; if `dev` is already aligned with or ahead of `main`, do not ask.
+- Small fixes may be made directly on `dev` when `dev` is already aligned with `main`.
+- When a task is completed, ask whether you can close it.
+- If the answer is yes, use this delivery flow:
+  - if a version bump is requested, do it before committing
+  - open a PR into `dev`
+  - merge the PR into `dev`
+  - close the issue
+  - delete the task branch after the merge
+  - if requested, open a PR from `dev` into `main`
+  - if requested, merge the PR into `main`
+- When a task is completed, suggest a Conventional Commits-style commit name and ask before pushing with it.
+- Never commit or push unless @AlexSantini10 has explicitly confirmed it for the current task.
+- For any committed update, decide the version bump as part of the task when it is needed; do not ask the user to approve the bump first.
+- Use `patch` for fixes, `minor` for new features, and `major` for breaking changes or large version jumps.

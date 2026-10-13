@@ -200,6 +200,9 @@ def build_recommendation_explanation(
     texts = _notification_texts(language)
     action = recommendation.action.value
     prefix = f"VentWise · {recommendation.room_name}: " if include_room_name else ""
+    if action == "ventilate":
+        minutes = getattr(recommendation, "ventilation_duration_minutes", None) or 10
+        return f"{prefix}{_ventilation_reason(language, minutes)}"
     if action == "open":
         if getattr(recommendation, "reason_code", None) == "forecast":
             return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
@@ -401,6 +404,14 @@ def _notification_texts(language: str | None) -> dict[str, str]:
 def _notification_action_title(action: str, language: str | None) -> str:
     """Return the action text formatted as a notification title."""
 
+    if action == "ventilate":
+        return {
+            "en": "Ventilate briefly",
+            "it": "Arieggia brevemente",
+            "es": "Ventila brevemente",
+            "ru": "Кратко проветрите",
+            "zh-hans": "短时通风",
+        }.get(_normalize_language_key(language), "Ventilate briefly")
     texts = _notification_texts(language)
     return texts.get(action, texts["none"]).rstrip(".。 ").capitalize()
 
@@ -419,6 +430,19 @@ def _safe_identifier(value: str, fallback: str) -> str:
     """Convert a user or entity identifier into a stable notification suffix."""
 
     return re.sub(r"[^a-z0-9_-]+", "_", value.lower()).strip("_") or fallback
+
+
+def _ventilation_reason(language: str | None, minutes: int) -> str:
+    """Return the localized bounded-duration ventilation guidance."""
+
+    templates = {
+        "en": "Ventilate for about {minutes} minutes, then close and check again.",
+        "it": "Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
+        "es": "Ventila durante unos {minutes} minutos, luego cierra y vuelve a comprobarlo.",
+        "ru": "Проветривайте около {minutes} минут, затем закройте и проверьте снова.",
+        "zh-hans": "通风约 {minutes} 分钟，然后关闭并再次检查。",
+    }
+    return templates.get(_normalize_language_key(language), templates["en"]).format(minutes=minutes)
 
 
 def _localized_temperature_reason(

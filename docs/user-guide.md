@@ -72,6 +72,15 @@ Assistant entities. Check the recommendation before opening or closing a
 window. A recommendation can be delayed by the configured stability period,
 quiet hours, cooldown, missing data, or a disabled room.
 
+When the outdoor temperature can correct the room only temporarily, VentWise
+can recommend **brief ventilation** instead of leaving a window open. In that
+case, air the room for about 10 minutes, close the window, and check the sensor
+again. The duration is a conservative reminder rather than a calculation of
+your home's heat-transfer rate; VentWise does not control or verify the window.
+Its comfort score also treats temperatures below 18 °C and above 26 °C as
+health-relevant conditions, even if a personal comfort target is outside that
+range.
+
 Use **Configure** on the integration to change comfort values, notification
 settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
 climate-adaptive option changes only VentWise's recommendation target; it does

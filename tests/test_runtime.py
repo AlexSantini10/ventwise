@@ -46,6 +46,7 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_NOTIFICATION_MARKERS,
+    CONF_RUNTIME_ROOM_ACTION_GUARDS,
 )
 from custom_components.ventwise.runtime import RuntimeSnapshot
 from ventwise_core import (
@@ -416,6 +417,25 @@ def test_runtime_state_round_trips_through_storage() -> None:
             "signature": ["open", "Camera"],
             "notified_at": notification_at.isoformat(),
         }
+    }
+
+
+def test_runtime_state_preserves_brief_ventilation_action_guard() -> None:
+    loaded = load_runtime_state(
+        {
+            CONF_RUNTIME_STATE: {
+                CONF_RUNTIME_ROOM_ACTION_GUARDS: {
+                    "Camera": {"accepted_action": "ventilate", "pending_action": "open"}
+                }
+            }
+        }
+    )
+
+    stored = dump_runtime_state(loaded)
+
+    assert stored[CONF_RUNTIME_STATE][CONF_RUNTIME_ROOM_ACTION_GUARDS]["Camera"] == {
+        "accepted_action": "ventilate",
+        "pending_action": "open",
     }
 
 

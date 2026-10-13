@@ -127,6 +127,15 @@ class ComfortRecommender:
         )
         inside_delta = abs(indoor_perceived - target_perceived)
         outside_delta = abs(outdoor_perceived - target_perceived)
+        inside_severity = _comfort_severity(indoor_perceived, target_perceived)
+        outside_severity = _comfort_severity(outdoor_perceived, target_perceived)
+        comfort_lower = target_perceived - 1.0
+        comfort_upper = target_perceived + 1.0
+        indoor_band_distance = max(
+            0.0,
+            comfort_lower - indoor_perceived,
+            indoor_perceived - comfort_upper,
+        )
 
         if _weather_requires_close(outdoor.weather_condition):
             close_score = self._clamp(max(self._config.minimum_score, 0.75))
@@ -165,20 +174,38 @@ class ComfortRecommender:
                 ),
                 co2_ppm=room.co2_ppm,
                 co2_influence=co2_influence,
+                indoor_comfort_severity=inside_severity,
+                outdoor_comfort_severity=outside_severity,
             )
 
         open_score = self._direction_score(
-            need_c=inside_delta,
-            benefit_c=max(0.0, inside_delta - outside_delta),
+            need_c=inside_severity,
+            benefit_c=max(0.0, inside_severity - outside_severity),
             outdoor=outdoor,
             direction=RecommendationAction.OPEN,
         )
         close_score = self._direction_score(
-            need_c=outside_delta,
-            benefit_c=max(0.0, outside_delta - inside_delta),
+            need_c=outside_severity,
+            benefit_c=max(0.0, outside_severity - inside_severity),
             outdoor=outdoor,
             direction=RecommendationAction.CLOSE,
         )
+        brief_ventilation_score = 0.0
+        if indoor_band_distance <= 2.0 and (
+            (
+                indoor_perceived > comfort_upper
+                and outdoor_perceived < comfort_lower
+                and outdoor_perceived < indoor_perceived
+            )
+            or (
+                indoor_perceived < comfort_lower
+                and outdoor_perceived > comfort_upper
+                and outdoor_perceived > indoor_perceived
+            )
+        ):
+            # Outdoor air crosses the personal band: it is useful as a short
+            # correction, but not a stable endpoint for an open window.
+            brief_ventilation_score = _smoothstep(inside_severity, 0.0, 4.0)
         open_score, close_score = self._apply_season_bias(open_score, close_score)
         forecast_note = None
         forecast = outdoor.forecast
@@ -193,28 +220,29 @@ class ComfortRecommender:
                 target_humidity,
                 self._config.humidity_weight,
             )
-            forecast_delta = abs(forecast_perceived - target_perceived)
-            worsening = forecast_delta - outside_delta
+            forecast_delta = _comfort_severity(forecast_perceived, target_perceived)
+            worsening = forecast_delta - outside_severity
             if worsening >= 1.0:
                 forecast_note = (
                     f"short-term forecast moves outside conditions further from comfort "
                     f"({outdoor.temperature_c:.1f}C to {forecast.temperature_c:.1f}C)."
                 )
-                if inside_delta <= self._config.decision_threshold_c:
+                if inside_severity <= self._config.decision_threshold_c:
                     close_score = max(close_score, self._clamp(0.35 + (worsening * 0.12)))
-                elif outside_delta < inside_delta:
+                elif outside_severity < inside_severity:
                     open_score = max(open_score, self._clamp(0.35 + (worsening * 0.10)))
         if forecast is not None and _forecast_blocks_opening(forecast):
             forecast_note = "short-term forecast is likely to make opening less practical."
-            if inside_delta <= self._config.decision_threshold_c:
+            if inside_severity <= self._config.decision_threshold_c:
                 close_score = max(close_score, 0.45)
-            elif outside_delta < inside_delta:
+            elif outside_severity < inside_severity:
                 open_score = max(open_score, 0.5)
         co2_influence = self._co2_influence(room.co2_ppm)
         if co2_influence > 0.0:
             open_score = max(open_score, co2_influence)
         target_penalty = self._target_reasonableness_factor(target_temperature, target_humidity)
         open_score = self._clamp(open_score * target_penalty)
+        brief_ventilation_score = self._clamp(brief_ventilation_score * target_penalty)
         close_score = self._clamp(close_score * target_penalty)
         (
             environmental_open_factor,
@@ -230,6 +258,9 @@ class ComfortRecommender:
         if co2_influence > 0.0:
             environment_notes = (*environment_notes, f"CO2 {room.co2_ppm:.0f}ppm needs fresh air.")
         open_score = self._clamp(open_score * environmental_open_factor)
+        brief_ventilation_score = self._clamp(
+            brief_ventilation_score * environmental_open_factor
+        )
         close_score = self._clamp(
             (close_score * environmental_close_factor) + environmental_close_bonus
         )
@@ -237,15 +268,19 @@ class ComfortRecommender:
             if co2_influence > 0.0:
                 environment_notes = (*environment_notes, "Fresh air is needed, but current weather makes opening unsafe.")
             open_score = 0.0
+            brief_ventilation_score = 0.0
             close_score = self._clamp(max(close_score, force_close_floor))
 
         if (
-            max(inside_delta, outside_delta) < self._config.decision_threshold_c
+            max(inside_severity, outside_severity) < self._config.decision_threshold_c
             and forecast_note is None
             and co2_influence == 0.0
         ):
             action = RecommendationAction.NONE
             score = 0.0
+        elif brief_ventilation_score > close_score and co2_influence == 0.0:
+            action = RecommendationAction.VENTILATE
+            score = brief_ventilation_score
         elif open_score > close_score:
             action = RecommendationAction.OPEN
             score = open_score
@@ -307,6 +342,11 @@ class ComfortRecommender:
             ),
             co2_ppm=room.co2_ppm,
             co2_influence=co2_influence,
+            ventilation_duration_minutes=10
+            if action == RecommendationAction.VENTILATE
+            else None,
+            indoor_comfort_severity=inside_severity,
+            outdoor_comfort_severity=outside_severity,
         )
 
     def evaluate(
@@ -376,7 +416,13 @@ class ComfortRecommender:
                 suggested_comfort_temperature_c=None,
             )
 
-        best_room = max(room_recommendations, key=lambda recommendation: recommendation.score)
+        best_room = max(
+            room_recommendations,
+            key=lambda recommendation: (
+                recommendation.score,
+                recommendation.indoor_comfort_severity,
+            ),
+        )
         weighted_score = best_room.score
         if (
             best_room.action == RecommendationAction.OPEN
@@ -453,6 +499,8 @@ class ComfortRecommender:
         environment_notes: tuple[str, ...] = (),
     ) -> str:
         direction = "open" if action == RecommendationAction.OPEN else "close"
+        if action == RecommendationAction.VENTILATE:
+            direction = "ventilate briefly"
         if action == RecommendationAction.NONE:
             direction = "none"
         reason = (
@@ -610,6 +658,20 @@ def _smoothstep(value: float, edge0: float, edge1: float) -> float:
     return x * x * (3.0 - 2.0 * x)
 
 
+def _comfort_severity(perceived_temperature_c: float, target_temperature_c: float) -> float:
+    """Return comfort severity with health guardrails outside 18–26 C.
+
+    The personal comfort band is one degree either side of the selected
+    target.  Health risk outside the established indoor-habitability range is
+    deliberately weighted above ordinary preference, preventing an unusual
+    configured target from treating an unsafe room as comfortable.
+    """
+
+    personal_distance = max(0.0, abs(perceived_temperature_c - target_temperature_c) - 1.0)
+    health_distance = max(0.0, 18.0 - perceived_temperature_c, perceived_temperature_c - 26.0)
+    return personal_distance + (2.0 * health_distance)
+
+
 def _recommendation_reason_code(
     weather_condition: str | None,
     environment_notes: tuple[str, ...],
@@ -639,6 +701,8 @@ def _current_comfort_supports_action(
 
     if action == RecommendationAction.OPEN:
         return outside_delta < inside_delta
+    if action == RecommendationAction.VENTILATE:
+        return True
     if action == RecommendationAction.CLOSE:
         return inside_delta < outside_delta
     return False
