@@ -2,7 +2,8 @@
 
 VentWise keeps one notification marker for each room. A marker records the
 last delivered action, its stable reason category, severity band, and delivery
-time.
+time. It may also retain the rendered title and message for diagnostics; those
+text fields are never part of deduplication.
 
 Two recommendations are equivalent only when all of the following match for
 the same room:
