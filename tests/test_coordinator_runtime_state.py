@@ -520,6 +520,7 @@ def test_coordinator_suppresses_equivalent_notification_after_cooldown_expiry(
     first_snapshot = asyncio.run(coordinator._async_update_data())
     suppressed_snapshot = asyncio.run(coordinator._async_update_data())
     current_now[0] += timedelta(minutes=61)
+    fake_states["sensor.room_temp"] = SimpleNamespace(state="27.8")
     duplicate_snapshot = asyncio.run(coordinator._async_update_data())
 
     assert first_snapshot.notification_allowed is True
@@ -658,7 +659,7 @@ def test_notification_marker_suppresses_an_unchanged_visible_payload() -> None:
     recommendation = RoomRecommendation(
         room_name="Camera",
         action=RecommendationAction.OPEN,
-        score=0.8,
+        score=0.5,
         reason="Outside is more comfortable.",
         target_perceived_c=22.0,
         indoor_perceived_c=25.3,
@@ -675,6 +676,38 @@ def test_notification_marker_suppresses_an_unchanged_visible_payload() -> None:
         recommendation,
         title="Apri le finestre",
         message="VentWise · Camera: Fuori è più confortevole adesso: 2.3°C più vicino al comfort.",
+    )
+
+
+def test_notification_marker_ignores_a_changed_visible_payload() -> None:
+    marker = NotificationMarker(
+        ("open", "Camera"),
+        datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc),
+        "comfort",
+        "normal",
+        "Open windows",
+        "VentWise: outside is 2.3C closer to comfort.",
+    )
+    recommendation = RoomRecommendation(
+        room_name="Camera",
+        action=RecommendationAction.OPEN,
+        score=0.5,
+        reason="Outside is 2.1C closer to comfort.",
+        target_perceived_c=22.0,
+        indoor_perceived_c=25.1,
+        outdoor_perceived_c=23.0,
+        suggested_comfort_temperature_c=22.0,
+    )
+
+    assert VentWiseCoordinator._matches_notification_marker(
+        SimpleNamespace(
+            _notification_identity=VentWiseCoordinator._notification_identity,
+            _notification_severity=VentWiseCoordinator._notification_severity,
+        ),
+        marker,
+        recommendation,
+        title="Open windows",
+        message="VentWise: outside is 2.1C closer to comfort.",
     )
 
 
