@@ -320,15 +320,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         for recommendation in summary.room_recommendations:
             room_signature = self._notification_identity(recommendation)
             room_marker = self._notification_markers.get(recommendation.room_name)
-            title, message = build_room_notification_payload(
-                recommendation,
-                language=getattr(getattr(self.hass, "config", None), "language", None),
-            )
             matches_marker = room_marker is not None and self._matches_notification_marker(
                 room_marker,
                 recommendation,
-                title=title,
-                message=message,
             )
             bypasses_cooldown = room_marker is not None and self._should_bypass_notification_cooldown(
                 room_marker,
@@ -395,6 +389,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     self._notification_severity(recommendation.score),
                 )
 
+            title, message = build_room_notification_payload(
+                recommendation,
+                language=getattr(getattr(self.hass, "config", None), "language", None),
+            )
             delivered = await async_send_notification(
                 self.hass,
                 notification_entity_ids,
@@ -652,10 +650,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         title: str | None = None,
         message: str | None = None,
     ) -> bool:
-        """Return whether a marker represents the same semantic recommendation."""
+        """Return whether a marker represents the same semantic recommendation.
 
-        if marker.title is not None and marker.message is not None:
-            return marker.title == title and marker.message == message
+        Rendered payload values are deliberately excluded from the comparison.
+        """
+
         return (
             marker.signature == self._notification_identity(recommendation)
             and marker.reason == recommendation.reason_code
