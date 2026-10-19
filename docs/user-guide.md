@@ -91,11 +91,13 @@ not change a thermostat or HVAC setpoint.
 ### Receive a recommendation now
 
 The VentWise device includes a **Receive recommendation now** button. Use it
-when you want an immediate, informational answer to “what is best right now?”
+when you want an immediate answer to “what is best right now?”
 It refreshes the available weather and room data and sends the current advice
 to the configured notification targets without waiting for the regular
-notification cooldown or stability interval. It never includes confirmation
-actions and cannot trigger a room automation.
+notification cooldown or stability interval. For each actionable room, the
+notification is the same as a regular VentWise recommendation and includes a
+Companion App confirmation button when that room has an automation configured.
+Pressing this device button never runs an automation by itself.
 
 ### Confirming room automations
 

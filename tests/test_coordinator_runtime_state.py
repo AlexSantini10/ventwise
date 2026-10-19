@@ -106,7 +106,7 @@ def _make_coordinator(options: dict[str, object] | None = None):
     return coordinator, hass, entry
 
 
-def test_on_demand_recommendation_refreshes_and_never_supplies_an_action(
+def test_on_demand_recommendation_sends_the_current_room_recommendation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     refresh_suppression_states: list[bool] = []
@@ -121,11 +121,14 @@ def test_on_demand_recommendation_refreshes_and_never_supplies_an_action(
 
     summary = SimpleNamespace(
         best_room="Camera",
-        action=SimpleNamespace(value="open"),
+        action=RecommendationAction.OPEN,
         room_recommendations=(
             SimpleNamespace(
                 room_name="Camera",
-                action=SimpleNamespace(value="open"),
+                room_id="camera",
+                action=RecommendationAction.OPEN,
+                score=0.8,
+                reason_code="comfort",
                 indoor_perceived_c=26.0,
                 target_perceived_c=22.0,
                 outdoor_perceived_c=23.0,
@@ -141,12 +144,25 @@ def test_on_demand_recommendation_refreshes_and_never_supplies_an_action(
         _config=SimpleNamespace(
             notification_device_ids=("phone-1",),
             home_assistant_notification_enabled=True,
+            minimum_score=0.5,
         ),
+        _pending_confirmations={},
+        _notification_markers={},
+        _notification_identity=lambda recommendation: (
+            recommendation.action.value,
+            recommendation.room_name,
+        ),
+        _notification_severity=lambda _score: "elevated",
+        _persist_runtime_state=lambda: None,
+        _mobile_confirmation_action=lambda _recommendation: {
+            "action": "ventwise_confirm_test",
+            "title": "Conferma apertura",
+        },
     )
     monkeypatch.setattr(
         coordinator_module,
         "notification_entity_ids_for_device_ids",
-        lambda _hass, _device_ids: ("notify.iphone_di_alex",),
+        lambda _hass, _device_ids: ("notify.mobile_app_iphone_di_alex",),
     )
     monkeypatch.setattr(coordinator_module, "async_send_notification", _send_notification)
 
@@ -157,11 +173,17 @@ def test_on_demand_recommendation_refreshes_and_never_supplies_an_action(
     assert coordinator._forecast_fetched_at is None
     assert coordinator._suppress_automatic_notifications is False
     notification = notification_calls[0]
+    assert notification["title"] == "Apri le finestre"
     assert "Camera" in notification["message"]
     assert notification["device_ids"] == ("phone-1",)
     assert notification["send_to_home_assistant"] is True
-    assert notification["home_assistant_notification_id"] == "ventwise_on_demand_recommendation"
-    assert "mobile_action" not in notification
+    assert notification["home_assistant_notification_id"] == "ventwise_recommendation_camera"
+    assert notification["mobile_action"] == {
+        "action": "ventwise_confirm_test",
+        "title": "Conferma apertura",
+    }
+    assert coordinator._pending_confirmations["ventwise_confirm_test"].room_key == "camera"
+    assert coordinator._notification_markers["Camera"].title == "Apri le finestre"
 
 
 def test_coordinator_loads_persisted_runtime_state() -> None:

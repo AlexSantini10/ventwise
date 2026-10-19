@@ -46,7 +46,7 @@ from .notification import (
     async_create_persistent_notification,
     async_send_notification,
     build_diagnostic_notification_payload,
-    build_on_demand_notification_payload,
+    build_notification_payload,
     build_room_notification_payload,
     home_assistant_diagnostic_notification_id,
     home_assistant_notification_id_for_room,
@@ -147,7 +147,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._refresh_time_listener(self.data.last_updated, self.data)
 
     async def async_send_on_demand_recommendation(self) -> bool:
-        """Send a user-requested recommendation without automation actions."""
+        """Send the current recommendations as immediate, manual notifications."""
 
         self._forecast_fetched_at = None
         self._suppress_automatic_notifications = True
@@ -169,19 +169,72 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             if self._config.notification_device_ids
             else ()
         )
-        title, message = build_on_demand_notification_payload(
-            snapshot.summary,
-            language=getattr(getattr(self.hass, "config", None), "language", None),
+        language = getattr(getattr(self.hass, "config", None), "language", None)
+        actionable_recommendations = tuple(
+            recommendation
+            for recommendation in snapshot.summary.room_recommendations
+            if (
+                recommendation.action != RecommendationAction.NONE
+                and recommendation.score >= self._config.minimum_score
+            )
         )
-        return await async_send_notification(
-            self.hass,
-            notification_entity_ids,
-            title=title,
-            message=message,
-            device_ids=self._config.notification_device_ids,
-            send_to_home_assistant=self._config.home_assistant_notification_enabled,
-            home_assistant_notification_id=home_assistant_on_demand_notification_id(),
+        if not actionable_recommendations:
+            title, message = build_notification_payload(snapshot.summary, language=language)
+            return await async_send_notification(
+                self.hass,
+                notification_entity_ids,
+                title=title,
+                message=message,
+                device_ids=self._config.notification_device_ids,
+                send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                home_assistant_notification_id=home_assistant_on_demand_notification_id(),
+            )
+
+        delivered = False
+        has_mobile_app_target = any(
+            entity_id.startswith("notify.mobile_app_")
+            for entity_id in notification_entity_ids
         )
+        for recommendation in actionable_recommendations:
+            title, message = build_room_notification_payload(recommendation, language=language)
+            mobile_action = (
+                self._mobile_confirmation_action(recommendation)
+                if has_mobile_app_target
+                else None
+            )
+            sent = await async_send_notification(
+                self.hass,
+                notification_entity_ids,
+                title=title,
+                message=message,
+                device_ids=self._config.notification_device_ids,
+                send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                home_assistant_notification_id=home_assistant_notification_id_for_room(
+                    recommendation
+                ),
+                mobile_action=mobile_action,
+            )
+            if sent:
+                delivered = True
+                self._notification_markers[recommendation.room_name] = NotificationMarker(
+                    self._notification_identity(recommendation),
+                    dt_util.now(),
+                    recommendation.reason_code,
+                    self._notification_severity(recommendation.score),
+                    title,
+                    message,
+                )
+                if mobile_action is not None:
+                    self._pending_confirmations[mobile_action["action"]] = (
+                        PendingAutomationConfirmation(
+                            recommendation.room_id or recommendation.room_name,
+                            recommendation.action,
+                            dt_util.now() + _CONFIRMATION_TTL,
+                        )
+                    )
+        if delivered:
+            self._persist_runtime_state()
+        return delivered
 
     async def _async_update_data(self) -> RuntimeSnapshot:
         """Refresh recommendation state from Home Assistant entity states."""
