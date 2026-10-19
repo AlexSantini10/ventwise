@@ -91,6 +91,15 @@ def notification_entity_ids_for_device_ids(
 
     mobile_app_unique_ids: set[str] = set()
     for device_id in device_ids:
+        # New configurations persist the notify entity ID itself.  Unlike a
+        # device-registry ID, this does not change when the Companion App
+        # recreates its device entry.
+        if device_id.startswith("notify."):
+            entry = entity_registry.async_get(device_id)
+            if entry is not None and entry.entity_id not in seen:
+                seen.add(entry.entity_id)
+                entity_ids.append(entry.entity_id)
+            continue
         device = device_registry.async_get(device_id)
         if device is None:
             continue

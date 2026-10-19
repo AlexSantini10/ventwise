@@ -82,6 +82,28 @@ def test_notification_entity_resolution_filters_to_notify_entities(monkeypatch: 
     assert result == ("notify.mobile_app_alice", "notify.mobile_app_bob")
 
 
+def test_notification_entity_resolution_accepts_a_saved_notify_entity_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import notification as notification_module
+
+    entity = _FakeEntry("notify.iphone_di_alex", platform="mobile_app")
+    entity_registry = SimpleNamespace(async_get=lambda entity_id: entity if entity_id == entity.entity_id else None)
+    monkeypatch.setattr(notification_module.er, "async_get", lambda _hass: entity_registry)
+    monkeypatch.setattr(
+        notification_module.dr,
+        "async_get",
+        lambda _hass: SimpleNamespace(async_get=lambda _device_id: None),
+    )
+    monkeypatch.setattr(
+        notification_module.er, "async_entries_for_device", lambda _registry, _device_id: []
+    )
+
+    assert notification_entity_ids_for_device_ids(object(), ["notify.iphone_di_alex"]) == (
+        "notify.iphone_di_alex",
+    )
+
+
 def test_notification_entity_resolution_matches_companion_identifier_after_device_migration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -122,9 +122,8 @@ class ConfigValidationError(ValueError):
 def _notification_device_selector(hass) -> SelectSelector:
     """Return a selector containing only devices with notify entities.
 
-    VentWise stores device IDs, then resolves the matching ``notify.*`` entities
-    at delivery time. Selecting devices here (rather than notification entities)
-    preserves that relationship while preventing invalid notification targets.
+    VentWise stores the selected ``notify.*`` entity ID. This stays valid if
+    the Companion App recreates its device-registry entry.
     """
 
     return SelectSelector(
@@ -149,29 +148,36 @@ def _notification_device_defaults(
     available_ids = {
         option["value"] for option in _notification_device_options(hass)
     }
-    return [device_id for device_id in configured_ids if device_id in available_ids]
+    defaults: list[str] = []
+    for target in configured_ids:
+        if target in available_ids and target not in defaults:
+            defaults.append(target)
+
+    # Backward compatibility: older entries stored device IDs. Resolve them
+    # to their current notify entity IDs and write the stable form on save.
+    for entity_id in notification_entity_ids_for_device_ids(hass, configured_ids):
+        if entity_id in available_ids and entity_id not in defaults:
+            defaults.append(entity_id)
+    return defaults
 
 
 def _notification_device_options(hass) -> list[dict[str, str]]:
-    """List registered devices that expose one or more notify entities."""
+    """List notification entities, labelled with their registered device."""
 
     if hass is None:
         return []
 
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
-    device_ids = {
-        entry.device_id
-        for entry in entity_registry.entities.values()
-        if entry.device_id and entry.entity_id.startswith("notify.")
-    }
     options: list[dict[str, str]] = []
-    for device_id in device_ids:
-        device = device_registry.async_get(device_id)
+    for entry in entity_registry.entities.values():
+        if not entry.device_id or not entry.entity_id.startswith("notify."):
+            continue
+        device = device_registry.async_get(entry.device_id)
         if device is None:
             continue
-        label = device.name_by_user or device.name or device_id
-        options.append({"value": device_id, "label": label})
+        label = device.name_by_user or device.name or entry.device_id
+        options.append({"value": entry.entity_id, "label": label})
     return sorted(options, key=lambda option: option["label"].casefold())
 
 

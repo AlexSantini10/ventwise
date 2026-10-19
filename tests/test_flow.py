@@ -146,7 +146,7 @@ def test_basic_options_schema_covers_simple_controls() -> None:
 def test_notification_device_options_include_only_devices_with_notify_entities(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The notification picker must store devices, limited to notify-capable ones."""
+    """The notification picker must store notify entities, not volatile device IDs."""
 
     from custom_components.ventwise import flow
 
@@ -165,20 +165,29 @@ def test_notification_device_options_include_only_devices_with_notify_entities(
     )
     device_registry = SimpleNamespace(
         async_get=lambda device_id: {
-            "phone-alex": SimpleNamespace(name="iPhone di Alex", name_by_user=None),
-            "sensor-1": SimpleNamespace(name="Sensore soggiorno", name_by_user=None),
+            "phone-alex": SimpleNamespace(
+                name="iPhone di Alex", name_by_user=None, identifiers=set()
+            ),
+            "sensor-1": SimpleNamespace(
+                name="Sensore soggiorno", name_by_user=None, identifiers=set()
+            ),
         }.get(device_id)
     )
     monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
     monkeypatch.setattr(flow.dr, "async_get", lambda _hass: device_registry)
+    monkeypatch.setattr(
+        flow.er, "async_entries_for_device", lambda registry, device_id: [
+            entry for entry in registry.entities.values() if entry.device_id == device_id
+        ]
+    )
 
     hass = object()
     assert _notification_device_options(hass) == [
-        {"value": "phone-alex", "label": "iPhone di Alex"}
+        {"value": "notify.alex", "label": "iPhone di Alex"}
     ]
     assert _notification_device_defaults(
         {CONF_NOTIFICATION_DEVICE_ID: ["sensor-1", "phone-alex"]}, hass
-    ) == ["phone-alex"]
+    ) == ["notify.alex"]
 
 
 def test_room_automation_requires_a_selected_companion_app_device(
