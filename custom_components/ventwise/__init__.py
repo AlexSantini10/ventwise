@@ -115,6 +115,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             entry,
             [
                 Platform.BINARY_SENSOR,
+                Platform.BUTTON,
                 Platform.SENSOR,
                 Platform.NUMBER,
                 Platform.SWITCH,
@@ -137,6 +138,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry,
         [
             Platform.BINARY_SENSOR,
+            Platform.BUTTON,
             Platform.SENSOR,
             Platform.NUMBER,
             Platform.SWITCH,

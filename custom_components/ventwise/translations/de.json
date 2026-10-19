@@ -9,6 +9,7 @@
         "title": "Ersteinrichtung",
         "description": "Wählen Sie die Wetterquelle, legen Sie Komfortwerte für den Innenraum fest und wählen Sie optional Benachrichtigungsgeräte aus.",
         "data": {
+          "debug_mode_enabled": "Debugmodus aktivieren",
           "outdoor_weather_entity_id": "Wetterquelle",
           "target_temperature_c": "Komforttemperatur",
           "auto_comfort_temperature": "Nutzen Sie ein klimaadaptives Komfortziel",
@@ -19,6 +20,7 @@
           "diagnostic_notification_level": "Diagnosebenachrichtigungen"
         },
         "data_description": {
+          "debug_mode_enabled": "Zeigt Teststeuerungen fuer Oeffnungs- und Schliessbenachrichtigungen je Raum an.",
           "outdoor_weather_entity_id": "Wählen Sie die standardmäßige Home Assistant-Wettereinheit, die VentWise noch heute verwenden kann. Wenn Sie die benötigte Quelle nicht sehen, öffnen Sie ein GitHub-Problem.",
           "target_temperature_c": "Stellen Sie die Innentemperatur ein, die Sie zu Hause als angenehm empfinden.",
           "auto_comfort_temperature": "Verwendet Ihre Komforttemperatur als Basis und passt sie schrittweise an die wahrgenommene Außentemperatur an. Die Einstellung ist innerhalb eines Sicherheitsbereichs von 18–26 °C für Innenräume auf ±2 °C begrenzt. Raumsensoren ermitteln die Empfehlung, bewegen aber niemals das Ziel. Dadurch wird kein Thermostat oder HVAC-System gesteuert.",
@@ -231,6 +233,7 @@
         "title": "VentWise-Einstellungen",
         "description": "Legen Sie hier Alltagskomfort, Benachrichtigungen und Outdoor-Daten fest. Manuelle Außeneinheiten sind nur erforderlich, wenn der entsprechende Schalter aktiviert ist.",
         "data": {
+          "debug_mode_enabled": "Debugmodus aktivieren",
           "outdoor_weather_entity_id": "Wetterquelle",
           "target_temperature_c": "Komforttemperatur",
           "auto_comfort_temperature": "Komforttemperatur automatisch anpassen",
@@ -252,6 +255,7 @@
           "wind_speed_entity_id": "Manuelle Windgeschwindigkeit im Freien"
         },
         "data_description": {
+          "debug_mode_enabled": "Zeigt Teststeuerungen fuer Oeffnungs- und Schliessbenachrichtigungen je Raum an.",
           "outdoor_weather_entity_id": "Wählen Sie die von VentWise verwendete standardmäßige Home Assistant-Wettereinheit.",
           "target_temperature_c": "Stellen Sie die Innentemperatur ein, die Sie zu Hause als angenehm empfinden.",
           "auto_comfort_temperature": "Verwendet Ihre Komforttemperatur als Basis und passt sie schrittweise an die wahrgenommene Außentemperatur an. Die Einstellung ist innerhalb eines Sicherheitsbereichs von 18–26 °C für Innenräume auf ±2 °C begrenzt. Raumsensoren ermitteln die Empfehlung, bewegen aber niemals das Ziel. Dadurch wird kein Thermostat oder HVAC-System gesteuert.",

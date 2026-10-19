@@ -28,6 +28,7 @@ from .const import (
     CONF_NOTIFICATION_ENABLED,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    CONF_DEBUG_MODE_ENABLED,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
@@ -69,6 +70,7 @@ from .const import (
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    DEFAULT_DEBUG_MODE_ENABLED,
     DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_MINIMUM_SCORE,
@@ -131,6 +133,7 @@ class IntegrationConfig:
     notification_enabled: bool = True
     home_assistant_notification_enabled: bool = False
     diagnostic_notification_level: str = DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
+    debug_mode_enabled: bool = DEFAULT_DEBUG_MODE_ENABLED
     co2_enabled: bool = False
     co2_entity_id: str | None = None
     co2_threshold_ppm: float = DEFAULT_CO2_THRESHOLD_PPM
@@ -283,6 +286,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         diagnostic_notification_level=_diagnostic_notification_level(
             data.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
         ),
+        debug_mode_enabled=bool(data.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED)),
         co2_enabled=bool(data.get(CONF_CO2_ENABLED, False)),
         co2_entity_id=_string_or_none(data.get(CONF_CO2_ENTITY_ID)),
         co2_threshold_ppm=float(data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)),
