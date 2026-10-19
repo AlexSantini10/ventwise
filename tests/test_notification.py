@@ -71,10 +71,48 @@ def test_notification_entity_resolution_filters_to_notify_entities(monkeypatch: 
 
     monkeypatch.setattr(notification_module.er, "async_get", _fake_async_get)
     monkeypatch.setattr(notification_module.er, "async_entries_for_device", _fake_entries_for_device)
+    monkeypatch.setattr(
+        notification_module.dr,
+        "async_get",
+        lambda _hass: SimpleNamespace(async_get=lambda _device_id: None),
+    )
 
     result = notification_entity_ids_for_device_ids(object(), ["device-1", "device-2"])
 
     assert result == ("notify.mobile_app_alice", "notify.mobile_app_bob")
+
+
+def test_notification_entity_resolution_matches_companion_identifier_after_device_migration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import notification as notification_module
+
+    entity_registry = SimpleNamespace(
+        entities={
+            "notify.iphone_di_alex": SimpleNamespace(
+                entity_id="notify.iphone_di_alex",
+                device_id="legacy-phone-device",
+                platform="mobile_app",
+                unique_id="phone-uuid",
+            )
+        }
+    )
+    device_registry = SimpleNamespace(
+        async_get=lambda device_id: (
+            SimpleNamespace(identifiers={("mobile_app", "phone-uuid")})
+            if device_id == "current-phone-device"
+            else None
+        )
+    )
+    monkeypatch.setattr(notification_module.er, "async_get", lambda _hass: entity_registry)
+    monkeypatch.setattr(notification_module.dr, "async_get", lambda _hass: device_registry)
+    monkeypatch.setattr(
+        notification_module.er, "async_entries_for_device", lambda _registry, _device_id: []
+    )
+
+    assert notification_entity_ids_for_device_ids(object(), ["current-phone-device"]) == (
+        "notify.iphone_di_alex",
+    )
 
 
 def test_build_notification_payload_uses_requested_language() -> None:

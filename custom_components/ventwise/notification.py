@@ -6,6 +6,7 @@ import logging
 import re
 from collections.abc import Iterable, Sequence
 
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from .ventwise_core import RecommendationSummary
@@ -84,8 +85,20 @@ def notification_entity_ids_for_device_ids(
     """Resolve configured device IDs to notify entity IDs."""
 
     entity_registry = er.async_get(hass)
+    device_registry = dr.async_get(hass)
     entity_ids: list[str] = []
     seen: set[str] = set()
+
+    mobile_app_unique_ids: set[str] = set()
+    for device_id in device_ids:
+        device = device_registry.async_get(device_id)
+        if device is None:
+            continue
+        mobile_app_unique_ids.update(
+            str(identifier)
+            for domain, identifier in device.identifiers
+            if domain == "mobile_app"
+        )
 
     for device_id in device_ids:
         for entry in er.async_entries_for_device(entity_registry, device_id):
@@ -93,6 +106,24 @@ def notification_entity_ids_for_device_ids(
             if not entity_id or not entity_id.startswith("notify."):
                 continue
             if entity_id in seen:
+                continue
+            seen.add(entity_id)
+            entity_ids.append(entity_id)
+
+    # Home Assistant can split or recreate device-registry entries while the
+    # Companion App notify entity keeps its stable mobile_app identifier. Match
+    # that identifier too, so both previously saved and current device IDs stay
+    # valid across such migrations.
+    if mobile_app_unique_ids:
+        for entry in entity_registry.entities.values():
+            entity_id = entry.entity_id
+            if (
+                not entity_id
+                or not entity_id.startswith("notify.")
+                or entry.platform != "mobile_app"
+                or str(entry.unique_id) not in mobile_app_unique_ids
+                or entity_id in seen
+            ):
                 continue
             seen.add(entity_id)
             entity_ids.append(entity_id)

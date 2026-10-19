@@ -78,6 +78,10 @@ from .const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
+from .notification import (
+    is_companion_app_notification_entity,
+    notification_entity_ids_for_device_ids,
+)
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
 SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
@@ -179,14 +183,9 @@ def has_companion_app_notification_device(hass, device_ids: Sequence[str]) -> bo
     configured_ids = set(device_ids)
     if not configured_ids:
         return False
-    entity_registry = er.async_get(hass)
     return any(
-        entry.device_id in configured_ids
-        and (
-            entry.entity_id.startswith("notify.mobile_app_")
-            or entry.platform == "mobile_app"
-        )
-        for entry in entity_registry.entities.values()
+        is_companion_app_notification_entity(hass, entity_id)
+        for entity_id in notification_entity_ids_for_device_ids(hass, configured_ids)
     )
 
 
