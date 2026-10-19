@@ -6,6 +6,7 @@ import logging
 import re
 from collections.abc import Iterable, Sequence
 
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from .ventwise_core import RecommendationSummary
@@ -84,8 +85,29 @@ def notification_entity_ids_for_device_ids(
     """Resolve configured device IDs to notify entity IDs."""
 
     entity_registry = er.async_get(hass)
+    device_registry = dr.async_get(hass)
     entity_ids: list[str] = []
     seen: set[str] = set()
+
+    mobile_app_unique_ids: set[str] = set()
+    for device_id in device_ids:
+        # New configurations persist the notify entity ID itself.  Unlike a
+        # device-registry ID, this does not change when the Companion App
+        # recreates its device entry.
+        if device_id.startswith("notify."):
+            entry = entity_registry.async_get(device_id)
+            if entry is not None and entry.entity_id not in seen:
+                seen.add(entry.entity_id)
+                entity_ids.append(entry.entity_id)
+            continue
+        device = device_registry.async_get(device_id)
+        if device is None:
+            continue
+        mobile_app_unique_ids.update(
+            str(identifier)
+            for domain, identifier in device.identifiers
+            if domain == "mobile_app"
+        )
 
     for device_id in device_ids:
         for entry in er.async_entries_for_device(entity_registry, device_id):
@@ -97,12 +119,54 @@ def notification_entity_ids_for_device_ids(
             seen.add(entity_id)
             entity_ids.append(entity_id)
 
+    # Home Assistant can split or recreate device-registry entries while the
+    # Companion App notify entity keeps its stable mobile_app identifier. Match
+    # that identifier too, so both previously saved and current device IDs stay
+    # valid across such migrations.
+    if mobile_app_unique_ids:
+        for entry in entity_registry.entities.values():
+            entity_id = entry.entity_id
+            if (
+                not entity_id
+                or not entity_id.startswith("notify.")
+                or entry.platform != "mobile_app"
+                or str(entry.unique_id) not in mobile_app_unique_ids
+                or entity_id in seen
+            ):
+                continue
+            seen.add(entity_id)
+            entity_ids.append(entity_id)
+
     if not entity_ids:
         _LOGGER.warning(
             "No notification entities were resolved for %d configured device(s)",
             len(device_ids),
         )
     return tuple(entity_ids)
+
+
+def is_companion_app_notification_entity(hass, entity_id: str) -> bool:
+    """Return whether a notify entity is provided by the Companion App.
+
+    Older Companion App entities commonly used the ``notify.mobile_app_*``
+    prefix. Newer Home Assistant installations can expose the same service as
+    ``notify.<device_name>``, so the entity-registry platform is authoritative.
+    """
+
+    if entity_id.startswith("notify.mobile_app_"):
+        return True
+
+    entry = er.async_get(hass).async_get(entity_id)
+    return entry is not None and entry.platform == "mobile_app"
+
+
+def mobile_app_notification_service(entity_id: str) -> str:
+    """Return the Companion App notify service for an entity-registry target."""
+
+    object_id = entity_id.removeprefix("notify.")
+    if object_id.startswith("mobile_app_"):
+        return object_id
+    return f"mobile_app_{object_id}"
 
 
 def build_notification_payload(
@@ -325,13 +389,20 @@ async def async_send_notification(
         for entity_id in targets:
             try:
                 service_data: dict[str, object] = {"title": title, "message": message}
-                if mobile_action is not None and entity_id.startswith("notify.mobile_app_"):
+                companion_target = is_companion_app_notification_entity(hass, entity_id)
+                if mobile_action is not None and companion_target:
                     service_data["data"] = {"actions": [mobile_action]}
+                service = (
+                    mobile_app_notification_service(entity_id)
+                    if mobile_action is not None and companion_target
+                    else "send_message"
+                )
+                target = None if service != "send_message" else {"entity_id": entity_id}
                 await hass.services.async_call(
                     "notify",
-                    "send_message",
+                    service,
                     service_data,
-                    target={"entity_id": entity_id},
+                    target=target,
                     blocking=True,
                 )
                 delivered_targets.append(entity_id)

@@ -91,11 +91,24 @@ not change a thermostat or HVAC setpoint.
 ### Receive a recommendation now
 
 The VentWise device includes a **Receive recommendation now** button. Use it
-when you want an immediate, informational answer to “what is best right now?”
+when you want an immediate answer to “what is best right now?”
 It refreshes the available weather and room data and sends the current advice
 to the configured notification targets without waiting for the regular
-notification cooldown or stability interval. It never includes confirmation
-actions and cannot trigger a room automation.
+notification cooldown or stability interval. For each actionable room, the
+notification is the same as a regular VentWise recommendation and includes a
+Companion App confirmation button when that room has an automation configured.
+Pressing this device button never runs an automation by itself.
+
+### Debug room notifications
+
+Enable **Debug mode** in VentWise settings only when testing notifications or
+automations. Each room then exposes **Receive open notification** and
+**Receive close notification** controls. They send the normal operational
+notification with the requested action, bypassing notification timing and
+without suppressing later real recommendations. A Companion App confirmation
+is valid for 15 minutes and can run the configured room automation even when
+the current recommendation differs; its own conditions still apply. Disable
+Debug mode when testing is complete to remove these controls from every room.
 
 ### Confirming room automations
 

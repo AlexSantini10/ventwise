@@ -10,6 +10,7 @@ pytest.importorskip("voluptuous")
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
+    CONF_DEBUG_MODE_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
@@ -81,11 +82,22 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert _schema_default(_schema_entry(schema, CONF_DEBUG_MODE_ENABLED)) is False
     assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
     assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "SelectSelector"
+
+
+def test_debug_mode_is_normalized_with_a_safe_default() -> None:
+    """Existing configurations must leave debug controls disabled."""
+
+    normalized = normalize_basic_config(
+        {CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home"}
+    )
+
+    assert normalized[CONF_DEBUG_MODE_ENABLED] is False
 
 
 def test_setup_overrides_schema_is_checkbox_based() -> None:
@@ -134,7 +146,7 @@ def test_basic_options_schema_covers_simple_controls() -> None:
 def test_notification_device_options_include_only_devices_with_notify_entities(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The notification picker must store devices, limited to notify-capable ones."""
+    """The notification picker must store notify entities, not volatile device IDs."""
 
     from custom_components.ventwise import flow
 
@@ -153,20 +165,29 @@ def test_notification_device_options_include_only_devices_with_notify_entities(
     )
     device_registry = SimpleNamespace(
         async_get=lambda device_id: {
-            "phone-alex": SimpleNamespace(name="iPhone di Alex", name_by_user=None),
-            "sensor-1": SimpleNamespace(name="Sensore soggiorno", name_by_user=None),
+            "phone-alex": SimpleNamespace(
+                name="iPhone di Alex", name_by_user=None, identifiers=set()
+            ),
+            "sensor-1": SimpleNamespace(
+                name="Sensore soggiorno", name_by_user=None, identifiers=set()
+            ),
         }.get(device_id)
     )
     monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
     monkeypatch.setattr(flow.dr, "async_get", lambda _hass: device_registry)
+    monkeypatch.setattr(
+        flow.er, "async_entries_for_device", lambda registry, device_id: [
+            entry for entry in registry.entities.values() if entry.device_id == device_id
+        ]
+    )
 
     hass = object()
     assert _notification_device_options(hass) == [
-        {"value": "phone-alex", "label": "iPhone di Alex"}
+        {"value": "notify.alex", "label": "iPhone di Alex"}
     ]
     assert _notification_device_defaults(
         {CONF_NOTIFICATION_DEVICE_ID: ["sensor-1", "phone-alex"]}, hass
-    ) == ["phone-alex"]
+    ) == ["notify.alex"]
 
 
 def test_room_automation_requires_a_selected_companion_app_device(
@@ -177,14 +198,32 @@ def test_room_automation_requires_a_selected_companion_app_device(
     entity_registry = SimpleNamespace(
         entities={
             "notify.mobile_app_alex": SimpleNamespace(
-                entity_id="notify.mobile_app_alex", device_id="phone-alex"
+                entity_id="notify.mobile_app_alex", device_id="phone-alex", platform="mobile_app"
             ),
             "notify.telegram": SimpleNamespace(
-                entity_id="notify.telegram", device_id="telegram-device"
+                entity_id="notify.telegram", device_id="telegram-device", platform="telegram"
             ),
-        }
+            "notify.iphone_di_alex": SimpleNamespace(
+                entity_id="notify.iphone_di_alex", device_id="phone-modern", platform="mobile_app"
+            ),
+        },
+        async_get=lambda entity_id: {
+            "notify.mobile_app_alex": SimpleNamespace(platform="mobile_app"),
+            "notify.telegram": SimpleNamespace(platform="telegram"),
+            "notify.iphone_di_alex": SimpleNamespace(platform="mobile_app"),
+        }.get(entity_id),
     )
     monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
+    monkeypatch.setattr(
+        flow.dr,
+        "async_get",
+        lambda _hass: SimpleNamespace(async_get=lambda _device_id: None),
+    )
+    monkeypatch.setattr(
+        flow.er, "async_entries_for_device", lambda registry, device_id: [
+            entry for entry in registry.entities.values() if entry.device_id == device_id
+        ]
+    )
     room = {
         CONF_ROOM_NAME: "Bedroom",
         CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
@@ -192,6 +231,7 @@ def test_room_automation_requires_a_selected_companion_app_device(
     }
 
     assert has_companion_app_notification_device(object(), ["phone-alex"])
+    assert has_companion_app_notification_device(object(), ["phone-modern"])
     validate_room_automation_confirmation(
         [room], {CONF_NOTIFICATION_DEVICE_ID: ["phone-alex"]}, object()
     )
@@ -201,6 +241,48 @@ def test_room_automation_requires_a_selected_companion_app_device(
         )
     assert exc_info.value.field == CONF_NOTIFICATION_DEVICE_ID
     assert exc_info.value.message == "companion_app_required"
+
+
+def test_room_automation_accepts_a_companion_device_id_after_registry_migration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import flow
+    from custom_components.ventwise import notification as notification_module
+
+    entity_registry = SimpleNamespace(
+        entities={
+            "notify.iphone_di_alex": SimpleNamespace(
+                entity_id="notify.iphone_di_alex",
+                device_id="legacy-phone-device",
+                platform="mobile_app",
+                unique_id="phone-uuid",
+            )
+        },
+        async_get=lambda entity_id: SimpleNamespace(platform="mobile_app")
+        if entity_id == "notify.iphone_di_alex"
+        else None,
+    )
+    device_registry = SimpleNamespace(
+        async_get=lambda device_id: (
+            SimpleNamespace(identifiers={("mobile_app", "phone-uuid")})
+            if device_id == "current-phone-device"
+            else None
+        )
+    )
+    monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
+    monkeypatch.setattr(notification_module.dr, "async_get", lambda _hass: device_registry)
+    monkeypatch.setattr(
+        notification_module.er, "async_entries_for_device", lambda _registry, _device_id: []
+    )
+    room = {
+        CONF_ROOM_NAME: "Bedroom",
+        CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+        CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
+    }
+
+    validate_room_automation_confirmation(
+        [room], {CONF_NOTIFICATION_DEVICE_ID: ["current-phone-device"]}, object()
+    )
 
 
 def test_advanced_options_schema_contains_the_technical_overrides() -> None:

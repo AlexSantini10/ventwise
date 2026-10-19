@@ -24,8 +24,9 @@ from custom_components.ventwise.notification import (
 
 
 class _FakeEntry:
-    def __init__(self, entity_id: str) -> None:
+    def __init__(self, entity_id: str, platform: str | None = None) -> None:
         self.entity_id = entity_id
+        self.platform = platform
 
 
 class _FakeServices:
@@ -70,10 +71,70 @@ def test_notification_entity_resolution_filters_to_notify_entities(monkeypatch: 
 
     monkeypatch.setattr(notification_module.er, "async_get", _fake_async_get)
     monkeypatch.setattr(notification_module.er, "async_entries_for_device", _fake_entries_for_device)
+    monkeypatch.setattr(
+        notification_module.dr,
+        "async_get",
+        lambda _hass: SimpleNamespace(async_get=lambda _device_id: None),
+    )
 
     result = notification_entity_ids_for_device_ids(object(), ["device-1", "device-2"])
 
     assert result == ("notify.mobile_app_alice", "notify.mobile_app_bob")
+
+
+def test_notification_entity_resolution_accepts_a_saved_notify_entity_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import notification as notification_module
+
+    entity = _FakeEntry("notify.iphone_di_alex", platform="mobile_app")
+    entity_registry = SimpleNamespace(async_get=lambda entity_id: entity if entity_id == entity.entity_id else None)
+    monkeypatch.setattr(notification_module.er, "async_get", lambda _hass: entity_registry)
+    monkeypatch.setattr(
+        notification_module.dr,
+        "async_get",
+        lambda _hass: SimpleNamespace(async_get=lambda _device_id: None),
+    )
+    monkeypatch.setattr(
+        notification_module.er, "async_entries_for_device", lambda _registry, _device_id: []
+    )
+
+    assert notification_entity_ids_for_device_ids(object(), ["notify.iphone_di_alex"]) == (
+        "notify.iphone_di_alex",
+    )
+
+
+def test_notification_entity_resolution_matches_companion_identifier_after_device_migration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import notification as notification_module
+
+    entity_registry = SimpleNamespace(
+        entities={
+            "notify.iphone_di_alex": SimpleNamespace(
+                entity_id="notify.iphone_di_alex",
+                device_id="legacy-phone-device",
+                platform="mobile_app",
+                unique_id="phone-uuid",
+            )
+        }
+    )
+    device_registry = SimpleNamespace(
+        async_get=lambda device_id: (
+            SimpleNamespace(identifiers={("mobile_app", "phone-uuid")})
+            if device_id == "current-phone-device"
+            else None
+        )
+    )
+    monkeypatch.setattr(notification_module.er, "async_get", lambda _hass: entity_registry)
+    monkeypatch.setattr(notification_module.dr, "async_get", lambda _hass: device_registry)
+    monkeypatch.setattr(
+        notification_module.er, "async_entries_for_device", lambda _registry, _device_id: []
+    )
+
+    assert notification_entity_ids_for_device_ids(object(), ["current-phone-device"]) == (
+        "notify.iphone_di_alex",
+    )
 
 
 def test_build_notification_payload_uses_requested_language() -> None:
@@ -255,8 +316,44 @@ def test_async_send_notification_adds_confirmation_only_for_companion_targets() 
     )
 
     assert result is True
+    assert hass.services.calls[0][:2] == ("notify", "mobile_app_alice")
+    assert hass.services.calls[0][3] is None
     assert hass.services.calls[0][2]["data"] == {
         "actions": [{"action": "ventwise_confirm_token", "title": "Confirm opening"}]
+    }
+    assert "data" not in hass.services.calls[1][2]
+
+
+def test_async_send_notification_adds_confirmation_for_modern_companion_entity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import notification as notification_module
+
+    registry = SimpleNamespace(
+        async_get=lambda entity_id: (
+            _FakeEntry(entity_id, platform="mobile_app")
+            if entity_id == "notify.iphone_di_alex"
+            else _FakeEntry(entity_id, platform="telegram")
+        )
+    )
+    monkeypatch.setattr(notification_module.er, "async_get", lambda _hass: registry)
+    hass = type("Hass", (), {"services": _FakeServices(), "config": SimpleNamespace(language="it")})()
+
+    result = asyncio.run(
+        async_send_notification(
+            hass,
+            ["notify.iphone_di_alex", "notify.telegram"],
+            title="Apri le finestre",
+            message="Camera: aria fresca.",
+            mobile_action={"action": "ventwise_confirm_token", "title": "Conferma apertura"},
+        )
+    )
+
+    assert result is True
+    assert hass.services.calls[0][:2] == ("notify", "mobile_app_iphone_di_alex")
+    assert hass.services.calls[0][3] is None
+    assert hass.services.calls[0][2]["data"] == {
+        "actions": [{"action": "ventwise_confirm_token", "title": "Conferma apertura"}]
     }
     assert "data" not in hass.services.calls[1][2]
 

@@ -29,6 +29,7 @@ from .const import (
     CONF_CO2_ENTITY_ID,
     CONF_CO2_THRESHOLD_PPM,
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    CONF_DEBUG_MODE_ENABLED,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
@@ -64,6 +65,7 @@ from .const import (
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    DEFAULT_DEBUG_MODE_ENABLED,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
@@ -75,6 +77,10 @@ from .const import (
     DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
+)
+from .notification import (
+    is_companion_app_notification_entity,
+    notification_entity_ids_for_device_ids,
 )
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
@@ -116,9 +122,8 @@ class ConfigValidationError(ValueError):
 def _notification_device_selector(hass) -> SelectSelector:
     """Return a selector containing only devices with notify entities.
 
-    VentWise stores device IDs, then resolves the matching ``notify.*`` entities
-    at delivery time. Selecting devices here (rather than notification entities)
-    preserves that relationship while preventing invalid notification targets.
+    VentWise stores the selected ``notify.*`` entity ID. This stays valid if
+    the Companion App recreates its device-registry entry.
     """
 
     return SelectSelector(
@@ -143,29 +148,36 @@ def _notification_device_defaults(
     available_ids = {
         option["value"] for option in _notification_device_options(hass)
     }
-    return [device_id for device_id in configured_ids if device_id in available_ids]
+    defaults: list[str] = []
+    for target in configured_ids:
+        if target in available_ids and target not in defaults:
+            defaults.append(target)
+
+    # Backward compatibility: older entries stored device IDs. Resolve them
+    # to their current notify entity IDs and write the stable form on save.
+    for entity_id in notification_entity_ids_for_device_ids(hass, configured_ids):
+        if entity_id in available_ids and entity_id not in defaults:
+            defaults.append(entity_id)
+    return defaults
 
 
 def _notification_device_options(hass) -> list[dict[str, str]]:
-    """List registered devices that expose one or more notify entities."""
+    """List notification entities, labelled with their registered device."""
 
     if hass is None:
         return []
 
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
-    device_ids = {
-        entry.device_id
-        for entry in entity_registry.entities.values()
-        if entry.device_id and entry.entity_id.startswith("notify.")
-    }
     options: list[dict[str, str]] = []
-    for device_id in device_ids:
-        device = device_registry.async_get(device_id)
+    for entry in entity_registry.entities.values():
+        if not entry.device_id or not entry.entity_id.startswith("notify."):
+            continue
+        device = device_registry.async_get(entry.device_id)
         if device is None:
             continue
-        label = device.name_by_user or device.name or device_id
-        options.append({"value": device_id, "label": label})
+        label = device.name_by_user or device.name or entry.device_id
+        options.append({"value": entry.entity_id, "label": label})
     return sorted(options, key=lambda option: option["label"].casefold())
 
 
@@ -177,11 +189,9 @@ def has_companion_app_notification_device(hass, device_ids: Sequence[str]) -> bo
     configured_ids = set(device_ids)
     if not configured_ids:
         return False
-    entity_registry = er.async_get(hass)
     return any(
-        entry.device_id in configured_ids
-        and entry.entity_id.startswith("notify.mobile_app_")
-        for entry in entity_registry.entities.values()
+        is_companion_app_notification_entity(hass, entity_id)
+        for entity_id in notification_entity_ids_for_device_ids(hass, configured_ids)
     )
 
 
@@ -252,6 +262,10 @@ def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema
                     ]
                 )
             ),
+            vol.Required(
+                CONF_DEBUG_MODE_ENABLED,
+                default=defaults.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED),
+            ): cv.boolean,
             vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
             **_optional_selector_field(
                 CONF_CO2_ENTITY_ID,
@@ -517,6 +531,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     }:
         raise ConfigValidationError(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
     data[CONF_DIAGNOSTIC_NOTIFICATION_LEVEL] = level
+    data[CONF_DEBUG_MODE_ENABLED] = _normalize_bool(
+        data.get(CONF_DEBUG_MODE_ENABLED),
+        CONF_DEBUG_MODE_ENABLED,
+        default=DEFAULT_DEBUG_MODE_ENABLED,
+    )
     data[CONF_CO2_ENABLED] = _normalize_bool(
         data.get(CONF_CO2_ENABLED), CONF_CO2_ENABLED, default=False
     )
