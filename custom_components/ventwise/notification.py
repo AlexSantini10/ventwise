@@ -151,6 +151,15 @@ def is_companion_app_notification_entity(hass, entity_id: str) -> bool:
     return entry is not None and entry.platform == "mobile_app"
 
 
+def mobile_app_notification_service(entity_id: str) -> str:
+    """Return the Companion App notify service for an entity-registry target."""
+
+    object_id = entity_id.removeprefix("notify.")
+    if object_id.startswith("mobile_app_"):
+        return object_id
+    return f"mobile_app_{object_id}"
+
+
 def build_notification_payload(
     summary: RecommendationSummary,
     *,
@@ -371,15 +380,20 @@ async def async_send_notification(
         for entity_id in targets:
             try:
                 service_data: dict[str, object] = {"title": title, "message": message}
-                if mobile_action is not None and is_companion_app_notification_entity(
-                    hass, entity_id
-                ):
+                companion_target = is_companion_app_notification_entity(hass, entity_id)
+                if mobile_action is not None and companion_target:
                     service_data["data"] = {"actions": [mobile_action]}
+                service = (
+                    mobile_app_notification_service(entity_id)
+                    if mobile_action is not None and companion_target
+                    else "send_message"
+                )
+                target = None if service != "send_message" else {"entity_id": entity_id}
                 await hass.services.async_call(
                     "notify",
-                    "send_message",
+                    service,
                     service_data,
-                    target={"entity_id": entity_id},
+                    target=target,
                     blocking=True,
                 )
                 delivered_targets.append(entity_id)

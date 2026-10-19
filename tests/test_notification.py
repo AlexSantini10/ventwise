@@ -294,6 +294,8 @@ def test_async_send_notification_adds_confirmation_only_for_companion_targets() 
     )
 
     assert result is True
+    assert hass.services.calls[0][:2] == ("notify", "mobile_app_alice")
+    assert hass.services.calls[0][3] is None
     assert hass.services.calls[0][2]["data"] == {
         "actions": [{"action": "ventwise_confirm_token", "title": "Confirm opening"}]
     }
@@ -326,6 +328,8 @@ def test_async_send_notification_adds_confirmation_for_modern_companion_entity(
     )
 
     assert result is True
+    assert hass.services.calls[0][:2] == ("notify", "mobile_app_iphone_di_alex")
+    assert hass.services.calls[0][3] is None
     assert hass.services.calls[0][2]["data"] == {
         "actions": [{"action": "ventwise_confirm_token", "title": "Conferma apertura"}]
     }
