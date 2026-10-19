@@ -13,6 +13,7 @@ from .ventwise_core.models import RoomRecommendation
 
 _LOGGER = logging.getLogger(__name__)
 _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
+_PERSISTENT_ON_DEMAND_RECOMMENDATION_ID = "ventwise_on_demand_recommendation"
 _PERSISTENT_DELIVERY_FAILURE_ID = "ventwise_notification_delivery_failure"
 _PERSISTENT_DIAGNOSTIC_ID = "ventwise_diagnostic"
 _LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "ru", "zh-hans")
@@ -121,6 +122,33 @@ def build_notification_payload(
     return title, body
 
 
+def build_on_demand_notification_payload(
+    summary: RecommendationSummary,
+    *,
+    language: str | None = None,
+) -> tuple[str, str]:
+    """Build a clearly informational recommendation requested by a user."""
+
+    language_key = _normalize_language_key(language)
+    titles = {
+        "en": "VentWise · Recommendation requested now",
+        "it": "VentWise · Consiglio richiesto ora",
+        "es": "VentWise · Recomendación solicitada ahora",
+        "fr": "VentWise · Recommandation demandée maintenant",
+        "de": "VentWise · Empfehlung jetzt angefordert",
+        "ru": "VentWise · Рекомендация запрошена",
+        "zh-hans": "VentWise · 已请求当前建议",
+    }
+    title = titles.get(language_key, titles["en"])
+    if summary.action.value == "none":
+        return title, build_recommendation_status(
+            blocked_by=getattr(summary, "blocked_by", None),
+            language=language,
+        )
+    _, message = build_notification_payload(summary, language=language)
+    return title, message
+
+
 def build_room_notification_payload(
     recommendation: RoomRecommendation,
     *,
@@ -145,6 +173,12 @@ def home_assistant_notification_id_for_room(
 
     identifier = recommendation.room_id or recommendation.room_name
     return f"{_PERSISTENT_RECOMMENDATION_ID}_{_safe_identifier(identifier, 'room')}"
+
+
+def home_assistant_on_demand_notification_id() -> str:
+    """Return the stable ID for the latest on-demand recommendation."""
+
+    return _PERSISTENT_ON_DEMAND_RECOMMENDATION_ID
 
 
 def home_assistant_delivery_failure_id_for_target(target: str | None) -> str:

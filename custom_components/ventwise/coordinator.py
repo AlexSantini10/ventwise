@@ -46,9 +46,11 @@ from .notification import (
     async_create_persistent_notification,
     async_send_notification,
     build_diagnostic_notification_payload,
+    build_on_demand_notification_payload,
     build_room_notification_payload,
     home_assistant_diagnostic_notification_id,
     home_assistant_notification_id_for_room,
+    home_assistant_on_demand_notification_id,
     notification_entity_ids_for_device_ids,
 )
 from .const import (
@@ -114,6 +116,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._pending_confirmations: dict[str, PendingAutomationConfirmation] = {}
         self._confirmation_listener_unsub: Callable[[], None] | None = None
         self._listeners_initialized = False
+        self._suppress_automatic_notifications = False
         bus = getattr(hass, "bus", None)
         if bus is not None:
             self._confirmation_listener_unsub = bus.async_listen(
@@ -142,6 +145,43 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._refresh_state_listeners()
         self._listeners_initialized = True
         self._refresh_time_listener(self.data.last_updated, self.data)
+
+    async def async_send_on_demand_recommendation(self) -> bool:
+        """Send a user-requested recommendation without automation actions."""
+
+        self._forecast_fetched_at = None
+        self._suppress_automatic_notifications = True
+        try:
+            await self.async_request_refresh()
+        finally:
+            self._suppress_automatic_notifications = False
+
+        snapshot = self.data
+        if snapshot is None:
+            _LOGGER.warning("VentWise could not refresh an on-demand recommendation")
+            return False
+
+        notification_entity_ids = (
+            notification_entity_ids_for_device_ids(
+                self.hass,
+                self._config.notification_device_ids,
+            )
+            if self._config.notification_device_ids
+            else ()
+        )
+        title, message = build_on_demand_notification_payload(
+            snapshot.summary,
+            language=getattr(getattr(self.hass, "config", None), "language", None),
+        )
+        return await async_send_notification(
+            self.hass,
+            notification_entity_ids,
+            title=title,
+            message=message,
+            device_ids=self._config.notification_device_ids,
+            send_to_home_assistant=self._config.home_assistant_notification_enabled,
+            home_assistant_notification_id=home_assistant_on_demand_notification_id(),
+        )
 
     async def _async_update_data(self) -> RuntimeSnapshot:
         """Refresh recommendation state from Home Assistant entity states."""
@@ -336,6 +376,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             and not quiet_hours_active
             and stable_for_seconds >= self._config.stability_minutes * 60
         )
+        if self._suppress_automatic_notifications:
+            notification_channel_available = False
         notification_allowed = False
         for recommendation in summary.room_recommendations:
             room_signature = self._notification_identity(recommendation)

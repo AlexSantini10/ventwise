@@ -44,6 +44,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "humidity_override_enabled": "Humidity override enabled",
         "temperature_override": "Temperature override",
         "humidity_override": "Humidity override",
+        "request_recommendation": "Request recommendation now",
     },
     "it": {
         "weather_condition": "Condizione meteo",
@@ -78,6 +79,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "humidity_override_enabled": "Override umidità abilitato",
         "temperature_override": "Override temperatura",
         "humidity_override": "Override umidità",
+        "request_recommendation": "Ricevi consiglio ora",
     },
     "es": {
         "weather_condition": "Condición meteorológica",

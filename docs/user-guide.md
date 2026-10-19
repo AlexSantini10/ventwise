@@ -88,6 +88,15 @@ settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
 climate-adaptive option changes only VentWise's recommendation target; it does
 not change a thermostat or HVAC setpoint.
 
+### Receive a recommendation now
+
+The VentWise device includes a **Receive recommendation now** button. Use it
+when you want an immediate, informational answer to “what is best right now?”
+It refreshes the available weather and room data and sends the current advice
+to the configured notification targets without waiting for the regular
+notification cooldown or stability interval. It never includes confirmation
+actions and cannot trigger a room automation.
+
 ### Confirming room automations
 
 For a room's open or close automation, select at least one Home Assistant
