@@ -209,7 +209,8 @@
       }
     },
     "error": {
-      "invalid_input": "Uno o più valori non sono validi."
+      "invalid_input": "Uno o più valori non sono validi.",
+      "companion_app_required": "Seleziona un dispositivo di notifica Home Assistant Companion App prima di configurare le automazioni della stanza."
     }
   },
   "options": {
@@ -464,7 +465,8 @@
       }
     },
     "error": {
-      "invalid_input": "Uno o più valori non sono validi."
+      "invalid_input": "Uno o più valori non sono validi.",
+      "companion_app_required": "Seleziona un dispositivo di notifica Home Assistant Companion App prima di configurare le automazioni della stanza."
     }
   },
   "selector": {

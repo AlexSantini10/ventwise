@@ -206,7 +206,8 @@
       }
     },
     "error": {
-      "invalid_input": "Uno o más valores no son válidos."
+      "invalid_input": "Uno o más valores no son válidos.",
+      "companion_app_required": "Selecciona un dispositivo de notificación de la aplicación Home Assistant Companion antes de configurar las automatizaciones de la habitación."
     },
     "abort": {
       "single_instance_allowed": "VentWise ya está configurado. Utilice Configurar para actualizarlo."
@@ -464,7 +465,8 @@
       }
     },
     "error": {
-      "invalid_input": "Uno o más valores no son válidos."
+      "invalid_input": "Uno o más valores no son válidos.",
+      "companion_app_required": "Selecciona un dispositivo de notificación de la aplicación Home Assistant Companion antes de configurar las automatizaciones de la habitación."
     }
   },
   "selector": {

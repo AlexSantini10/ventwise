@@ -33,12 +33,18 @@ from custom_components.ventwise.const import (
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
+    CONF_ROOM_START_ENTITY_ID,
+    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_TARGET_TEMPERATURE_C,
     CONF_STABILITY_MINUTES,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from custom_components.ventwise.coordinator import VentWiseCoordinator, _first_forecast_temperature
+from custom_components.ventwise.coordinator import (
+    PendingAutomationConfirmation,
+    VentWiseCoordinator,
+    _first_forecast_temperature,
+)
 from custom_components.ventwise.runtime import NotificationMarker, RoomActionGuard, RoomConfig
 from custom_components.ventwise.ventwise_core import RecommendationAction
 from custom_components.ventwise.ventwise_core.models import RoomRecommendation
@@ -234,6 +240,62 @@ def test_urgent_close_bypasses_room_action_guard() -> None:
     )
 
     assert coordinator._guard_room_recommendation(urgent_close, room, now).action == RecommendationAction.CLOSE
+
+
+def test_confirmed_room_automation_is_one_time_and_rechecks_recommendation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: now)
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                    CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
+                    CONF_ROOM_STOP_ENTITY_ID: "automation.close_bedroom",
+                }
+            ],
+        }
+    )
+    coordinator.data = SimpleNamespace(
+        summary=SimpleNamespace(
+            room_recommendations=(
+                RoomRecommendation(
+                    "Bedroom", RecommendationAction.OPEN, 0.5, "Fresh air.", 22.0, 25.0, 20.0, 22.0
+                ),
+            )
+        )
+    )
+
+    async def _refresh() -> None:
+        return None
+
+    coordinator.async_request_refresh = _refresh
+    coordinator._pending_confirmations["token"] = PendingAutomationConfirmation(
+        "Bedroom", RecommendationAction.OPEN, now + timedelta(minutes=15)
+    )
+    asyncio.run(coordinator._async_confirm_room_automation("token"))
+    asyncio.run(coordinator._async_confirm_room_automation("token"))
+
+    assert hass.services.calls == [
+        (
+            "automation",
+            "trigger",
+            {"skip_condition": False},
+            {"entity_id": "automation.open_bedroom"},
+        )
+    ]
+
+    coordinator._pending_confirmations["stale"] = PendingAutomationConfirmation(
+        "Bedroom", RecommendationAction.CLOSE, now + timedelta(minutes=15)
+    )
+    asyncio.run(coordinator._async_confirm_room_automation("stale"))
+    assert len(hass.services.calls) == 1
 
 
 def test_short_term_forecast_uses_the_nearest_upcoming_temperature() -> None:

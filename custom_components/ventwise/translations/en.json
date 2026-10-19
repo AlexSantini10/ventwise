@@ -119,8 +119,8 @@
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
+          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
           "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
@@ -145,8 +145,8 @@
           "temperature_entity_id": "Pick the room temperature sensor.",
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
+          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
           "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
@@ -175,8 +175,8 @@
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
+          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
           "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
@@ -201,15 +201,16 @@
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
+          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
           "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
         }
       }
     },
     "error": {
-      "invalid_input": "One or more values are invalid."
+      "invalid_input": "One or more values are invalid.",
+      "companion_app_required": "Select a Home Assistant Companion App notification device before configuring room automations."
     }
   },
   "options": {
@@ -464,7 +465,8 @@
       }
     },
     "error": {
-      "invalid_input": "One or more values are invalid."
+      "invalid_input": "One or more values are invalid.",
+      "companion_app_required": "Select a Home Assistant Companion App notification device before configuring room automations."
     }
   },
   "selector": {

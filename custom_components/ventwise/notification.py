@@ -276,6 +276,7 @@ async def async_send_notification(
     device_ids: Sequence[str] | None = None,
     send_to_home_assistant: bool = False,
     home_assistant_notification_id: str = _PERSISTENT_RECOMMENDATION_ID,
+    mobile_action: dict[str, str] | None = None,
 ) -> bool:
     """Deliver a recommendation to selected devices and/or Home Assistant."""
 
@@ -289,10 +290,13 @@ async def async_send_notification(
         failed_targets: list[str] = []
         for entity_id in targets:
             try:
+                service_data: dict[str, object] = {"title": title, "message": message}
+                if mobile_action is not None and entity_id.startswith("notify.mobile_app_"):
+                    service_data["data"] = {"actions": [mobile_action]}
                 await hass.services.async_call(
                     "notify",
                     "send_message",
-                    {"title": title, "message": message},
+                    service_data,
                     target={"entity_id": entity_id},
                     blocking=True,
                 )
