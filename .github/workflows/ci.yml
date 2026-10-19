@@ -11,6 +11,8 @@ on:
       - "test-*"
     paths:
       - ".github/workflows/ci.yml"
+      - ".github/workflows/experimental-release.yml"
+      - ".github/workflows/release.yml"
       - "custom_components/**"
       - "src/**"
       - "tests/**"
@@ -25,6 +27,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/ci.yml"
+      - ".github/workflows/experimental-release.yml"
+      - ".github/workflows/release.yml"
       - "custom_components/**"
       - "src/**"
       - "tests/**"
