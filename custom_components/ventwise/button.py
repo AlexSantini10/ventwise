@@ -33,6 +33,6 @@ class VentWiseRequestRecommendationButton(VentWiseEntity, ButtonEntity):
         super().__init__(coordinator, "request_recommendation", "request_recommendation")
 
     async def async_press(self) -> None:
-        """Refresh data and send the current recommendation without any actions."""
+        """Refresh data and send the current recommendations immediately."""
 
         await self.coordinator.async_send_on_demand_recommendation()
