@@ -186,6 +186,113 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
     assert coordinator._notification_markers["Camera"].title == "Apri le finestre"
 
 
+def test_debug_notification_forces_the_requested_action_without_marking_delivery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    notification_calls: list[dict[str, object]] = []
+    room = SimpleNamespace(name="Camera", room_id="camera")
+    recommendation = RoomRecommendation(
+        "Camera",
+        RecommendationAction.NONE,
+        0.0,
+        "No action.",
+        22.0,
+        26.0,
+        20.0,
+        22.0,
+        room_id="camera",
+    )
+
+    async def _refresh() -> None:
+        return None
+
+    async def _send_notification(_hass, _targets, **kwargs) -> bool:
+        notification_calls.append(kwargs)
+        return True
+
+    coordinator = SimpleNamespace(
+        _forecast_fetched_at=object(),
+        _suppress_automatic_notifications=False,
+        async_request_refresh=_refresh,
+        data=SimpleNamespace(summary=SimpleNamespace(room_recommendations=(recommendation,))),
+        hass=SimpleNamespace(config=SimpleNamespace(language="it")),
+        _config=SimpleNamespace(
+            notification_device_ids=("phone-1",),
+            home_assistant_notification_enabled=True,
+        ),
+        _pending_confirmations={},
+        _notification_markers={"Camera": object()},
+        _mobile_confirmation_action=lambda _recommendation: {
+            "action": "ventwise_confirm_debug",
+            "title": "Conferma apertura",
+        },
+    )
+    monkeypatch.setattr(
+        coordinator_module,
+        "notification_entity_ids_for_device_ids",
+        lambda _hass, _device_ids: ("notify.mobile_app_iphone_di_alex",),
+    )
+    monkeypatch.setattr(coordinator_module, "async_send_notification", _send_notification)
+
+    delivered = asyncio.run(
+        VentWiseCoordinator.async_send_debug_room_notification(
+            coordinator,
+            room,
+            RecommendationAction.OPEN,
+        )
+    )
+
+    assert delivered is True
+    assert coordinator._suppress_automatic_notifications is False
+    assert notification_calls[0]["title"] == "Apri le finestre"
+    assert notification_calls[0]["home_assistant_notification_id"] == "ventwise_recommendation_camera"
+    assert notification_calls[0]["mobile_action"]["action"] == "ventwise_confirm_debug"
+    assert coordinator._notification_markers == {"Camera": coordinator._notification_markers["Camera"]}
+    assert coordinator._pending_confirmations["ventwise_confirm_debug"].debug is True
+
+
+def test_debug_confirmation_bypasses_changed_recommendation() -> None:
+    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                    CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
+                }
+            ],
+        }
+    )
+    coordinator.data = SimpleNamespace(summary=SimpleNamespace(room_recommendations=()))
+
+    async def _refresh() -> None:
+        return None
+
+    coordinator.async_request_refresh = _refresh
+    coordinator._pending_confirmations["debug-token"] = PendingAutomationConfirmation(
+        "Bedroom", RecommendationAction.OPEN, now + timedelta(minutes=15), debug=True
+    )
+
+    from custom_components.ventwise import coordinator as coordinator_module
+
+    original_now = coordinator_module.dt_util.now
+    coordinator_module.dt_util.now = lambda: now
+    try:
+        asyncio.run(coordinator._async_confirm_room_automation("debug-token"))
+    finally:
+        coordinator_module.dt_util.now = original_now
+
+    assert hass.services.calls == [
+        (
+            "automation",
+            "trigger",
+            {"skip_condition": False},
+            {"entity_id": "automation.open_bedroom"},
+        )
+    ]
+
+
 def test_coordinator_loads_persisted_runtime_state() -> None:
     started_at = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
     notification_at = datetime(2026, 7, 21, 13, 5, tzinfo=timezone.utc)

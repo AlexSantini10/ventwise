@@ -99,6 +99,17 @@ notification is the same as a regular VentWise recommendation and includes a
 Companion App confirmation button when that room has an automation configured.
 Pressing this device button never runs an automation by itself.
 
+### Debug room notifications
+
+Enable **Debug mode** in VentWise settings only when testing notifications or
+automations. Each room then exposes **Receive open notification** and
+**Receive close notification** controls. They send the normal operational
+notification with the requested action, bypassing notification timing and
+without suppressing later real recommendations. A Companion App confirmation
+is valid for 15 minutes and can run the configured room automation even when
+the current recommendation differs; its own conditions still apply. Disable
+Debug mode when testing is complete to remove these controls from every room.
+
 ### Confirming room automations
 
 For a room's open or close automation, select at least one Home Assistant

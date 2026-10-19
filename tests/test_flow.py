@@ -10,6 +10,7 @@ pytest.importorskip("voluptuous")
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
+    CONF_DEBUG_MODE_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
@@ -81,11 +82,22 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     schema_dict = schema.schema
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
+    assert _schema_default(_schema_entry(schema, CONF_DEBUG_MODE_ENABLED)) is False
     assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
     assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "SelectSelector"
+
+
+def test_debug_mode_is_normalized_with_a_safe_default() -> None:
+    """Existing configurations must leave debug controls disabled."""
+
+    normalized = normalize_basic_config(
+        {CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home"}
+    )
+
+    assert normalized[CONF_DEBUG_MODE_ENABLED] is False
 
 
 def test_setup_overrides_schema_is_checkbox_based() -> None:
