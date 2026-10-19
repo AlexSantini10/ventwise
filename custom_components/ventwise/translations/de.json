@@ -209,7 +209,8 @@
       }
     },
     "error": {
-      "invalid_input": "Ein oder mehrere Werte sind ungültig."
+      "invalid_input": "Ein oder mehrere Werte sind ungültig.",
+      "companion_app_required": "Wähle ein Benachrichtigungsgerät der Home Assistant Companion App, bevor du Raumautomatisierungen konfigurierst."
     }
   },
   "options": {
@@ -464,7 +465,8 @@
       }
     },
     "error": {
-      "invalid_input": "Ein oder mehrere Werte sind ungültig."
+      "invalid_input": "Ein oder mehrere Werte sind ungültig.",
+      "companion_app_required": "Wähle ein Benachrichtigungsgerät der Home Assistant Companion App, bevor du Raumautomatisierungen konfigurierst."
     }
   },
   "selector": {

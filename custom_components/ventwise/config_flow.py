@@ -31,6 +31,7 @@ from .flow import (
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
+    validate_room_automation_confirmation,
     split_config_data,
     _localized_room_kind_label,
 )
@@ -264,11 +265,16 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 room_input = {**(default_room or {}), **user_input}
                 room = normalize_room_config(room_input, room_kind)
+                candidate_rooms = list(self._rooms)
                 if room_index is None:
-                    self._rooms.append(room)
+                    candidate_rooms.append(room)
                 else:
-                    self._rooms[room_index] = room
-                self._current_config[CONF_ROOMS] = deepcopy(self._rooms)
+                    candidate_rooms[room_index] = room
+                validate_room_automation_confirmation(
+                    candidate_rooms, self._current_config, self.hass
+                )
+                self._rooms = candidate_rooms
+                self._current_config[CONF_ROOMS] = deepcopy(candidate_rooms)
                 self._selected_room_index = None
                 return await self.async_step_rooms()
             except ConfigValidationError as err:

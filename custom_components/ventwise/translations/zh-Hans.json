@@ -206,7 +206,8 @@
       }
     },
     "error": {
-      "invalid_input": "一个或多个值无效。"
+      "invalid_input": "一个或多个值无效。",
+      "companion_app_required": "配置房间自动化前，请先选择 Home Assistant Companion App 通知设备。"
     },
     "abort": {
       "single_instance_allowed": "VentWise 已配置。使用配置来更新它。"
@@ -464,7 +465,8 @@
       }
     },
     "error": {
-      "invalid_input": "一个或多个值无效。"
+      "invalid_input": "一个或多个值无效。",
+      "companion_app_required": "配置房间自动化前，请先选择 Home Assistant Companion App 通知设备。"
     }
   },
   "selector": {

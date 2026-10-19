@@ -12,8 +12,10 @@ You need a working Home Assistant installation and at least one Home Assistant
 temperature sensor and one indoor humidity sensor for each room you want to
 configure.
 
-VentWise does not open or close windows, change a thermostat, or replace a
-safety, weather-protection, or security system.
+VentWise does not directly open or close windows, change a thermostat, or
+replace a safety, weather-protection, or security system. If you opt in to room
+automations, VentWise runs the selected automation only after your explicit
+confirmation in a Companion App notification.
 
 ## Install with HACS
 
@@ -85,6 +87,15 @@ Use **Configure** on the integration to change comfort values, notification
 settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
 climate-adaptive option changes only VentWise's recommendation target; it does
 not change a thermostat or HVAC setpoint.
+
+### Confirming room automations
+
+For a room's open or close automation, select at least one Home Assistant
+Companion App notification device. A matching recommendation includes a
+confirmation button that is valid for 15 minutes and runs the automation only
+if the same recommendation is still current. VentWise respects the automation's
+own conditions. Persistent Home Assistant notifications and non-Companion
+notification services cannot confirm or trigger an automation.
 
 ## Update
 

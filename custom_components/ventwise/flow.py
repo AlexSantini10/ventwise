@@ -169,6 +169,40 @@ def _notification_device_options(hass) -> list[dict[str, str]]:
     return sorted(options, key=lambda option: option["label"].casefold())
 
 
+def has_companion_app_notification_device(hass, device_ids: Sequence[str]) -> bool:
+    """Return whether configured devices include a Companion App notify target."""
+
+    if hass is None:
+        return False
+    configured_ids = set(device_ids)
+    if not configured_ids:
+        return False
+    entity_registry = er.async_get(hass)
+    return any(
+        entry.device_id in configured_ids
+        and entry.entity_id.startswith("notify.mobile_app_")
+        for entry in entity_registry.entities.values()
+    )
+
+
+def validate_room_automation_confirmation(
+    rooms: Sequence[Mapping[str, object]],
+    config: Mapping[str, object],
+    hass,
+) -> None:
+    """Require a Companion App target for configured room automations."""
+
+    has_automation = any(
+        room.get(CONF_ROOM_START_ENTITY_ID) or room.get(CONF_ROOM_STOP_ENTITY_ID)
+        for room in rooms
+    )
+    if has_automation and not has_companion_app_notification_device(
+        hass,
+        _normalize_notification_device_ids(config.get(CONF_NOTIFICATION_DEVICE_ID)) or [],
+    ):
+        raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID, "companion_app_required")
+
+
 def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
     """Create the minimal setup schema."""
 
