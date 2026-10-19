@@ -29,6 +29,7 @@ from .const import (
     CONF_CO2_ENTITY_ID,
     CONF_CO2_THRESHOLD_PPM,
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    CONF_DEBUG_MODE_ENABLED,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
@@ -64,6 +65,7 @@ from .const import (
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    DEFAULT_DEBUG_MODE_ENABLED,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
@@ -252,6 +254,10 @@ def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema
                     ]
                 )
             ),
+            vol.Required(
+                CONF_DEBUG_MODE_ENABLED,
+                default=defaults.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED),
+            ): cv.boolean,
             vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
             **_optional_selector_field(
                 CONF_CO2_ENTITY_ID,
@@ -517,6 +523,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     }:
         raise ConfigValidationError(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
     data[CONF_DIAGNOSTIC_NOTIFICATION_LEVEL] = level
+    data[CONF_DEBUG_MODE_ENABLED] = _normalize_bool(
+        data.get(CONF_DEBUG_MODE_ENABLED),
+        CONF_DEBUG_MODE_ENABLED,
+        default=DEFAULT_DEBUG_MODE_ENABLED,
+    )
     data[CONF_CO2_ENABLED] = _normalize_bool(
         data.get(CONF_CO2_ENABLED), CONF_CO2_ENABLED, default=False
     )

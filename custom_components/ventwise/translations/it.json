@@ -16,7 +16,8 @@
           "stability_minutes": "Attesa prima della raccomandazione (minuti)",
           "notification_device_id": "Dispositivi da notificare",
           "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant",
-          "diagnostic_notification_level": "Notifiche diagnostiche"
+          "diagnostic_notification_level": "Notifiche diagnostiche",
+          "debug_mode_enabled": "Abilita modalità debug"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
@@ -26,7 +27,8 @@
           "stability_minutes": "Per quanto tempo il suggerimento deve restare invariato prima che VentWise invii una notifica. Se non sei sicuro, lascia il valore predefinito.",
           "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise.",
           "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant.",
-          "diagnostic_notification_level": "Scegli se Home Assistant deve mostrare avvisi aggiuntivi per problemi di configurazione o dati dei sensori."
+          "diagnostic_notification_level": "Scegli se Home Assistant deve mostrare avvisi aggiuntivi per problemi di configurazione o dati dei sensori.",
+          "debug_mode_enabled": "Mostra controlli di test per ricevere notifiche di apertura e chiusura per ogni stanza. La conferma può eseguire l'automazione configurata."
         }
       },
       "outdoor": {
@@ -239,6 +241,7 @@
           "notification_device_id": "Dispositivi da notificare",
           "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant",
           "diagnostic_notification_level": "Notifiche diagnostiche",
+          "debug_mode_enabled": "Abilita modalità debug",
           "co2_enabled": "Considera CO₂ nelle raccomandazioni",
           "co2_entity_id": "Sensore CO₂ della casa",
           "co2_threshold_ppm": "Soglia CO₂ (ppm)",
@@ -260,6 +263,7 @@
           "notification_device_id": "Facoltativo. Seleziona i dispositivi che riceveranno le notifiche VentWise.",
           "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant.",
           "diagnostic_notification_level": "Scegli se Home Assistant deve mostrare avvisi aggiuntivi per problemi di configurazione o dati dei sensori.",
+          "debug_mode_enabled": "Mostra controlli di test per ricevere notifiche di apertura e chiusura per ogni stanza. La conferma può eseguire l'automazione configurata.",
           "co2_enabled": "Consigliato se è disponibile un sensore CO₂. Dà priorità al ricambio quando il CO₂ è alto.",
           "co2_entity_id": "Sensore CO₂ predefinito per le stanze senza un proprio sensore.",
           "co2_threshold_ppm": "Livello di CO₂ oltre il quale VentWise dà priorità al ricambio.",

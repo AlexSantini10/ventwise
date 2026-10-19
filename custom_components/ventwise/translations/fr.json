@@ -9,6 +9,7 @@
         "title": "Configuration initiale",
         "description": "Choisissez la source météo, définissez les valeurs de confort intérieur et choisissez éventuellement les appareils de notification.",
         "data": {
+          "debug_mode_enabled": "Activer le mode debug",
           "outdoor_weather_entity_id": "Source météo",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Utiliser un objectif de confort adapté au climat",
@@ -19,6 +20,7 @@
           "diagnostic_notification_level": "Notifications de diagnostic"
         },
         "data_description": {
+          "debug_mode_enabled": "Affiche des controles de test de notification d'ouverture et de fermeture pour chaque piece.",
           "outdoor_weather_entity_id": "Choisissez l’entité météorologique Home Assistant standard que VentWise peut utiliser aujourd’hui. Si vous ne voyez pas la source dont vous avez besoin, ouvrez un ticket GitHub.",
           "target_temperature_c": "Réglez la température intérieure qui vous convient lorsque vous êtes à la maison.",
           "auto_comfort_temperature": "Utilise votre température de confort comme référence et l'ajuste progressivement à partir de la température extérieure perçue. Le réglage est limité à ±2 °C dans une plage de sécurité intérieure de 18 à 26 °C. Les capteurs d'ambiance déterminent la recommandation mais ne déplacent jamais la cible. Cela ne contrôle pas un thermostat ou un système CVC.",
@@ -231,6 +233,7 @@
         "title": "Paramètres VentWise",
         "description": "Définissez ici le confort quotidien, les notifications et les données extérieures. Les entités extérieures manuelles sont requises uniquement lorsque leur commutateur correspondant est activé.",
         "data": {
+          "debug_mode_enabled": "Activer le mode debug",
           "outdoor_weather_entity_id": "Source météo",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Adapter automatiquement la température de confort",
@@ -252,6 +255,7 @@
           "wind_speed_entity_id": "Vitesse du vent extérieur manuelle"
         },
         "data_description": {
+          "debug_mode_enabled": "Affiche des controles de test de notification d'ouverture et de fermeture pour chaque piece.",
           "outdoor_weather_entity_id": "Choisissez l’entité météo standard de Home Assistant utilisée par VentWise.",
           "target_temperature_c": "Réglez la température intérieure qui vous convient lorsque vous êtes à la maison.",
           "auto_comfort_temperature": "Utilise votre température de confort comme référence et l'ajuste progressivement à partir de la température extérieure perçue. Le réglage est limité à ±2 °C dans une plage de sécurité intérieure de 18 à 26 °C. Les capteurs d'ambiance déterminent la recommandation mais ne déplacent jamais la cible. Cela ne contrôle pas un thermostat ou un système CVC.",

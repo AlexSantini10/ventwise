@@ -6,6 +6,7 @@
         "title": "Configuración inicial",
         "description": "Elige la fuente meteorológica, define los valores de confort interiores y, si quieres, selecciona uno o más dispositivos de notificación.",
         "data": {
+          "debug_mode_enabled": "Activar modo de depuracion",
           "outdoor_weather_entity_id": "Fuente meteorológica",
           "target_temperature_c": "Temperatura de confort interior",
           "target_humidity_percent": "Humedad de confort interior",
@@ -16,6 +17,7 @@
           "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant"
         },
         "data_description": {
+          "debug_mode_enabled": "Muestra controles de prueba de apertura y cierre para cada habitacion.",
           "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
           "target_temperature_c": "Define la temperatura interior que te resulta cómoda cuando estás en casa.",
           "target_humidity_percent": "Define la humedad interior que te resulta cómoda cuando estás en casa.",
@@ -421,6 +423,7 @@
         "title": "Configuración de VentWise",
         "description": "Configure aquí la comodidad diaria, las notificaciones y los datos exteriores. Las entidades exteriores manuales solo se requieren cuando su interruptor correspondiente está habilitado.",
         "data": {
+          "debug_mode_enabled": "Activar modo de depuracion",
           "outdoor_weather_entity_id": "Fuente meteorológica",
           "target_temperature_c": "Temperatura de confort",
           "auto_comfort_temperature": "Adaptar la temperatura de confort automáticamente",
@@ -442,6 +445,7 @@
           "wind_speed_entity_id": "Velocidad del viento exterior manual"
         },
         "data_description": {
+          "debug_mode_enabled": "Muestra controles de prueba de apertura y cierre para cada habitacion.",
           "outdoor_weather_entity_id": "Elija la entidad meteorológica estándar de Home Assistant utilizada por VentWise.",
           "target_temperature_c": "Establezca la temperatura interior que le resulte cómoda cuando esté en casa.",
           "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de seguridad interior de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla un termostato ni un sistema HVAC.",

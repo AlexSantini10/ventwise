@@ -6,6 +6,7 @@
         "title": "初始设置",
         "description": "选择天气来源，设置室内舒适值，如果需要，还可以选择一个或多个通知设备。",
         "data": {
+          "debug_mode_enabled": "Debug mode",
           "outdoor_weather_entity_id": "天气来源",
           "target_temperature_c": "室内舒适温度",
           "target_humidity_percent": "室内舒适湿度",
@@ -16,6 +17,7 @@
           "home_assistant_notification_enabled": "在 Home Assistant 中显示通知"
         },
         "data_description": {
+          "debug_mode_enabled": "Shows per-room open and close notification test controls.",
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
           "target_temperature_c": "设置你在家时感觉舒适的室内温度。",
           "target_humidity_percent": "设置你在家时感觉舒适的室内湿度。",
@@ -421,6 +423,7 @@
         "title": "VentWise 设置",
         "description": "在此设置日常舒适度、通知和户外数据。仅当室外实体匹配的开关启用时，才需要手动操作。",
         "data": {
+          "debug_mode_enabled": "启用调试模式",
           "outdoor_weather_entity_id": "天气来源",
           "target_temperature_c": "舒适温度",
           "auto_comfort_temperature": "自动适应舒适温度",
@@ -442,6 +445,7 @@
           "wind_speed_entity_id": "手动室外风速"
         },
         "data_description": {
+          "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试按钮。",
           "outdoor_weather_entity_id": "选择 VentWise 使用的标准 Home Assistant 天气实体。",
           "target_temperature_c": "设置您在家时感觉舒适的室内温度。",
           "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
