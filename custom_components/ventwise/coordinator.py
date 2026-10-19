@@ -51,6 +51,7 @@ from .notification import (
     home_assistant_diagnostic_notification_id,
     home_assistant_notification_id_for_room,
     home_assistant_on_demand_notification_id,
+    is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
 from .const import (
@@ -193,7 +194,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         delivered = False
         has_mobile_app_target = any(
-            entity_id.startswith("notify.mobile_app_")
+            is_companion_app_notification_entity(self.hass, entity_id)
             for entity_id in notification_entity_ids
         )
         for recommendation in actionable_recommendations:
@@ -289,7 +290,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         mobile_action = (
             self._mobile_confirmation_action(forced_recommendation)
             if any(
-                entity_id.startswith("notify.mobile_app_")
+                is_companion_app_notification_entity(self.hass, entity_id)
                 for entity_id in notification_entity_ids
             )
             else None
@@ -590,7 +591,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             mobile_action = (
                 self._mobile_confirmation_action(recommendation)
                 if any(
-                    entity_id.startswith("notify.mobile_app_")
+                    is_companion_app_notification_entity(self.hass, entity_id)
                     for entity_id in notification_entity_ids
                 )
                 else None

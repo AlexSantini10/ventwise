@@ -105,6 +105,21 @@ def notification_entity_ids_for_device_ids(
     return tuple(entity_ids)
 
 
+def is_companion_app_notification_entity(hass, entity_id: str) -> bool:
+    """Return whether a notify entity is provided by the Companion App.
+
+    Older Companion App entities commonly used the ``notify.mobile_app_*``
+    prefix. Newer Home Assistant installations can expose the same service as
+    ``notify.<device_name>``, so the entity-registry platform is authoritative.
+    """
+
+    if entity_id.startswith("notify.mobile_app_"):
+        return True
+
+    entry = er.async_get(hass).async_get(entity_id)
+    return entry is not None and entry.platform == "mobile_app"
+
+
 def build_notification_payload(
     summary: RecommendationSummary,
     *,
@@ -325,7 +340,9 @@ async def async_send_notification(
         for entity_id in targets:
             try:
                 service_data: dict[str, object] = {"title": title, "message": message}
-                if mobile_action is not None and entity_id.startswith("notify.mobile_app_"):
+                if mobile_action is not None and is_companion_app_notification_entity(
+                    hass, entity_id
+                ):
                     service_data["data"] = {"actions": [mobile_action]}
                 await hass.services.async_call(
                     "notify",

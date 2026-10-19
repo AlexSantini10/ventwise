@@ -182,7 +182,10 @@ def has_companion_app_notification_device(hass, device_ids: Sequence[str]) -> bo
     entity_registry = er.async_get(hass)
     return any(
         entry.device_id in configured_ids
-        and entry.entity_id.startswith("notify.mobile_app_")
+        and (
+            entry.entity_id.startswith("notify.mobile_app_")
+            or entry.platform == "mobile_app"
+        )
         for entry in entity_registry.entities.values()
     )
 

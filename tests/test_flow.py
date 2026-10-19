@@ -189,10 +189,13 @@ def test_room_automation_requires_a_selected_companion_app_device(
     entity_registry = SimpleNamespace(
         entities={
             "notify.mobile_app_alex": SimpleNamespace(
-                entity_id="notify.mobile_app_alex", device_id="phone-alex"
+                entity_id="notify.mobile_app_alex", device_id="phone-alex", platform="mobile_app"
             ),
             "notify.telegram": SimpleNamespace(
-                entity_id="notify.telegram", device_id="telegram-device"
+                entity_id="notify.telegram", device_id="telegram-device", platform="telegram"
+            ),
+            "notify.iphone_di_alex": SimpleNamespace(
+                entity_id="notify.iphone_di_alex", device_id="phone-modern", platform="mobile_app"
             ),
         }
     )
@@ -204,6 +207,7 @@ def test_room_automation_requires_a_selected_companion_app_device(
     }
 
     assert has_companion_app_notification_device(object(), ["phone-alex"])
+    assert has_companion_app_notification_device(object(), ["phone-modern"])
     validate_room_automation_confirmation(
         [room], {CONF_NOTIFICATION_DEVICE_ID: ["phone-alex"]}, object()
     )

@@ -24,8 +24,9 @@ from custom_components.ventwise.notification import (
 
 
 class _FakeEntry:
-    def __init__(self, entity_id: str) -> None:
+    def __init__(self, entity_id: str, platform: str | None = None) -> None:
         self.entity_id = entity_id
+        self.platform = platform
 
 
 class _FakeServices:
@@ -257,6 +258,38 @@ def test_async_send_notification_adds_confirmation_only_for_companion_targets() 
     assert result is True
     assert hass.services.calls[0][2]["data"] == {
         "actions": [{"action": "ventwise_confirm_token", "title": "Confirm opening"}]
+    }
+    assert "data" not in hass.services.calls[1][2]
+
+
+def test_async_send_notification_adds_confirmation_for_modern_companion_entity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import notification as notification_module
+
+    registry = SimpleNamespace(
+        async_get=lambda entity_id: (
+            _FakeEntry(entity_id, platform="mobile_app")
+            if entity_id == "notify.iphone_di_alex"
+            else _FakeEntry(entity_id, platform="telegram")
+        )
+    )
+    monkeypatch.setattr(notification_module.er, "async_get", lambda _hass: registry)
+    hass = type("Hass", (), {"services": _FakeServices(), "config": SimpleNamespace(language="it")})()
+
+    result = asyncio.run(
+        async_send_notification(
+            hass,
+            ["notify.iphone_di_alex", "notify.telegram"],
+            title="Apri le finestre",
+            message="Camera: aria fresca.",
+            mobile_action={"action": "ventwise_confirm_token", "title": "Conferma apertura"},
+        )
+    )
+
+    assert result is True
+    assert hass.services.calls[0][2]["data"] == {
+        "actions": [{"action": "ventwise_confirm_token", "title": "Conferma apertura"}]
     }
     assert "data" not in hass.services.calls[1][2]
 
