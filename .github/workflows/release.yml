@@ -60,9 +60,9 @@ jobs:
 
       - name: Build release package
         if: steps.release_check.outputs.exists != 'true'
-        shell: pwsh
+        shell: bash
         run: |
-          ./scripts/build_release_package.ps1 -OutputPath dist/ventwise.zip
+          python scripts/build_release_package.py --output-path dist/ventwise.zip
 
       - name: Verify package structure
         if: steps.release_check.outputs.exists != 'true'
