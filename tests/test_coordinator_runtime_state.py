@@ -45,6 +45,7 @@ from custom_components.ventwise.coordinator import (
     VentWiseCoordinator,
     _first_forecast_temperature,
 )
+from custom_components.ventwise import coordinator as coordinator_module
 from custom_components.ventwise.runtime import NotificationMarker, RoomActionGuard, RoomConfig
 from custom_components.ventwise.ventwise_core import RecommendationAction
 from custom_components.ventwise.ventwise_core.models import RoomRecommendation
@@ -103,6 +104,64 @@ def _make_coordinator(options: dict[str, object] | None = None):
     )
     coordinator = VentWiseCoordinator(hass, entry, {**entry.data, **entry.options})
     return coordinator, hass, entry
+
+
+def test_on_demand_recommendation_refreshes_and_never_supplies_an_action(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    refresh_suppression_states: list[bool] = []
+    notification_calls: list[dict[str, object]] = []
+
+    async def _refresh() -> None:
+        refresh_suppression_states.append(coordinator._suppress_automatic_notifications)
+
+    async def _send_notification(_hass, _targets, **kwargs) -> bool:
+        notification_calls.append(kwargs)
+        return True
+
+    summary = SimpleNamespace(
+        best_room="Camera",
+        action=SimpleNamespace(value="open"),
+        room_recommendations=(
+            SimpleNamespace(
+                room_name="Camera",
+                action=SimpleNamespace(value="open"),
+                indoor_perceived_c=26.0,
+                target_perceived_c=22.0,
+                outdoor_perceived_c=23.0,
+            ),
+        ),
+    )
+    coordinator = SimpleNamespace(
+        _forecast_fetched_at=object(),
+        _suppress_automatic_notifications=False,
+        async_request_refresh=_refresh,
+        data=SimpleNamespace(summary=summary),
+        hass=SimpleNamespace(config=SimpleNamespace(language="it")),
+        _config=SimpleNamespace(
+            notification_device_ids=("phone-1",),
+            home_assistant_notification_enabled=True,
+        ),
+    )
+    monkeypatch.setattr(
+        coordinator_module,
+        "notification_entity_ids_for_device_ids",
+        lambda _hass, _device_ids: ("notify.iphone_di_alex",),
+    )
+    monkeypatch.setattr(coordinator_module, "async_send_notification", _send_notification)
+
+    delivered = asyncio.run(VentWiseCoordinator.async_send_on_demand_recommendation(coordinator))
+
+    assert delivered is True
+    assert refresh_suppression_states == [True]
+    assert coordinator._forecast_fetched_at is None
+    assert coordinator._suppress_automatic_notifications is False
+    notification = notification_calls[0]
+    assert "Camera" in notification["message"]
+    assert notification["device_ids"] == ("phone-1",)
+    assert notification["send_to_home_assistant"] is True
+    assert notification["home_assistant_notification_id"] == "ventwise_on_demand_recommendation"
+    assert "mobile_action" not in notification
 
 
 def test_coordinator_loads_persisted_runtime_state() -> None:

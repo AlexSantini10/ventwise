@@ -9,6 +9,7 @@ import pytest
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import UNIT_CELSIUS
+from custom_components.ventwise.button import VentWiseRequestRecommendationButton
 from custom_components.ventwise.number import (
     ComfortTemperatureNumber,
     RoomTargetTemperatureOverrideNumber,
@@ -77,3 +78,10 @@ def test_celsius_number_units_are_consistent() -> None:
     ]
 
     assert all(number.native_unit_of_measurement == UNIT_CELSIUS for number in numbers)
+
+
+def test_on_demand_recommendation_button_has_a_stable_identity() -> None:
+    button = VentWiseRequestRecommendationButton(_coordinator())
+
+    assert button.unique_id == "entry-1_request_recommendation"
+    assert button.name == "Request recommendation now"
