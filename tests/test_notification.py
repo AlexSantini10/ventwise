@@ -219,6 +219,26 @@ def test_async_send_notification_delivers_to_home_assistant_when_selected() -> N
     ]
 
 
+def test_async_send_notification_adds_confirmation_only_for_companion_targets() -> None:
+    hass = type("Hass", (), {"services": _FakeServices(), "config": SimpleNamespace(language="en")})()
+
+    result = asyncio.run(
+        async_send_notification(
+            hass,
+            ["notify.mobile_app_alice", "notify.telegram"],
+            title="Open windows",
+            message="Bedroom: fresh air helps.",
+            mobile_action={"action": "ventwise_confirm_token", "title": "Confirm opening"},
+        )
+    )
+
+    assert result is True
+    assert hass.services.calls[0][2]["data"] == {
+        "actions": [{"action": "ventwise_confirm_token", "title": "Confirm opening"}]
+    }
+    assert "data" not in hass.services.calls[1][2]
+
+
 def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytest.LogCaptureFixture) -> None:
     hass = type("Hass", (), {"services": _FakeServices(failing_target="notify.mobile_app_alice"), "config": type("Config", (), {"language": "it"})()})()
 

@@ -24,3 +24,5 @@
 - Never commit or push unless @AlexSantini10 has explicitly confirmed it for the current task.
 - For any committed update, decide the version bump as part of the task when it is needed; do not ask the user to approve the bump first.
 - Use `patch` for fixes, `minor` for new features, and `major` for breaking changes or large version jumps.
+- Agent-created temporary test and verification directories (for example `.codex-*`,
+  `.pytest-*`, and build caches) may be deleted without additional approval.

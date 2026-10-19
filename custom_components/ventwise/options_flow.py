@@ -24,6 +24,7 @@ from .flow import (
     normalize_settings_config,
     normalize_room_config,
     split_config_data,
+    validate_room_automation_confirmation,
 )
 
 
@@ -68,9 +69,14 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                self._current_config.update(
-                    normalize_settings_config(user_input, self._current_config)
+                candidate_config = {
+                    **self._current_config,
+                    **normalize_settings_config(user_input, self._current_config),
+                }
+                validate_room_automation_confirmation(
+                    self._rooms, candidate_config, self.hass
                 )
+                self._current_config = candidate_config
                 return self.async_create_entry(title=NAME, data=self._result_data())
             except ConfigValidationError as err:
                 errors[err.field] = err.message
@@ -225,11 +231,16 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             try:
                 room_input = {**(default_room or {}), **user_input}
                 room = normalize_room_config(room_input, room_kind)
+                candidate_rooms = list(self._rooms)
                 if room_index is None:
-                    self._rooms.append(room)
+                    candidate_rooms.append(room)
                 else:
-                    self._rooms[room_index] = room
-                self._current_config[CONF_ROOMS] = deepcopy(self._rooms)
+                    candidate_rooms[room_index] = room
+                validate_room_automation_confirmation(
+                    candidate_rooms, self._current_config, self.hass
+                )
+                self._rooms = candidate_rooms
+                self._current_config[CONF_ROOMS] = deepcopy(candidate_rooms)
                 self._selected_room_index = None
                 return await self.async_step_rooms()
             except ConfigValidationError as err:

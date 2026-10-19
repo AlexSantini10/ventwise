@@ -54,11 +54,13 @@ from custom_components.ventwise.flow import (
     build_room_schema,
     _notification_device_defaults,
     _notification_device_options,
+    has_companion_app_notification_device,
     normalize_advanced_config,
     normalize_basic_config,
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
+    validate_room_automation_confirmation,
     split_config_data,
 )
 
@@ -165,6 +167,40 @@ def test_notification_device_options_include_only_devices_with_notify_entities(
     assert _notification_device_defaults(
         {CONF_NOTIFICATION_DEVICE_ID: ["sensor-1", "phone-alex"]}, hass
     ) == ["phone-alex"]
+
+
+def test_room_automation_requires_a_selected_companion_app_device(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from custom_components.ventwise import flow
+
+    entity_registry = SimpleNamespace(
+        entities={
+            "notify.mobile_app_alex": SimpleNamespace(
+                entity_id="notify.mobile_app_alex", device_id="phone-alex"
+            ),
+            "notify.telegram": SimpleNamespace(
+                entity_id="notify.telegram", device_id="telegram-device"
+            ),
+        }
+    )
+    monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
+    room = {
+        CONF_ROOM_NAME: "Bedroom",
+        CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+        CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
+    }
+
+    assert has_companion_app_notification_device(object(), ["phone-alex"])
+    validate_room_automation_confirmation(
+        [room], {CONF_NOTIFICATION_DEVICE_ID: ["phone-alex"]}, object()
+    )
+    with pytest.raises(ConfigValidationError) as exc_info:
+        validate_room_automation_confirmation(
+            [room], {CONF_NOTIFICATION_DEVICE_ID: ["telegram-device"]}, object()
+        )
+    assert exc_info.value.field == CONF_NOTIFICATION_DEVICE_ID
+    assert exc_info.value.message == "companion_app_required"
 
 
 def test_advanced_options_schema_contains_the_technical_overrides() -> None:
