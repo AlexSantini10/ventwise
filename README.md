@@ -1,7 +1,7 @@
 # VentWise
 
 <p align="center">
-  <img src="docs/assets/brand/banner.png" alt="VentWise banner" width="960" />
+  <img src="https://raw.githubusercontent.com/AlexSantini10/ventwise/main/docs/assets/brand/banner.png" alt="VentWise banner" width="960" />
 </p>
 
 <p align="center">
