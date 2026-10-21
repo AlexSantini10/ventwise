@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/github/actions/workflow/status/AlexSantini10/ventwise/ci.yml?branch=main&label=CI&logo=githubactions&style=for-the-badge" alt="CI status" />
   </a>
   <a href="https://hacs.xyz/">
-    <img src="https://img.shields.io/badge/HACS-Compatible-orange.svg?logo=HomeAssistantCommunityStore&logoColor=white&style=for-the-badge" alt="HACS compatible" />
+    <img src="https://img.shields.io/badge/HACS-Default-orange.svg?logo=HomeAssistantCommunityStore&logoColor=white&style=for-the-badge" alt="HACS Default" />
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/github/license/AlexSantini10/ventwise?logo=apache&logoColor=white&style=for-the-badge" alt="Apache-2.0 license" />
@@ -62,13 +62,14 @@ VentWise helps users decide when opening or closing windows is likely to improve
 
 ### Via HACS
 
-[![Add VentWise to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AlexSantini10&repository=ventwise&category=integration)
+VentWise is available in the **default HACS catalogue**; no custom repository
+is needed.
 
-The button opens VentWise in HACS as a **custom repository**. It works before
-VentWise is listed in the public HACS catalogue; HACS must already be installed
-and will ask the user to confirm the download. Select **Download**, restart
-Home Assistant when prompted, then add **VentWise** from **Settings > Devices
-& services > Add integration**.
+1. Open **HACS** in Home Assistant and select **Integrations**.
+2. Search for **VentWise**, open it, and select **Download**.
+3. Restart Home Assistant when prompted.
+4. Open **Settings > Devices & services > Add integration**, then select
+   **VentWise** to configure it.
 
 Stable releases are published from `main`. Experimental prereleases from the
 `test` branch family are for testing only.
