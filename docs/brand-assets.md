@@ -11,9 +11,11 @@ branding.
 
 - `icon.png` is the 256x256 PNG icon.
 - `icon@2x.png` is the 512x512 high-density PNG icon.
+- `logo.png` is the 1280x640 PNG logo used where a wide brand mark is
+  appropriate.
 
-The icon has a transparent background and is used as the logo fallback. Do not
-add Home Assistant logos, badges, or certification claims to these files.
+The icon has a transparent background. Do not add Home Assistant logos, badges,
+or certification claims to these files.
 
 ## Repository artwork
 
