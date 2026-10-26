@@ -28,7 +28,7 @@ coverage report
 ```
 
 The lightweight suite runs without Home Assistant installed; Home
-Assistant-specific tests are exercised by CI. Use `python ha-local-docker-test.py`
+Assistant-specific tests are exercised by CI. Use `python scripts/ha-local-docker-test.py`
 when you need to inspect the integration in a local Home Assistant environment.
 
 ## Repository Layout
