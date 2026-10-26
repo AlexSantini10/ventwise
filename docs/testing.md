@@ -71,13 +71,13 @@ Use the local Docker sandbox to test the integration without reinstalling from
 HACS on every run.
 
 ```powershell
-python ha-local-docker-test.py
+python scripts/ha-local-docker-test.py
 ```
 
 Run the complete setup-to-recommendation journey in the container with:
 
 ```powershell
-python ha-local-docker-test.py test
+python scripts/ha-local-docker-test.py test
 ```
 
 The script keeps Home Assistant runtime data outside the repository under
