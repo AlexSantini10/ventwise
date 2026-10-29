@@ -38,8 +38,10 @@ from .runtime import (
     build_room_profiles,
     build_scoring_config,
     dump_runtime_state,
+    gate_room_recommendations,
     load_runtime_state,
     is_quiet_hours_active,
+    room_window_states,
 )
 from .notification import (
     async_dismiss_persistent_notification,
@@ -360,6 +362,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self.hass.states.get,
             forecast=forecast,
         )
+        window_states = room_window_states(self._config, self.hass.states.get)
         notification_entity_ids = (
             notification_entity_ids_for_device_ids(
                 self.hass,
@@ -468,6 +471,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             ),
         )
         summary = _with_suggested_comfort_temperature(summary, suggested_target)
+        summary = gate_room_recommendations(summary, window_states)
         summary = self._apply_room_action_guardrails(summary, now)
         signature = self._signature(summary)
         if signature != self._last_action_signature:
@@ -651,6 +655,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             enabled=True,
             stable_for_seconds=stable_for_seconds,
             last_updated=now,
+            window_states=window_states,
         )
         self._persist_runtime_state()
         self._refresh_time_listener(now, snapshot)
@@ -1127,6 +1132,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:
                 entity_ids.add(room.humidity_entity_id)
+            entity_ids.update(room.window_sensor_entity_ids)
         return sorted(entity_ids)
 
     def _async_remove_listeners(self) -> None:

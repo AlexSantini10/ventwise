@@ -34,6 +34,7 @@ from custom_components.ventwise.const import (
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
@@ -627,6 +628,40 @@ def test_normalize_room_config_accepts_input_number_temperature_and_humidity() -
 
     assert data[CONF_ROOM_TEMPERATURE_ENTITY_ID] == "input_number.bedroom_temp"
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] == "input_number.bedroom_humidity"
+
+
+def test_normalize_room_config_accepts_multiple_window_contacts() -> None:
+    data = normalize_room_config(
+        {
+            CONF_ROOM_NAME: "Bedroom",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+            CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
+                "binary_sensor.bedroom_window_left",
+                "binary_sensor.bedroom_window_right",
+                "binary_sensor.bedroom_window_left",
+            ],
+        },
+        "room",
+    )
+
+    assert data[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] == [
+        "binary_sensor.bedroom_window_left",
+        "binary_sensor.bedroom_window_right",
+    ]
+
+
+def test_normalize_room_config_rejects_non_binary_window_contacts() -> None:
+    with pytest.raises(ConfigValidationError) as exc_info:
+        normalize_room_config(
+            {
+                CONF_ROOM_NAME: "Bedroom",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+                CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: ["sensor.bedroom_window"],
+            },
+            "room",
+        )
+
+    assert exc_info.value.field == CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS
 
 
 def test_normalize_room_config_rejects_non_automation_room_actions() -> None:

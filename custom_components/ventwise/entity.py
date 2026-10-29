@@ -23,6 +23,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "recommendation": "Recommendation",
         "recommendation_score": "Recommendation score",
         "recommendation_reason": "Recommendation reason",
+        "window_state": "Window state",
         "perceived_indoor_temperature": "Perceived indoor temperature",
         "temperature": "Indoor temperature",
         "indoor_humidity": "Indoor humidity",
@@ -60,6 +61,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "recommendation": "Raccomandazione",
         "recommendation_score": "Punteggio raccomandazione",
         "recommendation_reason": "Motivo raccomandazione",
+        "window_state": "Stato finestre",
         "perceived_indoor_temperature": "Temperatura interna percepita",
         "temperature": "Temperatura interna",
         "indoor_humidity": "Umidità interna",
@@ -86,6 +88,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "debug_close_notification": "Ricevi notifica di chiusura",
     },
     "es": {
+        "window_state": "Estado de las ventanas",
         "weather_condition": "Condición meteorológica",
         "average_perceived_indoor_temperature": "Temperatura interior percibida media",
         "perceived_outdoor_temperature": "Temperatura exterior percibida",
@@ -120,6 +123,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "humidity_override": "Override de humedad",
     },
     "ru": {
+        "window_state": "Состояние окон",
         "weather_condition": "Погодные условия",
         "average_perceived_indoor_temperature": "Средняя ощущаемая температура в помещении",
         "perceived_outdoor_temperature": "Ощущаемая температура на улице",
@@ -154,6 +158,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "humidity_override": "Переопределение влажности",
     },
     "zh-hans": {
+        "window_state": "窗户状态",
         "weather_condition": "天气状况",
         "average_perceived_indoor_temperature": "平均感知室内温度",
         "perceived_outdoor_temperature": "感知室外温度",

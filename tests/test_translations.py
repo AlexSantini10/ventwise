@@ -42,6 +42,12 @@ def _leaf_paths(value: Any, prefix: str = "") -> set[str]:
 
 
 REVIEWED_LANGUAGES = ("it", "es", "ru", "zh-Hans", "fr", "de")
+ROOM_FORM_STEPS = (
+    "add_room",
+    "edit_room_form",
+    "add_macro_room",
+    "edit_macro_room_form",
+)
 
 
 @pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
@@ -62,6 +68,18 @@ def test_translation_files_reject_duplicate_keys(language: str) -> None:
         _load_translation(language)
     except ValueError as error:
         pytest.fail(f"{language}.json is invalid: {error}")
+
+
+@pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
+def test_room_forms_localize_the_window_contacts_field(language: str) -> None:
+    """Keep the optional contact picker readable in every supported UI locale."""
+
+    translation = _load_translation(language)
+    for section in ("config", "options"):
+        for step in ROOM_FORM_STEPS:
+            assert (
+                translation[section]["step"][step]["data"]["window_sensor_entity_ids"]
+            )
 
 
 def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -> None:

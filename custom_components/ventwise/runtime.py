@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
@@ -10,6 +10,7 @@ from typing import Any
 from .ventwise_core import (
     ComfortObservation,
     ForecastObservation,
+    RecommendationAction,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
@@ -42,6 +43,7 @@ from .const import (
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -102,6 +104,7 @@ class RoomConfig:
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
     co2_entity_id: str | None = None
+    window_sensor_entity_ids: tuple[str, ...] = ()
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
     action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
@@ -162,6 +165,7 @@ class RuntimeSnapshot:
     enabled: bool
     stable_for_seconds: int
     last_updated: datetime
+    window_states: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,6 +233,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
             co2_entity_id=_string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID)),
+            window_sensor_entity_ids=_string_list(
+                room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
+            ),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
             action_change_hold_minutes=int(
@@ -491,6 +498,110 @@ def build_room_profiles(
     return rooms, outdoor
 
 
+WINDOW_STATE_NOT_CONFIGURED = "not_configured"
+WINDOW_STATE_OPEN = "open"
+WINDOW_STATE_CLOSED = "closed"
+WINDOW_STATE_UNAVAILABLE = "unavailable"
+
+
+def room_window_states(
+    config: IntegrationConfig,
+    state_getter: Callable[[str], Any],
+) -> dict[str, str]:
+    """Aggregate each room's optional contact sensors without scoring them."""
+
+    return {
+        room.room_id or room.name: room_window_state(room, state_getter)
+        for room in config.rooms
+    }
+
+
+def room_window_state(room: RoomConfig, state_getter: Callable[[str], Any]) -> str:
+    """Return open when any contact is open, closed only when all are closed."""
+
+    if not room.window_sensor_entity_ids:
+        return WINDOW_STATE_NOT_CONFIGURED
+    states = [
+        state_to_bool(state_getter(entity_id))
+        for entity_id in room.window_sensor_entity_ids
+    ]
+    if any(state is True for state in states):
+        return WINDOW_STATE_OPEN
+    if all(state is False for state in states):
+        return WINDOW_STATE_CLOSED
+    return WINDOW_STATE_UNAVAILABLE
+
+
+def gate_room_recommendations(
+    summary: RecommendationSummary,
+    window_states: Mapping[str, str],
+) -> RecommendationSummary:
+    """Suppress advice already satisfied by a configured room window state."""
+
+    gated_recommendations = []
+    gated_any = False
+    for recommendation in summary.room_recommendations:
+        window_state = window_states.get(
+            recommendation.room_id or recommendation.room_name,
+            WINDOW_STATE_NOT_CONFIGURED,
+        )
+        action = recommendation.action
+        if window_state == WINDOW_STATE_OPEN and action in {
+            RecommendationAction.OPEN,
+            RecommendationAction.VENTILATE,
+        }:
+            gated_recommendations.append(
+                replace(
+                    recommendation,
+                    action=RecommendationAction.NONE,
+                    score=0.0,
+                    reason="The room windows are already open.",
+                    reason_code="window_already_open",
+                )
+            )
+            gated_any = True
+        elif window_state == WINDOW_STATE_CLOSED and action == RecommendationAction.CLOSE:
+            gated_recommendations.append(
+                replace(
+                    recommendation,
+                    action=RecommendationAction.NONE,
+                    score=0.0,
+                    reason="The room windows are already closed.",
+                    reason_code="window_already_closed",
+                )
+            )
+            gated_any = True
+        else:
+            gated_recommendations.append(recommendation)
+
+    if not gated_any:
+        return summary
+    actionable = [
+        recommendation
+        for recommendation in gated_recommendations
+        if recommendation.action != RecommendationAction.NONE
+    ]
+    if not actionable:
+        return replace(
+            summary,
+            action=RecommendationAction.NONE,
+            score=0.0,
+            reason="The configured room window states already match the advice.",
+            blocked_by="window_state",
+            best_room=None,
+            room_recommendations=tuple(gated_recommendations),
+        )
+    best = max(actionable, key=lambda recommendation: recommendation.score)
+    return replace(
+        summary,
+        action=best.action,
+        score=best.score,
+        reason=best.reason,
+        best_room=best.room_name,
+        room_recommendations=tuple(gated_recommendations),
+    )
+
+
 def build_debug_attributes(
     config: IntegrationConfig,
     snapshot: RuntimeSnapshot,
@@ -499,7 +610,7 @@ def build_debug_attributes(
 
     summary = snapshot.summary
     room_details = [
-        _room_debug_attributes(room, recommendation)
+        _room_debug_attributes(room, recommendation, snapshot.window_states)
         for room, recommendation in zip(config.rooms, summary.room_recommendations)
     ]
     best_room_details = next(
@@ -720,7 +831,11 @@ def _dump_datetime(value: datetime | None) -> str | None:
     return value.isoformat()
 
 
-def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation) -> dict[str, Any]:
+def _room_debug_attributes(
+    room: RoomProfile,
+    recommendation: RoomRecommendation,
+    window_states: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     return {
         "room_name": room.name,
         "kind": room.kind,
@@ -737,6 +852,9 @@ def _room_debug_attributes(room: RoomProfile, recommendation: RoomRecommendation
         "outdoor_comfort_severity": recommendation.outdoor_comfort_severity,
         "co2_ppm": recommendation.co2_ppm,
         "co2_influence": recommendation.co2_influence,
+        "window_state": (window_states or {}).get(
+            room.room_id or room.name, WINDOW_STATE_NOT_CONFIGURED
+        ),
     }
 
 
