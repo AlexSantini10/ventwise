@@ -247,10 +247,15 @@ async def test_real_state_events_do_not_redeliver_an_unchanged_recommendation(
     coordinator = await _setup_coordinator(hass, options)
 
     assert coordinator.data.summary.action is RecommendationAction.OPEN
+    assert deliveries == []
+
+    hass.states.async_set("sensor.test_temperature", "27.1")
+    await hass.async_block_till_done()
+    assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert len(deliveries) == 1
     assert deliveries[0].data["notification_id"] == "ventwise_recommendation_test_room"
 
-    hass.states.async_set("sensor.test_temperature", "27.1")
+    hass.states.async_set("sensor.test_temperature", "27.2")
     await hass.async_block_till_done()
     assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert coordinator.data.cooldown_active is True
