@@ -188,19 +188,17 @@ async def test_real_flow_manager_starts_the_ventwise_config_flow(
 @pytest.mark.asyncio
 async def test_real_window_events_suppress_satisfied_advice_and_notifications(
     hass: HomeAssistant,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """An open contact must prevent both repeated advice and another delivery."""
 
     _seed_states(hass)
     hass.states.async_set("binary_sensor.test_window_left", "on")
-    deliveries: list[dict[str, object]] = []
+    deliveries: list[ServiceCall] = []
 
-    async def _capture_delivery(_hass, _entity_ids, **kwargs: object) -> bool:
-        deliveries.append(kwargs)
-        return True
+    async def _capture_delivery(call: ServiceCall) -> None:
+        deliveries.append(call)
 
-    monkeypatch.setattr(coordinator_module, "async_send_notification", _capture_delivery)
+    hass.services.async_register("persistent_notification", "create", _capture_delivery)
     options = _options(
         **{
             CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
@@ -217,6 +215,7 @@ async def test_real_window_events_suppress_satisfied_advice_and_notifications(
     await hass.async_block_till_done()
     assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert len(deliveries) == 1
+    assert deliveries[0].data["notification_id"] == "ventwise_recommendation_test_room"
 
     hass.states.async_set("binary_sensor.test_window_right", "on")
     await hass.async_block_till_done()
@@ -228,18 +227,16 @@ async def test_real_window_events_suppress_satisfied_advice_and_notifications(
 @pytest.mark.asyncio
 async def test_real_state_events_do_not_redeliver_an_unchanged_recommendation(
     hass: HomeAssistant,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The coordinator's delivery marker suppresses deterministic duplicates."""
 
     _seed_states(hass)
-    deliveries: list[dict[str, object]] = []
+    deliveries: list[ServiceCall] = []
 
-    async def _capture_delivery(_hass, _entity_ids, **kwargs: object) -> bool:
-        deliveries.append(kwargs)
-        return True
+    async def _capture_delivery(call: ServiceCall) -> None:
+        deliveries.append(call)
 
-    monkeypatch.setattr(coordinator_module, "async_send_notification", _capture_delivery)
+    hass.services.async_register("persistent_notification", "create", _capture_delivery)
     options = _options(
         **{
             CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
@@ -251,6 +248,7 @@ async def test_real_state_events_do_not_redeliver_an_unchanged_recommendation(
 
     assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert len(deliveries) == 1
+    assert deliveries[0].data["notification_id"] == "ventwise_recommendation_test_room"
 
     hass.states.async_set("sensor.test_temperature", "27.1")
     await hass.async_block_till_done()
