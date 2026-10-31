@@ -69,11 +69,8 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -e .[dev]
 
-      - name: Run scoring model tests
-        run: python -m pytest tests/test_scoring_model.py -q
-
-      - name: Run runtime helper tests
-        run: python -m pytest tests/test_runtime.py -q
+      - name: Run unit tests
+        run: python -m pytest tests/test_scoring_model.py tests/test_runtime.py tests/test_local_docker_runner.py -q
 
   home-assistant:
     name: home-assistant
@@ -99,8 +96,8 @@ jobs:
       - name: Install Home Assistant 2026.7.2
         run: python -m pip install --upgrade -r requirements-ci.txt
 
-      - name: Run Home Assistant tests on 2026.7.2
-        run: python -m pytest tests/test_flow.py tests/test_options_flow.py tests/test_coordinator_runtime_state.py tests/test_notification.py tests/test_entity_units.py tests/test_user_journey.py -q
+      - name: Run Home Assistant integration tests on 2026.7.2
+        run: python -m pytest tests/test_flow.py tests/test_options_flow.py tests/test_coordinator_runtime_state.py tests/test_notification.py tests/test_entity_units.py tests/test_user_journey.py tests/test_home_assistant_integration.py -q
 
   hassfest:
     name: hassfest

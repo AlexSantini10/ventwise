@@ -21,15 +21,15 @@ python -m pip install -e ".[dev]"
 ## Common Commands
 
 ```bash
-python -m pytest -q
-python -m pytest tests/test_scoring_model.py -q
+python -m pytest tests/test_scoring_model.py tests/test_runtime.py tests/test_local_docker_runner.py -q
 coverage run -m pytest
 coverage report
 ```
 
-The lightweight suite runs without Home Assistant installed; Home
-Assistant-specific tests are exercised by CI. Use `python scripts/ha-local-docker-test.py`
-when you need to inspect the integration in a local Home Assistant environment.
+The unit suite runs without Home Assistant. Install `requirements-ci.txt` to
+run the Home Assistant integration suite locally on Linux; CI runs it on every
+change using the version pinned there. Use `python scripts/ha-local-docker-test.py`
+when you need to inspect the packaged integration in a local Home Assistant environment.
 
 ## Repository Layout
 

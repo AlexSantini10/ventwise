@@ -1,3 +1,4 @@
 # Keep CI-only, version-pinned dependencies here so the pip cache key changes
 # whenever the Home Assistant test target changes.
 homeassistant==2026.7.2
+pytest-homeassistant-custom-component==0.13.346

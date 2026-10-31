@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a local Home Assistant Docker sandbox for VentWise."""
+"""Build and run an isolated, persistent Home Assistant test lab for VentWise."""
 
 from __future__ import annotations
 
@@ -10,20 +10,16 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-
+from zipfile import ZipFile
 
 DEFAULT_IMAGE = "ghcr.io/home-assistant/home-assistant:stable"
 DEFAULT_CONTAINER_NAME = "ventwise-ha-test"
 DEFAULT_PORT = 8123
-USER_JOURNEY_TEST = "tests/test_user_journey.py"
-TEST_FIXTURES_MARKER = "# VentWise test fixtures"
-TEST_HELPERS_FILE = "ventwise_test_helpers.yaml"
-TEST_WEATHER_CONDITION_FILE = "ventwise_test_weather_condition.yaml"
-TEST_WEATHER_FILE = "ventwise_test_weather.yaml"
-TEST_DASHBOARD_CONFIG_FILE = "ventwise_test_dashboards.yaml"
-TEST_DASHBOARD_FILE = "ventwise_test_dashboard.yaml"
+PACKAGE_NAME = "ventwise-lab.zip"
+PACKAGE_ROOT_FILES = frozenset({"README.md", "LICENSE", "NOTICE", "hacs.json"})
+FIXTURES_MARKER = "# VentWise test lab fixtures"
 
-TEST_HELPERS_YAML = """ventwise_test_bedroom_temperature:
+HELPERS_YAML = """ventwise_test_bedroom_temperature:
   name: VentWise Test Bedroom Temperature
   min: 10
   max: 35
@@ -39,6 +35,14 @@ ventwise_test_bedroom_humidity:
   initial: 50
   mode: box
   unit_of_measurement: "%"
+ventwise_test_bedroom_co2:
+  name: VentWise Test Bedroom CO2
+  min: 400
+  max: 3000
+  step: 10
+  initial: 700
+  mode: box
+  unit_of_measurement: "ppm"
 ventwise_test_living_room_temperature:
   name: VentWise Test Living Room Temperature
   min: 10
@@ -55,6 +59,14 @@ ventwise_test_living_room_humidity:
   initial: 65
   mode: box
   unit_of_measurement: "%"
+ventwise_test_living_room_co2:
+  name: VentWise Test Living Room CO2
+  min: 400
+  max: 3000
+  step: 10
+  initial: 700
+  mode: box
+  unit_of_measurement: "ppm"
 ventwise_test_outdoor_temperature:
   name: VentWise Test Outdoor Temperature
   min: -20
@@ -81,7 +93,42 @@ ventwise_test_wind_speed:
   unit_of_measurement: "m/s"
 """
 
-TEST_WEATHER_YAML = """- weather:
+BOOLEANS_YAML = """ventwise_test_bedroom_window_left:
+  name: VentWise Test Bedroom Window Left
+ventwise_test_bedroom_window_right:
+  name: VentWise Test Bedroom Window Right
+ventwise_test_living_room_window:
+  name: VentWise Test Living Room Window
+ventwise_test_bedroom_start:
+  name: VentWise Test Bedroom Start Action
+ventwise_test_bedroom_stop:
+  name: VentWise Test Bedroom Stop Action
+ventwise_test_living_room_start:
+  name: VentWise Test Living Room Start Action
+ventwise_test_living_room_stop:
+  name: VentWise Test Living Room Stop Action
+"""
+
+CONDITION_YAML = """ventwise_test_weather_condition:
+  name: VentWise Test Weather Condition
+  options: [sunny, rainy, thunderstorm]
+  initial: sunny
+"""
+
+TEMPLATE_YAML = """- binary_sensor:
+    - name: VentWise Test Bedroom Window Left
+      unique_id: ventwise_test_bedroom_window_left
+      device_class: window
+      state: "{{ is_state('input_boolean.ventwise_test_bedroom_window_left', 'on') }}"
+    - name: VentWise Test Bedroom Window Right
+      unique_id: ventwise_test_bedroom_window_right
+      device_class: window
+      state: "{{ is_state('input_boolean.ventwise_test_bedroom_window_right', 'on') }}"
+    - name: VentWise Test Living Room Window
+      unique_id: ventwise_test_living_room_window
+      device_class: window
+      state: "{{ is_state('input_boolean.ventwise_test_living_room_window', 'on') }}"
+- weather:
     - name: VentWise Test Weather
       unique_id: ventwise_test_weather
       condition: "{{ states('input_select.ventwise_test_weather_condition') }}"
@@ -92,17 +139,7 @@ TEST_WEATHER_YAML = """- weather:
       wind_speed_unit: "m/s"
 """
 
-TEST_WEATHER_CONDITION_YAML = """ventwise_test_weather_condition:
-  name: VentWise Test Weather Condition
-  options:
-    - sunny
-    - rainy
-    - thunderstorm
-  initial: sunny
-  icon: mdi:weather-partly-cloudy
-"""
-
-TEST_DASHBOARD_CONFIG_YAML = """dashboards:
+DASHBOARD_CONFIG_YAML = """dashboards:
   ventwise-test-lab:
     mode: yaml
     title: VentWise Test Lab
@@ -111,7 +148,7 @@ TEST_DASHBOARD_CONFIG_YAML = """dashboards:
     filename: ventwise_test_dashboard.yaml
 """
 
-TEST_DASHBOARD_YAML = """title: VentWise Test Lab
+DASHBOARD_YAML = """title: VentWise Test Lab
 views:
   - title: Scenarios
     path: ventwise-test-lab
@@ -119,8 +156,8 @@ views:
     cards:
       - type: markdown
         content: >
-          Adjust the fixtures below, then inspect the VentWise room entities.
-          The default scenario should recommend opening the bedroom windows.
+          Change the fixtures below. Bedroom has two contacts: either one open
+          makes its aggregated VentWise window state open.
       - type: entities
         title: Outdoor test data
         entities:
@@ -134,160 +171,156 @@ views:
         entities:
           - input_number.ventwise_test_bedroom_temperature
           - input_number.ventwise_test_bedroom_humidity
+          - input_number.ventwise_test_bedroom_co2
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
+          - binary_sensor.ventwise_test_bedroom_window_left
+          - binary_sensor.ventwise_test_bedroom_window_right
       - type: entities
         title: Living room test data
         entities:
           - input_number.ventwise_test_living_room_temperature
           - input_number.ventwise_test_living_room_humidity
+          - input_number.ventwise_test_living_room_co2
+          - input_boolean.ventwise_test_living_room_window
+          - binary_sensor.ventwise_test_living_room_window
       - type: entities
-        title: VentWise results for Camera test
+        title: VentWise results
         entities:
-          - sensor.camera_test_effective_comfort_temperature
-          - sensor.camera_test_climate_adaptive_comfort_target
           - sensor.camera_test_recommendation
           - sensor.camera_test_recommendation_score
           - sensor.camera_test_recommendation_reason
+          - sensor.camera_test_window_state
           - binary_sensor.camera_test_recommendation_active
+          - sensor.living_room_recommendation
+          - sensor.living_room_recommendation_score
+          - sensor.living_room_recommendation_reason
+          - sensor.living_room_window_state
+          - binary_sensor.living_room_recommendation_active
 """
+
+BOOTSTRAP_MANIFEST = '{"domain":"ventwise_lab_bootstrap","name":"VentWise Test Lab Bootstrap","version":"1.0.0","integration_type":"helper","requirements":[],"codeowners":[]}'
+BOOTSTRAP_INIT = '''"""Provision the repeatable VentWise Lab config entry."""
+from homeassistant.config_entries import ConfigEntry
+
+DOMAIN = "ventwise_lab_bootstrap"
+DATA = {
+    "outdoor_weather_entity_id": "weather.ventwise_test_weather",
+    "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
+    "stability_minutes": 0, "co2_enabled": True, "co2_threshold_ppm": 1000.0,
+    "rooms": [
+        {"kind": "room", "room_id": "camera_test", "name": "Camera test", "enabled": True,
+         "temperature_entity_id": "input_number.ventwise_test_bedroom_temperature",
+         "humidity_entity_id": "input_number.ventwise_test_bedroom_humidity",
+         "co2_entity_id": "input_number.ventwise_test_bedroom_co2",
+         "window_sensor_entity_ids": ["binary_sensor.ventwise_test_bedroom_window_left", "binary_sensor.ventwise_test_bedroom_window_right"],
+         "start_entity_id": "input_boolean.ventwise_test_bedroom_start", "stop_entity_id": "input_boolean.ventwise_test_bedroom_stop"},
+        {"kind": "room", "room_id": "living_room", "name": "Living room", "enabled": True,
+         "temperature_entity_id": "input_number.ventwise_test_living_room_temperature",
+         "humidity_entity_id": "input_number.ventwise_test_living_room_humidity",
+         "co2_entity_id": "input_number.ventwise_test_living_room_co2",
+         "window_sensor_entity_ids": ["binary_sensor.ventwise_test_living_room_window"],
+         "start_entity_id": "input_boolean.ventwise_test_living_room_start", "stop_entity_id": "input_boolean.ventwise_test_living_room_stop"},
+    ],
+}
+
+async def async_setup(hass, config):
+    if hass.config_entries.async_entries("ventwise"):
+        return True
+    entry = ConfigEntry(domain="ventwise", title="VentWise Test Lab", data=DATA, options={}, source="user", version=2, minor_version=1, unique_id="ventwise", discovery_keys={}, subentries_data=None)
+    await hass.config_entries.async_add(entry)
+    return True
+'''
 
 
 def repo_root() -> Path:
-    return Path(__file__).resolve().parent
+    return Path(__file__).resolve().parents[1]
 
 
 def default_config_root() -> Path:
     local_app_data = os.environ.get("LOCALAPPDATA")
-    if local_app_data:
-        return Path(local_app_data) / "VentWise-HA-Test"
-    return Path.home() / ".ventwise-ha-test"
-
-
-def ensure_docker() -> None:
-    if shutil.which("docker") is None:
-        raise SystemExit("Docker is not installed or not available on PATH.")
+    return (Path(local_app_data) / "VentWise-HA-Test") if local_app_data else Path.home() / ".ventwise-ha-test"
 
 
 def run(command: list[str]) -> None:
-    completed = subprocess.run(command, check=False)
-    if completed.returncode != 0:
-        raise SystemExit(completed.returncode)
+    if subprocess.run(command, check=False).returncode:
+        raise SystemExit(1)
 
 
 def docker_output(command: list[str]) -> str:
-    completed = subprocess.run(command, check=True, capture_output=True, text=True)
-    return completed.stdout.strip()
+    return subprocess.run(command, check=True, capture_output=True, text=True).stdout.strip()
+
+
+def integration_version(integration_dir: Path) -> str:
+    try:
+        version = json.loads((integration_dir / "manifest.json").read_text(encoding="utf-8")).get("version")
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"Could not read VentWise manifest: {error}") from error
+    if not isinstance(version, str) or not version.strip():
+        raise SystemExit(f"VentWise manifest has no usable version: {integration_dir / 'manifest.json'}")
+    return version.strip()
+
+
+def build_package(config_root: Path) -> Path:
+    package = config_root / "artifacts" / PACKAGE_NAME
+    package.parent.mkdir(parents=True, exist_ok=True)
+    run([sys.executable, str(repo_root() / "scripts" / "build_release_package.py"), "--source-path", str(repo_root()), "--output-path", str(package)])
+    return package
+
+
+def install_package(package: Path, config_dir: Path) -> Path:
+    """Install only package files into the Lab, never from a source bind mount."""
+    target = config_dir / "custom_components" / "ventwise"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        shutil.rmtree(target)
+    target.mkdir()
+    with ZipFile(package) as archive:
+        if "manifest.json" not in archive.namelist():
+            raise SystemExit(f"Invalid VentWise package without manifest: {package}")
+        for name in archive.namelist():
+            if name in PACKAGE_ROOT_FILES or name.endswith("/"):
+                continue
+            destination = (target / name).resolve()
+            if target.resolve() not in destination.parents:
+                raise SystemExit(f"Unsafe path in VentWise package: {name}")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(name) as source, destination.open("wb") as output:
+                shutil.copyfileobj(source, output)
+    return target
 
 
 def ensure_config(config_root: Path) -> Path:
     config_dir = config_root / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
-
-    config_file = config_dir / "configuration.yaml"
-    if not config_file.exists():
-        config_file.write_text(
-            "default_config:\n\nhomeassistant:\n  name: VentWise Test\n",
-            encoding="utf-8",
-        )
-
-    ensure_test_fixtures(config_dir, config_file)
-
+    configuration = config_dir / "configuration.yaml"
+    if not configuration.exists():
+        configuration.write_text("default_config:\n\nhomeassistant:\n  name: VentWise Test Lab\n", encoding="utf-8")
+    lines = (
+        "input_number: !include ventwise_test_helpers.yaml", "input_boolean: !include ventwise_test_booleans.yaml",
+        "input_select: !include ventwise_test_weather_condition.yaml", "template: !include ventwise_test_template.yaml",
+        "lovelace: !include ventwise_test_dashboards.yaml", "ventwise_lab_bootstrap:",
+    )
+    text = configuration.read_text(encoding="utf-8")
+    missing = [line for line in lines if line not in text]
+    if missing:
+        marker = f"{FIXTURES_MARKER}\n" if FIXTURES_MARKER not in text else ""
+        configuration.write_text(f"{text.rstrip()}\n\n{marker}{'\n'.join(missing)}\n", encoding="utf-8")
+    for name, content in {
+        "ventwise_test_helpers.yaml": HELPERS_YAML, "ventwise_test_booleans.yaml": BOOLEANS_YAML,
+        "ventwise_test_weather_condition.yaml": CONDITION_YAML, "ventwise_test_template.yaml": TEMPLATE_YAML,
+        "ventwise_test_dashboards.yaml": DASHBOARD_CONFIG_YAML, "ventwise_test_dashboard.yaml": DASHBOARD_YAML,
+    }.items():
+        (config_dir / name).write_text(content, encoding="utf-8")
+    bootstrap = config_dir / "custom_components" / "ventwise_lab_bootstrap"
+    bootstrap.mkdir(parents=True, exist_ok=True)
+    (bootstrap / "manifest.json").write_text(BOOTSTRAP_MANIFEST, encoding="utf-8")
+    (bootstrap / "__init__.py").write_text(BOOTSTRAP_INIT, encoding="utf-8")
     return config_dir
 
 
-def ensure_test_fixtures(config_dir: Path, config_file: Path) -> None:
-    """Provision repeatable test helpers and a local weather entity."""
-
-    config_text = config_file.read_text(encoding="utf-8")
-    fixture_lines = (
-        f"input_number: !include {TEST_HELPERS_FILE}",
-        f"input_select: !include {TEST_WEATHER_CONDITION_FILE}",
-        f"template: !include {TEST_WEATHER_FILE}",
-        f"lovelace: !include {TEST_DASHBOARD_CONFIG_FILE}",
-    )
-    missing_lines = [line for line in fixture_lines if line not in config_text]
-    if missing_lines:
-        marker = f"{TEST_FIXTURES_MARKER}\n" if TEST_FIXTURES_MARKER not in config_text else ""
-        config_file.write_text(
-            f"{config_text.rstrip()}\n\n{marker}{'\n'.join(missing_lines)}\n",
-            encoding="utf-8",
-        )
-    (config_dir / TEST_HELPERS_FILE).write_text(TEST_HELPERS_YAML, encoding="utf-8")
-    (config_dir / TEST_WEATHER_CONDITION_FILE).write_text(
-        TEST_WEATHER_CONDITION_YAML,
-        encoding="utf-8",
-    )
-    (config_dir / TEST_WEATHER_FILE).write_text(TEST_WEATHER_YAML, encoding="utf-8")
-    (config_dir / TEST_DASHBOARD_CONFIG_FILE).write_text(
-        TEST_DASHBOARD_CONFIG_YAML,
-        encoding="utf-8",
-    )
-    (config_dir / TEST_DASHBOARD_FILE).write_text(TEST_DASHBOARD_YAML, encoding="utf-8")
-
-
-def integration_source() -> Path:
-    source = repo_root() / "custom_components" / "ventwise"
-    if not source.exists():
-        raise SystemExit(f"Integration folder not found: {source}")
-    return source
-
-
-def integration_version(integration_dir: Path) -> str:
-    """Read the version that will be mounted into Home Assistant."""
-
-    manifest_path = integration_dir / "manifest.json"
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise SystemExit(f"Could not read VentWise version from {manifest_path}: {error}") from error
-    version = manifest.get("version") if isinstance(manifest, dict) else None
-    if not isinstance(version, str) or not version.strip():
-        raise SystemExit(f"VentWise manifest has no usable version: {manifest_path}")
-    return version.strip()
-
-
-def mounted_integration_version(name: str) -> str:
-    """Read the version exposed by the integration mount inside a container."""
-
-    return docker_output(
-        [
-            "docker",
-            "exec",
-            name,
-            "python",
-            "-c",
-            (
-                "import json; from pathlib import Path; "
-                "print(json.loads(Path('/config/custom_components/ventwise/manifest.json')"
-                ".read_text(encoding='utf-8'))['version'])"
-            ),
-        ]
-    )
-
-
-def verify_mounted_integration_version(name: str, expected_version: str) -> None:
-    """Fail when Home Assistant cannot see the source version being tested."""
-
-    actual_version = mounted_integration_version(name)
-    if actual_version != expected_version:
-        raise SystemExit(
-            "VentWise source mount version mismatch: "
-            f"expected {expected_version}, container sees {actual_version}."
-        )
-
-
 def container_exists(name: str) -> bool:
-    output = docker_output(
-        [
-            "docker",
-            "ps",
-            "-a",
-            "--filter",
-            f"name=^/{name}$",
-            "--format",
-            "{{.Names}}",
-        ]
-    )
-    return bool(output)
+    return bool(docker_output(["docker", "ps", "-a", "--filter", f"name=^/{name}$", "--format", "{{.Names}}"]))
 
 
 def stop_container(name: str) -> None:
@@ -295,135 +328,56 @@ def stop_container(name: str) -> None:
         run(["docker", "rm", "-f", name])
 
 
-def start_container(
-    *,
-    name: str,
-    image: str,
-    config_dir: Path,
-    integration_dir: Path,
-    integration_version_value: str,
-    port: int,
-    timezone: str,
-) -> None:
+def mounted_integration_version(name: str) -> str:
+    return docker_output(["docker", "exec", name, "python", "-c", "import json; from pathlib import Path; print(json.loads(Path('/config/custom_components/ventwise/manifest.json').read_text(encoding='utf-8'))['version'])"])
+
+
+def verify_mounted_integration_version(name: str, expected: str) -> None:
+    actual = mounted_integration_version(name)
+    if actual != expected:
+        raise SystemExit(f"VentWise package version mismatch: expected {expected}, container sees {actual}.")
+
+
+def start_container(name: str, image: str, config_dir: Path, port: int, timezone: str) -> None:
     stop_container(name)
-
-    run(
-        [
-            "docker",
-            "run",
-            "-d",
-            "--name",
-            name,
-            "--restart",
-            "unless-stopped",
-            "-p",
-            f"{port}:8123",
-            "-e",
-            f"TZ={timezone}",
-            "-v",
-            f"{str(config_dir)}:/config",
-            "-v",
-            f"{str(integration_dir)}:/config/custom_components/ventwise:ro",
-            image,
-        ]
-    )
-
-    verify_mounted_integration_version(name, integration_version_value)
-
-    print(f"Home Assistant is starting at http://localhost:{port}")
-    print(f"Runtime config: {config_dir}")
-    print(f"Local integration: {integration_dir}")
-    print(f"VentWise version under test: {integration_version_value}")
-
-
-def run_user_journey_test(name: str) -> None:
-    """Run the setup-to-recommendation journey inside Home Assistant's Python runtime."""
-
-    test_path = repo_root() / USER_JOURNEY_TEST
-    if not test_path.exists():
-        raise SystemExit(f"User journey test not found: {test_path}")
-    if not container_exists(name):
-        raise SystemExit(f"Home Assistant container is not running: {name}")
-    container_test_path = "/tmp/ventwise_test_user_journey.py"
-    run(["docker", "cp", str(test_path), f"{name}:{container_test_path}"])
-    run(
-        [
-            "docker",
-            "exec",
-            "-e",
-            "PYTHONPATH=/config",
-            name,
-            "python",
-            "-m",
-            "pytest",
-            "-q",
-            container_test_path,
-        ]
-    )
+    run(["docker", "run", "-d", "--name", name, "-p", f"{port}:8123", "-e", f"TZ={timezone}", "-v", f"{config_dir}:/config", image])
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        prog="ha-local-docker-test.py",
-        description="Run a local Home Assistant Docker sandbox for VentWise.",
-    )
-    parser.add_argument(
-        "action",
-        nargs="?",
-        choices=("up", "down", "logs", "restart", "test"),
-        default="up",
-        help="Container action to run.",
-    )
-    parser.add_argument("--image", default=DEFAULT_IMAGE, help="Home Assistant image.")
-    parser.add_argument(
-        "--container-name",
-        default=DEFAULT_CONTAINER_NAME,
-        help="Docker container name.",
-    )
-    parser.add_argument(
-        "--config-root",
-        type=Path,
-        default=default_config_root(),
-        help="External runtime directory for Home Assistant.",
-    )
-    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Host port.")
-    parser.add_argument("--timezone", default="Europe/Rome", help="Container timezone.")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", nargs="?", choices=("up", "down", "logs", "restart", "reset"), default="up")
+    parser.add_argument("--image", default=DEFAULT_IMAGE)
+    parser.add_argument("--container-name", default=DEFAULT_CONTAINER_NAME)
+    parser.add_argument("--config-root", type=Path, default=default_config_root())
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT)
+    parser.add_argument("--timezone", default="Europe/Rome")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    ensure_docker()
-
-    config_dir = ensure_config(args.config_root)
-    integration_dir = integration_source()
-    version = integration_version(integration_dir)
-
-    if args.action in {"up", "restart"}:
-        start_container(
-            name=args.container_name,
-            image=args.image,
-            config_dir=config_dir,
-            integration_dir=integration_dir,
-            integration_version_value=version,
-            port=args.port,
-            timezone=args.timezone,
-        )
+    if shutil.which("docker") is None:
+        raise SystemExit("Docker is not installed or not available on PATH.")
+    if args.action == "reset":
+        stop_container(args.container_name)
+        if args.config_root.exists():
+            shutil.rmtree(args.config_root)
+        print(f"VentWise Test Lab reset: {args.config_root}")
         return 0
-
     if args.action == "down":
         stop_container(args.container_name)
         return 0
-
     if args.action == "logs":
         run(["docker", "logs", "-f", args.container_name])
         return 0
-
-    if args.action == "test":
-        run_user_journey_test(args.container_name)
-        return 0
-
-    raise SystemExit(f"Unsupported action: {args.action}")
+    config_dir = ensure_config(args.config_root)
+    package = build_package(args.config_root)
+    version = integration_version(install_package(package, config_dir))
+    start_container(args.container_name, args.image, config_dir, args.port, args.timezone)
+    verify_mounted_integration_version(args.container_name, version)
+    print(f"VentWise Test Lab is starting at http://localhost:{args.port}")
+    print(f"Runtime profile: {config_dir}\nInstalled package: {package}\nVentWise version: {version}")
+    return 0
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 
@@ -34,12 +35,44 @@ def test_integration_version_rejects_a_missing_manifest_version(tmp_path: Path) 
         RUNNER.integration_version(tmp_path)
 
 
-def test_verify_mounted_integration_version_rejects_stale_source(
+def test_verify_mounted_integration_version_rejects_stale_package(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A container with a stale bind mount must fail before manual testing."""
+    """A container with a stale installed package must fail before testing."""
 
     monkeypatch.setattr(RUNNER, "mounted_integration_version", lambda _: "0.4.0")
 
     with pytest.raises(SystemExit, match="expected 0.5.0, container sees 0.4.0"):
         RUNNER.verify_mounted_integration_version("ventwise-ha-test", "0.5.0")
+
+
+def test_install_package_uses_only_the_distributable_integration_files(tmp_path: Path) -> None:
+    """The Lab must not use a source mount or install release root files as code."""
+
+    package_path = tmp_path / "ventwise.zip"
+    with ZipFile(package_path, "w") as package:
+        package.writestr("manifest.json", json.dumps({"version": "1.2.3"}))
+        package.writestr("sensor.py", "SENSOR = True\n")
+        package.writestr("translations/en.json", "{}")
+        package.writestr("README.md", "release notes")
+
+    installed = RUNNER.install_package(package_path, tmp_path / "profile" / "config")
+
+    assert json.loads((installed / "manifest.json").read_text(encoding="utf-8"))["version"] == "1.2.3"
+    assert (installed / "sensor.py").exists()
+    assert (installed / "translations" / "en.json").exists()
+    assert not (installed / "README.md").exists()
+
+
+def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> None:
+    """The isolated profile includes fixtures, dashboard, and entry bootstrap."""
+
+    config_dir = RUNNER.ensure_config(tmp_path)
+    config_text = (config_dir / "configuration.yaml").read_text(encoding="utf-8")
+
+    assert "ventwise_lab_bootstrap:" in config_text
+    assert "input_boolean: !include ventwise_test_booleans.yaml" in config_text
+    assert "input_number.ventwise_test_bedroom_co2" in (
+        config_dir / "ventwise_test_dashboard.yaml"
+    ).read_text(encoding="utf-8")
+    assert (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py").exists()

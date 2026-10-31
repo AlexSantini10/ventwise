@@ -12,6 +12,8 @@ pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_NOTIFICATION_ENABLED,
@@ -36,6 +38,8 @@ from custom_components.ventwise.const import (
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_TARGET_TEMPERATURE_C,
     CONF_STABILITY_MINUTES,
     OUTDOOR_SOURCE_OVERRIDE,
@@ -104,6 +108,45 @@ def _make_coordinator(options: dict[str, object] | None = None):
     )
     coordinator = VentWiseCoordinator(hass, entry, {**entry.data, **entry.options})
     return coordinator, hass, entry
+
+
+def test_coordinator_watches_window_contacts_and_co2_sources() -> None:
+    """Sensor changes must refresh advice without a polling delay."""
+
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_CO2_ENABLED: True,
+            CONF_CO2_ENTITY_ID: "sensor.home_co2",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.camera_temperature",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.camera_co2",
+                    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
+                        "binary_sensor.camera_left_window",
+                        "binary_sensor.camera_right_window",
+                    ],
+                },
+                {
+                    CONF_ROOM_NAME: "Studio",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.studio_temperature",
+                    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: ["binary_sensor.studio_window"],
+                },
+            ],
+        }
+    )
+
+    assert coordinator._watched_entity_ids() == [
+        "binary_sensor.camera_left_window",
+        "binary_sensor.camera_right_window",
+        "binary_sensor.studio_window",
+        "sensor.camera_co2",
+        "sensor.camera_temperature",
+        "sensor.home_co2",
+        "sensor.studio_temperature",
+        "weather.home",
+    ]
 
 
 def test_on_demand_recommendation_sends_the_current_room_recommendation(
