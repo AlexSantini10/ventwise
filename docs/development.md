@@ -28,8 +28,9 @@ coverage report
 
 The unit suite runs without Home Assistant. Install `requirements-ci.txt` to
 run the Home Assistant integration suite locally on Linux; CI runs it on every
-change using the version pinned there. Use `python scripts/ha-local-docker-test.py`
-when you need to inspect the packaged integration in a local Home Assistant environment.
+change using the version pinned there. For a packaged, local Home Assistant
+environment without physical hardware, use the
+[Docker Test Lab](docker-test-lab.md).
 
 ## Repository Layout
 

@@ -55,7 +55,11 @@ installed in CI.
 - windy cold outside with warm inside
 - neutral conditions near the target
 - multi-room evaluation with rooms treated independently
+- configured window contacts suppress only advice already satisfied; multiple
+  contacts aggregate deterministically
 - quiet hours and cooldown gate the recommendation
+- Home Assistant state events trigger one eligible notification, suppress
+  duplicates, and use the configured notify service target
 - persisted state is reloaded after restart
 - debug attributes expose summary and per-room details
 
@@ -74,6 +78,9 @@ On Windows, run the lightweight command above; the Home Assistant pytest
 framework is exercised by the Linux CI runner.
 
 ## Local Home Assistant Sandbox
+
+For complete startup, dashboard, update, reset, and troubleshooting
+instructions, see [Docker Test Lab](docker-test-lab.md).
 
 Use the local Docker Lab to test the integration manually without physical
 hardware. It is completely isolated from any existing Home Assistant instance.
@@ -100,6 +107,11 @@ The Lab verifies that the installed package version equals the generated ZIP
 version before it reports success. A mismatch stops the command before manual
 testing can use stale code.
 
+VentWise entity IDs in the Lab are deterministic English technical IDs (for
+example `sensor.camera_test_recommendation`), independent of the Home Assistant
+UI language. Only the displayed labels are localized, so automations and the
+dashboard remain stable when users change language.
+
 The sandbox automatically provisions adjustable test fixtures:
 
 - `input_number.ventwise_test_bedroom_temperature` and `_humidity`
@@ -116,6 +128,17 @@ test entry. Change the helpers from the **VentWise Test Lab** sidebar dashboard
 to create repeatable open, close, humidity, CO₂, wind, and multiple-window
 scenarios. The dashboard displays the resulting recommendation, score, reason,
 active flag, and aggregate window state for each room.
+
+For immediate use, the first dashboard control is **Ricevi consiglio ora**: it
+refreshes the evaluation right after changing a fixture. The same screen offers
+quick window toggles, integration, notification, automatic-comfort and
+quiet-hours controls, and the quiet-hours time range.
+
+For the window-contact regression scenario, keep all contacts closed, make a
+room warmer than the outdoor data and press **Ricevi consiglio ora**. Then open
+one bedroom contact and press it again: the room must not be advised to open a
+window that is already open. Repeat with the other bedroom contact to verify
+the multi-contact aggregate.
 
 `tests/system/test_user_journey.py` covers the automated path from the submitted setup
 data through room sensor readings, scoring, and the Italian explanation shown to

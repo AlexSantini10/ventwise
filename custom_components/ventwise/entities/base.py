@@ -208,12 +208,19 @@ class VentWiseEntity(CoordinatorEntity[VentWiseCoordinator]):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_suffix}"
+        self._suggested_object_id = entity_suffix
         self._attr_name = _localized_name(name_key, coordinator.hass.config.language)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.config_entry.entry_id)},
             manufacturer=MANUFACTURER,
             name=coordinator.config_entry.title or NAME,
         )
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Keep the entity ID independent from the Home Assistant UI language."""
+
+        return self._suggested_object_id
 
 
 class VentWiseRoomEntity(VentWiseEntity):
@@ -232,6 +239,9 @@ class VentWiseRoomEntity(VentWiseEntity):
             f"{room_key}_{entity_suffix}",
             name_key,
         )
+        # Home Assistant prefixes entities with the room device object ID.
+        # Keep only the English entity type here to avoid a doubled room key.
+        self._suggested_object_id = entity_suffix
         self._room = room
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.config_entry.entry_id, room_key)},

@@ -65,14 +65,16 @@ def test_install_package_uses_only_the_distributable_integration_files(tmp_path:
 
 
 def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> None:
-    """The isolated profile includes fixtures, dashboard, and entry bootstrap."""
+    """The isolated profile exposes fixtures and actionable Lab controls."""
 
     config_dir = RUNNER.ensure_config(tmp_path)
     config_text = (config_dir / "configuration.yaml").read_text(encoding="utf-8")
 
     assert "ventwise_lab_bootstrap:" in config_text
     assert "input_boolean: !include ventwise_test_booleans.yaml" in config_text
-    assert "input_number.ventwise_test_bedroom_co2" in (
-        config_dir / "ventwise_test_dashboard.yaml"
-    ).read_text(encoding="utf-8")
+    dashboard = (config_dir / "ventwise_test_dashboard.yaml").read_text(encoding="utf-8")
+    assert "input_number.ventwise_test_bedroom_co2" in dashboard
+    assert "button.ventwise_test_lab_request_recommendation" in dashboard
+    assert "switch.ventwise_test_lab_quiet_hours_enable" in dashboard
+    assert "sensor.camera_test_recommendation" in dashboard
     assert (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py").exists()

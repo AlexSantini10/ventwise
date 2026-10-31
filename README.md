@@ -68,6 +68,7 @@ Stable releases are published from `main`. Experimental prereleases from the
 ## Documentation
 
 - [User guide: installation, setup, updates, and removal](docs/user-guide.md)
+- [Docker Test Lab: local manual testing without hardware](docs/docker-test-lab.md)
 - [How the Home Assistant integration works](docs/home-assistant-integration.md)
 - [Safety, beta status, and reporting guidance](docs/NOTICE.md)
 - [Contributing guide](CONTRIBUTING.md)

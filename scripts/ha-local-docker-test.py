@@ -150,16 +150,39 @@ DASHBOARD_CONFIG_YAML = """dashboards:
 
 DASHBOARD_YAML = """title: VentWise Test Lab
 views:
-  - title: Scenarios
+  - title: Prova VentWise
     path: ventwise-test-lab
     icon: mdi:test-tube
     cards:
       - type: markdown
-        content: >
-          Change the fixtures below. Bedroom has two contacts: either one open
-          makes its aggregated VentWise window state open.
+        content: |
+          # VentWise Test Lab
+
+          Modifica un dato di prova, poi premi **Ricevi consiglio ora**. I
+          risultati e le motivazioni vengono aggiornati qui sotto: non serve
+          alcun dispositivo fisico.
+
+          **Scenari rapidi:** con finestre chiuse, imposta una stanza più calda
+          e l'esterno più fresco per ottenere un consiglio di apertura. Apri
+          poi uno dei contatti della camera: VentWise non deve suggerire di
+          riaprire una finestra già aperta. La camera ha due contatti: ne basta
+          uno aperto perché lo stato aggregato sia `open`.
+      - type: horizontal-stack
+        cards:
+          - type: button
+            entity: input_boolean.ventwise_test_bedroom_window_left
+            name: Apri/chiudi finestra camera
+            icon: mdi:window-open-variant
+            tap_action:
+              action: toggle
+          - type: button
+            entity: input_boolean.ventwise_test_living_room_window
+            name: Apri/chiudi finestra soggiorno
+            icon: mdi:window-open-variant
+            tap_action:
+              action: toggle
       - type: entities
-        title: Outdoor test data
+        title: Dati esterni simulati
         entities:
           - input_number.ventwise_test_outdoor_temperature
           - input_number.ventwise_test_outdoor_humidity
@@ -167,7 +190,7 @@ views:
           - input_select.ventwise_test_weather_condition
           - weather.ventwise_test_weather
       - type: entities
-        title: Bedroom test data
+        title: Dati simulati — Camera
         entities:
           - input_number.ventwise_test_bedroom_temperature
           - input_number.ventwise_test_bedroom_humidity
@@ -177,26 +200,47 @@ views:
           - binary_sensor.ventwise_test_bedroom_window_left
           - binary_sensor.ventwise_test_bedroom_window_right
       - type: entities
-        title: Living room test data
+        title: Dati simulati — Soggiorno
         entities:
           - input_number.ventwise_test_living_room_temperature
           - input_number.ventwise_test_living_room_humidity
           - input_number.ventwise_test_living_room_co2
           - input_boolean.ventwise_test_living_room_window
           - binary_sensor.ventwise_test_living_room_window
+      - type: button
+        entity: button.ventwise_test_lab_request_recommendation
+        name: Ricevi consiglio ora
+        icon: mdi:message-text-fast-outline
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.ventwise_test_lab_request_recommendation
       - type: entities
-        title: VentWise results
+        title: Controlli VentWise
+        entities:
+          - switch.ventwise_test_lab_master_enable
+          - switch.ventwise_test_lab_notification_enable
+          - switch.ventwise_test_lab_auto_comfort_temperature
+          - switch.ventwise_test_lab_quiet_hours_enable
+          - time.ventwise_test_lab_quiet_hours_start
+          - time.ventwise_test_lab_quiet_hours_end
+      - type: entities
+        title: Risultati VentWise — Camera
         entities:
           - sensor.camera_test_recommendation
-          - sensor.camera_test_recommendation_score
-          - sensor.camera_test_recommendation_reason
+          - sensor.camera_test_score
+          - sensor.camera_test_reason
           - sensor.camera_test_window_state
-          - binary_sensor.camera_test_recommendation_active
+          - binary_sensor.camera_test_active
+      - type: entities
+        title: Risultati VentWise — Soggiorno
+        entities:
           - sensor.living_room_recommendation
-          - sensor.living_room_recommendation_score
-          - sensor.living_room_recommendation_reason
+          - sensor.living_room_score
+          - sensor.living_room_reason
           - sensor.living_room_window_state
-          - binary_sensor.living_room_recommendation_active
+          - binary_sensor.living_room_active
 """
 
 BOOTSTRAP_MANIFEST = '{"domain":"ventwise_lab_bootstrap","name":"VentWise Test Lab Bootstrap","version":"1.0.0","integration_type":"helper","requirements":[],"codeowners":[]}'
@@ -225,9 +269,9 @@ DATA = {
 }
 
 async def async_setup(hass, config):
-    if hass.config_entries.async_entries("ventwise"):
+    if any(entry.unique_id == "ventwise_test_lab" for entry in hass.config_entries.async_entries("ventwise")):
         return True
-    entry = ConfigEntry(domain="ventwise", title="VentWise Test Lab", data=DATA, options={}, source="user", version=2, minor_version=1, unique_id="ventwise", discovery_keys={}, subentries_data=None)
+    entry = ConfigEntry(domain="ventwise", title="VentWise Test Lab", data=DATA, options={}, source="user", version=2, minor_version=1, unique_id="ventwise_test_lab", discovery_keys={}, subentries_data=None)
     await hass.config_entries.async_add(entry)
     return True
 '''
