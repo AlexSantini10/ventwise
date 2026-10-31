@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 
 
-TRANSLATIONS_DIR = Path(__file__).parents[1] / "custom_components" / "ventwise" / "translations"
+TRANSLATIONS_DIR = Path(__file__).parents[2] / "custom_components" / "ventwise" / "translations"
 
 
 def _load_translation(language: str) -> dict[str, Any]:

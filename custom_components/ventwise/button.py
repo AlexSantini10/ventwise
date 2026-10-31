@@ -8,9 +8,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
-from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity, VentWiseRoomEntity
-from .runtime import RoomConfig
+from .application.coordinator import VentWiseCoordinator
+from .application.runtime import RoomConfig
+from .entities.base import VentWiseEntity, VentWiseRoomEntity
 from .ventwise_core import RecommendationAction
 
 _DEBUG_BUTTON_SUFFIXES = ("_debug_open_notification", "_debug_close_notification")

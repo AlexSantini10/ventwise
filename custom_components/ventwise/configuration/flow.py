@@ -22,7 +22,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .const import (
+from ..const import (
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_CO2_ENABLED,
@@ -79,7 +79,7 @@ from .const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from .notification import (
+from ..application.notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )

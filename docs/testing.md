@@ -32,12 +32,13 @@ the core engine and the Home Assistant runtime layer.
 
 ## Test Types
 
-- pure Python unit tests for scoring
-- unit tests for runtime parsing, sensor aggregation, and recommendation gates
-- Home Assistant integration tests using `pytest-homeassistant-custom-component`
-- regression tests for every user-visible behavior change
-- regression tests for room management and config validation
-- coverage checks on the reusable core and the HA runtime helpers
+- `tests/unit/`: pure scoring, runtime parsing, sensor aggregation, package, and runner tests
+- `tests/integration/`: configuration, entities, coordinator, notifications, translations, and Home Assistant framework tests
+- `tests/system/`: end-to-end user journeys from submitted setup data to advice
+
+Every user-visible behavior change needs a focused regression in the narrowest
+layer that proves it; use integration or system tests when Home Assistant state
+delivery or the full configuration journey matters.
 
 ## Supported Home Assistant Version
 
@@ -61,7 +62,7 @@ installed in CI.
 ## Local Workflow
 
 ```bash
-python -m pytest tests/test_scoring_model.py tests/test_runtime.py tests/test_local_docker_runner.py -q
+python -m pytest tests/unit -q
 coverage run -m pytest
 coverage report
 ```
@@ -116,7 +117,7 @@ to create repeatable open, close, humidity, CO₂, wind, and multiple-window
 scenarios. The dashboard displays the resulting recommendation, score, reason,
 active flag, and aggregate window state for each room.
 
-`tests/test_user_journey.py` covers the automated path from the submitted setup
+`tests/system/test_user_journey.py` covers the automated path from the submitted setup
 data through room sensor readings, scoring, and the Italian explanation shown to
 the user. It runs in the Home Assistant CI job.
 

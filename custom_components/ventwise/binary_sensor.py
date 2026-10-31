@@ -8,9 +8,9 @@ from homeassistant.core import HomeAssistant
 
 from .ventwise_core import RecommendationAction
 
-from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity, VentWiseRoomEntity
-from .runtime import find_room_recommendation
+from .application.coordinator import VentWiseCoordinator
+from .application.runtime import find_room_recommendation
+from .entities.base import VentWiseEntity, VentWiseRoomEntity
 
 
 async def async_setup_entry(

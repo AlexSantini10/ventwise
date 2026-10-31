@@ -5,9 +5,9 @@ from __future__ import annotations
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER, NAME
-from .coordinator import VentWiseCoordinator
-from .runtime import RoomConfig
+from ..const import DOMAIN, MANUFACTURER, NAME
+from ..application.coordinator import VentWiseCoordinator
+from ..application.runtime import RoomConfig
 
 
 ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {

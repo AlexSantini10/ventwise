@@ -26,7 +26,7 @@ from custom_components.ventwise.const import (
     CONF_STABILITY_MINUTES,
     DOMAIN,
 )
-from custom_components.ventwise.coordinator import VentWiseCoordinator
+from custom_components.ventwise.application.coordinator import VentWiseCoordinator
 
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")

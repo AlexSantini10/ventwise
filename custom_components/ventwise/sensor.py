@@ -7,15 +7,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import UNIT_CELSIUS
-from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity, VentWiseRoomEntity
-from .notification import build_recommendation_explanation, build_recommendation_status
-from .runtime import (
+from .application.coordinator import VentWiseCoordinator
+from .application.notification import build_recommendation_explanation, build_recommendation_status
+from .application.runtime import (
     RoomConfig,
     WINDOW_STATE_NOT_CONFIGURED,
     find_room_recommendation,
     state_to_float,
 )
+from .entities.base import VentWiseEntity, VentWiseRoomEntity
 from .ventwise_core import RecommendationAction
 
 

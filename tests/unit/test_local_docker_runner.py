@@ -10,7 +10,7 @@ from zipfile import ZipFile
 import pytest
 
 
-RUNNER_PATH = Path(__file__).parents[1] / "scripts" / "ha-local-docker-test.py"
+RUNNER_PATH = Path(__file__).parents[2] / "scripts" / "ha-local-docker-test.py"
 SPEC = importlib.util.spec_from_file_location("ventwise_local_docker_runner", RUNNER_PATH)
 assert SPEC is not None and SPEC.loader is not None
 RUNNER = importlib.util.module_from_spec(SPEC)

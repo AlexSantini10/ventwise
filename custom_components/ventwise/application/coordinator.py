@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from .ventwise_core import (
+from ..ventwise_core import (
     ComfortRecommender,
     ForecastObservation,
     RecommendationAction,
@@ -56,7 +56,7 @@ from .notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
-from .const import (
+from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
@@ -73,8 +73,8 @@ from .const import (
     CONF_TARGET_TEMPERATURE_C,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from .const import CONF_NOTIFICATION_ENABLED
-from .const import DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
+from ..const import CONF_NOTIFICATION_ENABLED
+from ..const import DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
 
 _LOGGER = logging.getLogger(__name__)
 

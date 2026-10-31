@@ -46,7 +46,7 @@ from custom_components.ventwise.const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from custom_components.ventwise.flow import (
+from custom_components.ventwise.configuration.flow import (
     ConfigValidationError,
     build_advanced_options_schema,
     build_basic_options_schema,
@@ -149,7 +149,7 @@ def test_notification_device_options_include_only_devices_with_notify_entities(
 ) -> None:
     """The notification picker must store notify entities, not volatile device IDs."""
 
-    from custom_components.ventwise import flow
+    from custom_components.ventwise.configuration import flow
 
     entity_registry = SimpleNamespace(
         entities={
@@ -194,7 +194,7 @@ def test_notification_device_options_include_only_devices_with_notify_entities(
 def test_room_automation_requires_a_selected_companion_app_device(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from custom_components.ventwise import flow
+    from custom_components.ventwise.configuration import flow
 
     entity_registry = SimpleNamespace(
         entities={
@@ -247,8 +247,8 @@ def test_room_automation_requires_a_selected_companion_app_device(
 def test_room_automation_accepts_a_companion_device_id_after_registry_migration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from custom_components.ventwise import flow
-    from custom_components.ventwise import notification as notification_module
+    from custom_components.ventwise.configuration import flow
+    from custom_components.ventwise.application import notification as notification_module
 
     entity_registry = SimpleNamespace(
         entities={

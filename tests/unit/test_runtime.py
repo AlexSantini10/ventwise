@@ -29,7 +29,7 @@ from custom_components.ventwise.const import (
     CONF_TARGET_TEMPERATURE_C,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
-from custom_components.ventwise.runtime import (
+from custom_components.ventwise.application.runtime import (
     build_integration_config,
     build_debug_attributes,
     build_room_profiles,
@@ -51,7 +51,7 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_RUNTIME_ROOM_ACTION_GUARDS,
 )
-from custom_components.ventwise.runtime import RuntimeSnapshot
+from custom_components.ventwise.application.runtime import RuntimeSnapshot
 from ventwise_core import (
     ComfortObservation,
     ComfortRecommender,

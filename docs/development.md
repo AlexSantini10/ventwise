@@ -21,7 +21,7 @@ python -m pip install -e ".[dev]"
 ## Common Commands
 
 ```bash
-python -m pytest tests/test_scoring_model.py tests/test_runtime.py tests/test_local_docker_runner.py -q
+python -m pytest tests/unit -q
 coverage run -m pytest
 coverage report
 ```
@@ -34,9 +34,16 @@ when you need to inspect the packaged integration in a local Home Assistant envi
 ## Repository Layout
 
 - `custom_components/ventwise/ventwise_core/` for the reusable scoring core
-- `custom_components/ventwise/` for the Home Assistant integration layer
-- `tests/` for unit and runtime coverage
+- `custom_components/ventwise/application/` for runtime coordination, state, and notifications
+- `custom_components/ventwise/configuration/` for shared config and options-flow logic
+- `custom_components/ventwise/entities/` for shared entity behavior
+- `custom_components/ventwise/` root for Home Assistant discovery entry points and platforms
+- `tests/unit/`, `tests/integration/`, and `tests/system/` for focused test layers
 - `docs/` for architecture and packaging notes
+
+Keep only Home Assistant discovery entry points and platform modules at the
+integration root. All implementation imports should target the internal module
+that owns the behavior.
 
 ## CI / Release
 

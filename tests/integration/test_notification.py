@@ -9,7 +9,7 @@ import pytest
 
 pytest.importorskip("homeassistant")
 
-from custom_components.ventwise.notification import (
+from custom_components.ventwise.application.notification import (
     async_send_notification,
     build_room_notification_payload,
     build_notification_payload,
@@ -67,7 +67,7 @@ def test_notification_entity_resolution_filters_to_notify_entities(monkeypatch: 
             ]
         return []
 
-    from custom_components.ventwise import notification as notification_module
+    from custom_components.ventwise.application import notification as notification_module
 
     monkeypatch.setattr(notification_module.er, "async_get", _fake_async_get)
     monkeypatch.setattr(notification_module.er, "async_entries_for_device", _fake_entries_for_device)
@@ -85,7 +85,7 @@ def test_notification_entity_resolution_filters_to_notify_entities(monkeypatch: 
 def test_notification_entity_resolution_accepts_a_saved_notify_entity_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from custom_components.ventwise import notification as notification_module
+    from custom_components.ventwise.application import notification as notification_module
 
     entity = _FakeEntry("notify.iphone_di_alex", platform="mobile_app")
     entity_registry = SimpleNamespace(async_get=lambda entity_id: entity if entity_id == entity.entity_id else None)
@@ -107,7 +107,7 @@ def test_notification_entity_resolution_accepts_a_saved_notify_entity_id(
 def test_notification_entity_resolution_matches_companion_identifier_after_device_migration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from custom_components.ventwise import notification as notification_module
+    from custom_components.ventwise.application import notification as notification_module
 
     entity_registry = SimpleNamespace(
         entities={
@@ -327,7 +327,7 @@ def test_async_send_notification_adds_confirmation_only_for_companion_targets() 
 def test_async_send_notification_adds_confirmation_for_modern_companion_entity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from custom_components.ventwise import notification as notification_module
+    from custom_components.ventwise.application import notification as notification_module
 
     registry = SimpleNamespace(
         async_get=lambda entity_id: (

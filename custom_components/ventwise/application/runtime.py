@@ -7,7 +7,7 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
 
-from .ventwise_core import (
+from ..ventwise_core import (
     ComfortObservation,
     ForecastObservation,
     RecommendationAction,
@@ -17,7 +17,7 @@ from .ventwise_core import (
     ScoringConfig,
 )
 
-from .const import (
+from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_CO2_ENABLED,
     CONF_CO2_ENTITY_ID,
@@ -86,7 +86,7 @@ from .const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from .ventwise_core import ComfortRecommender
+from ..ventwise_core import ComfortRecommender
 
 
 @dataclass(frozen=True, slots=True)
