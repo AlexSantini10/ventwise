@@ -192,7 +192,6 @@ async def test_real_window_events_suppress_satisfied_advice_and_notifications(
     """An open contact must prevent both repeated advice and another delivery."""
 
     _seed_states(hass)
-    hass.states.async_set("binary_sensor.test_window_left", "on")
     deliveries: list[ServiceCall] = []
 
     async def _capture_delivery(call: ServiceCall) -> None:
@@ -208,20 +207,19 @@ async def test_real_window_events_suppress_satisfied_advice_and_notifications(
     )
     coordinator = await _setup_coordinator(hass, options)
 
-    assert coordinator.data.summary.action is RecommendationAction.NONE
-    assert coordinator.data.summary.blocked_by == "window_state"
-    assert deliveries == []
-
-    hass.states.async_set("binary_sensor.test_window_left", "off")
-    await hass.async_block_till_done()
     assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert len(deliveries) == 1
     assert deliveries[0].data["notification_id"] == "ventwise_recommendation_test_room"
 
-    hass.states.async_set("binary_sensor.test_window_right", "on")
+    hass.states.async_set("binary_sensor.test_window_left", "on")
     await hass.async_block_till_done()
     assert coordinator.data.summary.action is RecommendationAction.NONE
     assert coordinator.data.summary.blocked_by == "window_state"
+    assert len(deliveries) == 1
+
+    hass.states.async_set("binary_sensor.test_window_left", "off")
+    await hass.async_block_till_done()
+    assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert len(deliveries) == 1
 
 
@@ -249,13 +247,14 @@ async def test_real_state_events_do_not_redeliver_an_unchanged_recommendation(
     coordinator = await _setup_coordinator(hass, options)
 
     assert coordinator.data.summary.action is RecommendationAction.OPEN
-    assert deliveries == []
+    assert len(deliveries) == 1
+    assert deliveries[0].data["notification_id"] == "ventwise_recommendation_test_room"
 
     hass.states.async_set("sensor.test_temperature", "27.1")
     await hass.async_block_till_done()
     assert coordinator.data.summary.action is RecommendationAction.OPEN
+    assert coordinator.data.cooldown_active is True
     assert len(deliveries) == 1
-    assert deliveries[0].data["notification_id"] == "ventwise_recommendation_test_room"
 
     hass.states.async_set("sensor.test_temperature", "27.2")
     await hass.async_block_till_done()
