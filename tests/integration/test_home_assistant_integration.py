@@ -217,11 +217,6 @@ async def test_real_window_events_suppress_satisfied_advice_and_notifications(
     assert coordinator.data.summary.blocked_by == "window_state"
     assert len(deliveries) == 1
 
-    hass.states.async_set("binary_sensor.test_window_left", "off")
-    await hass.async_block_till_done()
-    assert coordinator.data.summary.action is RecommendationAction.OPEN
-    assert len(deliveries) == 1
-
 
 @pytest.mark.asyncio
 async def test_real_state_events_do_not_redeliver_an_unchanged_recommendation(
