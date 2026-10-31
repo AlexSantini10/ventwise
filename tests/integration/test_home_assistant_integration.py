@@ -84,6 +84,21 @@ def _seed_states(hass: HomeAssistant) -> None:
     hass.states.async_set("binary_sensor.test_window_right", "off")
 
 
+async def _setup_coordinator(
+    hass: HomeAssistant,
+    options: dict[str, object],
+) -> VentWiseCoordinator:
+    """Set up VentWise through HA's config-entry lifecycle."""
+
+    entry = MockConfigEntry(domain=DOMAIN, version=2, data={}, options=options)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    runtime = hass.data[DOMAIN][entry.entry_id]
+    assert isinstance(runtime, IntegrationRuntimeData)
+    return runtime.coordinator
+
+
 @pytest.mark.asyncio
 async def test_contact_and_co2_state_changes_refresh_a_real_ha_coordinator(
     hass: HomeAssistant,
@@ -92,11 +107,8 @@ async def test_contact_and_co2_state_changes_refresh_a_real_ha_coordinator(
 
     _seed_states(hass)
     options = _options()
-    entry = MockConfigEntry(domain=DOMAIN, data={}, options=options)
-    entry.add_to_hass(hass)
-    coordinator = VentWiseCoordinator(hass, entry, options)
+    coordinator = await _setup_coordinator(hass, options)
 
-    await coordinator.async_config_entry_first_refresh()
     assert coordinator.data.window_states["Test room"] == "closed"
 
     hass.states.async_set("binary_sensor.test_window_left", "on")
@@ -195,11 +207,8 @@ async def test_real_window_events_suppress_satisfied_advice_and_notifications(
             CONF_NOTIFICATION_ENABLED: True,
         }
     )
-    entry = MockConfigEntry(domain=DOMAIN, data={}, options=options)
-    entry.add_to_hass(hass)
-    coordinator = VentWiseCoordinator(hass, entry, options)
+    coordinator = await _setup_coordinator(hass, options)
 
-    await coordinator.async_config_entry_first_refresh()
     assert coordinator.data.summary.action is RecommendationAction.NONE
     assert coordinator.data.summary.blocked_by == "window_state"
     assert deliveries == []
@@ -238,11 +247,8 @@ async def test_real_state_events_do_not_redeliver_an_unchanged_recommendation(
             CONF_COOLDOWN_MINUTES: 60,
         }
     )
-    entry = MockConfigEntry(domain=DOMAIN, data={}, options=options)
-    entry.add_to_hass(hass)
-    coordinator = VentWiseCoordinator(hass, entry, options)
+    coordinator = await _setup_coordinator(hass, options)
 
-    await coordinator.async_config_entry_first_refresh()
     assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert len(deliveries) == 1
 
@@ -280,11 +286,8 @@ async def test_quiet_hours_block_automatic_delivery_in_a_real_ha_runtime(
             CONF_QUIET_HOURS_END: "23:59:59",
         }
     )
-    entry = MockConfigEntry(domain=DOMAIN, data={}, options=options)
-    entry.add_to_hass(hass)
-    coordinator = VentWiseCoordinator(hass, entry, options)
+    coordinator = await _setup_coordinator(hass, options)
 
-    await coordinator.async_config_entry_first_refresh()
     assert coordinator.data.summary.action is RecommendationAction.OPEN
     assert coordinator.data.quiet_hours_active is True
     assert deliveries == []
@@ -312,5 +315,8 @@ async def test_notification_delivery_uses_the_real_ha_service_registry(
 
     assert delivered is True
     assert len(received) == 1
-    assert received[0].data == {"title": "VentWise test", "message": "Open the window"}
-    assert received[0].target == {"entity_id": "notify.test_phone"}
+    assert received[0].data == {
+        "title": "VentWise test",
+        "message": "Open the window",
+        "entity_id": "notify.test_phone",
+    }
