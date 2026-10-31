@@ -21,7 +21,7 @@ from .const import (
     NAME,
     CONF_WIND_SPEED_OVERRIDE,
 )
-from .flow import (
+from .configuration.flow import (
     ConfigValidationError,
     build_config_schema,
     build_outdoor_override_schema,
@@ -355,6 +355,6 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.OptionsFlow:
         """Return the options flow handler."""
 
-        from .options_flow import VentWiseOptionsFlowHandler
+        from .configuration.options_flow import VentWiseOptionsFlowHandler
 
         return VentWiseOptionsFlowHandler(config_entry)

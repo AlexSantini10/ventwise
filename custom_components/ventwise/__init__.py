@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
-    from .coordinator import VentWiseCoordinator
+    from .application.coordinator import VentWiseCoordinator
     VentWiseCoordinator = Any  # type: ignore[assignment]
 else:
     ConfigEntry = Any  # type: ignore[assignment]
@@ -99,7 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     from homeassistant.const import Platform
 
-    from .coordinator import VentWiseCoordinator
+    from .application.coordinator import VentWiseCoordinator
 
     try:
         coordinator = VentWiseCoordinator(

@@ -7,14 +7,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import UNIT_CELSIUS
-from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity, VentWiseRoomEntity
-from .notification import build_recommendation_explanation, build_recommendation_status
-from .runtime import (
+from .application.coordinator import VentWiseCoordinator
+from .application.notification import build_recommendation_explanation, build_recommendation_status
+from .application.runtime import (
     RoomConfig,
+    WINDOW_STATE_NOT_CONFIGURED,
     find_room_recommendation,
     state_to_float,
 )
+from .entities.base import VentWiseEntity, VentWiseRoomEntity
 from .ventwise_core import RecommendationAction
 
 
@@ -42,6 +43,7 @@ async def async_setup_entry(
                 RoomRecommendationStateSensor(coordinator, room),
                 RoomRecommendationScoreSensor(coordinator, room),
                 RoomRecommendationReasonSensor(coordinator, room),
+                RoomWindowStateSensor(coordinator, room),
                 RoomWeatherConditionSensor(coordinator, room),
                 RoomPerceivedIndoorTemperatureSensor(coordinator, room),
                 RoomPerceivedOutdoorTemperatureSensor(coordinator, room),
@@ -248,6 +250,22 @@ class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
         return build_recommendation_explanation(
             recommendation,
             language=self.hass.config.language,
+        )
+
+
+class RoomWindowStateSensor(VentWiseRoomEntity, SensorEntity):
+    """Aggregated open/closed state from the room's optional contacts."""
+
+    _attr_icon = "mdi:window-shutter-cog"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room) -> None:
+        super().__init__(coordinator, room, "window_state", "window_state")
+
+    @property
+    def native_value(self) -> str:
+        return self.coordinator.data.window_states.get(
+            self.room.room_id or self.room.name,
+            WINDOW_STATE_NOT_CONFIGURED,
         )
 
 

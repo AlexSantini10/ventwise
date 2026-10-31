@@ -66,6 +66,11 @@ The setup form asks for:
 After initial setup, open **Configure** on the VentWise integration to add a
 room. Give it a clear name and select its indoor temperature and humidity
 sensors. You can add, edit, disable, or remove rooms later from the same menu.
+If your room has door or window contacts, select them in the room form as well.
+VentWise treats the room as open when any selected contact is open, and only
+asks you to open or close windows when that action has not already happened.
+The room's **Window state** entity shows whether the contacts are open, closed,
+unavailable, or not configured.
 
 ## Everyday Use
 

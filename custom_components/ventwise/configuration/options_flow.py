@@ -9,7 +9,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
-from .const import (
+from ..const import (
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,

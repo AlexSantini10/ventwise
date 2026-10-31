@@ -21,6 +21,7 @@ The UI should allow the user to:
 - choose forecast or override independently for outdoor temperature, humidity,
   and wind speed
 - select temperature and humidity sensors per room
+- optionally select one or more binary window contacts per room
 - define notification targets and the devices that should receive them
 - configure all entity references used by the integration
 - set notification cooldown
@@ -59,10 +60,19 @@ Expose one logical device that groups runtime state and controls:
 - quiet-hour or notification state
 - notification target or delivery state
 - detailed debug attributes for the recommendation sensors
+- one room-level window-state sensor that reports `open`, `closed`,
+  `unavailable`, or `not_configured`
 
 Use the config flow and options flow for all user-editable inputs such as room
 sensors, comfort temperature, notification target entities, quiet hours, and
 outdoor-data overrides.
+
+When window contacts are configured, VentWise aggregates them per room: the
+room is open when any contact is open and closed only when every contact is
+closed. It suppresses an open or brief-ventilation recommendation for an
+already open room and a close recommendation for an already closed room.
+Unavailable contacts do not change the advice; the room window-state entity
+shows `unavailable` so the user can assess the data quality.
 
 ## Storage
 

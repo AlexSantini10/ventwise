@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from .ventwise_core import (
+from ..ventwise_core import (
     ComfortRecommender,
     ForecastObservation,
     RecommendationAction,
@@ -38,8 +38,10 @@ from .runtime import (
     build_room_profiles,
     build_scoring_config,
     dump_runtime_state,
+    gate_room_recommendations,
     load_runtime_state,
     is_quiet_hours_active,
+    room_window_states,
 )
 from .notification import (
     async_dismiss_persistent_notification,
@@ -54,7 +56,7 @@ from .notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
-from .const import (
+from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
@@ -71,8 +73,8 @@ from .const import (
     CONF_TARGET_TEMPERATURE_C,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from .const import CONF_NOTIFICATION_ENABLED
-from .const import DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
+from ..const import CONF_NOTIFICATION_ENABLED
+from ..const import DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -154,6 +156,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._forecast_fetched_at = None
         self._suppress_automatic_notifications = True
         try:
+            # State changes from a contact, template, or helper can still be
+            # queued when the user immediately requests advice. A manual answer
+            # must evaluate the same settled state that HA exposes in the UI.
+            await self.hass.async_block_till_done()
             await self.async_request_refresh()
         finally:
             self._suppress_automatic_notifications = False
@@ -188,7 +194,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 title=title,
                 message=message,
                 device_ids=self._config.notification_device_ids,
-                send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                # A user explicitly requested this result, so always surface
+                # it in HA even when automatic notifications are disabled.
+                send_to_home_assistant=True,
                 home_assistant_notification_id=home_assistant_on_demand_notification_id(),
             )
 
@@ -210,7 +218,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 title=title,
                 message=message,
                 device_ids=self._config.notification_device_ids,
-                send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                send_to_home_assistant=True,
                 home_assistant_notification_id=home_assistant_notification_id_for_room(
                     recommendation
                 ),
@@ -360,6 +368,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self.hass.states.get,
             forecast=forecast,
         )
+        window_states = room_window_states(self._config, self.hass.states.get)
         notification_entity_ids = (
             notification_entity_ids_for_device_ids(
                 self.hass,
@@ -468,6 +477,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             ),
         )
         summary = _with_suggested_comfort_temperature(summary, suggested_target)
+        summary = gate_room_recommendations(summary, window_states)
         summary = self._apply_room_action_guardrails(summary, now)
         signature = self._signature(summary)
         if signature != self._last_action_signature:
@@ -651,6 +661,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             enabled=True,
             stable_for_seconds=stable_for_seconds,
             last_updated=now,
+            window_states=window_states,
         )
         self._persist_runtime_state()
         self._refresh_time_listener(now, snapshot)
@@ -1127,6 +1138,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:
                 entity_ids.add(room.humidity_entity_id)
+            if self._config.co2_enabled:
+                co2_entity_id = room.co2_entity_id or self._config.co2_entity_id
+                if co2_entity_id:
+                    entity_ids.add(co2_entity_id)
+            entity_ids.update(room.window_sensor_entity_ids)
         return sorted(entity_ids)
 
     def _async_remove_listeners(self) -> None:

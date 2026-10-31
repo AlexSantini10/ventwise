@@ -12,6 +12,8 @@ pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_NOTIFICATION_ENABLED,
@@ -36,17 +38,23 @@ from custom_components.ventwise.const import (
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_TARGET_TEMPERATURE_C,
     CONF_STABILITY_MINUTES,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from custom_components.ventwise.coordinator import (
+from custom_components.ventwise.application.coordinator import (
     PendingAutomationConfirmation,
     VentWiseCoordinator,
     _first_forecast_temperature,
 )
-from custom_components.ventwise import coordinator as coordinator_module
-from custom_components.ventwise.runtime import NotificationMarker, RoomActionGuard, RoomConfig
+from custom_components.ventwise.application import coordinator as coordinator_module
+from custom_components.ventwise.application.runtime import (
+    NotificationMarker,
+    RoomActionGuard,
+    RoomConfig,
+)
 from custom_components.ventwise.ventwise_core import RecommendationAction
 from custom_components.ventwise.ventwise_core.models import RoomRecommendation
 
@@ -106,14 +114,58 @@ def _make_coordinator(options: dict[str, object] | None = None):
     return coordinator, hass, entry
 
 
+def test_coordinator_watches_window_contacts_and_co2_sources() -> None:
+    """Sensor changes must refresh advice without a polling delay."""
+
+    coordinator, _, _ = _make_coordinator(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_CO2_ENABLED: True,
+            CONF_CO2_ENTITY_ID: "sensor.home_co2",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.camera_temperature",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.camera_co2",
+                    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
+                        "binary_sensor.camera_left_window",
+                        "binary_sensor.camera_right_window",
+                    ],
+                },
+                {
+                    CONF_ROOM_NAME: "Studio",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.studio_temperature",
+                    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: ["binary_sensor.studio_window"],
+                },
+            ],
+        }
+    )
+
+    assert coordinator._watched_entity_ids() == [
+        "binary_sensor.camera_left_window",
+        "binary_sensor.camera_right_window",
+        "binary_sensor.studio_window",
+        "sensor.camera_co2",
+        "sensor.camera_temperature",
+        "sensor.home_co2",
+        "sensor.studio_temperature",
+        "weather.home",
+    ]
+
+
 def test_on_demand_recommendation_sends_the_current_room_recommendation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     refresh_suppression_states: list[bool] = []
+    execution_order: list[str] = []
     notification_calls: list[dict[str, object]] = []
 
     async def _refresh() -> None:
+        execution_order.append("refresh")
         refresh_suppression_states.append(coordinator._suppress_automatic_notifications)
+
+    async def _drain_pending_events() -> None:
+        execution_order.append("drain")
 
     async def _send_notification(_hass, _targets, **kwargs) -> bool:
         notification_calls.append(kwargs)
@@ -140,10 +192,13 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
         _suppress_automatic_notifications=False,
         async_request_refresh=_refresh,
         data=SimpleNamespace(summary=summary),
-        hass=SimpleNamespace(config=SimpleNamespace(language="it")),
+        hass=SimpleNamespace(
+            config=SimpleNamespace(language="it"),
+            async_block_till_done=_drain_pending_events,
+        ),
         _config=SimpleNamespace(
             notification_device_ids=("phone-1",),
-            home_assistant_notification_enabled=True,
+            home_assistant_notification_enabled=False,
             minimum_score=0.5,
         ),
         _pending_confirmations={},
@@ -169,6 +224,7 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
     delivered = asyncio.run(VentWiseCoordinator.async_send_on_demand_recommendation(coordinator))
 
     assert delivered is True
+    assert execution_order == ["drain", "refresh"]
     assert refresh_suppression_states == [True]
     assert coordinator._forecast_fetched_at is None
     assert coordinator._suppress_automatic_notifications is False
@@ -274,7 +330,7 @@ def test_debug_confirmation_bypasses_changed_recommendation() -> None:
         "Bedroom", RecommendationAction.OPEN, now + timedelta(minutes=15), debug=True
     )
 
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     original_now = coordinator_module.dt_util.now
     coordinator_module.dt_util.now = lambda: now
@@ -434,7 +490,7 @@ def test_confirmed_room_automation_is_one_time_and_rechecks_recommendation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: now)
     coordinator, hass, _ = _make_coordinator(
@@ -529,7 +585,7 @@ def test_coordinator_tracks_source_entities_for_event_refresh(
         captured["callback"] = callback
         return lambda: captured.setdefault("state_unsubscribed", True)
 
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(
         coordinator_module,
@@ -578,7 +634,7 @@ def test_coordinator_schedules_next_time_refresh_after_stability_window(
         captured["callback"] = callback
         return lambda: captured.setdefault("time_unsubscribed", True)
 
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(
         coordinator_module,
@@ -613,7 +669,7 @@ def test_coordinator_keeps_recommendation_active_during_notification_cooldown(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -668,7 +724,7 @@ def test_coordinator_applies_cooldown_independently_per_room(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -737,7 +793,7 @@ def test_coordinator_suppresses_equivalent_notification_after_cooldown_expiry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     current_now = [datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)]
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: current_now[0])
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: current_now[0])
@@ -785,7 +841,7 @@ def test_coordinator_delivers_changed_recommendation_after_cooldown_expiry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     current_now = [datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)]
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: current_now[0])
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: current_now[0])
@@ -1052,7 +1108,7 @@ def test_coordinator_notifies_each_eligible_room(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -1101,7 +1157,7 @@ def test_coordinator_sends_notification_to_selected_devices(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -1158,7 +1214,7 @@ def test_coordinator_sends_notification_to_home_assistant_when_selected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -1205,7 +1261,7 @@ def test_coordinator_uses_automatic_comfort_temperature_when_enabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -1247,7 +1303,7 @@ def test_coordinator_keeps_global_outdoor_values_without_rooms(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -1279,7 +1335,7 @@ def test_coordinator_logs_unavailable_required_data_once_and_recovery(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
@@ -1322,7 +1378,7 @@ def test_coordinator_averages_global_perceived_indoor_across_rooms(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise import coordinator as coordinator_module
+    from custom_components.ventwise.application import coordinator as coordinator_module
 
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)

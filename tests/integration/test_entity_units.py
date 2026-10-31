@@ -90,6 +90,7 @@ def test_on_demand_recommendation_button_has_a_stable_identity() -> None:
 
     assert button.unique_id == "entry-1_request_recommendation"
     assert button.name == "Request recommendation now"
+    assert button.suggested_object_id == "request_recommendation"
 
 
 def test_debug_room_buttons_have_stable_room_identities() -> None:
@@ -104,6 +105,19 @@ def test_debug_room_buttons_have_stable_room_identities() -> None:
     assert close_button.unique_id == "entry-1_camera-1_debug_close_notification"
     assert open_button.name == "Receive open notification"
     assert close_button.name == "Receive close notification"
+    assert open_button.suggested_object_id == "debug_open_notification"
+    assert close_button.suggested_object_id == "debug_close_notification"
+
+
+def test_suggested_object_id_does_not_follow_the_ui_language() -> None:
+    """Localized labels must never make automations receive new entity IDs."""
+
+    italian = _coordinator()
+    italian.hass.config.language = "it"
+    sensor = OutdoorTemperatureSensor(italian)
+
+    assert sensor.name == "Temperatura esterna"
+    assert sensor.suggested_object_id == "outdoor_temperature"
 
 
 def test_disabling_debug_mode_removes_only_debug_button_registry_entries(
