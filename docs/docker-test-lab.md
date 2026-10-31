@@ -47,6 +47,11 @@ La dashboard contiene tutto ciò che serve per una prova immediata:
 4. Leggi raccomandazione, punteggio, motivazione, stato aggregato delle
    finestre e flag di raccomandazione attiva per ogni stanza.
 
+Una richiesta manuale crea sempre una notifica persistente con il risultato
+attuale: è una risposta esplicita al pulsante, non un invio automatico. Prima
+del calcolo VentWise attende gli aggiornamenti di stato HA pendenti, quindi un
+contatto appena aperto viene considerato anche se premi subito il pulsante.
+
 I controlli VentWise consentono inoltre di abilitare/disabilitare integrazione,
 notifiche, comfort automatico e fascia silenziosa, senza riconfigurare il Lab.
 

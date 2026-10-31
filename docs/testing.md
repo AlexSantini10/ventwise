@@ -130,8 +130,9 @@ scenarios. The dashboard displays the resulting recommendation, score, reason,
 active flag, and aggregate window state for each room.
 
 For immediate use, the first dashboard control is **Ricevi consiglio ora**: it
-refreshes the evaluation right after changing a fixture. The same screen offers
-quick window toggles, integration, notification, automatic-comfort and
+waits for pending Home Assistant state updates, refreshes the evaluation, and
+creates a persistent notification with the current result. The same screen
+offers quick window toggles, integration, notification, automatic-comfort and
 quiet-hours controls, and the quiet-hours time range.
 
 For the window-contact regression scenario, keep all contacts closed, make a

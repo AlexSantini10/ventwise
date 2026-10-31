@@ -252,6 +252,7 @@ DATA = {
     "outdoor_weather_entity_id": "weather.ventwise_test_weather",
     "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
     "stability_minutes": 0, "co2_enabled": True, "co2_threshold_ppm": 1000.0,
+    "home_assistant_notification_enabled": True,
     "rooms": [
         {"kind": "room", "room_id": "camera_test", "name": "Camera test", "enabled": True,
          "temperature_entity_id": "input_number.ventwise_test_bedroom_temperature",

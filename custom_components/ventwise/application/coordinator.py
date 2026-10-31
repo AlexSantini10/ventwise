@@ -156,6 +156,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._forecast_fetched_at = None
         self._suppress_automatic_notifications = True
         try:
+            # State changes from a contact, template, or helper can still be
+            # queued when the user immediately requests advice. A manual answer
+            # must evaluate the same settled state that HA exposes in the UI.
+            await self.hass.async_block_till_done()
             await self.async_request_refresh()
         finally:
             self._suppress_automatic_notifications = False
@@ -190,7 +194,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 title=title,
                 message=message,
                 device_ids=self._config.notification_device_ids,
-                send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                # A user explicitly requested this result, so always surface
+                # it in HA even when automatic notifications are disabled.
+                send_to_home_assistant=True,
                 home_assistant_notification_id=home_assistant_on_demand_notification_id(),
             )
 
@@ -212,7 +218,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 title=title,
                 message=message,
                 device_ids=self._config.notification_device_ids,
-                send_to_home_assistant=self._config.home_assistant_notification_enabled,
+                send_to_home_assistant=True,
                 home_assistant_notification_id=home_assistant_notification_id_for_room(
                     recommendation
                 ),

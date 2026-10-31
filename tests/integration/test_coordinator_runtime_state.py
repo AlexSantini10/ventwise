@@ -157,10 +157,15 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     refresh_suppression_states: list[bool] = []
+    execution_order: list[str] = []
     notification_calls: list[dict[str, object]] = []
 
     async def _refresh() -> None:
+        execution_order.append("refresh")
         refresh_suppression_states.append(coordinator._suppress_automatic_notifications)
+
+    async def _drain_pending_events() -> None:
+        execution_order.append("drain")
 
     async def _send_notification(_hass, _targets, **kwargs) -> bool:
         notification_calls.append(kwargs)
@@ -187,10 +192,13 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
         _suppress_automatic_notifications=False,
         async_request_refresh=_refresh,
         data=SimpleNamespace(summary=summary),
-        hass=SimpleNamespace(config=SimpleNamespace(language="it")),
+        hass=SimpleNamespace(
+            config=SimpleNamespace(language="it"),
+            async_block_till_done=_drain_pending_events,
+        ),
         _config=SimpleNamespace(
             notification_device_ids=("phone-1",),
-            home_assistant_notification_enabled=True,
+            home_assistant_notification_enabled=False,
             minimum_score=0.5,
         ),
         _pending_confirmations={},
@@ -216,6 +224,7 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
     delivered = asyncio.run(VentWiseCoordinator.async_send_on_demand_recommendation(coordinator))
 
     assert delivered is True
+    assert execution_order == ["drain", "refresh"]
     assert refresh_suppression_states == [True]
     assert coordinator._forecast_fetched_at is None
     assert coordinator._suppress_automatic_notifications is False

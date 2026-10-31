@@ -77,4 +77,7 @@ def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> Non
     assert "button.ventwise_test_lab_request_recommendation" in dashboard
     assert "switch.ventwise_test_lab_quiet_hours_enable" in dashboard
     assert "sensor.camera_test_recommendation" in dashboard
+    assert '"home_assistant_notification_enabled": True' in (
+        config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py"
+    ).read_text(encoding="utf-8")
     assert (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py").exists()
