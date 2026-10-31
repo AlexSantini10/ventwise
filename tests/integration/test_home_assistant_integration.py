@@ -203,6 +203,7 @@ async def test_real_window_events_suppress_satisfied_advice_and_notifications(
         **{
             CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
             CONF_NOTIFICATION_ENABLED: True,
+            CONF_QUIET_HOURS_ENABLED: False,
         }
     )
     coordinator = await _setup_coordinator(hass, options)
@@ -242,6 +243,7 @@ async def test_real_state_events_do_not_redeliver_an_unchanged_recommendation(
             CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: True,
             CONF_NOTIFICATION_ENABLED: True,
             CONF_COOLDOWN_MINUTES: 60,
+            CONF_QUIET_HOURS_ENABLED: False,
         }
     )
     coordinator = await _setup_coordinator(hass, options)
