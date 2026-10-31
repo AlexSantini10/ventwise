@@ -9,8 +9,8 @@ from collections.abc import Iterable, Sequence
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from .ventwise_core import RecommendationSummary
-from .ventwise_core.models import RoomRecommendation
+from ..ventwise_core import RecommendationSummary
+from ..ventwise_core.models import RoomRecommendation
 
 _LOGGER = logging.getLogger(__name__)
 _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"

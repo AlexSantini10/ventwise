@@ -7,8 +7,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
-from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity, VentWiseRoomEntity
+from .application.coordinator import VentWiseCoordinator
+from .entities.base import VentWiseEntity, VentWiseRoomEntity
 
 
 async def async_setup_entry(

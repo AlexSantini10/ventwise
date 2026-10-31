@@ -22,7 +22,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .const import (
+from ..const import (
     CONF_COOLDOWN_MINUTES,
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_CO2_ENABLED,
@@ -43,6 +43,7 @@ from .const import (
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -78,7 +79,7 @@ from .const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from .notification import (
+from ..application.notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
@@ -451,6 +452,14 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_CO2_ENTITY_ID),
             ),
+            vol.Optional(
+                CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+                default=_default_entity_id_list(
+                    defaults.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
+                ),
+            ): EntitySelector(
+                EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
             **_optional_selector_field(
                 CONF_ROOM_START_ENTITY_ID,
                 EntitySelector(EntitySelectorConfig(domain="automation")),
@@ -725,6 +734,11 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_CO2_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
+    data[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] = _normalize_entity_id_list(
+        data.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS),
+        CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+        domain="binary_sensor",
+    )
     _normalize_optional_entity_ids(
         data,
         CONF_ROOM_START_ENTITY_ID,
@@ -819,6 +833,33 @@ def _normalize_notification_device_ids(value: object) -> list[str] | None:
         return items
     text = str(value).strip()
     return [text] if text else None
+
+
+def _default_entity_id_list(value: object) -> list[str]:
+    """Return a stable list default for a multiple-entity selector."""
+
+    if isinstance(value, (list, tuple, set)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if value is None:
+        return []
+    text = str(value).strip()
+    return [text] if text else []
+
+
+def _normalize_entity_id_list(
+    value: object,
+    field: str,
+    *,
+    domain: str,
+) -> list[str]:
+    """Normalize optional, unique entity IDs for a multiple selector."""
+
+    normalized: list[str] = []
+    for entity_id in _default_entity_id_list(value):
+        valid_entity_id = _normalize_required_entity_id(entity_id, field, domain=domain)
+        if valid_entity_id not in normalized:
+            normalized.append(valid_entity_id)
+    return normalized
 
 
 def _default_outdoor_override(

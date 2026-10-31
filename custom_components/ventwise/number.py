@@ -13,8 +13,8 @@ from .const import (
     CONF_TARGET_TEMPERATURE_C,
     UNIT_CELSIUS,
 )
-from .coordinator import VentWiseCoordinator
-from .entity import VentWiseEntity, VentWiseRoomEntity
+from .application.coordinator import VentWiseCoordinator
+from .entities.base import VentWiseEntity, VentWiseRoomEntity
 
 
 async def async_setup_entry(

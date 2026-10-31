@@ -1,0 +1,1 @@
+"""Shared VentWise entity implementation."""

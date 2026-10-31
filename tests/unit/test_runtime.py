@@ -24,11 +24,12 @@ from custom_components.ventwise.const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
-from custom_components.ventwise.runtime import (
+from custom_components.ventwise.application.runtime import (
     build_integration_config,
     build_debug_attributes,
     build_room_profiles,
@@ -36,6 +37,8 @@ from custom_components.ventwise.runtime import (
     is_quiet_hours_active,
     load_runtime_state,
     room_target_temperature_c,
+    room_window_states,
+    gate_room_recommendations,
     state_to_bool,
     state_to_float,
 )
@@ -48,13 +51,18 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_RUNTIME_ROOM_ACTION_GUARDS,
 )
-from custom_components.ventwise.runtime import RuntimeSnapshot
+from custom_components.ventwise.application.runtime import RuntimeSnapshot
 from ventwise_core import (
     ComfortObservation,
     ComfortRecommender,
     RecommendationContext,
     RoomObservation,
     RoomProfile,
+)
+from custom_components.ventwise.ventwise_core.models import (
+    RecommendationAction,
+    RecommendationSummary,
+    RoomRecommendation,
 )
 
 
@@ -171,6 +179,105 @@ def test_build_room_profiles_skips_missing_sensor_values() -> None:
 
     assert outdoor is None
     assert rooms == []
+
+
+def test_room_window_states_aggregate_contacts_and_keep_unconfigured_rooms_compatible() -> None:
+    config = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Living room",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temperature",
+                    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
+                        "binary_sensor.living_left",
+                        "binary_sensor.living_right",
+                    ],
+                },
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temperature",
+                },
+            ]
+        }
+    )
+
+    states = {
+        "binary_sensor.living_left": SimpleNamespace(state="off"),
+        "binary_sensor.living_right": SimpleNamespace(state="on"),
+    }
+
+    assert room_window_states(config, states.get) == {
+        "Living room": "open",
+        "Bedroom": "not_configured",
+    }
+
+
+def test_room_window_states_report_unavailable_when_no_contact_is_open() -> None:
+    config = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Living room",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temperature",
+                    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
+                        "binary_sensor.living_left",
+                        "binary_sensor.living_right",
+                    ],
+                }
+            ]
+        }
+    )
+
+    states = {
+        "binary_sensor.living_left": SimpleNamespace(state="off"),
+        "binary_sensor.living_right": SimpleNamespace(state="unavailable"),
+    }
+
+    assert room_window_states(config, states.get) == {"Living room": "unavailable"}
+
+
+def test_window_states_gate_only_advice_already_satisfied_by_a_contact() -> None:
+    recommendations = (
+        RoomRecommendation(
+            room_name="Living room",
+            action=RecommendationAction.OPEN,
+            score=0.8,
+            reason="Open the windows.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=26.0,
+            outdoor_perceived_c=20.0,
+            suggested_comfort_temperature_c=22.0,
+        ),
+        RoomRecommendation(
+            room_name="Bedroom",
+            action=RecommendationAction.CLOSE,
+            score=0.9,
+            reason="Close the windows.",
+            target_perceived_c=22.0,
+            indoor_perceived_c=20.0,
+            outdoor_perceived_c=10.0,
+            suggested_comfort_temperature_c=22.0,
+        ),
+    )
+    summary = RecommendationSummary(
+        action=RecommendationAction.CLOSE,
+        score=0.9,
+        reason="Close the windows.",
+        best_room="Bedroom",
+        room_recommendations=recommendations,
+    )
+
+    gated = gate_room_recommendations(
+        summary,
+        {"Living room": "open", "Bedroom": "closed"},
+    )
+
+    assert gated.action == RecommendationAction.NONE
+    assert gated.blocked_by == "window_state"
+    assert [item.reason_code for item in gated.room_recommendations] == [
+        "window_already_open",
+        "window_already_closed",
+    ]
 
 
 def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_missing() -> None:

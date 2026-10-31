@@ -21,22 +21,30 @@ python -m pip install -e ".[dev]"
 ## Common Commands
 
 ```bash
-python -m pytest -q
-python -m pytest tests/test_scoring_model.py -q
+python -m pytest tests/unit -q
 coverage run -m pytest
 coverage report
 ```
 
-The lightweight suite runs without Home Assistant installed; Home
-Assistant-specific tests are exercised by CI. Use `python scripts/ha-local-docker-test.py`
-when you need to inspect the integration in a local Home Assistant environment.
+The unit suite runs without Home Assistant. Install `requirements-ci.txt` to
+run the Home Assistant integration suite locally on Linux; CI runs it on every
+change using the version pinned there. For a packaged, local Home Assistant
+environment without physical hardware, use the
+[Docker Test Lab](docker-test-lab.md).
 
 ## Repository Layout
 
 - `custom_components/ventwise/ventwise_core/` for the reusable scoring core
-- `custom_components/ventwise/` for the Home Assistant integration layer
-- `tests/` for unit and runtime coverage
+- `custom_components/ventwise/application/` for runtime coordination, state, and notifications
+- `custom_components/ventwise/configuration/` for shared config and options-flow logic
+- `custom_components/ventwise/entities/` for shared entity behavior
+- `custom_components/ventwise/` root for Home Assistant discovery entry points and platforms
+- `tests/unit/`, `tests/integration/`, and `tests/system/` for focused test layers
 - `docs/` for architecture and packaging notes
+
+Keep only Home Assistant discovery entry points and platform modules at the
+integration root. All implementation imports should target the internal module
+that owns the behavior.
 
 ## CI / Release
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER, NAME
-from .coordinator import VentWiseCoordinator
-from .runtime import RoomConfig
+from ..const import DOMAIN, MANUFACTURER, NAME
+from ..application.coordinator import VentWiseCoordinator
+from ..application.runtime import RoomConfig
 
 
 ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
@@ -23,6 +23,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "recommendation": "Recommendation",
         "recommendation_score": "Recommendation score",
         "recommendation_reason": "Recommendation reason",
+        "window_state": "Window state",
         "perceived_indoor_temperature": "Perceived indoor temperature",
         "temperature": "Indoor temperature",
         "indoor_humidity": "Indoor humidity",
@@ -60,6 +61,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "recommendation": "Raccomandazione",
         "recommendation_score": "Punteggio raccomandazione",
         "recommendation_reason": "Motivo raccomandazione",
+        "window_state": "Stato finestre",
         "perceived_indoor_temperature": "Temperatura interna percepita",
         "temperature": "Temperatura interna",
         "indoor_humidity": "Umidità interna",
@@ -86,6 +88,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "debug_close_notification": "Ricevi notifica di chiusura",
     },
     "es": {
+        "window_state": "Estado de las ventanas",
         "weather_condition": "Condición meteorológica",
         "average_perceived_indoor_temperature": "Temperatura interior percibida media",
         "perceived_outdoor_temperature": "Temperatura exterior percibida",
@@ -120,6 +123,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "humidity_override": "Override de humedad",
     },
     "ru": {
+        "window_state": "Состояние окон",
         "weather_condition": "Погодные условия",
         "average_perceived_indoor_temperature": "Средняя ощущаемая температура в помещении",
         "perceived_outdoor_temperature": "Ощущаемая температура на улице",
@@ -154,6 +158,7 @@ ENTITY_NAME_LABELS: dict[str, dict[str, str]] = {
         "humidity_override": "Переопределение влажности",
     },
     "zh-hans": {
+        "window_state": "窗户状态",
         "weather_condition": "天气状况",
         "average_perceived_indoor_temperature": "平均感知室内温度",
         "perceived_outdoor_temperature": "感知室外温度",
@@ -203,12 +208,19 @@ class VentWiseEntity(CoordinatorEntity[VentWiseCoordinator]):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_suffix}"
+        self._suggested_object_id = entity_suffix
         self._attr_name = _localized_name(name_key, coordinator.hass.config.language)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.config_entry.entry_id)},
             manufacturer=MANUFACTURER,
             name=coordinator.config_entry.title or NAME,
         )
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Keep the entity ID independent from the Home Assistant UI language."""
+
+        return self._suggested_object_id
 
 
 class VentWiseRoomEntity(VentWiseEntity):
@@ -227,6 +239,9 @@ class VentWiseRoomEntity(VentWiseEntity):
             f"{room_key}_{entity_suffix}",
             name_key,
         )
+        # Home Assistant prefixes entities with the room device object ID.
+        # Keep only the English entity type here to avoid a doubled room key.
+        self._suggested_object_id = entity_suffix
         self._room = room
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.config_entry.entry_id, room_key)},

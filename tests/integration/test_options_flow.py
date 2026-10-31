@@ -27,7 +27,7 @@ from custom_components.ventwise.const import (
     CONF_TARGET_TEMPERATURE_C,
     CONF_WIND_SPEED_OVERRIDE,
 )
-from custom_components.ventwise.options_flow import VentWiseOptionsFlowHandler
+from custom_components.ventwise.configuration.options_flow import VentWiseOptionsFlowHandler
 
 
 def _make_flow(options: dict[str, object] | None = None) -> VentWiseOptionsFlowHandler:
