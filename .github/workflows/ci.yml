@@ -5,11 +5,7 @@ run-name: CI on ${{ github.ref_name }} @ ${{ github.sha }}
 on:
   push:
     branches:
-      - dev
-      - main
-      - test
-      - "test/**"
-      - "test-*"
+      - "**"
     paths:
       - ".github/workflows/ci.yml"
       - ".github/workflows/experimental-release.yml"
