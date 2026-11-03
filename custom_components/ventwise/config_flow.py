@@ -12,6 +12,7 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
@@ -56,9 +57,15 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Collect the minimal setup required to start."""
 
         if user_input is None and not self._setup_data:
-            return await self.async_step_units()
+            return self.async_show_form(
+                step_id="user",
+                data_schema=build_unit_schema(self._setup_data),
+            )
         errors: dict[str, str] = {}
         if user_input is not None:
+            if not self._setup_data and CONF_OUTDOOR_WEATHER_ENTITY_ID not in user_input:
+                self._setup_data = normalize_unit_config(user_input)
+                return await self.async_step_user()
             await self.async_set_unique_id(DOMAIN)
             self._abort_if_unique_id_configured()
             if self._async_current_entries():
@@ -79,17 +86,6 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=build_config_schema(self._setup_data, self.hass, include_units=False),
             errors=errors,
-        )
-
-    async def async_step_units(self, user_input: dict[str, Any] | None = None):
-        """Choose units before numeric setup values are shown."""
-
-        if user_input is not None:
-            self._setup_data = normalize_unit_config(user_input)
-            return await self.async_step_user()
-        return self.async_show_form(
-            step_id="units",
-            data_schema=build_unit_schema(self._setup_data),
         )
 
     async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):

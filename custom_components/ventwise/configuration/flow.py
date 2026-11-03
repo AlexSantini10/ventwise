@@ -249,7 +249,13 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
                     float(defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)),
                     selected_temperature_unit,
                 ),
-            ): vol.Coerce(float),
+            ): vol.All(
+                vol.Coerce(float),
+                vol.Range(
+                    min=temperature_from_celsius(10.0, selected_temperature_unit),
+                    max=temperature_from_celsius(30.0, selected_temperature_unit),
+                ),
+            ),
             vol.Required(
                 CONF_AUTO_COMFORT_TEMPERATURE,
                 default=defaults.get(
@@ -393,7 +399,13 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 default=temperature_from_celsius(float(defaults.get(
                     CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
                 )), selected_temperature_unit),
-            ): vol.Coerce(float),
+            ): vol.All(
+                vol.Coerce(float),
+                vol.Range(
+                    min=temperature_from_celsius(-10.0, selected_temperature_unit),
+                    max=temperature_from_celsius(40.0, selected_temperature_unit),
+                ),
+            ),
             vol.Required(
                 CONF_COOLDOWN_MINUTES,
                 default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
