@@ -11,6 +11,8 @@
         "data": {
           "debug_mode_enabled": "Debug mode",
           "outdoor_weather_entity_id": "Источник погоды",
+          "temperature_unit": "Единица температуры",
+          "wind_speed_unit": "Единица скорости ветра",
           "target_temperature_c": "Комфортная температура",
           "auto_comfort_temperature": "Адаптировать комфортную температуру к погоде",
           "target_humidity_percent": "Комфортная влажность",
@@ -239,6 +241,8 @@
         "data": {
           "debug_mode_enabled": "Режим отладки",
           "outdoor_weather_entity_id": "Источник погоды",
+          "temperature_unit": "Единица температуры",
+          "wind_speed_unit": "Единица скорости ветра",
           "target_temperature_c": "Комфортная температура",
           "auto_comfort_temperature": "Адаптировать комфортную температуру автоматически",
           "target_humidity_percent": "Комфортная влажность",

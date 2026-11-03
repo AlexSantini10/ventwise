@@ -11,6 +11,8 @@
         "data": {
           "debug_mode_enabled": "Activer le mode debug",
           "outdoor_weather_entity_id": "Source météo",
+          "temperature_unit": "Unité de température",
+          "wind_speed_unit": "Unité de vitesse du vent",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Utiliser un objectif de confort adapté au climat",
           "target_humidity_percent": "Humidité de confort",
@@ -239,6 +241,8 @@
         "data": {
           "debug_mode_enabled": "Activer le mode debug",
           "outdoor_weather_entity_id": "Source météo",
+          "temperature_unit": "Unité de température",
+          "wind_speed_unit": "Unité de vitesse du vent",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Adapter automatiquement la température de confort",
           "target_humidity_percent": "Humidité de confort",

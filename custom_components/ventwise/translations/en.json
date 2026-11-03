@@ -9,6 +9,8 @@
         "title": "Initial setup",
         "description": "Choose the weather source, set indoor comfort values, and optionally pick notification devices.",
         "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit",
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
           "auto_comfort_temperature": "Use a climate-adaptive comfort target",
@@ -237,6 +239,8 @@
         "title": "VentWise settings",
         "description": "Set everyday comfort, notifications, and outdoor data here. Manual outdoor entities are required only when their matching switch is enabled.",
         "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit",
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
           "auto_comfort_temperature": "Adapt comfort temperature automatically",

@@ -10,6 +10,8 @@
         "description": "Scegli la sorgente meteo, imposta i valori di comfort interni e, se vuoi, seleziona uno o più dispositivi di notifica.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento",
           "target_temperature_c": "Temperatura di comfort",
           "auto_comfort_temperature": "Usa un target di comfort adattivo al clima",
           "target_humidity_percent": "Umidità di comfort",
@@ -238,6 +240,8 @@
         "description": "Imposta qui comfort quotidiano, notifiche e dati esterni. Le entità esterne manuali sono obbligatorie solo quando attivi il relativo interruttore.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento",
           "target_temperature_c": "Temperatura di comfort",
           "auto_comfort_temperature": "Adatta automaticamente la temperatura di comfort",
           "target_humidity_percent": "Umidità di comfort",

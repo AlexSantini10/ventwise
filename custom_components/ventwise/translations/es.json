@@ -8,6 +8,8 @@
         "data": {
           "debug_mode_enabled": "Activar modo de depuracion",
           "outdoor_weather_entity_id": "Fuente meteorológica",
+          "temperature_unit": "Unidad de temperatura",
+          "wind_speed_unit": "Unidad de velocidad del viento",
           "target_temperature_c": "Temperatura de confort interior",
           "target_humidity_percent": "Humedad de confort interior",
           "stability_minutes": "Ventana de estabilidad (minutos)",
@@ -433,6 +435,8 @@
         "data": {
           "debug_mode_enabled": "Activar modo de depuracion",
           "outdoor_weather_entity_id": "Fuente meteorológica",
+          "temperature_unit": "Unidad de temperatura",
+          "wind_speed_unit": "Unidad de velocidad del viento",
           "target_temperature_c": "Temperatura de confort",
           "auto_comfort_temperature": "Adaptar la temperatura de confort automáticamente",
           "target_humidity_percent": "Humedad de confort",

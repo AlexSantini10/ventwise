@@ -59,6 +59,8 @@ The setup form asks for:
 
 - a Home Assistant weather entity;
 - your preferred indoor comfort temperature and humidity;
+- the temperature unit (`°C` or `°F`) and wind-speed unit (`m/s`, `km/h`,
+  `mph`, or `kn`) used by VentWise;
 - whether to use the climate-adaptive comfort target;
 - a stability delay before sending recommendations; and
 - optional notification devices or Home Assistant persistent notifications.
@@ -88,7 +90,7 @@ Its comfort score also treats temperatures below 18 °C and above 26 °C as
 health-relevant conditions, even if a personal comfort target is outside that
 range.
 
-Use **Configure** on the integration to change comfort values, notification
+Use **Configure** on the integration to change units, comfort values, notification
 settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
 climate-adaptive option changes only VentWise's recommendation target; it does
 not change a thermostat or HVAC setpoint.

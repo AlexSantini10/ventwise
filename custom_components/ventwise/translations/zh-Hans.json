@@ -8,6 +8,8 @@
         "data": {
           "debug_mode_enabled": "Debug mode",
           "outdoor_weather_entity_id": "天气来源",
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位",
           "target_temperature_c": "室内舒适温度",
           "target_humidity_percent": "室内舒适湿度",
           "stability_minutes": "稳定窗口（分钟）",
@@ -433,6 +435,8 @@
         "data": {
           "debug_mode_enabled": "启用调试模式",
           "outdoor_weather_entity_id": "天气来源",
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位",
           "target_temperature_c": "舒适温度",
           "auto_comfort_temperature": "自动适应舒适温度",
           "target_humidity_percent": "舒适湿度",

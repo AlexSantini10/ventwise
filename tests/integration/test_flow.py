@@ -84,7 +84,7 @@ def test_config_schema_is_simple_and_weather_based() -> None:
 
     assert schema_dict[CONF_OUTDOOR_WEATHER_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert _schema_default(_schema_entry(schema, CONF_DEBUG_MODE_ENABLED)) is False
-    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "All"
+    assert schema_dict[CONF_TARGET_TEMPERATURE_C].__class__.__name__ == "Coerce"
     assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"

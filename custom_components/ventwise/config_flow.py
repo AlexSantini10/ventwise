@@ -40,7 +40,7 @@ from .configuration.flow import (
 class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for the integration."""
 
-    VERSION = 2
+    VERSION = 3
 
     def __init__(self) -> None:
         self._setup_data: dict[str, Any] = {}

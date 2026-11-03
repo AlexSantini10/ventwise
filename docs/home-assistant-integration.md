@@ -17,6 +17,8 @@ The UI should allow the user to:
 - add, edit, and remove rooms
 - choose the supported forecast source
 - set the ideal comfort temperature
+- choose VentWise temperature (`°C` or `°F`) and wind-speed (`m/s`, `km/h`,
+  `mph`, or `kn`) units
 - choose one or more notification targets during the initial setup
 - choose forecast or override independently for outdoor temperature, humidity,
   and wind speed

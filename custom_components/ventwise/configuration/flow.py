@@ -60,6 +60,8 @@ from ..const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
@@ -74,11 +76,14 @@ from ..const import (
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
+    DEFAULT_TEMPERATURE_UNIT,
+    DEFAULT_WIND_SPEED_UNIT,
     DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
     DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
+from ..units import TEMPERATURE_UNITS, WIND_SPEED_UNITS, temperature_from_celsius, temperature_to_celsius, temperature_unit, wind_speed_unit
 from ..application.notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
@@ -217,16 +222,26 @@ def validate_room_automation_confirmation(
 def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
     """Create the minimal setup schema."""
 
+    selected_temperature_unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
     return vol.Schema(
         {
+            vol.Required(CONF_TEMPERATURE_UNIT, default=selected_temperature_unit): SelectSelector(
+                SelectSelectorConfig(options=list(TEMPERATURE_UNITS))
+            ),
+            vol.Required(CONF_WIND_SPEED_UNIT, default=wind_speed_unit(defaults.get(CONF_WIND_SPEED_UNIT))): SelectSelector(
+                SelectSelectorConfig(options=list(WIND_SPEED_UNITS))
+            ),
             vol.Required(
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
             ): EntitySelector(EntitySelectorConfig(domain="weather")),
             vol.Required(
                 CONF_TARGET_TEMPERATURE_C,
-                default=defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C),
-            ): vol.All(vol.Coerce(float), vol.Range(min=10.0, max=30.0)),
+                default=temperature_from_celsius(
+                    float(defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)),
+                    selected_temperature_unit,
+                ),
+            ): vol.Coerce(float),
             vol.Required(
                 CONF_AUTO_COMFORT_TEMPERATURE,
                 default=defaults.get(
@@ -354,6 +369,7 @@ def build_basic_options_schema(defaults: Mapping[str, object], hass=None) -> vol
 def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     """Create the advanced settings schema."""
 
+    selected_temperature_unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
     return vol.Schema(
         {
             vol.Required(
@@ -364,10 +380,10 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
             ): cv.boolean,
             vol.Required(
                 CONF_SOFT_OUTDOOR_THRESHOLD_C,
-                default=defaults.get(
+                default=temperature_from_celsius(float(defaults.get(
                     CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
-                ),
-            ): vol.All(vol.Coerce(float), vol.Range(min=-10.0, max=40.0)),
+                )), selected_temperature_unit),
+            ): vol.Coerce(float),
             vol.Required(
                 CONF_COOLDOWN_MINUTES,
                 default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
@@ -492,16 +508,14 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     """Normalize minimal setup data."""
 
     data = dict(user_input)
+    data[CONF_TEMPERATURE_UNIT] = temperature_unit(data.get(CONF_TEMPERATURE_UNIT))
+    data[CONF_WIND_SPEED_UNIT] = wind_speed_unit(data.get(CONF_WIND_SPEED_UNIT))
     data[CONF_OUTDOOR_WEATHER_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID), CONF_OUTDOOR_WEATHER_ENTITY_ID, "weather"
     )
     if CONF_TARGET_TEMPERATURE_C in data:
-        data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(
-            data.get(CONF_TARGET_TEMPERATURE_C),
-            CONF_TARGET_TEMPERATURE_C,
-            10.0,
-            30.0,
-        )
+        value_c = temperature_to_celsius(float(data.get(CONF_TARGET_TEMPERATURE_C)), data[CONF_TEMPERATURE_UNIT])
+        data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(value_c, CONF_TARGET_TEMPERATURE_C, 10.0, 30.0)
     data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(
         data.get(CONF_AUTO_COMFORT_TEMPERATURE),
         CONF_AUTO_COMFORT_TEMPERATURE,
@@ -607,11 +621,10 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         CONF_AUTO_COMFORT_TEMPERATURE,
         default=DEFAULT_AUTO_COMFORT_TEMPERATURE,
     )
+    selected_temperature_unit = temperature_unit(data.get(CONF_TEMPERATURE_UNIT))
     data[CONF_SOFT_OUTDOOR_THRESHOLD_C] = _normalize_float(
-        data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C),
-        CONF_SOFT_OUTDOOR_THRESHOLD_C,
-        -10.0,
-        40.0,
+        temperature_to_celsius(float(data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C)), selected_temperature_unit),
+        CONF_SOFT_OUTDOOR_THRESHOLD_C, -10.0, 40.0,
     )
     data[CONF_COOLDOWN_MINUTES] = _normalize_int(
         data.get(CONF_COOLDOWN_MINUTES),
