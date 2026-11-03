@@ -1,0 +1,11 @@
+services:
+  ci:
+    build:
+      context: .
+      dockerfile: Dockerfile.ci
+    working_dir: /workspace
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - .:/workspace:ro

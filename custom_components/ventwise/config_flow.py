@@ -25,12 +25,10 @@ from .const import (
 from .configuration.flow import (
     ConfigValidationError,
     build_config_schema,
-    build_unit_schema,
     build_outdoor_override_schema,
     build_outdoor_source_schema,
     build_room_schema,
     normalize_basic_config,
-    normalize_unit_config,
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
@@ -56,16 +54,8 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Collect the minimal setup required to start."""
 
-        if user_input is None and not self._setup_data:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=build_unit_schema(self._setup_data),
-            )
         errors: dict[str, str] = {}
         if user_input is not None:
-            if not self._setup_data and CONF_OUTDOOR_WEATHER_ENTITY_ID not in user_input:
-                self._setup_data = normalize_unit_config(user_input)
-                return await self.async_step_user()
             await self.async_set_unique_id(DOMAIN)
             self._abort_if_unique_id_configured()
             if self._async_current_entries():
@@ -84,7 +74,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_config_schema(self._setup_data, self.hass, include_units=False),
+            data_schema=build_config_schema(self._setup_data, self.hass),
             errors=errors,
         )
 

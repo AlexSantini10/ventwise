@@ -26,11 +26,34 @@ coverage run -m pytest
 coverage report
 ```
 
-The unit suite runs without Home Assistant. Install `requirements-ci.txt` to
-run the Home Assistant integration suite locally on Linux; CI runs it on every
-change using the version pinned there. For a packaged, local Home Assistant
-environment without physical hardware, use the
-[Docker Test Lab](docker-test-lab.md).
+The unit suite runs without Home Assistant. To execute the exact Python and
+Home Assistant test gates used by CI from any host with Docker Desktop, run:
+
+```powershell
+.\scripts\test-ci-docker.ps1
+```
+
+To enforce the same check automatically before every commit and push, enable
+the repository hooks once after cloning:
+
+```powershell
+git config core.hooksPath .githooks
+```
+
+The hooks use the cached Docker image and clean up the disposable container and
+Compose network when they finish. A failed test blocks the commit or push.
+
+The command builds a cached Python 3.14.2 image, mounts the checkout
+read-only, and runs `tests/unit`, `tests/integration`, and `tests/system` in a
+disposable container. Pass pytest paths or flags to narrow a run:
+
+```powershell
+.\scripts\test-ci-docker.ps1 tests/integration tests/system -q
+```
+
+It is independent of the [Docker Test Lab](docker-test-lab.md), which remains
+the packaged local Home Assistant environment for manual testing without
+physical hardware.
 
 ## Repository Layout
 
