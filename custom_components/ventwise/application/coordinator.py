@@ -189,7 +189,13 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             )
         )
         if not actionable_recommendations:
-            title, message = build_notification_payload(snapshot.summary, language=language)
+            title, message = build_notification_payload(
+                snapshot.summary,
+                language=language,
+                temperature_unit=getattr(
+                    self._config, "temperature_unit", DEFAULT_TEMPERATURE_UNIT
+                ),
+            )
             return await async_send_notification(
                 self.hass,
                 notification_entity_ids,
@@ -208,7 +214,13 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             for entity_id in notification_entity_ids
         )
         for recommendation in actionable_recommendations:
-            title, message = build_room_notification_payload(recommendation, language=language)
+            title, message = build_room_notification_payload(
+                recommendation,
+                language=language,
+                temperature_unit=getattr(
+                    self._config, "temperature_unit", DEFAULT_TEMPERATURE_UNIT
+                ),
+            )
             mobile_action = (
                 self._mobile_confirmation_action(recommendation)
                 if has_mobile_app_target
@@ -296,6 +308,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         title, message = build_room_notification_payload(
             forced_recommendation,
             language=language,
+            temperature_unit=getattr(
+                self._config, "temperature_unit", DEFAULT_TEMPERATURE_UNIT
+            ),
         )
         mobile_action = (
             self._mobile_confirmation_action(forced_recommendation)
@@ -599,6 +614,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             title, message = build_room_notification_payload(
                 recommendation,
                 language=getattr(getattr(self.hass, "config", None), "language", None),
+                temperature_unit=getattr(
+                    self._config, "temperature_unit", DEFAULT_TEMPERATURE_UNIT
+                ),
             )
             mobile_action = (
                 self._mobile_confirmation_action(recommendation)

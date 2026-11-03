@@ -264,6 +264,7 @@ class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
         return build_recommendation_explanation(
             recommendation,
             language=self.hass.config.language,
+            temperature_unit=self.coordinator.config.temperature_unit,
         )
 
 

@@ -31,6 +31,13 @@ def temperature_from_celsius(value: float | None, unit: object) -> float | None:
     return value * 9 / 5 + 32 if temperature_unit(unit) == UNIT_FAHRENHEIT else value
 
 
+def temperature_delta_from_celsius(value: float | None, unit: object) -> float | None:
+    """Convert a temperature difference without applying an absolute offset."""
+    if value is None:
+        return None
+    return value * 9 / 5 if temperature_unit(unit) == UNIT_FAHRENHEIT else value
+
+
 def wind_speed_to_m_s(value: float, unit: object) -> float:
     unit = wind_speed_unit(unit)
     if unit == UNIT_KILOMETERS_PER_HOUR:

@@ -21,6 +21,7 @@ from custom_components.ventwise.application.notification import (
     home_assistant_delivery_failure_id_for_target,
     notification_entity_ids_for_device_ids,
 )
+from custom_components.ventwise.const import UNIT_FAHRENHEIT
 
 
 class _FakeEntry:
@@ -191,6 +192,24 @@ def test_recommendation_explanation_is_concise_and_localized() -> None:
     explanation = build_recommendation_explanation(recommendation, language="it-IT")
 
     assert explanation == "Dentro è più confortevole adesso: 2.0°C più vicino al comfort."
+
+
+def test_recommendation_explanation_uses_configured_temperature_unit() -> None:
+    recommendation = SimpleNamespace(
+        room_name="Camera",
+        action=SimpleNamespace(value="close"),
+        indoor_perceived_c=21.0,
+        outdoor_perceived_c=25.0,
+        target_perceived_c=22.0,
+    )
+
+    explanation = build_recommendation_explanation(
+        recommendation,
+        language="it-IT",
+        temperature_unit=UNIT_FAHRENHEIT,
+    )
+
+    assert explanation == "Dentro è più confortevole adesso: 3.6°F più vicino al comfort."
 
 
 def test_brief_ventilation_notification_is_localized_and_includes_duration() -> None:

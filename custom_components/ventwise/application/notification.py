@@ -11,6 +11,11 @@ from homeassistant.helpers import entity_registry as er
 
 from ..ventwise_core import RecommendationSummary
 from ..ventwise_core.models import RoomRecommendation
+from ..const import DEFAULT_TEMPERATURE_UNIT
+from ..units import (
+    temperature_delta_from_celsius,
+    temperature_unit as normalize_temperature_unit,
+)
 
 _LOGGER = logging.getLogger(__name__)
 _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
@@ -23,8 +28,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "open windows.",
         "close": "close windows.",
         "none": "no action needed.",
-        "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
-        "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+        "open_reason": "Outside is more comfortable right now: {delta:.1f}{unit} closer to comfort.",
+        "close_reason": "Inside is more comfortable right now: {delta:.1f}{unit} closer to comfort.",
         "forecast_reason": "Short-term forecast: outside conditions are expected to become less comfortable soon.",
         "failed_title": "VentWise notification delivery failed",
         "failed_targets": "Failed targets",
@@ -33,8 +38,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "apri le finestre.",
         "close": "chiudi le finestre.",
         "none": "nessuna azione necessaria.",
-        "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
-        "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+        "open_reason": "Fuori è più confortevole adesso: {delta:.1f}{unit} più vicino al comfort.",
+        "close_reason": "Dentro è più confortevole adesso: {delta:.1f}{unit} più vicino al comfort.",
         "forecast_reason": "Previsione a breve termine: fuori sarà presto meno confortevole.",
         "failed_title": "Consegna notifica VentWise fallita",
         "failed_targets": "Target falliti",
@@ -43,8 +48,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "abre las ventanas.",
         "close": "cierra las ventanas.",
         "none": "no se necesita ninguna accion.",
-        "open_reason": "Afuera es más confortable ahora: {delta:.1f}°C más cerca del confort.",
-        "close_reason": "Adentro es más confortable ahora: {delta:.1f}°C más cerca del confort.",
+        "open_reason": "Afuera es más confortable ahora: {delta:.1f}{unit} más cerca del confort.",
+        "close_reason": "Adentro es más confortable ahora: {delta:.1f}{unit} más cerca del confort.",
         "forecast_reason": "Pronóstico a corto plazo: se espera que las condiciones exteriores sean menos confortables pronto.",
         "delivered_title": "Notificacion de VentWise entregada",
         "failed_title": "Fallo la entrega de la notificacion de VentWise",
@@ -55,8 +60,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "откройте окна.",
         "close": "закройте окна.",
         "none": "действие не требуется.",
-        "open_reason": "Снаружи сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
-        "close_reason": "Внутри сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
+        "open_reason": "Снаружи сейчас комфортнее: на {delta:.1f}{unit} ближе к комфорту.",
+        "close_reason": "Внутри сейчас комфортнее: на {delta:.1f}{unit} ближе к комфорту.",
         "forecast_reason": "Краткосрочный прогноз: вскоре наружные условия станут менее комфортными.",
         "delivered_title": "Уведомление VentWise доставлено",
         "failed_title": "Сбой доставки уведомления VentWise",
@@ -67,8 +72,8 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "open": "打开窗户。",
         "close": "关闭窗户。",
         "none": "无需操作。",
-        "open_reason": "现在室外更舒适：更接近舒适温度 {delta:.1f}°C。",
-        "close_reason": "现在室内更舒适：更接近舒适温度 {delta:.1f}°C。",
+        "open_reason": "现在室外更舒适：更接近舒适温度 {delta:.1f}{unit}。",
+        "close_reason": "现在室内更舒适：更接近舒适温度 {delta:.1f}{unit}。",
         "forecast_reason": "短期预报：室外条件预计很快会变得不那么舒适。",
         "delivered_title": "VentWise 通知已送达",
         "failed_title": "VentWise 通知发送失败",
@@ -173,12 +178,17 @@ def build_notification_payload(
     summary: RecommendationSummary,
     *,
     language: str | None = None,
+    temperature_unit: str = DEFAULT_TEMPERATURE_UNIT,
 ) -> tuple[str, str]:
     """Build a readable notification title and body."""
 
     recommendation = _best_room_recommendation(summary)
     if recommendation is not None:
-        return build_room_notification_payload(recommendation, language=language)
+        return build_room_notification_payload(
+            recommendation,
+            language=language,
+            temperature_unit=temperature_unit,
+        )
     else:
         room_name = summary.best_room or "VentWise"
         title = _notification_action_title(summary.action.value, language)
@@ -190,6 +200,7 @@ def build_on_demand_notification_payload(
     summary: RecommendationSummary,
     *,
     language: str | None = None,
+    temperature_unit: str = DEFAULT_TEMPERATURE_UNIT,
 ) -> tuple[str, str]:
     """Build a clearly informational recommendation requested by a user."""
 
@@ -209,7 +220,11 @@ def build_on_demand_notification_payload(
             blocked_by=getattr(summary, "blocked_by", None),
             language=language,
         )
-    _, message = build_notification_payload(summary, language=language)
+    _, message = build_notification_payload(
+        summary,
+        language=language,
+        temperature_unit=temperature_unit,
+    )
     return title, message
 
 
@@ -217,6 +232,7 @@ def build_room_notification_payload(
     recommendation: RoomRecommendation,
     *,
     language: str | None = None,
+    temperature_unit: str = DEFAULT_TEMPERATURE_UNIT,
 ) -> tuple[str, str]:
     """Build a notification payload for one specific room."""
 
@@ -225,6 +241,7 @@ def build_room_notification_payload(
         build_recommendation_explanation(
             recommendation,
             language=language,
+            temperature_unit=temperature_unit,
             include_room_name=True,
         ),
     )
@@ -291,6 +308,7 @@ def build_recommendation_explanation(
     recommendation: RoomRecommendation,
     *,
     language: str | None = None,
+    temperature_unit: str = DEFAULT_TEMPERATURE_UNIT,
     include_room_name: bool = False,
 ) -> str:
     """Build a concise user-facing explanation for one room recommendation."""
@@ -304,12 +322,22 @@ def build_recommendation_explanation(
     if action == "open":
         if getattr(recommendation, "reason_code", None) == "forecast":
             return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
-        reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
+        reason = _localized_temperature_reason(
+            recommendation,
+            texts,
+            use_outside=True,
+            temperature_unit=temperature_unit,
+        )
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     if action == "close":
         if getattr(recommendation, "reason_code", None) == "forecast":
             return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
-        reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
+        reason = _localized_temperature_reason(
+            recommendation,
+            texts,
+            use_outside=False,
+            temperature_unit=temperature_unit,
+        )
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     return f"{prefix}{texts['none']}"
 
@@ -559,6 +587,7 @@ def _localized_temperature_reason(
     texts: dict[str, str],
     *,
     use_outside: bool,
+    temperature_unit: str = DEFAULT_TEMPERATURE_UNIT,
 ) -> str | None:
     """Return a brief localized explanation based on the best room metrics."""
 
@@ -567,10 +596,13 @@ def _localized_temperature_reason(
     if abs(indoor_delta - outdoor_delta) < 0.05:
         return None
 
+    unit = normalize_temperature_unit(temperature_unit)
     if use_outside and outdoor_delta < indoor_delta:
-        return texts["open_reason"].format(delta=indoor_delta - outdoor_delta)
+        delta = temperature_delta_from_celsius(indoor_delta - outdoor_delta, unit)
+        return texts["open_reason"].format(delta=delta, unit=unit)
     if not use_outside and indoor_delta < outdoor_delta:
-        return texts["close_reason"].format(delta=outdoor_delta - indoor_delta)
+        delta = temperature_delta_from_celsius(outdoor_delta - indoor_delta, unit)
+        return texts["close_reason"].format(delta=delta, unit=unit)
     return None
 
 

@@ -10,7 +10,7 @@ from custom_components.ventwise.const import (
     UNIT_METERS_PER_SECOND, UNIT_MILES_PER_HOUR,
 )
 from custom_components.ventwise.units import (
-    temperature_from_celsius, temperature_to_celsius,
+    temperature_delta_from_celsius, temperature_from_celsius, temperature_to_celsius,
     display_value, wind_speed_from_m_s, wind_speed_to_m_s,
 )
 from custom_components.ventwise.application.runtime import state_to_temperature_c
@@ -20,6 +20,10 @@ def test_temperature_conversion_round_trip() -> None:
     assert temperature_from_celsius(20.0, UNIT_FAHRENHEIT) == pytest.approx(68.0)
     assert temperature_to_celsius(68.0, UNIT_FAHRENHEIT) == pytest.approx(20.0)
     assert temperature_to_celsius(20.0, UNIT_CELSIUS) == 20.0
+
+
+def test_temperature_delta_conversion_does_not_apply_absolute_offset() -> None:
+    assert temperature_delta_from_celsius(4.0, UNIT_FAHRENHEIT) == pytest.approx(7.2)
 
 
 @pytest.mark.parametrize(
