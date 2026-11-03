@@ -10,6 +10,8 @@
         "description": "Scegli la sorgente meteo, imposta i valori di comfort interni e, se vuoi, seleziona uno o più dispositivi di notifica.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento",
           "target_temperature_c": "Temperatura di comfort",
           "auto_comfort_temperature": "Usa un target di comfort adattivo al clima",
           "target_humidity_percent": "Umidità di comfort",
@@ -29,6 +31,13 @@
           "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant.",
           "diagnostic_notification_level": "Scegli se Home Assistant deve mostrare avvisi aggiuntivi per problemi di configurazione o dati dei sensori.",
           "debug_mode_enabled": "Mostra controlli di test per ricevere notifiche di apertura e chiusura per ogni stanza. La conferma può eseguire l'automazione configurata."
+        }
+      },
+      "units": {
+        "title": "Unità di misura",
+        "data": {
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento"
         }
       },
       "outdoor": {
@@ -225,6 +234,7 @@
         "title": "Modifica VentWise",
         "description": "Scegli cosa vuoi gestire.",
         "menu_options": {
+          "units": "Unità di misura",
           "settings": "Impostazioni",
           "rooms": "Stanze"
         },
@@ -233,11 +243,20 @@
           "rooms": "Aggiungi, modifica o rimuovi stanze e aree raggruppate."
         }
       },
+      "units": {
+        "title": "Unità di misura",
+        "data": {
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento"
+        }
+      },
       "settings": {
         "title": "Impostazioni VentWise",
         "description": "Imposta qui comfort quotidiano, notifiche e dati esterni. Le entità esterne manuali sono obbligatorie solo quando attivi il relativo interruttore.",
         "data": {
           "outdoor_weather_entity_id": "Sorgente meteo",
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento",
           "target_temperature_c": "Temperatura di comfort",
           "auto_comfort_temperature": "Adatta automaticamente la temperatura di comfort",
           "target_humidity_percent": "Umidità di comfort",

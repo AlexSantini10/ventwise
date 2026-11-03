@@ -12,6 +12,7 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
@@ -40,7 +41,7 @@ from .configuration.flow import (
 class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for the integration."""
 
-    VERSION = 2
+    VERSION = 3
 
     def __init__(self) -> None:
         self._setup_data: dict[str, Any] = {}
@@ -60,7 +61,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if self._async_current_entries():
                 return self.async_abort(reason="single_instance_allowed")
             try:
-                self._setup_data = normalize_basic_config(user_input)
+                self._setup_data = normalize_basic_config({**self._setup_data, **user_input})
                 self._current_config = dict(self._setup_data)
                 self._rooms = []
                 self._room_index = 0

@@ -67,6 +67,8 @@ from ..const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
@@ -83,9 +85,12 @@ from ..const import (
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
+    DEFAULT_TEMPERATURE_UNIT,
+    DEFAULT_WIND_SPEED_UNIT,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
+from ..units import state_unit, temperature_to_celsius, temperature_unit, wind_speed_to_m_s, wind_speed_unit
 from ..ventwise_core import ComfortRecommender
 
 
@@ -117,6 +122,8 @@ class IntegrationConfig:
 
     outdoor_weather_entity_id: str | None = None
     target_temperature_c: float = DEFAULT_TARGET_TEMPERATURE_C
+    temperature_unit: str = DEFAULT_TEMPERATURE_UNIT
+    wind_speed_unit: str = DEFAULT_WIND_SPEED_UNIT
     auto_comfort_temperature_enabled: bool = DEFAULT_AUTO_COMFORT_TEMPERATURE
     target_humidity_percent: float = 50.0
     soft_outdoor_threshold_c: float = DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
@@ -256,6 +263,8 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     return IntegrationConfig(
         outdoor_weather_entity_id=_string_or_none(data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)),
         target_temperature_c=float(data.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)),
+        temperature_unit=temperature_unit(data.get(CONF_TEMPERATURE_UNIT)),
+        wind_speed_unit=wind_speed_unit(data.get(CONF_WIND_SPEED_UNIT)),
         auto_comfort_temperature_enabled=bool(
             data.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)
         ),
@@ -428,6 +437,7 @@ def build_room_profiles(
         config.outdoor_temperature_entity_id,
         state_getter,
         "temperature",
+        measurement="temperature",
     )
     outdoor_humidity = _outdoor_value(
         config.outdoor_humidity_source,
@@ -453,6 +463,7 @@ def build_room_profiles(
             state_getter,
             "wind_speed",
             allow_state_fallback=False,
+            measurement="wind_speed",
         )
         wind_gust = _weather_gust_value(
             config.outdoor_weather_entity_id,
@@ -470,7 +481,7 @@ def build_room_profiles(
 
     rooms: list[RoomProfile] = []
     for room in config.rooms:
-        temperature = state_to_float(state_getter(room.temperature_entity_id))
+        temperature = state_to_temperature_c(state_getter(room.temperature_entity_id))
         humidity = state_to_float(state_getter(room.humidity_entity_id)) if room.humidity_entity_id else None
         co2 = state_to_float(state_getter(room.co2_entity_id or config.co2_entity_id)) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None
         if temperature is None:
@@ -642,6 +653,8 @@ def build_debug_attributes(
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "wind_gust_m_s": snapshot.wind_gust_m_s,
         "target_temperature_c": config.target_temperature_c,
+        "temperature_unit": config.temperature_unit,
+        "wind_speed_unit": config.wind_speed_unit,
         "auto_comfort_temperature_enabled": config.auto_comfort_temperature_enabled,
         "target_humidity_percent": config.target_humidity_percent,
         "soft_outdoor_threshold_c": config.soft_outdoor_threshold_c,
@@ -725,9 +738,11 @@ def _outdoor_value(
     attribute_name: str,
     *,
     allow_state_fallback: bool = True,
+    measurement: str | None = None,
 ) -> float | None:
     if source == OUTDOOR_SOURCE_OVERRIDE and override_entity_id:
-        return state_to_float(state_getter(override_entity_id))
+        state = state_getter(override_entity_id)
+        return _canonical_measurement_value(state_to_float(state), state, measurement)
     if not weather_entity_id:
         return None
     state = state_getter(weather_entity_id)
@@ -738,11 +753,26 @@ def _outdoor_value(
     if value is None:
         if not allow_state_fallback:
             return None
-        return state_to_float(state)
+        return _canonical_measurement_value(state_to_float(state), state, measurement)
     try:
-        return float(value)
+        return _canonical_measurement_value(float(value), state, measurement)
     except (TypeError, ValueError):
         return None
+
+
+def state_to_temperature_c(state: Any | None) -> float | None:
+    """Read a state temperature using its declared Home Assistant unit."""
+    return _canonical_measurement_value(state_to_float(state), state, "temperature")
+
+
+def _canonical_measurement_value(value: float | None, state: Any | None, measurement: str | None) -> float | None:
+    if value is None:
+        return None
+    if measurement == "temperature":
+        return temperature_to_celsius(value, state_unit(state, DEFAULT_TEMPERATURE_UNIT, "temperature"))
+    if measurement == "wind_speed":
+        return wind_speed_to_m_s(value, state_unit(state, DEFAULT_WIND_SPEED_UNIT, "wind_speed"))
+    return value
 
 
 def _outdoor_source(data: Mapping[str, Any], source_key: str, entity_key: str) -> str:
@@ -891,7 +921,7 @@ def _weather_gust_value(
         if value is None:
             continue
         try:
-            return float(value)
+            return wind_speed_to_m_s(float(value), state_unit(state, DEFAULT_WIND_SPEED_UNIT, "wind_speed"))
         except (TypeError, ValueError):
             continue
     return None

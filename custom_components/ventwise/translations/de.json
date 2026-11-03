@@ -11,6 +11,8 @@
         "data": {
           "debug_mode_enabled": "Debugmodus aktivieren",
           "outdoor_weather_entity_id": "Wetterquelle",
+          "temperature_unit": "Temperatureinheit",
+          "wind_speed_unit": "Windgeschwindigkeitseinheit",
           "target_temperature_c": "Komforttemperatur",
           "auto_comfort_temperature": "Nutzen Sie ein klimaadaptives Komfortziel",
           "target_humidity_percent": "Komfortfeuchtigkeit",
@@ -30,6 +32,10 @@
           "home_assistant_notification_enabled": "Zeigen Sie jede VentWise-Empfehlung im Benachrichtigungsfeld von Home Assistant an.",
           "diagnostic_notification_level": "Wählen Sie, ob Home Assistant zusätzliche Benachrichtigungen bei Konfigurations- oder Sensordatenproblemen anzeigt."
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "outdoor": {
         "title": "Outdoor-Daten",
@@ -225,6 +231,7 @@
         "title": "Passen Sie VentWise an",
         "description": "Wählen Sie aus, was Sie verwalten möchten.",
         "menu_options": {
+          "units": "Units of measurement",
           "settings": "Einstellungen",
           "rooms": "Zimmer"
         },
@@ -233,12 +240,18 @@
           "rooms": "Räume und gruppierte Bereiche hinzufügen, bearbeiten oder entfernen."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "settings": {
         "title": "VentWise-Einstellungen",
         "description": "Legen Sie hier Alltagskomfort, Benachrichtigungen und Outdoor-Daten fest. Manuelle Außeneinheiten sind nur erforderlich, wenn der entsprechende Schalter aktiviert ist.",
         "data": {
           "debug_mode_enabled": "Debugmodus aktivieren",
           "outdoor_weather_entity_id": "Wetterquelle",
+          "temperature_unit": "Temperatureinheit",
+          "wind_speed_unit": "Windgeschwindigkeitseinheit",
           "target_temperature_c": "Komforttemperatur",
           "auto_comfort_temperature": "Komforttemperatur automatisch anpassen",
           "target_humidity_percent": "Komfortfeuchtigkeit",

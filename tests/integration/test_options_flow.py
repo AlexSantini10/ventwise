@@ -125,7 +125,7 @@ def test_options_menu_has_one_settings_screen_and_rooms() -> None:
 
     assert overview["type"] == "menu"
     assert overview["step_id"] == "init"
-    assert overview["menu_options"] == ["settings", "rooms"]
+    assert overview["menu_options"] == ["units", "settings", "rooms"]
 
 
 def test_edit_room_replaces_the_selected_room() -> None:

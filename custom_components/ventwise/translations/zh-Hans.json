@@ -8,6 +8,8 @@
         "data": {
           "debug_mode_enabled": "Debug mode",
           "outdoor_weather_entity_id": "天气来源",
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位",
           "target_temperature_c": "室内舒适温度",
           "target_humidity_percent": "室内舒适湿度",
           "stability_minutes": "稳定窗口（分钟）",
@@ -27,6 +29,10 @@
           "home_assistant_notification_enabled": "在 Home Assistant 的通知面板中显示每个 VentWise 建议。",
           "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。"
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "outdoor": {
         "title": "室外数据",
@@ -225,6 +231,7 @@
         "title": "调整 VentWise",
         "description": "选择你想编辑的内容。",
         "menu_options": {
+          "units": "Units of measurement",
           "rooms": "房间",
           "settings": "设置"
         },
@@ -427,12 +434,18 @@
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "settings": {
         "title": "VentWise 设置",
         "description": "在此设置日常舒适度、通知和户外数据。仅当室外实体匹配的开关启用时，才需要手动操作。",
         "data": {
           "debug_mode_enabled": "启用调试模式",
           "outdoor_weather_entity_id": "天气来源",
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位",
           "target_temperature_c": "舒适温度",
           "auto_comfort_temperature": "自动适应舒适温度",
           "target_humidity_percent": "舒适湿度",

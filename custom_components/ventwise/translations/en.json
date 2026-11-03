@@ -9,6 +9,8 @@
         "title": "Initial setup",
         "description": "Choose the weather source, set indoor comfort values, and optionally pick notification devices.",
         "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit",
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
           "auto_comfort_temperature": "Use a climate-adaptive comfort target",
@@ -29,6 +31,13 @@
           "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
           "diagnostic_notification_level": "Choose whether Home Assistant shows extra notifications for configuration or sensor-data problems.",
           "debug_mode_enabled": "Shows per-room open and close notification test controls. Confirming a debug notification can run the configured automation."
+        }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit"
         }
       },
       "outdoor": {
@@ -225,6 +234,7 @@
         "title": "Adjust VentWise",
         "description": "Choose what you want to manage.",
         "menu_options": {
+          "units": "Units of measurement",
           "settings": "Settings",
           "rooms": "Rooms"
         },
@@ -233,10 +243,19 @@
           "rooms": "Add, edit, or remove rooms and grouped areas."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit"
+        }
+      },
       "settings": {
         "title": "VentWise settings",
         "description": "Set everyday comfort, notifications, and outdoor data here. Manual outdoor entities are required only when their matching switch is enabled.",
         "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit",
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
           "auto_comfort_temperature": "Adapt comfort temperature automatically",

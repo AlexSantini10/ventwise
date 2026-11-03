@@ -71,11 +71,30 @@ coverage run -m pytest
 coverage report
 ```
 
+Before a commit, run the complete CI-equivalent suite through Docker Desktop:
+
+```powershell
+.\scripts\test-ci-docker.ps1
+```
+
+The repository also includes `pre-commit` and `pre-push` hooks. Enable them
+once with `git config core.hooksPath .githooks` to prevent an unverified
+commit or push.
+
+It uses Python 3.14.2 and the Home Assistant version pinned in
+`requirements-ci.txt`, with no Python packages installed on the host. The
+checkout is mounted read-only and the test container is removed after every
+run. Extra arguments are passed to pytest, for example:
+
+```powershell
+.\scripts\test-ci-docker.ps1 tests/integration tests/system -q
+```
+
 CI has two required gates: **unit tests** and **Home Assistant integration
 tests**. The latter use the same pinned Home Assistant version as release CI
 and create HA entity states in memory, so they require no physical sensors.
-On Windows, run the lightweight command above; the Home Assistant pytest
-framework is exercised by the Linux CI runner.
+The Docker command above runs the same framework on Windows before code is
+pushed.
 
 ## Local Home Assistant Sandbox
 

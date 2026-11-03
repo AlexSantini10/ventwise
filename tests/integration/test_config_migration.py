@@ -51,7 +51,7 @@ def test_migration_preserves_settings_and_notification_devices() -> None:
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 2
+    assert entry.version == 3
     assert entry.data == {
         "target_temperature_c": 21.0,
         CONF_NOTIFICATION_DEVICE_ID: ["device-alice", "device-bob"],
@@ -65,7 +65,7 @@ def test_migration_preserves_settings_and_notification_devices() -> None:
 
 def test_migration_rejects_a_future_entry_version(caplog: pytest.LogCaptureFixture) -> None:
     hass = SimpleNamespace(config_entries=_FakeConfigEntries())
-    entry = _entry(version=3, data={}, options={})
+    entry = _entry(version=4, data={}, options={})
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is False
     assert hass.config_entries.updates == []

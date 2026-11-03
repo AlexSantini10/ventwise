@@ -75,6 +75,8 @@ from ..const import (
 )
 from ..const import CONF_NOTIFICATION_ENABLED
 from ..const import DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
+from ..const import DEFAULT_TEMPERATURE_UNIT, DEFAULT_WIND_SPEED_UNIT
+from ..units import state_unit, temperature_to_celsius, wind_speed_to_m_s
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -706,7 +708,13 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             state = self.hass.states.get(weather_entity_id)
             attributes = getattr(state, "attributes", {}) if state is not None else {}
             forecasts = attributes.get("forecast") if isinstance(attributes, dict) else None
-        self._forecast = _near_term_forecast(forecasts, now)
+        weather_state = self.hass.states.get(weather_entity_id)
+        self._forecast = _near_term_forecast(
+            forecasts,
+            now,
+            temperature_source_unit=state_unit(weather_state, DEFAULT_TEMPERATURE_UNIT, "temperature"),
+            wind_speed_source_unit=state_unit(weather_state, DEFAULT_WIND_SPEED_UNIT, "wind_speed"),
+        )
         return self._forecast
 
     async def _set_diagnostic_issue(self, issue: str | None) -> None:
@@ -1355,7 +1363,13 @@ def _diagnostic_issue_log_message(issue: str) -> str:
     return messages.get(issue, f"VentWise diagnostic issue: {issue}")
 
 
-def _near_term_forecast(forecasts: Any, now: datetime) -> ForecastObservation | None:
+def _near_term_forecast(
+    forecasts: Any,
+    now: datetime,
+    *,
+    temperature_source_unit: str = DEFAULT_TEMPERATURE_UNIT,
+    wind_speed_source_unit: str = DEFAULT_WIND_SPEED_UNIT,
+) -> ForecastObservation | None:
     """Pick the most adverse usable hourly forecast in the next two hours."""
 
     if not isinstance(forecasts, list):
@@ -1372,10 +1386,16 @@ def _near_term_forecast(forecasts: Any, now: datetime) -> ForecastObservation | 
             forecast_at = forecast_at.replace(tzinfo=now.tzinfo)
         if now <= forecast_at <= now + timedelta(hours=2):
             candidates.append((forecast_at, ForecastObservation(
-                temperature_c=_optional_float(forecast.get("temperature")),
+                temperature_c=_convert_optional_temperature(
+                    forecast.get("temperature"), temperature_source_unit
+                ),
                 humidity_percent=_optional_float(forecast.get("humidity")),
-                wind_speed_m_s=_optional_float(forecast.get("wind_speed")),
-                wind_gust_m_s=_optional_float(forecast.get("wind_gust_speed")),
+                wind_speed_m_s=_convert_optional_wind_speed(
+                    forecast.get("wind_speed"), wind_speed_source_unit
+                ),
+                wind_gust_m_s=_convert_optional_wind_speed(
+                    forecast.get("wind_gust_speed"), wind_speed_source_unit
+                ),
                 weather_condition=_optional_string(forecast.get("condition")),
                 precipitation_probability=_optional_float(forecast.get("precipitation_probability")),
             )))
@@ -1408,6 +1428,16 @@ def _optional_float(value: Any) -> float | None:
         return float(value) if value is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _convert_optional_temperature(value: Any, unit: str) -> float | None:
+    parsed = _optional_float(value)
+    return temperature_to_celsius(parsed, unit) if parsed is not None else None
+
+
+def _convert_optional_wind_speed(value: Any, unit: str) -> float | None:
+    parsed = _optional_float(value)
+    return wind_speed_to_m_s(parsed, unit) if parsed is not None else None
 
 
 def _optional_string(value: Any) -> str | None:

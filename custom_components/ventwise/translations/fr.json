@@ -11,6 +11,8 @@
         "data": {
           "debug_mode_enabled": "Activer le mode debug",
           "outdoor_weather_entity_id": "Source météo",
+          "temperature_unit": "Unité de température",
+          "wind_speed_unit": "Unité de vitesse du vent",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Utiliser un objectif de confort adapté au climat",
           "target_humidity_percent": "Humidité de confort",
@@ -30,6 +32,10 @@
           "home_assistant_notification_enabled": "Affichez chaque recommandation VentWise dans le panneau de notification de Home Assistant.",
           "diagnostic_notification_level": "Choisissez si Home Assistant affiche des notifications supplémentaires pour les problèmes de configuration ou de données de capteur."
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "outdoor": {
         "title": "Données extérieures",
@@ -225,6 +231,7 @@
         "title": "Ajuster VentWise",
         "description": "Choisissez ce que vous souhaitez gérer.",
         "menu_options": {
+          "units": "Units of measurement",
           "settings": "Paramètres",
           "rooms": "Chambres"
         },
@@ -233,12 +240,18 @@
           "rooms": "Ajoutez, modifiez ou supprimez des pièces et des zones groupées."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "settings": {
         "title": "Paramètres VentWise",
         "description": "Définissez ici le confort quotidien, les notifications et les données extérieures. Les entités extérieures manuelles sont requises uniquement lorsque leur commutateur correspondant est activé.",
         "data": {
           "debug_mode_enabled": "Activer le mode debug",
           "outdoor_weather_entity_id": "Source météo",
+          "temperature_unit": "Unité de température",
+          "wind_speed_unit": "Unité de vitesse du vent",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Adapter automatiquement la température de confort",
           "target_humidity_percent": "Humidité de confort",

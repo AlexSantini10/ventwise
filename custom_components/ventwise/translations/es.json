@@ -8,6 +8,8 @@
         "data": {
           "debug_mode_enabled": "Activar modo de depuracion",
           "outdoor_weather_entity_id": "Fuente meteorológica",
+          "temperature_unit": "Unidad de temperatura",
+          "wind_speed_unit": "Unidad de velocidad del viento",
           "target_temperature_c": "Temperatura de confort interior",
           "target_humidity_percent": "Humedad de confort interior",
           "stability_minutes": "Ventana de estabilidad (minutos)",
@@ -27,6 +29,10 @@
           "home_assistant_notification_enabled": "Muestra cada recomendación de VentWise en el panel de notificaciones de Home Assistant.",
           "diagnostic_notification_level": "Elija si Home Assistant muestra notificaciones adicionales para problemas de configuración o de datos del sensor."
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "outdoor": {
         "title": "Datos exteriores",
@@ -225,6 +231,7 @@
         "title": "Ajustar VentWise",
         "description": "Elige qué quieres editar.",
         "menu_options": {
+          "units": "Units of measurement",
           "rooms": "Habitaciones",
           "settings": "Ajustes"
         },
@@ -427,12 +434,18 @@
           "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "settings": {
         "title": "Configuración de VentWise",
         "description": "Configure aquí la comodidad diaria, las notificaciones y los datos exteriores. Las entidades exteriores manuales solo se requieren cuando su interruptor correspondiente está habilitado.",
         "data": {
           "debug_mode_enabled": "Activar modo de depuracion",
           "outdoor_weather_entity_id": "Fuente meteorológica",
+          "temperature_unit": "Unidad de temperatura",
+          "wind_speed_unit": "Unidad de velocidad del viento",
           "target_temperature_c": "Temperatura de confort",
           "auto_comfort_temperature": "Adaptar la temperatura de confort automáticamente",
           "target_humidity_percent": "Humedad de confort",

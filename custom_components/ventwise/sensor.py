@@ -6,7 +6,6 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import UNIT_CELSIUS
 from .application.coordinator import VentWiseCoordinator
 from .application.notification import build_recommendation_explanation, build_recommendation_status
 from .application.runtime import (
@@ -14,9 +13,30 @@ from .application.runtime import (
     WINDOW_STATE_NOT_CONFIGURED,
     find_room_recommendation,
     state_to_float,
+    state_to_temperature_c,
 )
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
 from .ventwise_core import RecommendationAction
+from .units import display_value, temperature_from_celsius, wind_speed_from_m_s
+from .const import DEFAULT_TEMPERATURE_UNIT, DEFAULT_WIND_SPEED_UNIT
+
+
+class TemperatureUnitMixin:
+    @property
+    def native_unit_of_measurement(self):
+        return getattr(self.coordinator.config, "temperature_unit", DEFAULT_TEMPERATURE_UNIT)
+
+    def _temperature(self, value):
+        return display_value(temperature_from_celsius(value, self.native_unit_of_measurement))
+
+
+class WindSpeedUnitMixin:
+    @property
+    def native_unit_of_measurement(self):
+        return getattr(self.coordinator.config, "wind_speed_unit", DEFAULT_WIND_SPEED_UNIT)
+
+    def _wind_speed(self, value):
+        return display_value(wind_speed_from_m_s(value, self.native_unit_of_measurement))
 
 
 async def async_setup_entry(
@@ -82,11 +102,10 @@ class WeatherConditionSensor(VentWiseEntity, SensorEntity):
         return text or None
 
 
-class PerceivedIndoorTemperatureSensor(VentWiseEntity, SensorEntity):
+class PerceivedIndoorTemperatureSensor(TemperatureUnitMixin, VentWiseEntity, SensorEntity):
     """Average perceived indoor temperature across configured rooms."""
 
     _attr_icon = "mdi:thermometer-lines"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(
@@ -97,14 +116,13 @@ class PerceivedIndoorTemperatureSensor(VentWiseEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.active_indoor_perceived_c
+        return self._temperature(self.coordinator.data.active_indoor_perceived_c)
 
 
-class PerceivedOutdoorTemperatureSensor(VentWiseEntity, SensorEntity):
+class PerceivedOutdoorTemperatureSensor(TemperatureUnitMixin, VentWiseEntity, SensorEntity):
     """Current perceived outdoor temperature."""
 
     _attr_icon = "mdi:thermometer-lines"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(
@@ -115,14 +133,13 @@ class PerceivedOutdoorTemperatureSensor(VentWiseEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.outdoor_perceived_c
+        return self._temperature(self.coordinator.data.outdoor_perceived_c)
 
 
-class PerceivedComfortTemperatureSensor(VentWiseEntity, SensorEntity):
+class PerceivedComfortTemperatureSensor(TemperatureUnitMixin, VentWiseEntity, SensorEntity):
     """Current effective comfort temperature target."""
 
     _attr_icon = "mdi:thermometer-check"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(
@@ -133,14 +150,13 @@ class PerceivedComfortTemperatureSensor(VentWiseEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.target_perceived_c
+        return self._temperature(self.coordinator.data.target_perceived_c)
 
 
-class SuggestedComfortTemperatureSensor(VentWiseEntity, SensorEntity):
+class SuggestedComfortTemperatureSensor(TemperatureUnitMixin, VentWiseEntity, SensorEntity):
     """Current suggested comfort temperature from the algorithm."""
 
     _attr_icon = "mdi:thermometer-auto"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(
@@ -151,21 +167,20 @@ class SuggestedComfortTemperatureSensor(VentWiseEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.suggested_comfort_temperature_c
+        return self._temperature(self.coordinator.data.suggested_comfort_temperature_c)
 
 
-class OutdoorTemperatureSensor(VentWiseEntity, SensorEntity):
+class OutdoorTemperatureSensor(TemperatureUnitMixin, VentWiseEntity, SensorEntity):
     """Parsed outdoor temperature from the configured source."""
 
     _attr_icon = "mdi:thermometer"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(coordinator, "outdoor_temperature", "outdoor_temperature")
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.outdoor_temperature_c
+        return self._temperature(self.coordinator.data.outdoor_temperature_c)
 
 
 class OutdoorHumiditySensor(VentWiseEntity, SensorEntity):
@@ -182,18 +197,17 @@ class OutdoorHumiditySensor(VentWiseEntity, SensorEntity):
         return self.coordinator.data.outdoor_humidity_percent
 
 
-class WindSpeedSensor(VentWiseEntity, SensorEntity):
+class WindSpeedSensor(WindSpeedUnitMixin, VentWiseEntity, SensorEntity):
     """Parsed outdoor wind speed from the configured source."""
 
     _attr_icon = "mdi:weather-windy"
-    _attr_native_unit_of_measurement = "m/s"
 
     def __init__(self, coordinator: VentWiseCoordinator) -> None:
         super().__init__(coordinator, "wind_speed", "wind_speed")
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.wind_speed_m_s
+        return self._wind_speed(self.coordinator.data.wind_speed_m_s)
 
 
 class RoomRecommendationStateSensor(VentWiseRoomEntity, SensorEntity):
@@ -292,11 +306,10 @@ class RoomWeatherConditionSensor(VentWiseRoomEntity, SensorEntity):
         return text or None
 
 
-class RoomPerceivedIndoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+class RoomPerceivedIndoorTemperatureSensor(TemperatureUnitMixin, VentWiseRoomEntity, SensorEntity):
     """Perceived indoor temperature for a room."""
 
     _attr_icon = "mdi:thermometer-lines"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
         super().__init__(
@@ -309,14 +322,13 @@ class RoomPerceivedIndoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
-        return None if recommendation is None else recommendation.indoor_perceived_c
+        return None if recommendation is None else self._temperature(recommendation.indoor_perceived_c)
 
 
-class RoomPerceivedOutdoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+class RoomPerceivedOutdoorTemperatureSensor(TemperatureUnitMixin, VentWiseRoomEntity, SensorEntity):
     """Perceived outdoor temperature shown on a room device."""
 
     _attr_icon = "mdi:thermometer-lines"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
         super().__init__(
@@ -329,14 +341,13 @@ class RoomPerceivedOutdoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
-        return None if recommendation is None else recommendation.outdoor_perceived_c
+        return None if recommendation is None else self._temperature(recommendation.outdoor_perceived_c)
 
 
-class RoomPerceivedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+class RoomPerceivedComfortTemperatureSensor(TemperatureUnitMixin, VentWiseRoomEntity, SensorEntity):
     """Effective comfort temperature shown on a room device."""
 
     _attr_icon = "mdi:thermometer-check"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
         super().__init__(
@@ -349,14 +360,13 @@ class RoomPerceivedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
-        return None if recommendation is None else recommendation.target_perceived_c
+        return None if recommendation is None else self._temperature(recommendation.target_perceived_c)
 
 
-class RoomSuggestedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+class RoomSuggestedComfortTemperatureSensor(TemperatureUnitMixin, VentWiseRoomEntity, SensorEntity):
     """Suggested comfort temperature shown on a room device."""
 
     _attr_icon = "mdi:thermometer-auto"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
         super().__init__(
@@ -369,21 +379,20 @@ class RoomSuggestedComfortTemperatureSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
-        return None if recommendation is None else recommendation.suggested_comfort_temperature_c
+        return None if recommendation is None else self._temperature(recommendation.suggested_comfort_temperature_c)
 
 
-class RoomIndoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+class RoomIndoorTemperatureSensor(TemperatureUnitMixin, VentWiseRoomEntity, SensorEntity):
     """Current indoor temperature for a single room."""
 
     _attr_icon = "mdi:home-thermometer"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
         super().__init__(coordinator, room, "indoor_temperature", "temperature")
 
     @property
     def native_value(self) -> float | None:
-        return state_to_float(self.hass.states.get(self.room.temperature_entity_id))
+        return self._temperature(state_to_temperature_c(self.hass.states.get(self.room.temperature_entity_id)))
 
 
 class RoomIndoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
@@ -402,18 +411,17 @@ class RoomIndoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
         return state_to_float(self.hass.states.get(self.room.humidity_entity_id))
 
 
-class RoomOutdoorTemperatureSensor(VentWiseRoomEntity, SensorEntity):
+class RoomOutdoorTemperatureSensor(TemperatureUnitMixin, VentWiseRoomEntity, SensorEntity):
     """Parsed outdoor temperature shown on a room device."""
 
     _attr_icon = "mdi:thermometer"
-    _attr_native_unit_of_measurement = UNIT_CELSIUS
 
     def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
         super().__init__(coordinator, room, "outdoor_temperature", "outdoor_temperature")
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.outdoor_temperature_c
+        return self._temperature(self.coordinator.data.outdoor_temperature_c)
 
 
 class RoomOutdoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
@@ -430,15 +438,14 @@ class RoomOutdoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
         return self.coordinator.data.outdoor_humidity_percent
 
 
-class RoomWindSpeedSensor(VentWiseRoomEntity, SensorEntity):
+class RoomWindSpeedSensor(WindSpeedUnitMixin, VentWiseRoomEntity, SensorEntity):
     """Parsed outdoor wind speed shown on a room device."""
 
     _attr_icon = "mdi:weather-windy"
-    _attr_native_unit_of_measurement = "m/s"
 
     def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
         super().__init__(coordinator, room, "wind_speed", "wind_speed")
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.wind_speed_m_s
+        return self._wind_speed(self.coordinator.data.wind_speed_m_s)

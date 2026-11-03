@@ -5,11 +5,7 @@ run-name: CI on ${{ github.ref_name }} @ ${{ github.sha }}
 on:
   push:
     branches:
-      - dev
-      - main
-      - test
-      - "test/**"
-      - "test-*"
+      - "**"
     paths:
       - ".github/workflows/ci.yml"
       - ".github/workflows/experimental-release.yml"
@@ -19,6 +15,10 @@ on:
       - "tests/**"
       - "scripts/build_release_package.py"
       - "scripts/ha-local-docker-test.py"
+      - "scripts/test-ci-docker.ps1"
+      - ".githooks/**"
+      - "Dockerfile.ci"
+      - "docker-compose.ci.yml"
       - "pyproject.toml"
       - "requirements-ci.txt"
       - "requirements-dev.txt"
@@ -36,6 +36,10 @@ on:
       - "tests/**"
       - "scripts/build_release_package.py"
       - "scripts/ha-local-docker-test.py"
+      - "scripts/test-ci-docker.ps1"
+      - ".githooks/**"
+      - "Dockerfile.ci"
+      - "docker-compose.ci.yml"
       - "pyproject.toml"
       - "requirements-ci.txt"
       - "requirements-dev.txt"

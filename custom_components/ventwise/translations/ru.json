@@ -11,6 +11,8 @@
         "data": {
           "debug_mode_enabled": "Debug mode",
           "outdoor_weather_entity_id": "Источник погоды",
+          "temperature_unit": "Единица температуры",
+          "wind_speed_unit": "Единица скорости ветра",
           "target_temperature_c": "Комфортная температура",
           "auto_comfort_temperature": "Адаптировать комфортную температуру к погоде",
           "target_humidity_percent": "Комфортная влажность",
@@ -30,6 +32,10 @@
           "home_assistant_notification_enabled": "Показывать каждую рекомендацию VentWise в панели уведомлений Home Assistant.",
           "diagnostic_notification_level": "Выберите, показывать ли в Home Assistant дополнительные уведомления о проблемах с настройками или данными датчиков."
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "outdoor": {
         "title": "Наружные данные",
@@ -225,6 +231,7 @@
         "title": "Настройка VentWise",
         "description": "Выберите, что хотите изменить.",
         "menu_options": {
+          "units": "Units of measurement",
           "settings": "Настройки",
           "rooms": "Комнаты"
         },
@@ -233,12 +240,18 @@
           "rooms": "Добавление, изменение и удаление комнат и объединённых зон."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "settings": {
         "title": "Настройки VentWise",
         "description": "Здесь задаются повседневные значения комфорта, уведомления и наружные данные. Свои наружные сущности обязательны, только когда включён соответствующий переключатель.",
         "data": {
           "debug_mode_enabled": "Режим отладки",
           "outdoor_weather_entity_id": "Источник погоды",
+          "temperature_unit": "Единица температуры",
+          "wind_speed_unit": "Единица скорости ветра",
           "target_temperature_c": "Комфортная температура",
           "auto_comfort_temperature": "Адаптировать комфортную температуру автоматически",
           "target_humidity_percent": "Комфортная влажность",
