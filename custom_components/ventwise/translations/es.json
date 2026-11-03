@@ -30,6 +30,10 @@
           "diagnostic_notification_level": "Elija si Home Assistant muestra notificaciones adicionales para problemas de configuración o de datos del sensor."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "outdoor": {
         "title": "Datos exteriores",
         "description": "Usa las casillas para decidir qué mediciones exteriores llegan desde entidades de Home Assistant en lugar del pronóstico.",
@@ -227,6 +231,7 @@
         "title": "Ajustar VentWise",
         "description": "Elige qué quieres editar.",
         "menu_options": {
+          "units": "Units of measurement",
           "rooms": "Habitaciones",
           "settings": "Ajustes"
         },
@@ -428,6 +433,10 @@
           "action_change_hold_minutes": "Espere tanto tiempo antes de cambiar una recomendación abierta a una recomendación cerrada, o al revés.",
           "action_lockout_minutes": "Después de una recomendación abierta o cerrada, evite una recomendación opuesta durante tanto tiempo. Los cierres urgentes de seguridad nunca se retrasan."
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "settings": {
         "title": "Configuración de VentWise",

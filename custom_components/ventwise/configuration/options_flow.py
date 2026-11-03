@@ -20,8 +20,10 @@ from .flow import (
     ConfigValidationError,
     build_room_schema,
     build_settings_schema,
+    build_unit_schema,
     _localized_room_kind_label,
     normalize_settings_config,
+    normalize_unit_config,
     normalize_room_config,
     split_config_data,
     validate_room_automation_confirmation,
@@ -57,10 +59,24 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._room_index = len(current_rooms)
         return self.async_show_menu(
             step_id="init",
-            menu_options=["settings", "rooms"],
+            menu_options=["units", "settings", "rooms"],
             description_placeholders={
                 "room_count": str(len(current_rooms)),
             },
+        )
+
+    async def async_step_units(self, user_input: dict[str, Any] | None = None):
+        """Change display units without reinterpreting saved values."""
+
+        if user_input is not None:
+            self._current_config = {
+                **self._current_config,
+                **normalize_unit_config(user_input),
+            }
+            return self.async_create_entry(title=NAME, data=self._result_data())
+        return self.async_show_form(
+            step_id="units",
+            data_schema=build_unit_schema(self._current_config),
         )
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None):

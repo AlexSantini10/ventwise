@@ -30,6 +30,10 @@
           "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。"
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "outdoor": {
         "title": "室外数据",
         "description": "使用复选框决定哪些室外测量值来自 Home Assistant 实体，而不是天气预报。",
@@ -227,6 +231,7 @@
         "title": "调整 VentWise",
         "description": "选择你想编辑的内容。",
         "menu_options": {
+          "units": "Units of measurement",
           "rooms": "房间",
           "settings": "设置"
         },
@@ -428,6 +433,10 @@
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "settings": {
         "title": "VentWise 设置",

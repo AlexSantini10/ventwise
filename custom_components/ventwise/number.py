@@ -14,7 +14,7 @@ from .const import (
 )
 from .application.coordinator import VentWiseCoordinator
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
-from .units import temperature_from_celsius, temperature_to_celsius
+from .units import display_value, temperature_from_celsius, temperature_to_celsius
 from .const import DEFAULT_TEMPERATURE_UNIT, UNIT_CELSIUS
 
 
@@ -39,7 +39,7 @@ class TemperatureNumberMixin:
         return temperature_to_celsius(value, self.native_unit_of_measurement)
 
     def _temperature(self, value: float | None) -> float | None:
-        return temperature_from_celsius(value, self.native_unit_of_measurement)
+        return display_value(temperature_from_celsius(value, self.native_unit_of_measurement))
 
 
 async def async_setup_entry(

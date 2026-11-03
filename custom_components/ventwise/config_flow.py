@@ -24,10 +24,12 @@ from .const import (
 from .configuration.flow import (
     ConfigValidationError,
     build_config_schema,
+    build_unit_schema,
     build_outdoor_override_schema,
     build_outdoor_source_schema,
     build_room_schema,
     normalize_basic_config,
+    normalize_unit_config,
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
@@ -53,6 +55,8 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Collect the minimal setup required to start."""
 
+        if user_input is None and not self._setup_data:
+            return await self.async_step_units()
         errors: dict[str, str] = {}
         if user_input is not None:
             await self.async_set_unique_id(DOMAIN)
@@ -60,7 +64,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if self._async_current_entries():
                 return self.async_abort(reason="single_instance_allowed")
             try:
-                self._setup_data = normalize_basic_config(user_input)
+                self._setup_data = normalize_basic_config({**self._setup_data, **user_input})
                 self._current_config = dict(self._setup_data)
                 self._rooms = []
                 self._room_index = 0
@@ -73,8 +77,19 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_config_schema(self._setup_data, self.hass),
+            data_schema=build_config_schema(self._setup_data, self.hass, include_units=False),
             errors=errors,
+        )
+
+    async def async_step_units(self, user_input: dict[str, Any] | None = None):
+        """Choose units before numeric setup values are shown."""
+
+        if user_input is not None:
+            self._setup_data = normalize_unit_config(user_input)
+            return await self.async_step_user()
+        return self.async_show_form(
+            step_id="units",
+            data_schema=build_unit_schema(self._setup_data),
         )
 
     async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):

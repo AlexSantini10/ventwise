@@ -219,18 +219,26 @@ def validate_room_automation_confirmation(
         raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID, "companion_app_required")
 
 
-def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
-    """Create the minimal setup schema."""
+def build_unit_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the independent unit preference step."""
 
-    selected_temperature_unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
     return vol.Schema(
         {
-            vol.Required(CONF_TEMPERATURE_UNIT, default=selected_temperature_unit): SelectSelector(
+            vol.Required(CONF_TEMPERATURE_UNIT, default=temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))): SelectSelector(
                 SelectSelectorConfig(options=list(TEMPERATURE_UNITS))
             ),
             vol.Required(CONF_WIND_SPEED_UNIT, default=wind_speed_unit(defaults.get(CONF_WIND_SPEED_UNIT))): SelectSelector(
                 SelectSelectorConfig(options=list(WIND_SPEED_UNITS))
             ),
+        }
+    )
+
+
+def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_units: bool = True) -> vol.Schema:
+    """Create the minimal setup schema."""
+
+    selected_temperature_unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
+    fields: dict[object, object] = {
             vol.Required(
                 CONF_OUTDOOR_WEATHER_ENTITY_ID,
                 default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID),
@@ -292,8 +300,10 @@ def build_config_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema
                 CONF_CO2_THRESHOLD_PPM,
                 default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
             ): vol.All(vol.Coerce(float), vol.Range(min=400.0, max=5000.0)),
-        }
-    )
+    }
+    if include_units:
+        fields = {**build_unit_schema(defaults).schema, **fields}
+    return vol.Schema(fields)
 
 
 def build_outdoor_source_schema(defaults: Mapping[str, object]) -> vol.Schema:
@@ -395,7 +405,7 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
 def build_settings_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
     """Create the single-screen schema for everyday VentWise settings."""
 
-    fields = dict(build_config_schema(defaults, hass).schema)
+    fields = dict(build_config_schema(defaults, hass, include_units=False).schema)
     fields.update(build_advanced_options_schema(defaults).schema)
     fields.update(build_outdoor_source_schema(defaults).schema)
     for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
@@ -573,6 +583,15 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     return data
 
 
+def normalize_unit_config(user_input: Mapping[str, object]) -> dict[str, object]:
+    """Validate preferences without reinterpreting numeric configuration."""
+
+    return {
+        CONF_TEMPERATURE_UNIT: temperature_unit(user_input.get(CONF_TEMPERATURE_UNIT)),
+        CONF_WIND_SPEED_UNIT: wind_speed_unit(user_input.get(CONF_WIND_SPEED_UNIT)),
+    }
+
+
 def normalize_outdoor_source_config(user_input: Mapping[str, object]) -> dict[str, object]:
     """Normalize the outdoor override checkbox selection."""
 
@@ -662,7 +681,7 @@ def normalize_settings_config(
     """Normalize every field shown in the single-screen options form."""
 
     data = dict(defaults)
-    data.update(normalize_basic_config(user_input))
+    data.update(normalize_basic_config({**defaults, **user_input}))
     data.update(normalize_advanced_config(user_input))
     data.update(normalize_outdoor_source_config(user_input))
     data = normalize_outdoor_override_config(data, data)

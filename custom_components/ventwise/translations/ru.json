@@ -33,6 +33,10 @@
           "diagnostic_notification_level": "Выберите, показывать ли в Home Assistant дополнительные уведомления о проблемах с настройками или данными датчиков."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "outdoor": {
         "title": "Наружные данные",
         "description": "С помощью флажков выберите, какие наружные показатели брать из сущностей Home Assistant вместо прогноза погоды.",
@@ -227,6 +231,7 @@
         "title": "Настройка VentWise",
         "description": "Выберите, что хотите изменить.",
         "menu_options": {
+          "units": "Units of measurement",
           "settings": "Настройки",
           "rooms": "Комнаты"
         },
@@ -234,6 +239,10 @@
           "settings": "Погода, комфорт, уведомления и наружные данные на одном экране.",
           "rooms": "Добавление, изменение и удаление комнат и объединённых зон."
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "settings": {
         "title": "Настройки VentWise",

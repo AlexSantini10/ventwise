@@ -33,6 +33,10 @@
           "diagnostic_notification_level": "Wählen Sie, ob Home Assistant zusätzliche Benachrichtigungen bei Konfigurations- oder Sensordatenproblemen anzeigt."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+      },
       "outdoor": {
         "title": "Outdoor-Daten",
         "description": "Verwenden Sie die Kontrollkästchen, um zu entscheiden, welche Außenmessungen von Home Assistant-Entitäten und nicht von der Wettervorhersage stammen.",
@@ -227,6 +231,7 @@
         "title": "Passen Sie VentWise an",
         "description": "Wählen Sie aus, was Sie verwalten möchten.",
         "menu_options": {
+          "units": "Units of measurement",
           "settings": "Einstellungen",
           "rooms": "Zimmer"
         },
@@ -234,6 +239,10 @@
           "settings": "Wetter, Komfort, Benachrichtigungen und Outdoor-Daten auf einem Bildschirm.",
           "rooms": "Räume und gruppierte Bereiche hinzufügen, bearbeiten oder entfernen."
         }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
       },
       "settings": {
         "title": "VentWise-Einstellungen",

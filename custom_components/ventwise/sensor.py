@@ -17,7 +17,7 @@ from .application.runtime import (
 )
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
 from .ventwise_core import RecommendationAction
-from .units import temperature_from_celsius, wind_speed_from_m_s
+from .units import display_value, temperature_from_celsius, wind_speed_from_m_s
 from .const import DEFAULT_TEMPERATURE_UNIT, DEFAULT_WIND_SPEED_UNIT
 
 
@@ -27,7 +27,7 @@ class TemperatureUnitMixin:
         return getattr(self.coordinator.config, "temperature_unit", DEFAULT_TEMPERATURE_UNIT)
 
     def _temperature(self, value):
-        return temperature_from_celsius(value, self.native_unit_of_measurement)
+        return display_value(temperature_from_celsius(value, self.native_unit_of_measurement))
 
 
 class WindSpeedUnitMixin:
@@ -36,7 +36,7 @@ class WindSpeedUnitMixin:
         return getattr(self.coordinator.config, "wind_speed_unit", DEFAULT_WIND_SPEED_UNIT)
 
     def _wind_speed(self, value):
-        return wind_speed_from_m_s(value, self.native_unit_of_measurement)
+        return display_value(wind_speed_from_m_s(value, self.native_unit_of_measurement))
 
 
 async def async_setup_entry(

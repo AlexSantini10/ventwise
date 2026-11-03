@@ -33,6 +33,13 @@
           "debug_mode_enabled": "Shows per-room open and close notification test controls. Confirming a debug notification can run the configured automation."
         }
       },
+      "units": {
+        "title": "Units of measurement",
+        "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit"
+        }
+      },
       "outdoor": {
         "title": "Outdoor data",
         "description": "Use the checkboxes to decide which outdoor measurements come from Home Assistant entities instead of the weather forecast.",
@@ -227,12 +234,20 @@
         "title": "Adjust VentWise",
         "description": "Choose what you want to manage.",
         "menu_options": {
+          "units": "Units of measurement",
           "settings": "Settings",
           "rooms": "Rooms"
         },
         "menu_option_descriptions": {
           "settings": "Weather, comfort, notifications, and outdoor data in one screen.",
           "rooms": "Add, edit, or remove rooms and grouped areas."
+        }
+      },
+      "units": {
+        "title": "Units of measurement",
+        "data": {
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit"
         }
       },
       "settings": {

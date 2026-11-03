@@ -33,6 +33,13 @@
           "debug_mode_enabled": "Mostra controlli di test per ricevere notifiche di apertura e chiusura per ogni stanza. La conferma può eseguire l'automazione configurata."
         }
       },
+      "units": {
+        "title": "Unità di misura",
+        "data": {
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento"
+        }
+      },
       "outdoor": {
         "title": "Dati esterni",
         "description": "Usa le checkbox per decidere quali dati esterni arrivano da entità di Home Assistant invece che dal forecast.",
@@ -227,12 +234,20 @@
         "title": "Modifica VentWise",
         "description": "Scegli cosa vuoi gestire.",
         "menu_options": {
+          "units": "Unità di misura",
           "settings": "Impostazioni",
           "rooms": "Stanze"
         },
         "menu_option_descriptions": {
           "settings": "Meteo, comfort, notifiche e dati esterni in una sola schermata.",
           "rooms": "Aggiungi, modifica o rimuovi stanze e aree raggruppate."
+        }
+      },
+      "units": {
+        "title": "Unità di misura",
+        "data": {
+          "temperature_unit": "Unità di temperatura",
+          "wind_speed_unit": "Unità della velocità del vento"
         }
       },
       "settings": {

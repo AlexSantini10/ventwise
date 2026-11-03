@@ -10,6 +10,7 @@ from .const import (
 
 TEMPERATURE_UNITS = (UNIT_CELSIUS, UNIT_FAHRENHEIT)
 WIND_SPEED_UNITS = (UNIT_METERS_PER_SECOND, UNIT_KILOMETERS_PER_HOUR, UNIT_MILES_PER_HOUR, UNIT_KNOTS)
+DISPLAY_PRECISION = 2
 
 
 def temperature_unit(value: object) -> str:
@@ -62,3 +63,8 @@ def state_unit(state, fallback: str, measurement: str | None = None) -> str:
     if measurement == "wind_speed":
         return attributes.get("unit_of_measurement") or attributes.get("wind_speed_unit") or fallback
     return attributes.get("unit_of_measurement") or fallback
+
+
+def display_value(value: float | None) -> float | None:
+    """Round a user-facing measurement without affecting canonical values."""
+    return round(value, DISPLAY_PRECISION) if value is not None else None
