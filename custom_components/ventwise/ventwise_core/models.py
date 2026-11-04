@@ -84,7 +84,10 @@ class ScoringConfig:
     minimum_stability_seconds: int = 0
     decision_threshold_c: float = 1.0
     score_scale_c: float = 1.8
-    humidity_weight: float = 0.04
+    # Degrees Celsius per g/m³ of absolute-humidity difference. Around 22 C,
+    # this keeps the influence close to the former 0.04 C per percentage point
+    # calibration while respecting the physics of cold versus warm air.
+    humidity_weight: float = 0.20
     wind_open_preference_threshold_m_s: float = 4.0
     wind_open_preference_per_m_s: float = 0.02
     wind_open_penalty_per_m_s: float = 0.07

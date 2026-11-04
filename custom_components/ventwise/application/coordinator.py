@@ -25,6 +25,7 @@ from ..ventwise_core import (
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
+    perceived_temperature,
     suggested_comfort_temperature,
 )
 
@@ -426,10 +427,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 ),
                 target_perceived_c=self._config.target_temperature_c,
                 suggested_comfort_temperature_c=None,
-                outdoor_perceived_c=outdoor.temperature_c
-                + (
-                    (outdoor.humidity_percent - self._config.target_humidity_percent)
-                    * self._recommender.config.humidity_weight
+                outdoor_perceived_c=perceived_temperature(
+                    outdoor.temperature_c,
+                    outdoor.humidity_percent,
+                    self._config.target_humidity_percent,
+                    self._recommender.config.humidity_weight,
+                    self._config.target_temperature_c,
                 ),
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=outdoor.temperature_c,
@@ -450,9 +453,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         await self._set_diagnostic_issue(None)
 
         now = dt_util.now()
-        outdoor_perceived_c = outdoor.temperature_c + (
-            (outdoor.humidity_percent - self._config.target_humidity_percent)
-            * self._recommender.config.humidity_weight
+        outdoor_perceived_c = perceived_temperature(
+            outdoor.temperature_c,
+            outdoor.humidity_percent,
+            self._config.target_humidity_percent,
+            self._recommender.config.humidity_weight,
+            self._config.target_temperature_c,
         )
         suggested_target = suggested_comfort_temperature(
             self._config.target_temperature_c,

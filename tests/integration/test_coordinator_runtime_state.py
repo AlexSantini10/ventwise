@@ -1294,8 +1294,8 @@ def test_coordinator_uses_automatic_comfort_temperature_when_enabled(
 
     snapshot = asyncio.run(coordinator._async_update_data())
 
-    assert snapshot.target_perceived_c == pytest.approx(22.0)
-    assert snapshot.suggested_comfort_temperature_c == pytest.approx(22.0)
+    assert snapshot.target_perceived_c == pytest.approx(21.9)
+    assert snapshot.suggested_comfort_temperature_c == pytest.approx(21.9)
     assert snapshot.summary.action.value == "open"
 
 
@@ -1415,4 +1415,4 @@ def test_coordinator_averages_global_perceived_indoor_across_rooms(
 
     snapshot = asyncio.run(coordinator._async_update_data())
 
-    assert snapshot.active_indoor_perceived_c == pytest.approx(26.0)
+    assert snapshot.active_indoor_perceived_c == pytest.approx(26.50786)

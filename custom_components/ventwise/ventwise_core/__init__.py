@@ -11,12 +11,18 @@ from .models import (
     SeasonMode,
     ScoringConfig,
 )
-from .scoring import ComfortRecommender, perceived_temperature, suggested_comfort_temperature
+from .scoring import (
+    ComfortRecommender,
+    absolute_humidity_g_m3,
+    perceived_temperature,
+    suggested_comfort_temperature,
+)
 
 __all__ = [
     "ComfortObservation",
     "ForecastObservation",
     "ComfortRecommender",
+    "absolute_humidity_g_m3",
     "RecommendationAction",
     "RecommendationContext",
     "RecommendationSummary",

@@ -13,8 +13,98 @@ from ventwise_core import (
     RoomProfile,
     SeasonMode,
     ScoringConfig,
+    absolute_humidity_g_m3,
+    perceived_temperature,
     suggested_comfort_temperature,
 )
+
+
+def test_absolute_humidity_is_monotonic_and_physically_bounded() -> None:
+    assert absolute_humidity_g_m3(20.0, 0.0) == pytest.approx(0.0)
+    assert absolute_humidity_g_m3(20.0, 100.0) == pytest.approx(17.3, abs=0.2)
+    assert absolute_humidity_g_m3(30.0, 50.0) > absolute_humidity_g_m3(10.0, 50.0)
+    assert absolute_humidity_g_m3(-20.0, 150.0) == pytest.approx(
+        absolute_humidity_g_m3(-20.0, 100.0)
+    )
+
+
+def test_perceived_temperature_uses_absolute_humidity_not_relative_humidity() -> None:
+    # Cold outdoor air can have a lower absolute moisture load despite a
+    # higher RH; the comparison must therefore not use RH percentages alone.
+    cold_damp = perceived_temperature(5.0, 90.0, 50.0, 0.2)
+    warm_dry = perceived_temperature(25.0, 30.0, 50.0, 0.2)
+    assert cold_damp < warm_dry
+    assert perceived_temperature(30.0, 80.0, 50.0, 0.2) > 30.0
+
+
+@pytest.mark.parametrize(
+    ("indoor", "outdoor", "expected"),
+    [
+        ((25.0, 95.0), (5.0, 90.0), RecommendationAction.VENTILATE),
+        ((30.0, 80.0), (32.0, 70.0), RecommendationAction.CLOSE),
+        ((22.0, 50.0), (22.0, 50.0), RecommendationAction.NONE),
+    ],
+)
+def test_realistic_humidity_scenarios(
+    indoor: tuple[float, float],
+    outdoor: tuple[float, float],
+    expected: RecommendationAction,
+) -> None:
+    result = ComfortRecommender(ScoringConfig(minimum_score=0.0)).evaluate(
+        [RoomProfile("Bathroom", RoomObservation(*indoor))],
+        ComfortObservation(*outdoor),
+    )
+    assert result.action is expected
+    assert result.best_room == "Bathroom"
+    recommendation = result.room_recommendations[0]
+    assert recommendation.indoor_comfort_severity >= 0.0
+    assert recommendation.outdoor_comfort_severity >= 0.0
+
+
+def test_forecast_zero_humidity_is_not_replaced_by_outdoor_fallback() -> None:
+    result = ComfortRecommender(ScoringConfig(minimum_score=0.0)).evaluate(
+        [RoomProfile("Studio", RoomObservation(22.0, 50.0))],
+        ComfortObservation(
+            22.0,
+            50.0,
+            forecast=ForecastObservation(temperature_c=22.0, humidity_percent=0.0),
+        ),
+    )
+    assert result.room_recommendations[0].outdoor_perceived_c == pytest.approx(22.0)
+
+
+def test_issue_222_recommends_moisture_driven_ventilation() -> None:
+    result = ComfortRecommender(
+        ScoringConfig(target_temperature_c=19.0, minimum_score=0.0)
+    ).evaluate(
+        [RoomProfile("Camera", RoomObservation(20.49, 99.99))],
+        ComfortObservation(5.2, 78.0),
+    )
+
+    recommendation = result.room_recommendations[0]
+    assert result.action is RecommendationAction.VENTILATE
+    assert result.best_room == "Camera"
+    assert recommendation.reason_code == "humidity"
+    assert "humidity relief" in recommendation.reason
+    assert "absolute humidity" in recommendation.reason
+
+
+def test_moisture_signal_does_not_override_humid_outdoor_air_or_weather_safety() -> None:
+    recommender = ComfortRecommender(
+        ScoringConfig(target_temperature_c=19.0, minimum_score=0.0)
+    )
+    room = RoomProfile("Camera", RoomObservation(20.49, 99.99))
+
+    humid_outdoor = recommender.evaluate(
+        [room], ComfortObservation(25.0, 90.0)
+    )
+    stormy_outdoor = recommender.evaluate(
+        [room], ComfortObservation(5.2, 78.0, weather_condition="thunderstorm")
+    )
+
+    assert humid_outdoor.action is RecommendationAction.CLOSE
+    assert stormy_outdoor.action is RecommendationAction.CLOSE
+    assert stormy_outdoor.room_recommendations[0].reason_code.startswith("weather:")
 
 
 def test_recommender_prefers_open_when_outside_is_more_comfortable() -> None:
