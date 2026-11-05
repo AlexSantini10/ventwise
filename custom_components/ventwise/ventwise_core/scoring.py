@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from math import exp, isfinite
 from typing import Sequence
 
 from .models import (
@@ -20,15 +21,57 @@ from .models import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def absolute_humidity_g_m3(temperature_c: float, humidity_percent: float) -> float:
+    """Return absolute humidity in grams of water per cubic metre of air.
+
+    The Magnus saturation-vapour-pressure approximation is sufficiently
+    accurate for the indoor/outdoor range used by VentWise. Inputs are
+    bounded so malformed Home Assistant values cannot produce infinities.
+    Relative humidity is intentionally clamped to 0..100 because this is a
+    physical quantity, not a score tuning knob.
+    """
+
+    temperature = temperature_c if isfinite(temperature_c) else 20.0
+    humidity = humidity_percent if isfinite(humidity_percent) else 50.0
+    temperature = max(-80.0, min(80.0, temperature))
+    humidity = max(0.0, min(100.0, humidity))
+    saturation_pressure_hpa = 6.112 * exp(
+        (17.67 * temperature) / (temperature + 243.5)
+    )
+    return max(
+        0.0,
+        216.74
+        * saturation_pressure_hpa
+        * (humidity / 100.0)
+        / (temperature + 273.15),
+    )
+
+
 def perceived_temperature(
     temperature_c: float,
     humidity_percent: float,
     target_humidity_percent: float,
     humidity_weight: float = 0.04,
+    target_temperature_c: float = 22.0,
 ) -> float:
-    """Return a perceived temperature adjusted for humidity."""
+    """Return equivalent perceived temperature using absolute humidity.
 
-    return temperature_c + ((humidity_percent - target_humidity_percent) * humidity_weight)
+    ``humidity_weight`` is expressed as degrees Celsius per g/m³. The
+    optional target temperature preserves the historical four-argument API;
+    callers evaluating a different comfort target should pass it explicitly.
+    """
+
+    temperature = temperature_c if isfinite(temperature_c) else target_temperature_c
+    target_temperature = (
+        target_temperature_c if isfinite(target_temperature_c) else 22.0
+    )
+    target_absolute_humidity = absolute_humidity_g_m3(
+        target_temperature, target_humidity_percent
+    )
+    return temperature + (
+        absolute_humidity_g_m3(temperature, humidity_percent)
+        - target_absolute_humidity
+    ) * humidity_weight
 
 
 def suggested_comfort_temperature(
@@ -108,18 +151,21 @@ class ComfortRecommender:
             room.indoor.humidity_percent,
             target_humidity,
             self._config.humidity_weight,
+            target_temperature,
         )
         outdoor_perceived = perceived_temperature(
             outdoor.temperature_c,
             outdoor.humidity_percent,
             target_humidity,
             self._config.humidity_weight,
+            target_temperature,
         )
         target_perceived = perceived_temperature(
             target_temperature,
             target_humidity,
             target_humidity,
             self._config.humidity_weight,
+            target_temperature,
         )
         suggested_temperature = suggested_comfort_temperature(
             target_perceived,
@@ -129,14 +175,6 @@ class ComfortRecommender:
         outside_delta = abs(outdoor_perceived - target_perceived)
         inside_severity = _comfort_severity(indoor_perceived, target_perceived)
         outside_severity = _comfort_severity(outdoor_perceived, target_perceived)
-        comfort_lower = target_perceived - 1.0
-        comfort_upper = target_perceived + 1.0
-        indoor_band_distance = max(
-            0.0,
-            comfort_lower - indoor_perceived,
-            indoor_perceived - comfort_upper,
-        )
-
         if _weather_requires_close(outdoor.weather_condition):
             close_score = self._clamp(max(self._config.minimum_score, 0.75))
             co2_influence = self._co2_influence(room.co2_ppm)
@@ -190,22 +228,57 @@ class ComfortRecommender:
             outdoor=outdoor,
             direction=RecommendationAction.CLOSE,
         )
+        indoor_absolute_humidity = absolute_humidity_g_m3(
+            room.indoor.temperature_c, room.indoor.humidity_percent
+        )
+        outdoor_absolute_humidity = absolute_humidity_g_m3(
+            outdoor.temperature_c, outdoor.humidity_percent
+        )
+        target_absolute_humidity = absolute_humidity_g_m3(
+            target_temperature, target_humidity
+        )
+        humidity_relief = 0.0
+        if (
+            room.indoor.humidity_percent > target_humidity + 5.0
+            and indoor_absolute_humidity - target_absolute_humidity > 1.0
+            and outdoor_absolute_humidity < indoor_absolute_humidity
+        ):
+            humidity_relief = _smoothstep(
+                indoor_absolute_humidity - outdoor_absolute_humidity, 1.0, 8.0
+            )
+            # A cold but genuinely drier outdoor air mass is useful for a
+            # humid room. Let that physical relief counterbalance the outdoor
+            # cold penalty without making humidity an unconditional override.
+            open_score = max(open_score, 0.65 * humidity_relief)
+            close_score *= 1.0 - (0.65 * humidity_relief)
         brief_ventilation_score = 0.0
-        if indoor_band_distance <= 2.0 and (
+        indoor_temperature_band_distance = max(
+            0.0,
+            target_temperature - 1.0 - room.indoor.temperature_c,
+            room.indoor.temperature_c - (target_temperature + 1.0),
+        )
+        if indoor_temperature_band_distance <= 2.0 and (
             (
-                indoor_perceived > comfort_upper
-                and outdoor_perceived < comfort_lower
-                and outdoor_perceived < indoor_perceived
+                room.indoor.temperature_c > target_temperature + 1.0
+                and outdoor.temperature_c < target_temperature - 1.0
+                and outdoor.temperature_c < room.indoor.temperature_c
             )
             or (
-                indoor_perceived < comfort_lower
-                and outdoor_perceived > comfort_upper
-                and outdoor_perceived > indoor_perceived
+                room.indoor.temperature_c < target_temperature - 1.0
+                and outdoor.temperature_c > target_temperature + 1.0
+                and outdoor.temperature_c > room.indoor.temperature_c
             )
         ):
-            # Outdoor air crosses the personal band: it is useful as a short
-            # correction, but not a stable endpoint for an open window.
+            # Outdoor temperature crosses the personal band: it is useful as
+            # a short correction, but not a stable endpoint for an open
+            # window. Humidity still affects the score and final direction;
+            # using dry-bulb temperature here avoids turning a small humidity
+            # correction into a ventilation-only recommendation.
             brief_ventilation_score = _smoothstep(inside_severity, 0.0, 4.0)
+            # Crossing the dry-bulb comfort band is specifically a temporary
+            # airing case, so do not let the outdoor endpoint's cold severity
+            # turn it into a misleading permanent-close recommendation.
+            close_score *= 0.5
         open_score, close_score = self._apply_season_bias(open_score, close_score)
         forecast_note = None
         forecast = outdoor.forecast
@@ -216,9 +289,12 @@ class ComfortRecommender:
         if forecast is not None and forecast.temperature_c is not None:
             forecast_perceived = perceived_temperature(
                 forecast.temperature_c,
-                forecast.humidity_percent or outdoor.humidity_percent,
+                forecast.humidity_percent
+                if forecast.humidity_percent is not None
+                else outdoor.humidity_percent,
                 target_humidity,
                 self._config.humidity_weight,
+                target_temperature,
             )
             forecast_delta = _comfort_severity(forecast_perceived, target_perceived)
             worsening = forecast_delta - outside_severity
@@ -255,6 +331,13 @@ class ComfortRecommender:
         )
         if forecast_note is not None:
             environment_notes = (*environment_notes, forecast_note)
+        if humidity_relief > 0.0:
+            environment_notes = (
+                *environment_notes,
+                f"humidity relief: indoor absolute humidity is {indoor_absolute_humidity:.1f}g/m3 "
+                f"versus {outdoor_absolute_humidity:.1f}g/m3 outdoors; brief ventilation "
+                "can reduce moisture despite the thermal penalty.",
+            )
         if co2_influence > 0.0:
             environment_notes = (*environment_notes, f"CO2 {room.co2_ppm:.0f}ppm needs fresh air.")
         open_score = self._clamp(open_score * environmental_open_factor)
@@ -687,6 +770,8 @@ def _recommendation_reason_code(
         note.startswith("short-term forecast") for note in environment_notes
     ):
         return "forecast"
+    if any(note.startswith("humidity relief:") for note in environment_notes):
+        return "humidity"
     if any(note.startswith("wind ") for note in environment_notes):
         return "wind"
     return "comfort"

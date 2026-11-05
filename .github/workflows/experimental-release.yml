@@ -4,10 +4,6 @@ run-name: Experimental release on ${{ github.event.workflow_run.head_branch }} @
 on:
   workflow_run:
     workflows: ["CI"]
-    branches:
-      - test
-      - "test/**"
-      - "test-*"
     types:
       - completed
 
@@ -18,7 +14,13 @@ jobs:
   release:
     name: Publish experimental GitHub Release
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      (
+        startsWith(github.event.workflow_run.head_branch, 'test/') ||
+        startsWith(github.event.workflow_run.head_branch, 'test-') ||
+        github.event.workflow_run.head_branch == 'test'
+      )
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

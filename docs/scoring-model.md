@@ -18,9 +18,38 @@ For each room:
 1. Read indoor temperature and humidity.
 2. Read outdoor temperature and humidity.
 3. Optionally read wind speed.
-4. Compute perceived comfort for inside and outside.
-5. Compare both with the comfort target.
-6. Decide whether opening or closing creates a larger benefit.
+4. Convert temperature and relative humidity to absolute humidity.
+5. Compute perceived comfort for inside and outside.
+6. Compare both with the comfort target.
+7. Decide whether opening or closing creates a larger benefit.
+
+## Humidity calibration
+
+VentWise compares the physical moisture load, not relative-humidity
+percentages. It uses the Magnus approximation for saturation vapour pressure
+and reports absolute humidity in g/m³:
+
+`AH = 216.74 × e_s(T) × (RH / 100) / (T + 273.15)`
+
+where `e_s(T) = 6.112 × exp(17.67 × T / (T + 243.5))` hPa. Values are
+bounded to 0–100% RH and a conservative −80–80 °C calculation range so bad
+sensor values remain finite. Perceived temperature is the measured dry-bulb
+temperature plus `0.20 °C × (AH − AH_target)`; the target absolute humidity
+is calculated at the configured comfort temperature and humidity. This keeps
+the historical perceived-temperature API and Celsius/Fahrenheit rendering
+unchanged while making winter and summer comparisons physically meaningful.
+
+Missing indoor or outdoor humidity continues to use the existing 50% fallback.
+Forecast humidity falls back to the current outdoor humidity only when the
+forecast field is absent; an explicit 0% value is preserved.
+
+When indoor moisture is materially above the configured target and outdoor
+absolute humidity is lower, VentWise adds a separate moisture-relief signal.
+That signal is reduced by the normal thermal score and produces an advisory
+`ventilate` recommendation when appropriate. It does not bypass thunderstorm,
+rain, wind, CO₂, stability, cooldown, or other safety gates. The explanation
+includes the indoor/outdoor absolute-humidity values and makes clear that the
+advice is brief airing, not a guarantee of complete moisture removal.
 
 ## Climate-Adaptive Comfort Target
 
