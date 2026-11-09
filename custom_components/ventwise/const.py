@@ -60,6 +60,7 @@ CONF_POLLUTION_POLICY = "pollution_policy"
 CONF_POLLEN_POLICY = "pollen_policy"
 CONF_OPEN_METEO_AIR_QUALITY_ENABLED = "open_meteo_air_quality_enabled"
 CONF_AIR_QUALITY_ENTITY_IDS = "air_quality_entity_ids"
+CONF_EXPOSURE_POLICIES = "exposure_policies"
 
 # The keys match Open-Meteo's documented current-condition variables.
 AIR_QUALITY_VARIABLES = (

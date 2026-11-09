@@ -130,6 +130,26 @@ def test_decision_snapshot_prefers_configured_ha_air_source_over_provider() -> N
     assert readings["pm10"].observation.source_id == "open_meteo_cams"
 
 
+def test_exposure_policy_needs_matching_unit_and_average_before_blocking() -> None:
+    now = datetime(2026, 7, 20, 12, 0, tzinfo=timezone.utc)
+    config = build_integration_config({
+        CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+        "air_quality_entity_ids": {"pm2_5": "sensor.pm25"},
+        "exposure_policies": {"pm2_5": {"mode": "avoid", "threshold": 25, "unit": "µg/m³", "averaging_period": "instant"}},
+        CONF_ROOMS: [{CONF_ROOM_NAME: "Office", CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temperature", CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity"}],
+    })
+    states = {
+        "weather.home": SimpleNamespace(state="sunny", last_updated=now, attributes={"temperature": 20, "humidity": 50, "wind_speed": 1}),
+        "sensor.room_temperature": SimpleNamespace(state="28", last_updated=now, attributes={}),
+        "sensor.room_humidity": SimpleNamespace(state="50", last_updated=now, attributes={}),
+        "sensor.pm25": SimpleNamespace(state="30", last_updated=now, attributes={"unit_of_measurement": "µg/m³", "averaging_period": "instant"}),
+    }
+    snapshot = build_decision_snapshot(config, states.get, now)
+    assert snapshot.outdoor.pollution_policy.value == "avoid"
+    states["sensor.pm25"] = SimpleNamespace(state="30", last_updated=now, attributes={"unit_of_measurement": "µg/m³", "averaging_period": "24h"})
+    assert build_decision_snapshot(config, states.get, now).outdoor.pollution_policy is None
+
+
 def test_quiet_hours_support_wraparound_midnight() -> None:
     now = datetime(2026, 7, 20, 1, 30, 0)
 

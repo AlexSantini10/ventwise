@@ -75,6 +75,9 @@ from ..const import (
     CONF_POLLUTION_POLICY,
     CONF_POLLEN_POLICY,
     CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
+    CONF_AIR_QUALITY_ENTITY_IDS,
+    CONF_EXPOSURE_POLICIES,
+    AIR_QUALITY_VARIABLES,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
@@ -396,8 +399,7 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     """Create the advanced settings schema."""
 
     selected_temperature_unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
-    return vol.Schema(
-        {
+    fields: dict[object, object] = {
             vol.Required(
                 CONF_AUTO_COMFORT_TEMPERATURE,
                 default=defaults.get(
@@ -432,8 +434,28 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 SelectSelectorConfig(options=["ignore", "reduce", "avoid"])
             ),
             vol.Required(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, default=defaults.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)): cv.boolean,
-        }
-    )
+    }
+    configured_sources = defaults.get(CONF_AIR_QUALITY_ENTITY_IDS, {})
+    configured_sources = configured_sources if isinstance(configured_sources, Mapping) else {}
+    configured_policies = defaults.get(CONF_EXPOSURE_POLICIES, {})
+    configured_policies = configured_policies if isinstance(configured_policies, Mapping) else {}
+    for kind in AIR_QUALITY_VARIABLES:
+        fields.update(_optional_selector_field(
+            _air_quality_entity_field(kind),
+            EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+            configured_sources.get(kind),
+        ))
+        policy = configured_policies.get(kind, {})
+        policy = policy if isinstance(policy, Mapping) else {}
+        fields[vol.Optional(_exposure_policy_field(kind), default=policy.get("mode", "ignore"))] = SelectSelector(
+            SelectSelectorConfig(options=["ignore", "reduce", "avoid"])
+        )
+        fields.update(_optional_numeric_field(_exposure_threshold_field(kind), policy.get("threshold"), minimum=0.0, maximum=1_000_000.0))
+        fields[vol.Optional(_exposure_unit_field(kind), default=policy.get("unit", ""))] = cv.string
+        fields[vol.Optional(_exposure_averaging_field(kind), default=policy.get("averaging_period", "instant"))] = SelectSelector(
+            SelectSelectorConfig(options=["instant", "1h", "8h", "24h"])
+        )
+    return vol.Schema(fields)
 
 
 def build_settings_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
@@ -691,6 +713,33 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         0,
         24 * 60,
     )
+    sources: dict[str, str] = {}
+    for kind in AIR_QUALITY_VARIABLES:
+        field = _air_quality_entity_field(kind)
+        value = data.get(field)
+        if value is None or not str(value).strip():
+            data.pop(field, None)
+            continue
+        sources[kind] = _normalize_required_entity_id(
+            value, field, domains=NUMERIC_ENTITY_DOMAINS
+        )
+        data.pop(field, None)
+    data[CONF_AIR_QUALITY_ENTITY_IDS] = sources
+    policies: dict[str, dict[str, object]] = {}
+    for kind in AIR_QUALITY_VARIABLES:
+        mode_field = _exposure_policy_field(kind)
+        threshold_field = _exposure_threshold_field(kind)
+        unit_field = _exposure_unit_field(kind)
+        average_field = _exposure_averaging_field(kind)
+        mode = str(data.pop(mode_field, "ignore"))
+        threshold = _normalize_optional_float(data.pop(threshold_field, None), threshold_field, 0.0, 1_000_000.0)
+        unit = str(data.pop(unit_field, "")).strip()
+        averaging = str(data.pop(average_field, "instant"))
+        if mode in {"reduce", "avoid"}:
+            if threshold is None or not unit or averaging not in {"instant", "1h", "8h", "24h"}:
+                raise ConfigValidationError(threshold_field)
+            policies[kind] = {"mode": mode, "threshold": threshold, "unit": unit, "averaging_period": averaging}
+    data[CONF_EXPOSURE_POLICIES] = policies
     _normalize_optional_entities(
         data,
         CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
@@ -840,6 +889,28 @@ def _normalize_optional_entities(data: dict[str, object], *keys: str) -> None:
             continue
         text = str(value).strip()
         data[key] = text or None
+
+
+def _air_quality_entity_field(kind: str) -> str:
+    """Return a stable options-flow field name for one exposure source."""
+
+    return f"air_quality_{kind}_entity_id"
+
+
+def _exposure_policy_field(kind: str) -> str:
+    return f"air_quality_{kind}_policy"
+
+
+def _exposure_threshold_field(kind: str) -> str:
+    return f"air_quality_{kind}_threshold"
+
+
+def _exposure_unit_field(kind: str) -> str:
+    return f"air_quality_{kind}_unit"
+
+
+def _exposure_averaging_field(kind: str) -> str:
+    return f"air_quality_{kind}_averaging_period"
 
 
 def _normalize_room_id(value: object) -> str:

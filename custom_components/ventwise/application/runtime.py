@@ -90,6 +90,7 @@ from ..const import (
     CONF_POLLEN_POLICY,
     CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
     CONF_AIR_QUALITY_ENTITY_IDS,
+    CONF_EXPOSURE_POLICIES,
     AIR_QUALITY_VARIABLES,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
@@ -179,6 +180,7 @@ class IntegrationConfig:
     pollen_policy: str | None = None
     open_meteo_air_quality_enabled: bool = False
     air_quality_entity_ids: Mapping[str, str] = field(default_factory=dict)
+    exposure_policies: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -353,6 +355,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         pollen_policy=_exposure_policy(data.get(CONF_POLLEN_POLICY)),
         open_meteo_air_quality_enabled=bool(data.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)),
         air_quality_entity_ids=_air_quality_entity_ids(data.get(CONF_AIR_QUALITY_ENTITY_IDS)),
+        exposure_policies=_exposure_policies(data.get(CONF_EXPOSURE_POLICIES)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -574,8 +577,6 @@ def build_decision_snapshot(
     smoke_state = state_getter(config.smoke_alert_entity_id) if config.smoke_alert_entity_id else None
     smoke = observation_from_state(smoke_state, source_id=config.smoke_alert_entity_id, now=now, unit="", converter=lambda raw, _: state_to_bool(SimpleNamespace(state=raw))) if config.smoke_alert_entity_id else None
     policy_source = "user_policy"
-    pollen_policy = Observation(config.pollen_policy, "", now, now, policy_source) if config.pollen_policy else None
-    pollution_policy = Observation(config.pollution_policy, "", now, now, policy_source) if config.pollution_policy else None
     exposure: list[ExposureReading] = []
     # Configured HA entities are authoritative. The provider is only allowed
     # to fill a named field for which no HA entity was configured.
@@ -590,6 +591,11 @@ def build_decision_snapshot(
         elif provider_exposure and provider_exposure.get(kind) is not None:
             item = provider_exposure[kind]
             exposure.append(ExposureReading(kind, item.observation, item.averaging_period, item.attribution, item.resolution, item.coverage))
+    triggered = _triggered_exposure_policies(exposure, config.exposure_policies)
+    pollen_mode = triggered.get("pollen")
+    pollution_mode = triggered.get("pollution")
+    pollen_policy = Observation(pollen_mode, "", now, now, policy_source) if pollen_mode else None
+    pollution_policy = Observation(pollution_mode, "", now, now, policy_source) if pollution_mode else None
     return DecisionSnapshot(tuple(rooms), DecisionOutdoor(temperature, humidity, wind, gust, condition, rain, forecast_temp, smoke, pollen_policy, pollution_policy, tuple(exposure)), now)
 
 
@@ -987,6 +993,41 @@ def _air_quality_entity_ids(value: Any) -> Mapping[str, str]:
         if str(key) in AIR_QUALITY_VARIABLES
         and (entity_id := _string_or_none(raw)) is not None
     }
+
+
+def _exposure_policies(value: Any) -> Mapping[str, Mapping[str, Any]]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, Mapping[str, Any]] = {}
+    for kind, raw in value.items():
+        if kind not in AIR_QUALITY_VARIABLES or not isinstance(raw, Mapping):
+            continue
+        mode = _string_or_none(raw.get("mode"))
+        threshold = _float_or_none(raw.get("threshold"))
+        unit = _string_or_none(raw.get("unit"))
+        averaging = _string_or_none(raw.get("averaging_period")) or "instant"
+        if mode in {"reduce", "avoid"} and threshold is not None and unit:
+            result[str(kind)] = {"mode": mode, "threshold": threshold, "unit": unit, "averaging_period": averaging}
+    return result
+
+
+def _triggered_exposure_policies(
+    readings: list[ExposureReading], policies: Mapping[str, Mapping[str, Any]],
+) -> Mapping[str, str]:
+    result: dict[str, str] = {}
+    for reading in readings:
+        policy = policies.get(reading.kind)
+        value = reading.observation.value
+        if not policy or value is None:
+            continue
+        if reading.observation.unit != policy["unit"] or reading.averaging_period != policy["averaging_period"]:
+            continue
+        if value < policy["threshold"]:
+            continue
+        category = "pollen" if reading.kind.endswith("_pollen") else "pollution"
+        if policy["mode"] == "avoid" or category not in result:
+            result[category] = str(policy["mode"])
+    return result
 
 
 def _outdoor_value(

@@ -118,7 +118,19 @@ class DecisionEngine:
         for reading in snapshot.outdoor.exposure:
             value = self._usable(reading.observation, f"outdoor.{reading.kind}", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
             if value is not None:
-                trace.append(TraceEntry("source.exposure", f"{reading.kind}:{reading.observation.source_id}:{reading.averaging_period}"))
+                trace.append(TraceEntry(
+                    "source.exposure",
+                    ":".join(filter(None, (
+                        reading.kind,
+                        reading.observation.source_id,
+                        reading.observation.unit,
+                        reading.averaging_period,
+                        reading.observation.observed_at.isoformat() if reading.observation.observed_at else None,
+                        reading.attribution,
+                        reading.resolution,
+                        reading.coverage,
+                    ))),
+                ))
         hard_block = severe or hazardous_wind or smoke or pollen == "avoid" or pollution == "avoid"
         if severe:
             blocks.append("severe_weather")
