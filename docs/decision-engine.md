@@ -2,9 +2,8 @@
 
 ## Purpose and limits
 
-This is VentWise's **pre-implementation** decision-engine contract. It defines
-data, precedence, formulas, initial thresholds, outputs, and tests. It does not
-introduce code, Home Assistant configuration, or API calls.
+This is VentWise's canonical decision-engine contract. It defines data,
+precedence, formulas, initial thresholds, outputs, and tests.
 
 The engine is local, deterministic, explainable, and advisory. Equal normalised
 input, configuration, and evaluation time produce the same result and trace.
@@ -47,6 +46,20 @@ then regulate its presentation. Explanation exposes all material facts.
 
 An urgent **close** remains in the core result; a window contact can say that
 the window is already closed but cannot erase the recommendation.
+
+## Implemented deterministic interface
+
+The reusable core exposes `DecisionEngine` for new adapters. Its immutable
+`DecisionSnapshot` contains source-neutral `Observation` values; every value
+has canonical unit, source, observation/receipt time, validity, freshness and
+availability. `awaiting_source` is retained rather than guessed.
+
+`DecisionResult` always retains both `core_action` (the physical advice) and
+`delivered_action` (what may be shown after contacts, quiet hours, cooldown,
+or stability). Its ordered trace, candidate scores, blocks, penalties and data
+quality summary are stable test/UI/log interfaces. Legacy Home Assistant
+configuration continues to use the existing compatibility scorer while entity
+adapters migrate to snapshots; no configured entity or threshold is dropped.
 
 ## At-a-glance ordered decision table
 
