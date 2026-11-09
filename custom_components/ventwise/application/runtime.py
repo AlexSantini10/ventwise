@@ -69,6 +69,11 @@ from ..const import (
     CONF_ROOM_EXPOSURE,
     CONF_ROOM_THERMAL_RESISTANCE,
     CONF_ROOM_THERMAL_MASS,
+    CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_HVAC_ENTITY_ID,
+    CONF_ROOM_VENTILATION_ENTITY_ID,
+    CONF_ROOM_AIR_CLEANER_ENTITY_ID,
+    CONF_ROOM_RADIATION_ENTITY_ID,
     CONF_ROOMS,
     CONF_RUNTIME_STATE,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
@@ -142,6 +147,11 @@ class RoomConfig:
     exposure: str | None = None
     thermal_resistance_m2k_w: float | None = None
     thermal_mass_kj_k: float | None = None
+    surface_temperature_entity_id: str | None = None
+    hvac_entity_id: str | None = None
+    ventilation_entity_id: str | None = None
+    air_cleaner_entity_id: str | None = None
+    radiation_entity_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,6 +311,11 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             exposure=_string_or_none(room.get(CONF_ROOM_EXPOSURE)),
             thermal_resistance_m2k_w=_float_or_none(room.get(CONF_ROOM_THERMAL_RESISTANCE)),
             thermal_mass_kj_k=_float_or_none(room.get(CONF_ROOM_THERMAL_MASS)),
+            surface_temperature_entity_id=_string_or_none(room.get(CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID)),
+            hvac_entity_id=_string_or_none(room.get(CONF_ROOM_HVAC_ENTITY_ID)),
+            ventilation_entity_id=_string_or_none(room.get(CONF_ROOM_VENTILATION_ENTITY_ID)),
+            air_cleaner_entity_id=_string_or_none(room.get(CONF_ROOM_AIR_CLEANER_ENTITY_ID)),
+            radiation_entity_id=_string_or_none(room.get(CONF_ROOM_RADIATION_ENTITY_ID)),
         )
         for room in data.get(CONF_ROOMS, [])
     )
@@ -496,6 +511,25 @@ def observation_from_state(
     return Observation(canonical, unit, observed_at, received_at, source_id)
 
 
+def _optional_temperature_observation(entity_id: str | None, state_getter: Callable[[str], Any], now: datetime) -> Observation[float] | None:
+    if not entity_id:
+        return None
+    state = state_getter(entity_id)
+    return observation_from_state(state, source_id=entity_id, now=now, unit="°C", converter=lambda raw, item: _canonical_measurement_value(float(raw), item, "temperature"))
+
+
+def _optional_float_observation(entity_id: str | None, state_getter: Callable[[str], Any], now: datetime, unit: str) -> Observation[float] | None:
+    if not entity_id:
+        return None
+    return observation_from_state(state_getter(entity_id), source_id=entity_id, now=now, unit=unit, converter=lambda raw, _: float(raw))
+
+
+def _optional_bool_observation(entity_id: str | None, state_getter: Callable[[str], Any], now: datetime) -> Observation[bool] | None:
+    if not entity_id:
+        return None
+    return observation_from_state(state_getter(entity_id), source_id=entity_id, now=now, unit="", converter=lambda raw, _: state_to_bool(SimpleNamespace(state=raw)))
+
+
 def build_decision_snapshot(
     config: IntegrationConfig,
     state_getter: Callable[[str], Any],
@@ -571,9 +605,26 @@ def build_decision_snapshot(
         if contacts:
             value = True if any(item is True for item in contacts) else (False if all(item is False for item in contacts) else None)
             window = Observation(value, "", now, now, ",".join(room.window_sensor_entity_ids), availability=Availability.AVAILABLE if value is not None else Availability.MISSING)
+        surface = _optional_temperature_observation(room.surface_temperature_entity_id, state_getter, now)
+        hvac = _optional_bool_observation(room.hvac_entity_id, state_getter, now)
+        ventilation = _optional_bool_observation(room.ventilation_entity_id, state_getter, now)
+        air_cleaner = _optional_bool_observation(room.air_cleaner_entity_id, state_getter, now)
+        radiation = _optional_float_observation(room.radiation_entity_id, state_getter, now, "W/m²")
+        physical = tuple(
+            (name, value)
+            for name, value in (
+                ("volume_m3", room.volume_m3),
+                ("opening_area_m2", room.opening_area_m2),
+                ("opening_fraction", room.opening_fraction),
+                ("exposure", room.exposure),
+                ("thermal_resistance_m2k_w", room.thermal_resistance_m2k_w),
+                ("thermal_mass_kj_k", room.thermal_mass_kj_k),
+            ) if value is not None and value != "unknown"
+        )
         rooms.append(DecisionRoom(room_key, room.name, room_temp, room_humidity, co2, trend, window,
             room.target_temperature_c_override if room.target_temperature_c_override_enabled else config.target_temperature_c,
-            room.target_humidity_percent_override if room.target_humidity_percent_override_enabled else config.target_humidity_percent))
+            room.target_humidity_percent_override if room.target_humidity_percent_override_enabled else config.target_humidity_percent,
+            surface, hvac, ventilation, air_cleaner, radiation, physical))
     smoke_state = state_getter(config.smoke_alert_entity_id) if config.smoke_alert_entity_id else None
     smoke = observation_from_state(smoke_state, source_id=config.smoke_alert_entity_id, now=now, unit="", converter=lambda raw, _: state_to_bool(SimpleNamespace(state=raw))) if config.smoke_alert_entity_id else None
     policy_source = "user_policy"

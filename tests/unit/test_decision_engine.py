@@ -101,6 +101,25 @@ def test_delivery_stability_suppression_keeps_core_action() -> None:
     assert result.delivery_suppressed_by == "stability"
 
 
+def test_physical_parameters_only_refine_duration_and_confidence() -> None:
+    physical = {
+        "volume_m3": 120.0,
+        "opening_area_m2": 1.0,
+        "opening_fraction": 0.5,
+        "thermal_resistance_m2k_w": 2.0,
+        "thermal_mass_kj_k": 500.0,
+    }
+    result = DecisionEngine().evaluate(snapshot(
+        room_temp=22.0,
+        outdoor_temp=22.0,
+        room={"co2_ppm": obs(1400.0, "ppm"), "physical_parameters": tuple(physical.items())},
+    )).room_results[0]
+    assert result.core_action == RecommendationAction.VENTILATE
+    assert result.duration_minutes == 30
+    assert result.confidence == 0.9
+    assert any(entry.code == "physical.parameters" for entry in result.trace)
+
+
 def test_awaiting_source_is_explicit_but_never_approximated() -> None:
     data = snapshot(smoke_alert=Observation(None, "", None, None, None, availability=Availability.AWAITING_SOURCE))
     result = DecisionEngine().evaluate(data).room_results[0]

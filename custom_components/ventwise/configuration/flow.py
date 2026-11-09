@@ -60,6 +60,11 @@ from ..const import (
     CONF_ROOM_EXPOSURE,
     CONF_ROOM_THERMAL_RESISTANCE,
     CONF_ROOM_THERMAL_MASS,
+    CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_HVAC_ENTITY_ID,
+    CONF_ROOM_VENTILATION_ENTITY_ID,
+    CONF_ROOM_AIR_CLEANER_ENTITY_ID,
+    CONF_ROOM_RADIATION_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
@@ -572,6 +577,11 @@ def build_room_schema(
             vol.Optional(CONF_ROOM_EXPOSURE, default=defaults.get(CONF_ROOM_EXPOSURE, "unknown")): SelectSelector(SelectSelectorConfig(options=["unknown", "north", "east", "south", "west"])),
             **_optional_numeric_field(CONF_ROOM_THERMAL_RESISTANCE, defaults.get(CONF_ROOM_THERMAL_RESISTANCE), minimum=0.01, maximum=100.0),
             **_optional_numeric_field(CONF_ROOM_THERMAL_MASS, defaults.get(CONF_ROOM_THERMAL_MASS), minimum=1.0, maximum=1000000.0),
+            **_optional_selector_field(CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID)),
+            **_optional_selector_field(CONF_ROOM_HVAC_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["climate", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_HVAC_ENTITY_ID)),
+            **_optional_selector_field(CONF_ROOM_VENTILATION_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["fan", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_VENTILATION_ENTITY_ID)),
+            **_optional_selector_field(CONF_ROOM_AIR_CLEANER_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["fan", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_AIR_CLEANER_ENTITY_ID)),
+            **_optional_selector_field(CONF_ROOM_RADIATION_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_ROOM_RADIATION_ENTITY_ID)),
         }
     )
 
@@ -797,6 +807,11 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_CO2_ENTITY_ID,
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
+        CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
+        CONF_ROOM_HVAC_ENTITY_ID,
+        CONF_ROOM_VENTILATION_ENTITY_ID,
+        CONF_ROOM_AIR_CLEANER_ENTITY_ID,
+        CONF_ROOM_RADIATION_ENTITY_ID,
     )
     data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
@@ -855,6 +870,17 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_CO2_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
+    _normalize_optional_entity_ids(data, CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID, CONF_ROOM_RADIATION_ENTITY_ID, domains=NUMERIC_ENTITY_DOMAINS)
+    _normalize_optional_entity_ids(data, CONF_ROOM_HVAC_ENTITY_ID, domains=["climate", "binary_sensor", "switch"])
+    _normalize_optional_entity_ids(data, CONF_ROOM_VENTILATION_ENTITY_ID, CONF_ROOM_AIR_CLEANER_ENTITY_ID, domains=["fan", "binary_sensor", "switch"])
+    for field, minimum, maximum in (
+        (CONF_ROOM_VOLUME_M3, 1.0, 10000.0),
+        (CONF_ROOM_OPENING_AREA_M2, 0.01, 100.0),
+        (CONF_ROOM_OPENING_FRACTION, 0.0, 1.0),
+        (CONF_ROOM_THERMAL_RESISTANCE, 0.01, 100.0),
+        (CONF_ROOM_THERMAL_MASS, 1.0, 1_000_000.0),
+    ):
+        data[field] = _normalize_optional_float(data.get(field), field, minimum, maximum)
     data[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] = _normalize_entity_id_list(
         data.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS),
         CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,

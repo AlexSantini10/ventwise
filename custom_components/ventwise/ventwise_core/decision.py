@@ -195,9 +195,43 @@ class DecisionEngine:
         scores = CandidateScores(round(open_score, 6), round(ventilate_score, 6), round(close_score, 6))
         core, reason = self._select(scores)
         duration = self._duration(core, forecast, rain)
+        duration, physics_confidence = self._physical_adjustment(
+            room, snapshot, duration, indoor_t, indoor_h, used, discarded, awaiting, trace, penalties
+        )
         trace.extend((TraceEntry("score.thermal", f"{thermal_benefit:.3f}"), TraceEntry("score.moisture", f"{moisture_benefit:.3f}"), TraceEntry("selection." + reason)))
-        confidence = 1.0 if not discarded else max(0.3, 1.0 - 0.1 * len(discarded))
+        confidence = (1.0 if not discarded else max(0.3, 1.0 - 0.1 * len(discarded))) * physics_confidence
         return self._finish(room, core, scores, confidence, reason, trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open, duration)
+
+    def _physical_adjustment(self, room, snapshot, duration, indoor_t, indoor_h, used, discarded, awaiting, trace, penalties):
+        """Use optional room physics conservatively; never change the action."""
+
+        values = dict(room.physical_parameters)
+        required = {"volume_m3", "opening_area_m2", "opening_fraction", "thermal_resistance_m2k_w", "thermal_mass_kj_k"}
+        confidence = 1.0
+        if values and not required.issubset(values):
+            awaiting.append("physical.room_model")
+            trace.append(TraceEntry("physical.awaiting_source"))
+        elif required.issubset(values):
+            trace.append(TraceEntry("physical.parameters", ",".join(f"{key}={values[key]}" for key in sorted(values))))
+            if duration is not None:
+                opening = float(values["opening_area_m2"]) * float(values["opening_fraction"])
+                # A deliberately bounded heuristic: calibrated geometry can
+                # refine duration but never assert a deterministic forecast.
+                duration = max(5, min(30, round(float(values["volume_m3"]) / max(1.0, opening * 6.0))))
+                confidence = 0.9
+        surface = self._usable(room.surface_temperature_c, "indoor.surface_temperature", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
+        if surface is not None:
+            dew = dew_point_c(float(indoor_t), float(indoor_h))
+            if dew >= float(surface):
+                penalties.append("condensation_risk")
+                trace.append(TraceEntry("risk.condensation", f"dew_point={dew:.2f}"))
+                if duration is not None:
+                    duration = min(duration, 5)
+                confidence *= 0.8
+        for observation, name in ((room.hvac_active, "indoor.hvac"), (room.ventilation_active, "indoor.ventilation"), (room.air_cleaner_active, "indoor.air_cleaner"), (room.radiation_w_m2, "indoor.radiation")):
+            if self._usable(observation, name, snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True) is not None:
+                trace.append(TraceEntry("source.physical", name))
+        return duration, confidence
 
     def _usable(self, observation: Observation | None, name: str, snapshot: DecisionSnapshot, limit, used, discarded, awaiting, optional: bool = False):
         if observation is None:

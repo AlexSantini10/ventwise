@@ -71,6 +71,12 @@ class DecisionRoom:
     window_open: Observation[bool] | None = None
     target_temperature_c: float | None = None
     target_humidity_percent: float | None = None
+    surface_temperature_c: Observation[float] | None = None
+    hvac_active: Observation[bool] | None = None
+    ventilation_active: Observation[bool] | None = None
+    air_cleaner_active: Observation[bool] | None = None
+    radiation_w_m2: Observation[float] | None = None
+    physical_parameters: Tuple[tuple[str, float | str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
