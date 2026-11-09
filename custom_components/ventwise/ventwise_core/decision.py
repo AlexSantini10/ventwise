@@ -145,7 +145,7 @@ class DecisionEngine:
             blocks.append("outdoor_exposure_avoid")
             trace.append(TraceEntry("block.outdoor_exposure_avoid"))
 
-        if indoor_t is None or indoor_h is None:
+        if indoor_t is None:
             trace.append(TraceEntry("selection.insufficient_indoor_evidence"))
             return self._finish(room, RecommendationAction.NONE, CandidateScores(), 0.0, "insufficient_indoor_evidence", trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open)
         if critical_missing or hard_block:
@@ -155,15 +155,18 @@ class DecisionEngine:
             return self._finish(room, core, CandidateScores(close=close), 1.0 if hard_block else 0.4, code, trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open, urgent=hard_block)
 
         assert outdoor_t is not None and outdoor_h is not None
-        indoor_apparent = apparent_temperature_c(float(indoor_t), float(indoor_h))
+        # Indoor RH is optional in long-lived configurations. Do not invent a
+        # value for it: a dry-bulb thermal comparison remains valid, while
+        # humidity, dew-point and moisture benefits are simply unavailable.
+        indoor_apparent = apparent_temperature_c(float(indoor_t), float(indoor_h)) if indoor_h is not None else float(indoor_t)
         outdoor_apparent = apparent_temperature_c(float(outdoor_t), float(outdoor_h))
         target = room.target_temperature_c if room.target_temperature_c is not None else self.config.target_temperature_c
         indoor_distance = max(0.0, abs(indoor_apparent - target) - self.config.comfort_band_c)
         outdoor_distance = max(0.0, abs(outdoor_apparent - target) - self.config.comfort_band_c)
         thermal_benefit = max(0.0, indoor_distance - outdoor_distance)
-        indoor_ah = absolute_humidity_g_m3(float(indoor_t), float(indoor_h))
+        indoor_ah = absolute_humidity_g_m3(float(indoor_t), float(indoor_h)) if indoor_h is not None else None
         outdoor_ah = absolute_humidity_g_m3(float(outdoor_t), float(outdoor_h))
-        moisture_benefit = max(0.0, indoor_ah - outdoor_ah)
+        moisture_benefit = max(0.0, indoor_ah - outdoor_ah) if indoor_ah is not None else 0.0
         co2 = self._usable(room.co2_ppm, "indoor.co2", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         co2_trend = self._usable(room.co2_trend_ppm_per_hour, "indoor.co2_trend", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         co2_signal = (co2 is not None and co2 >= self.config.co2_threshold_ppm) or (co2_trend is not None and co2_trend >= self.config.co2_positive_trend_ppm_per_hour)
@@ -177,7 +180,7 @@ class DecisionEngine:
         # above its humidity preference.  A warmer room naturally has higher
         # absolute humidity at the same RH; treating that alone as a competing
         # ventilation signal would incorrectly defeat a sustained thermal open.
-        moisture_signal = moisture_benefit if float(indoor_h) > self.config.humidity_high_percent else 0.0
+        moisture_signal = moisture_benefit if indoor_h is not None and float(indoor_h) > self.config.humidity_high_percent else 0.0
         ventilate_score = max(transient, moisture_signal, self.config.meaningful_benefit if co2_signal else 0.0)
         close_score = max(0.0, outdoor_distance - indoor_distance)
         if pollen == "reduce" or pollution == "reduce":
@@ -220,7 +223,7 @@ class DecisionEngine:
                 duration = max(5, min(30, round(float(values["volume_m3"]) / max(1.0, opening * 6.0))))
                 confidence = 0.9
         surface = self._usable(room.surface_temperature_c, "indoor.surface_temperature", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
-        if surface is not None:
+        if surface is not None and indoor_h is not None:
             dew = dew_point_c(float(indoor_t), float(indoor_h))
             if dew >= float(surface):
                 penalties.append("condensation_risk")

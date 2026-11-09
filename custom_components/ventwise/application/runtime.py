@@ -920,18 +920,31 @@ def apply_decision_to_summary(
             recommendations.append(recommendation)
             continue
         score = max(result.candidate_scores.open, result.candidate_scores.ventilate, result.candidate_scores.close)
+        # Time-based delivery guardrails must not erase the physical advice
+        # from entities. A satisfied contact is different: showing an action
+        # for a window already in that state is misleading.
+        display_action = (
+            result.core_action
+            if result.delivery_suppressed_by in {"quiet_hours", "cooldown", "stability"}
+            else result.delivered_action
+        )
         recommendations.append(replace(
             recommendation,
-            action=result.delivered_action,
-            score=score if result.delivered_action != RecommendationAction.NONE else 0.0,
+            action=display_action,
+            score=score if display_action != RecommendationAction.NONE else 0.0,
             reason=result.reason_code,
             reason_code=result.reason_code,
             ventilation_duration_minutes=result.duration_minutes,
         ))
     actionable = [item for item in recommendations if item.action != RecommendationAction.NONE]
     if not actionable:
+        contact_suppressed = any(
+            item.delivery_suppressed_by in {"window_already_open", "window_already_closed"}
+            for item in decision.room_results
+        )
         return replace(summary, action=RecommendationAction.NONE, score=0.0,
-            reason="No actionable deterministic recommendation.", blocked_by="decision", best_room=None,
+            reason=("The configured room window states already match the advice." if contact_suppressed else "No actionable deterministic recommendation."),
+            blocked_by="window_state" if contact_suppressed else "decision", best_room=None,
             room_recommendations=tuple(recommendations))
     best = max(actionable, key=lambda item: item.score)
     return replace(summary, action=best.action, score=best.score, reason=best.reason,

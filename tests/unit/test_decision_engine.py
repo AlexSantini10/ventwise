@@ -75,6 +75,19 @@ def test_co2_is_targeted_ventilation_not_open_override() -> None:
     assert result.duration_minutes == 15
 
 
+def test_missing_indoor_humidity_does_not_invent_a_value_or_block_thermal_advice() -> None:
+    data = snapshot()
+    room = data.rooms[0]
+    data = DecisionSnapshot(
+        (DecisionRoom(room.room_id, room.name, room.temperature_c, Observation(None, "%", None, NOW, "humidity", availability=Availability.AWAITING_SOURCE)),),
+        data.outdoor,
+        NOW,
+    )
+    result = DecisionEngine().evaluate(data).room_results[0]
+    assert result.core_action == RecommendationAction.OPEN
+    assert "indoor.humidity" in result.data_quality.awaiting_source
+
+
 def test_delivery_suppression_keeps_core_action_and_trace() -> None:
     data = snapshot()
     data = DecisionSnapshot(data.rooms, data.outdoor, NOW, RecommendationContext(quiet_hours_active=True))

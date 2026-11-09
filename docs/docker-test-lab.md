@@ -67,6 +67,19 @@ notifiche, comfort automatico e fascia silenziosa, senza riconfigurare il Lab.
 La Camera ha due contatti: l'apertura di uno qualunque produce lo stato
 aggregato `open`.
 
+### Scenari dati e trace
+
+Il Lab include anche PM2.5, polline d'erba, allarme fumo esplicito e
+temperatura superficiale della Camera. Le policy di esempio riducono il
+beneficio di apertura quando PM2.5 raggiunge 25 µg/m³; nessun polline influisce
+finché non viene configurata una policy personale. L'allarme fumo usa soltanto
+il binary sensor dedicato e, con una finestra aperta, propone la chiusura.
+
+Apri gli attributi di `sensor.camera_test_recommendation` per ispezionare
+`core_action`, `delivered_action`, candidati, blocchi, penalità, qualità dati e
+trace. La Camera include anche una calibrazione fisica completa: questa può
+rifinire durata/confidenza o segnalare condensa, ma non cambia i blocchi.
+
 ## Comandi
 
 | Comando | Effetto |

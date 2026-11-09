@@ -43,6 +43,14 @@ from custom_components.ventwise.const import (
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
+    CONF_AIR_QUALITY_ENTITY_IDS,
+    CONF_EXPOSURE_POLICIES,
+    CONF_ROOM_VOLUME_M3,
+    CONF_ROOM_OPENING_AREA_M2,
+    CONF_ROOM_OPENING_FRACTION,
+    CONF_ROOM_THERMAL_RESISTANCE,
+    CONF_ROOM_THERMAL_MASS,
+    CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
@@ -298,6 +306,8 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert CONF_STABILITY_MINUTES not in schema_dict
     assert CONF_QUIET_HOURS_START not in schema_dict
     assert CONF_QUIET_HOURS_END not in schema_dict
+    assert _schema_entry(schema, "air_quality_pm2_5_entity_id")
+    assert _schema_entry(schema, "air_quality_grass_pollen_policy")
 
 
 def test_room_schema_supports_room_and_macro_room_defaults() -> None:
@@ -548,6 +558,24 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
     assert CONF_STABILITY_MINUTES not in data
 
 
+def test_normalize_advanced_config_stores_explicit_exposure_policy() -> None:
+    data = normalize_advanced_config(
+        {
+            CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
+            CONF_COOLDOWN_MINUTES: 60,
+            "air_quality_pm2_5_entity_id": "sensor.pm25",
+            "air_quality_pm2_5_policy": "avoid",
+            "air_quality_pm2_5_threshold": 25.0,
+            "air_quality_pm2_5_unit": "µg/m³",
+            "air_quality_pm2_5_averaging_period": "instant",
+        }
+    )
+    assert data[CONF_AIR_QUALITY_ENTITY_IDS] == {"pm2_5": "sensor.pm25"}
+    assert data[CONF_EXPOSURE_POLICIES]["pm2_5"] == {
+        "mode": "avoid", "threshold": 25.0, "unit": "µg/m³", "averaging_period": "instant"
+    }
+
+
 def test_normalize_advanced_config_rejects_out_of_range_numeric_values() -> None:
     with pytest.raises(ConfigValidationError) as exc_info:
         normalize_advanced_config(
@@ -628,6 +656,24 @@ def test_normalize_room_config_accepts_input_number_temperature_and_humidity() -
 
     assert data[CONF_ROOM_TEMPERATURE_ENTITY_ID] == "input_number.bedroom_temp"
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] == "input_number.bedroom_humidity"
+
+
+def test_normalize_room_config_validates_physical_calibration_and_surface_source() -> None:
+    data = normalize_room_config(
+        {
+            CONF_ROOM_NAME: "Bedroom",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+            CONF_ROOM_VOLUME_M3: 60,
+            CONF_ROOM_OPENING_AREA_M2: 1.2,
+            CONF_ROOM_OPENING_FRACTION: 0.5,
+            CONF_ROOM_THERMAL_RESISTANCE: 2.0,
+            CONF_ROOM_THERMAL_MASS: 500,
+            CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID: "sensor.wall_temperature",
+        },
+        "room",
+    )
+    assert data[CONF_ROOM_VOLUME_M3] == 60.0
+    assert data[CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID] == "sensor.wall_temperature"
 
 
 def test_normalize_room_config_accepts_multiple_window_contacts() -> None:

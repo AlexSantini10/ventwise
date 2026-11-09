@@ -91,6 +91,30 @@ ventwise_test_wind_speed:
   initial: 2
   mode: box
   unit_of_measurement: "m/s"
+ventwise_test_pm25:
+  name: VentWise Test PM2.5
+  min: 0
+  max: 500
+  step: 1
+  initial: 10
+  mode: box
+  unit_of_measurement: "µg/m³"
+ventwise_test_grass_pollen:
+  name: VentWise Test Grass Pollen
+  min: 0
+  max: 500
+  step: 1
+  initial: 0
+  mode: box
+  unit_of_measurement: "grains/m³"
+ventwise_test_bedroom_surface_temperature:
+  name: VentWise Test Bedroom Surface Temperature
+  min: 0
+  max: 40
+  step: 0.1
+  initial: 20
+  mode: box
+  unit_of_measurement: "°C"
 """
 
 BOOLEANS_YAML = """ventwise_test_bedroom_window_left:
@@ -107,6 +131,8 @@ ventwise_test_living_room_start:
   name: VentWise Test Living Room Start Action
 ventwise_test_living_room_stop:
   name: VentWise Test Living Room Stop Action
+ventwise_test_smoke_alert:
+  name: VentWise Test Smoke Alert
 """
 
 CONDITION_YAML = """ventwise_test_weather_condition:
@@ -128,6 +154,10 @@ TEMPLATE_YAML = """- binary_sensor:
       unique_id: ventwise_test_living_room_window
       device_class: window
       state: "{{ is_state('input_boolean.ventwise_test_living_room_window', 'on') }}"
+    - name: VentWise Test Smoke Alert
+      unique_id: ventwise_test_smoke_alert
+      device_class: smoke
+      state: "{{ is_state('input_boolean.ventwise_test_smoke_alert', 'on') }}"
 - weather:
     - name: VentWise Test Weather
       unique_id: ventwise_test_weather
@@ -188,6 +218,9 @@ views:
           - input_number.ventwise_test_outdoor_humidity
           - input_number.ventwise_test_wind_speed
           - input_select.ventwise_test_weather_condition
+          - input_number.ventwise_test_pm25
+          - input_number.ventwise_test_grass_pollen
+          - input_boolean.ventwise_test_smoke_alert
           - weather.ventwise_test_weather
       - type: entities
         title: Dati simulati — Camera
@@ -195,6 +228,7 @@ views:
           - input_number.ventwise_test_bedroom_temperature
           - input_number.ventwise_test_bedroom_humidity
           - input_number.ventwise_test_bedroom_co2
+          - input_number.ventwise_test_bedroom_surface_temperature
           - input_boolean.ventwise_test_bedroom_window_left
           - input_boolean.ventwise_test_bedroom_window_right
           - binary_sensor.ventwise_test_bedroom_window_left
@@ -231,6 +265,7 @@ views:
           - sensor.camera_test_recommendation
           - sensor.camera_test_score
           - sensor.camera_test_reason
+          - sensor.camera_test_recommendation
           - sensor.camera_test_window_state
           - binary_sensor.camera_test_active
       - type: entities
@@ -245,6 +280,8 @@ views:
 
 BOOTSTRAP_MANIFEST = '{"domain":"ventwise_lab_bootstrap","name":"VentWise Test Lab Bootstrap","version":"1.0.0","integration_type":"helper","requirements":[],"codeowners":[]}'
 BOOTSTRAP_INIT = '''"""Provision the repeatable VentWise Lab config entry."""
+import asyncio
+
 from homeassistant.config_entries import ConfigEntry
 
 DOMAIN = "ventwise_lab_bootstrap"
@@ -253,11 +290,17 @@ DATA = {
     "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
     "stability_minutes": 0, "co2_enabled": True, "co2_threshold_ppm": 1000.0,
     "home_assistant_notification_enabled": True,
+    "smoke_alert_entity_id": "binary_sensor.ventwise_test_smoke_alert",
+    "air_quality_entity_ids": {"pm2_5": "input_number.ventwise_test_pm25", "grass_pollen": "input_number.ventwise_test_grass_pollen"},
+    "exposure_policies": {"pm2_5": {"mode": "reduce", "threshold": 25.0, "unit": "µg/m³", "averaging_period": "instant"}},
     "rooms": [
         {"kind": "room", "room_id": "camera_test", "name": "Camera test", "enabled": True,
          "temperature_entity_id": "input_number.ventwise_test_bedroom_temperature",
          "humidity_entity_id": "input_number.ventwise_test_bedroom_humidity",
          "co2_entity_id": "input_number.ventwise_test_bedroom_co2",
+         "surface_temperature_entity_id": "input_number.ventwise_test_bedroom_surface_temperature",
+         "volume_m3": 60.0, "opening_area_m2": 1.0, "opening_fraction": 0.5,
+         "thermal_resistance_m2k_w": 2.0, "thermal_mass_kj_k": 500.0,
          "window_sensor_entity_ids": ["binary_sensor.ventwise_test_bedroom_window_left", "binary_sensor.ventwise_test_bedroom_window_right"],
          "start_entity_id": "input_boolean.ventwise_test_bedroom_start", "stop_entity_id": "input_boolean.ventwise_test_bedroom_stop"},
         {"kind": "room", "room_id": "living_room", "name": "Living room", "enabled": True,
@@ -274,6 +317,14 @@ async def async_setup(hass, config):
         return True
     entry = ConfigEntry(domain="ventwise", title="VentWise Test Lab", data=DATA, options={}, source="user", version=2, minor_version=1, unique_id="ventwise_test_lab", discovery_keys={}, subentries_data=None)
     await hass.config_entries.async_add(entry)
+    async def refresh_after_helpers_are_ready():
+        await hass.async_block_till_done()
+        await asyncio.sleep(5)
+        runtime = hass.data.get("ventwise", {}).get(entry.entry_id)
+        coordinator = getattr(runtime, "coordinator", None)
+        if coordinator is not None:
+            await coordinator.async_request_refresh()
+    hass.async_create_task(refresh_after_helpers_are_ready())
     return True
 '''
 
