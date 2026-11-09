@@ -23,6 +23,7 @@ from ..ventwise_core import (
     RoomObservation,
     RoomProfile,
     ScoringConfig,
+    ExposureReading,
 )
 
 from ..const import (
@@ -88,6 +89,8 @@ from ..const import (
     CONF_POLLUTION_POLICY,
     CONF_POLLEN_POLICY,
     CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
+    CONF_AIR_QUALITY_ENTITY_IDS,
+    AIR_QUALITY_VARIABLES,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
@@ -175,6 +178,7 @@ class IntegrationConfig:
     pollution_policy: str | None = None
     pollen_policy: str | None = None
     open_meteo_air_quality_enabled: bool = False
+    air_quality_entity_ids: Mapping[str, str] = field(default_factory=dict)
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -348,6 +352,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         pollution_policy=_exposure_policy(data.get(CONF_POLLUTION_POLICY)),
         pollen_policy=_exposure_policy(data.get(CONF_POLLEN_POLICY)),
         open_meteo_air_quality_enabled=bool(data.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)),
+        air_quality_entity_ids=_air_quality_entity_ids(data.get(CONF_AIR_QUALITY_ENTITY_IDS)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -495,6 +500,7 @@ def build_decision_snapshot(
     *,
     forecast: ForecastObservation | None = None,
     co2_history: dict[str, list[tuple[datetime, float]]] | None = None,
+    provider_exposure: Mapping[str, Any] | None = None,
 ) -> DecisionSnapshot:
     """Create the complete immutable decision input from configured HA state.
 
@@ -570,7 +576,21 @@ def build_decision_snapshot(
     policy_source = "user_policy"
     pollen_policy = Observation(config.pollen_policy, "", now, now, policy_source) if config.pollen_policy else None
     pollution_policy = Observation(config.pollution_policy, "", now, now, policy_source) if config.pollution_policy else None
-    return DecisionSnapshot(tuple(rooms), DecisionOutdoor(temperature, humidity, wind, gust, condition, rain, forecast_temp, smoke, pollen_policy, pollution_policy), now)
+    exposure: list[ExposureReading] = []
+    # Configured HA entities are authoritative. The provider is only allowed
+    # to fill a named field for which no HA entity was configured.
+    for kind in AIR_QUALITY_VARIABLES:
+        entity_id = config.air_quality_entity_ids.get(kind)
+        if entity_id:
+            state = state_getter(entity_id)
+            attributes = getattr(state, "attributes", {}) or {}
+            unit = str(attributes.get("unit_of_measurement", ""))
+            observation = observation_from_state(state, source_id=entity_id, now=now, unit=unit, converter=lambda raw, _: float(raw))
+            exposure.append(ExposureReading(kind, observation, str(attributes.get("averaging_period", "instant"))))
+        elif provider_exposure and provider_exposure.get(kind) is not None:
+            item = provider_exposure[kind]
+            exposure.append(ExposureReading(kind, item.observation, item.averaging_period, item.attribution, item.resolution, item.coverage))
+    return DecisionSnapshot(tuple(rooms), DecisionOutdoor(temperature, humidity, wind, gust, condition, rain, forecast_temp, smoke, pollen_policy, pollution_policy, tuple(exposure)), now)
 
 
 def is_quiet_hours_active(now: datetime, start_time: str, end_time: str) -> bool:
@@ -954,6 +974,19 @@ def _exposure_policy(value: Any) -> str | None:
 
     text = _string_or_none(value)
     return text if text in {"reduce", "avoid"} else None
+
+
+def _air_quality_entity_ids(value: Any) -> Mapping[str, str]:
+    """Accept known HA source keys without retaining provider location data."""
+
+    if not isinstance(value, Mapping):
+        return {}
+    return {
+        str(key): entity_id
+        for key, raw in value.items()
+        if str(key) in AIR_QUALITY_VARIABLES
+        and (entity_id := _string_or_none(raw)) is not None
+    }
 
 
 def _outdoor_value(

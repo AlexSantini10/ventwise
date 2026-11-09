@@ -61,6 +61,7 @@ from ventwise_core import (
     RoomProfile,
 )
 from custom_components.ventwise.ventwise_core.models import (
+    Observation,
     RecommendationAction,
     RecommendationSummary,
     RoomRecommendation,
@@ -103,6 +104,30 @@ def test_decision_snapshot_preserves_sources_and_requires_co2_history() -> None:
     states["sensor.co2"] = SimpleNamespace(state="1200", last_updated=later, attributes={})
     second = build_decision_snapshot(config, states.get, later, co2_history=history)
     assert second.rooms[0].co2_trend_ppm_per_hour.value == 600.0
+
+
+def test_decision_snapshot_prefers_configured_ha_air_source_over_provider() -> None:
+    now = datetime(2026, 7, 20, 12, 0, tzinfo=timezone.utc)
+    config = build_integration_config({
+        CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+        "air_quality_entity_ids": {"pm2_5": "sensor.pm25"},
+        CONF_ROOMS: [{CONF_ROOM_NAME: "Office", CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temperature", CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity"}],
+    })
+    states = {
+        "weather.home": SimpleNamespace(state="sunny", last_updated=now, attributes={"temperature": 20, "humidity": 50, "wind_speed": 1}),
+        "sensor.room_temperature": SimpleNamespace(state="22", last_updated=now, attributes={}),
+        "sensor.room_humidity": SimpleNamespace(state="50", last_updated=now, attributes={}),
+        "sensor.pm25": SimpleNamespace(state="12", last_updated=now, attributes={"unit_of_measurement": "µg/m³"}),
+    }
+    provider = {
+        "pm2_5": SimpleNamespace(observation=Observation(99.0, "µg/m³", now, now, "open_meteo_cams"), averaging_period="instant", attribution="Open-Meteo / CAMS", resolution="~11 km", coverage="model"),
+        "pm10": SimpleNamespace(observation=Observation(20.0, "µg/m³", now, now, "open_meteo_cams"), averaging_period="instant", attribution="Open-Meteo / CAMS", resolution="~11 km", coverage="model"),
+    }
+    snapshot = build_decision_snapshot(config, states.get, now, provider_exposure=provider)
+    readings = {item.kind: item for item in snapshot.outdoor.exposure}
+    assert readings["pm2_5"].observation.value == 12.0
+    assert readings["pm2_5"].observation.source_id == "sensor.pm25"
+    assert readings["pm10"].observation.source_id == "open_meteo_cams"
 
 
 def test_quiet_hours_support_wraparound_midnight() -> None:

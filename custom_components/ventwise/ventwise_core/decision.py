@@ -113,6 +113,12 @@ class DecisionEngine:
         smoke = self._usable(snapshot.outdoor.smoke_alert, "outdoor.smoke", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True) is True
         pollen = self._usable(snapshot.outdoor.pollen_policy, "outdoor.pollen", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
         pollution = self._usable(snapshot.outdoor.pollution_policy, "outdoor.pollution", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
+        # Exposure readings are always recorded, but are intentionally not a
+        # decision input until a user has configured an explicit policy.
+        for reading in snapshot.outdoor.exposure:
+            value = self._usable(reading.observation, f"outdoor.{reading.kind}", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
+            if value is not None:
+                trace.append(TraceEntry("source.exposure", f"{reading.kind}:{reading.observation.source_id}:{reading.averaging_period}"))
         hard_block = severe or hazardous_wind or smoke or pollen == "avoid" or pollution == "avoid"
         if severe:
             blocks.append("severe_weather")

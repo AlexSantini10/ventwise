@@ -59,6 +59,14 @@ CONF_SMOKE_ALERT_ENTITY_ID = "smoke_alert_entity_id"
 CONF_POLLUTION_POLICY = "pollution_policy"
 CONF_POLLEN_POLICY = "pollen_policy"
 CONF_OPEN_METEO_AIR_QUALITY_ENABLED = "open_meteo_air_quality_enabled"
+CONF_AIR_QUALITY_ENTITY_IDS = "air_quality_entity_ids"
+
+# The keys match Open-Meteo's documented current-condition variables.
+AIR_QUALITY_VARIABLES = (
+    "pm2_5", "pm10", "nitrogen_dioxide", "ozone", "carbon_monoxide",
+    "sulphur_dioxide", "european_aqi", "alder_pollen", "birch_pollen",
+    "grass_pollen", "mugwort_pollen", "olive_pollen", "ragweed_pollen",
+)
 CONF_NOTIFICATION_DEVICE_ID = "notification_device_id"
 CONF_NOTIFICATION_ENABLED = "notification_enabled"
 CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED = "home_assistant_notification_enabled"

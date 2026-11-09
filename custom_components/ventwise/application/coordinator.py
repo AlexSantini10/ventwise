@@ -59,6 +59,7 @@ from .notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
+from .air_quality import ProviderExposure, async_fetch_open_meteo_exposure
 from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
@@ -118,6 +119,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._room_action_guards = dict(self._runtime_state.room_action_guards)
         self._forecast: ForecastObservation | None = None
         self._co2_history: dict[str, list[tuple[datetime, float]]] = {}
+        self._provider_exposure: dict[str, ProviderExposure] = {}
+        self._provider_exposure_fetched_at: datetime | None = None
         self._forecast_fetched_at: datetime | None = None
         self._diagnostic_issue = self._runtime_state.diagnostic_issue
         self._last_diagnostic_log_issue: str | None = None
@@ -454,6 +457,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         await self._set_diagnostic_issue(None)
 
         now = dt_util.now()
+        provider_exposure = await self._async_provider_exposure(now)
         outdoor_perceived_c = outdoor.temperature_c + (
             (outdoor.humidity_percent - self._config.target_humidity_percent)
             * self._recommender.config.humidity_weight
@@ -488,6 +492,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         decision_snapshot = build_decision_snapshot(
             self._config, self.hass.states.get, now, forecast=forecast,
             co2_history=self._co2_history,
+            provider_exposure=provider_exposure,
         )
         decision_engine = DecisionEngine(DecisionConfig(
             target_temperature_c=effective_target_temperature_c,
@@ -700,6 +705,20 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         self._update_entry_options({"enabled": enabled})
         await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+    async def _async_provider_exposure(self, now: datetime) -> dict[str, ProviderExposure]:
+        """Return short-lived opt-in model data without retaining coordinates."""
+
+        if not self._config.open_meteo_air_quality_enabled:
+            return {}
+        if (
+            self._provider_exposure_fetched_at is not None
+            and now - self._provider_exposure_fetched_at < timedelta(minutes=30)
+        ):
+            return self._provider_exposure
+        self._provider_exposure = dict(await async_fetch_open_meteo_exposure(self.hass, now))
+        self._provider_exposure_fetched_at = now
+        return self._provider_exposure
 
     async def _async_forecast(self, now: datetime) -> ForecastObservation | None:
         """Return the most relevant hourly forecast within the next two hours."""

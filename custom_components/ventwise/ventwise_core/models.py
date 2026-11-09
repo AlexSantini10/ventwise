@@ -87,6 +87,19 @@ class DecisionOutdoor:
     smoke_alert: Observation[bool] | None = None
     pollen_policy: Observation[str] | None = None
     pollution_policy: Observation[str] | None = None
+    exposure: Tuple["ExposureReading", ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ExposureReading:
+    """One pollutant or pollen reading with policy-critical metadata."""
+
+    kind: str
+    observation: Observation[float]
+    averaging_period: str = "instant"
+    attribution: str | None = None
+    resolution: str | None = None
+    coverage: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
