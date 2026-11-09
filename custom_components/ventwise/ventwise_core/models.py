@@ -289,6 +289,7 @@ class RecommendationContext:
     quiet_hours_active: bool = False
     cooldown_active: bool = False
     stable_for_seconds: int = 0
+    stability_seconds_required: int = 0
 
 
 @dataclass(frozen=True, slots=True)

@@ -87,6 +87,20 @@ def test_delivery_suppression_keeps_core_action_and_trace() -> None:
     assert result.trace[-1].code == "delivery.suppressed"
 
 
+def test_delivery_stability_suppression_keeps_core_action() -> None:
+    data = snapshot()
+    data = DecisionSnapshot(
+        data.rooms,
+        data.outdoor,
+        NOW,
+        RecommendationContext(stable_for_seconds=10, stability_seconds_required=60),
+    )
+    result = DecisionEngine().evaluate(data).room_results[0]
+    assert result.core_action == RecommendationAction.OPEN
+    assert result.delivered_action == RecommendationAction.NONE
+    assert result.delivery_suppressed_by == "stability"
+
+
 def test_awaiting_source_is_explicit_but_never_approximated() -> None:
     data = snapshot(smoke_alert=Observation(None, "", None, None, None, availability=Availability.AWAITING_SOURCE))
     result = DecisionEngine().evaluate(data).room_results[0]

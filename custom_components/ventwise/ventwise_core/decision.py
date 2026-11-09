@@ -236,7 +236,7 @@ class DecisionEngine:
                 delivered, suppressed = RecommendationAction.NONE, "quiet_hours"
             elif context.cooldown_active:
                 delivered, suppressed = RecommendationAction.NONE, "cooldown"
-            elif context.stable_for_seconds < 0:
+            elif context.stable_for_seconds < context.stability_seconds_required:
                 delivered, suppressed = RecommendationAction.NONE, "stability"
         if suppressed:
             trace.append(TraceEntry("delivery.suppressed", suppressed))

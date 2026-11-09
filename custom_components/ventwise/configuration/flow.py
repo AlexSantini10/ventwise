@@ -54,6 +54,12 @@ from ..const import (
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+    CONF_ROOM_VOLUME_M3,
+    CONF_ROOM_OPENING_AREA_M2,
+    CONF_ROOM_OPENING_FRACTION,
+    CONF_ROOM_EXPOSURE,
+    CONF_ROOM_THERMAL_RESISTANCE,
+    CONF_ROOM_THERMAL_MASS,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
@@ -65,6 +71,10 @@ from ..const import (
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
+    CONF_SMOKE_ALERT_ENTITY_ID,
+    CONF_POLLUTION_POLICY,
+    CONF_POLLEN_POLICY,
+    CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
@@ -410,6 +420,18 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_COOLDOWN_MINUTES,
                 default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            **_optional_selector_field(
+                CONF_SMOKE_ALERT_ENTITY_ID,
+                EntitySelector(EntitySelectorConfig(domain="binary_sensor")),
+                defaults.get(CONF_SMOKE_ALERT_ENTITY_ID),
+            ),
+            vol.Optional(CONF_POLLUTION_POLICY, default=defaults.get(CONF_POLLUTION_POLICY, "ignore")): SelectSelector(
+                SelectSelectorConfig(options=["ignore", "reduce", "avoid"])
+            ),
+            vol.Optional(CONF_POLLEN_POLICY, default=defaults.get(CONF_POLLEN_POLICY, "ignore")): SelectSelector(
+                SelectSelectorConfig(options=["ignore", "reduce", "avoid"])
+            ),
+            vol.Required(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, default=defaults.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)): cv.boolean,
         }
     )
 
@@ -522,6 +544,12 @@ def build_room_schema(
                     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
                 ),
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            **_optional_numeric_field(CONF_ROOM_VOLUME_M3, defaults.get(CONF_ROOM_VOLUME_M3), minimum=1.0, maximum=10000.0),
+            **_optional_numeric_field(CONF_ROOM_OPENING_AREA_M2, defaults.get(CONF_ROOM_OPENING_AREA_M2), minimum=0.01, maximum=100.0),
+            **_optional_numeric_field(CONF_ROOM_OPENING_FRACTION, defaults.get(CONF_ROOM_OPENING_FRACTION), minimum=0.0, maximum=1.0),
+            vol.Optional(CONF_ROOM_EXPOSURE, default=defaults.get(CONF_ROOM_EXPOSURE, "unknown")): SelectSelector(SelectSelectorConfig(options=["unknown", "north", "east", "south", "west"])),
+            **_optional_numeric_field(CONF_ROOM_THERMAL_RESISTANCE, defaults.get(CONF_ROOM_THERMAL_RESISTANCE), minimum=0.01, maximum=100.0),
+            **_optional_numeric_field(CONF_ROOM_THERMAL_MASS, defaults.get(CONF_ROOM_THERMAL_MASS), minimum=1.0, maximum=1000000.0),
         }
     )
 

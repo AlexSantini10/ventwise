@@ -225,6 +225,37 @@ class RoomRecommendationStateSensor(VentWiseRoomEntity, SensorEntity):
             return RecommendationAction.NONE.value
         return recommendation.action.value
 
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        """Expose the stable deterministic explanation on the action entity."""
+
+        decision = getattr(self.coordinator.data, "decision", None)
+        if decision is None:
+            return {}
+        room_id = self.room.room_id or self.room.name
+        result = next((item for item in decision.room_results if item.room_id == room_id), None)
+        if result is None:
+            return {}
+        return {
+            "core_action": result.core_action.value,
+            "delivered_action": result.delivered_action.value,
+            "duration_minutes": result.duration_minutes,
+            "candidates": {
+                "open": result.candidate_scores.open,
+                "ventilate": result.candidate_scores.ventilate,
+                "close": result.candidate_scores.close,
+            },
+            "trace": [{"code": entry.code, "detail": entry.detail} for entry in result.trace],
+            "blocked_conditions": list(result.blocked_conditions),
+            "applied_penalties": list(result.applied_penalties),
+            "data_quality": {
+                "used": list(result.data_quality.used),
+                "discarded": list(result.data_quality.discarded),
+                "awaiting_source": list(result.data_quality.awaiting_source),
+            },
+            "delivery_suppressed_by": result.delivery_suppressed_by,
+        }
+
 
 class RoomRecommendationScoreSensor(VentWiseRoomEntity, SensorEntity):
     """Recommendation score for a single room."""

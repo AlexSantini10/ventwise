@@ -25,6 +25,8 @@ from ..ventwise_core import (
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
+    DecisionConfig,
+    DecisionEngine,
     suggested_comfort_temperature,
 )
 
@@ -36,9 +38,10 @@ from .runtime import (
     RuntimeState,
     build_integration_config,
     build_room_profiles,
+    build_decision_snapshot,
+    apply_decision_to_summary,
     build_scoring_config,
     dump_runtime_state,
-    gate_room_recommendations,
     load_runtime_state,
     is_quiet_hours_active,
     room_window_states,
@@ -114,6 +117,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._notification_markers = dict(self._runtime_state.notification_markers)
         self._room_action_guards = dict(self._runtime_state.room_action_guards)
         self._forecast: ForecastObservation | None = None
+        self._co2_history: dict[str, list[tuple[datetime, float]]] = {}
         self._forecast_fetched_at: datetime | None = None
         self._diagnostic_issue = self._runtime_state.diagnostic_issue
         self._last_diagnostic_log_issue: str | None = None
@@ -469,6 +473,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 target_temperature_c=effective_target_temperature_c,
             )
         )
+        # Keep the presentation calculation for backwards-compatible entity
+        # fields, but let the source-neutral decision engine own the action.
         summary = ComfortRecommender(scoring_config).evaluate(
             rooms=rooms,
             outdoor=outdoor,
@@ -479,9 +485,18 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             ),
         )
         summary = _with_suggested_comfort_temperature(summary, suggested_target)
-        summary = gate_room_recommendations(summary, window_states)
-        summary = self._apply_room_action_guardrails(summary, now)
-        signature = self._signature(summary)
+        decision_snapshot = build_decision_snapshot(
+            self._config, self.hass.states.get, now, forecast=forecast,
+            co2_history=self._co2_history,
+        )
+        decision_engine = DecisionEngine(DecisionConfig(
+            target_temperature_c=effective_target_temperature_c,
+            humidity_high_percent=self._config.target_humidity_percent + 10.0,
+            co2_threshold_ppm=self._config.co2_threshold_ppm,
+        ))
+        core_decision = decision_engine.evaluate(decision_snapshot)
+        core_summary = apply_decision_to_summary(summary, core_decision)
+        signature = self._signature(core_summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
             self._last_action_started_at = now
@@ -494,13 +509,12 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         )
         best_recommendation = next(
             (
-                recommendation
-                for recommendation in summary.room_recommendations
-                if recommendation.room_name == summary.best_room
+                recommendation for recommendation in core_summary.room_recommendations
+                if recommendation.room_name == core_summary.best_room
             ),
             None,
         )
-        notification_marker = self._notification_markers.get(summary.best_room or "")
+        notification_marker = self._notification_markers.get(core_summary.best_room or "")
         cooldown_active = (
             notification_marker is not None
             and best_recommendation is not None
@@ -511,6 +525,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 best_recommendation,
             )
         )
+        decision_snapshot = replace(
+            decision_snapshot,
+            operational=RecommendationContext(
+                quiet_hours_active=quiet_hours_active,
+                cooldown_active=cooldown_active,
+                stable_for_seconds=stable_for_seconds,
+                stability_seconds_required=self._config.stability_minutes * 60,
+            ),
+        )
+        decision = decision_engine.evaluate(decision_snapshot)
+        summary = apply_decision_to_summary(summary, decision)
 
         notification_channel_available = (
             self._config.notification_enabled
@@ -664,6 +689,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             stable_for_seconds=stable_for_seconds,
             last_updated=now,
             window_states=window_states,
+            decision=decision,
         )
         self._persist_runtime_state()
         self._refresh_time_listener(now, snapshot)

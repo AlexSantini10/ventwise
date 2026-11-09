@@ -4,14 +4,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from collections.abc import Callable, Mapping
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import Any
+from types import SimpleNamespace
 
 from ..ventwise_core import (
+    Availability,
     ComfortObservation,
     ForecastObservation,
     RecommendationAction,
     RecommendationSummary,
+    DecisionOutdoor,
+    DecisionRoom,
+    DecisionSnapshot,
+    AggregateDecisionResult,
+    Observation,
+    Validity,
     RoomObservation,
     RoomProfile,
     ScoringConfig,
@@ -54,6 +62,12 @@ from ..const import (
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+    CONF_ROOM_VOLUME_M3,
+    CONF_ROOM_OPENING_AREA_M2,
+    CONF_ROOM_OPENING_FRACTION,
+    CONF_ROOM_EXPOSURE,
+    CONF_ROOM_THERMAL_RESISTANCE,
+    CONF_ROOM_THERMAL_MASS,
     CONF_ROOMS,
     CONF_RUNTIME_STATE,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
@@ -70,6 +84,10 @@ from ..const import (
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_SMOKE_ALERT_ENTITY_ID,
+    CONF_POLLUTION_POLICY,
+    CONF_POLLEN_POLICY,
+    CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
@@ -114,6 +132,12 @@ class RoomConfig:
     stop_entity_id: str | None = None
     action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
     action_lockout_minutes: int = DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES
+    volume_m3: float | None = None
+    opening_area_m2: float | None = None
+    opening_fraction: float | None = None
+    exposure: str | None = None
+    thermal_resistance_m2k_w: float | None = None
+    thermal_mass_kj_k: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,6 +171,10 @@ class IntegrationConfig:
     co2_enabled: bool = False
     co2_entity_id: str | None = None
     co2_threshold_ppm: float = DEFAULT_CO2_THRESHOLD_PPM
+    smoke_alert_entity_id: str | None = None
+    pollution_policy: str | None = None
+    pollen_policy: str | None = None
+    open_meteo_air_quality_enabled: bool = False
     notification_device_ids: tuple[str, ...] = ()
     rooms: tuple[RoomConfig, ...] = ()
 
@@ -173,6 +201,10 @@ class RuntimeSnapshot:
     stable_for_seconds: int
     last_updated: datetime
     window_states: Mapping[str, str] = field(default_factory=dict)
+    # The source-neutral decision artifact is deliberately retained alongside
+    # the legacy presentation summary.  This keeps existing entity IDs stable
+    # while making every input and decision inspectable.
+    decision: Any | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -257,6 +289,12 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
                 )
             ),
+            volume_m3=_float_or_none(room.get(CONF_ROOM_VOLUME_M3)),
+            opening_area_m2=_float_or_none(room.get(CONF_ROOM_OPENING_AREA_M2)),
+            opening_fraction=_float_or_none(room.get(CONF_ROOM_OPENING_FRACTION)),
+            exposure=_string_or_none(room.get(CONF_ROOM_EXPOSURE)),
+            thermal_resistance_m2k_w=_float_or_none(room.get(CONF_ROOM_THERMAL_RESISTANCE)),
+            thermal_mass_kj_k=_float_or_none(room.get(CONF_ROOM_THERMAL_MASS)),
         )
         for room in data.get(CONF_ROOMS, [])
     )
@@ -306,6 +344,10 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         co2_enabled=bool(data.get(CONF_CO2_ENABLED, False)),
         co2_entity_id=_string_or_none(data.get(CONF_CO2_ENTITY_ID)),
         co2_threshold_ppm=float(data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)),
+        smoke_alert_entity_id=_string_or_none(data.get(CONF_SMOKE_ALERT_ENTITY_ID)),
+        pollution_policy=_exposure_policy(data.get(CONF_POLLUTION_POLICY)),
+        pollen_policy=_exposure_policy(data.get(CONF_POLLEN_POLICY)),
+        open_meteo_air_quality_enabled=bool(data.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
@@ -410,6 +452,125 @@ def state_to_bool(state: Any | None) -> bool | None:
     if lowered in {"off", "false", "0", "closed", "not_home"}:
         return False
     return None
+
+
+def observation_from_state(
+    state: Any | None,
+    *,
+    source_id: str | None,
+    now: datetime,
+    unit: str,
+    value: Any = None,
+    converter: Callable[[Any, Any], Any] | None = None,
+) -> Observation[Any]:
+    """Adapt one HA state without inventing a value or timestamp.
+
+    ``last_updated`` is HA's measurement provenance for this adapter; test
+    doubles without it use the receipt instant only so legacy fixtures remain
+    usable.  Unavailable and malformed states stay explicit in the snapshot.
+    """
+
+    received_at = now
+    observed_at = getattr(state, "last_updated", None) if state is not None else None
+    if observed_at is None and state is not None:
+        observed_at = received_at
+    raw = getattr(state, "state", None) if value is None else value
+    if state is None:
+        return Observation(None, unit, None, received_at, source_id, availability=Availability.AWAITING_SOURCE)
+    if raw is None or str(raw).strip().lower() in {"", "unknown", "unavailable", "none"}:
+        return Observation(None, unit, observed_at, received_at, source_id, availability=Availability.MISSING)
+    try:
+        canonical = converter(raw, state) if converter else raw
+    except (TypeError, ValueError):
+        return Observation(None, unit, observed_at, received_at, source_id, validity=Validity.INVALID, availability=Availability.INVALID)
+    if canonical is None:
+        return Observation(None, unit, observed_at, received_at, source_id, validity=Validity.INVALID, availability=Availability.INVALID)
+    return Observation(canonical, unit, observed_at, received_at, source_id)
+
+
+def build_decision_snapshot(
+    config: IntegrationConfig,
+    state_getter: Callable[[str], Any],
+    now: datetime,
+    *,
+    forecast: ForecastObservation | None = None,
+    co2_history: dict[str, list[tuple[datetime, float]]] | None = None,
+) -> DecisionSnapshot:
+    """Create the complete immutable decision input from configured HA state.
+
+    No fallback defaults are used: required inputs that cannot be observed are
+    represented as unavailable observations, which causes the engine to fail
+    closed for opening/ventilation advice.
+    """
+
+    def weather_attribute(attribute: str, unit: str, converter=None) -> Observation[Any]:
+        weather_id = config.outdoor_weather_entity_id
+        weather = state_getter(weather_id) if weather_id else None
+        attrs = getattr(weather, "attributes", {}) or {}
+        if weather is None or attribute not in attrs:
+            observed_at = getattr(weather, "last_updated", None) if weather is not None else None
+            return Observation(None, unit, observed_at, now, weather_id, availability=Availability.AWAITING_SOURCE if weather is None else Availability.MISSING)
+        return observation_from_state(weather, source_id=weather_id, now=now, unit=unit,
+            value=attrs.get(attribute), converter=converter)
+
+    def selected_numeric(source: str, entity_id: str | None, attribute: str, unit: str, measurement: str | None = None) -> Observation[float]:
+        if source == OUTDOOR_SOURCE_OVERRIDE and entity_id:
+            state = state_getter(entity_id)
+            return observation_from_state(state, source_id=entity_id, now=now, unit=unit,
+                converter=lambda raw, item: _canonical_measurement_value(float(raw), item, measurement))
+        return weather_attribute(attribute, unit, lambda raw, item: _canonical_measurement_value(float(raw), item, measurement))
+
+    temperature = selected_numeric(config.outdoor_temperature_source, config.outdoor_temperature_entity_id, "temperature", "°C", "temperature")
+    humidity = selected_numeric(config.outdoor_humidity_source, config.outdoor_humidity_entity_id, "humidity", "%")
+    wind = selected_numeric(config.wind_speed_source, config.wind_speed_entity_id, "wind_speed", "m/s", "wind_speed")
+    gust = weather_attribute("wind_gust_speed", "m/s", lambda raw, item: _canonical_measurement_value(float(raw), item, "wind_speed"))
+    weather_state = state_getter(config.outdoor_weather_entity_id) if config.outdoor_weather_entity_id else None
+    condition = observation_from_state(weather_state, source_id=config.outdoor_weather_entity_id, now=now, unit="", converter=lambda raw, _: str(raw).lower())
+    rain = weather_attribute("precipitation_probability", "%", lambda raw, _: float(raw))
+    forecast_temp = Observation(
+        forecast.temperature_c if forecast and forecast.temperature_c is not None else None,
+        "°C", now if forecast and forecast.temperature_c is not None else None, now,
+        "weather.forecast", availability=Availability.AVAILABLE if forecast and forecast.temperature_c is not None else Availability.AWAITING_SOURCE,
+    )
+
+    rooms: list[DecisionRoom] = []
+    history = co2_history if co2_history is not None else {}
+    for room in config.rooms:
+        room_key = room.room_id or room.name
+        temp_state = state_getter(room.temperature_entity_id)
+        room_temp = observation_from_state(temp_state, source_id=room.temperature_entity_id, now=now, unit="°C",
+            converter=lambda raw, item: _canonical_measurement_value(float(raw), item, "temperature"))
+        humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
+        room_humidity = observation_from_state(humidity_state, source_id=room.humidity_entity_id, now=now, unit="%", converter=lambda raw, _: float(raw))
+        co2_id = room.co2_entity_id or config.co2_entity_id
+        co2_state = state_getter(co2_id) if config.co2_enabled and co2_id else None
+        co2 = observation_from_state(co2_state, source_id=co2_id, now=now, unit="ppm", converter=lambda raw, _: float(raw)) if co2_id and config.co2_enabled else None
+        trend: Observation[float] | None = None
+        if co2 is not None and co2.value is not None and co2.observed_at is not None:
+            samples = [(at, val) for at, val in history.get(room_key, []) if now - at <= timedelta(minutes=30)]
+            if not samples or samples[-1] != (co2.observed_at, co2.value):
+                samples.append((co2.observed_at, co2.value))
+            history[room_key] = samples
+            first_at, first_value = samples[0]
+            seconds = (co2.observed_at - first_at).total_seconds()
+            if len(samples) >= 2 and seconds >= 300:
+                trend = Observation((co2.value - first_value) * 3600 / seconds, "ppm/h", co2.observed_at, now, co2_id)
+            else:
+                trend = Observation(None, "ppm/h", co2.observed_at, now, co2_id, availability=Availability.AWAITING_SOURCE)
+        contacts = [state_to_bool(state_getter(entity)) for entity in room.window_sensor_entity_ids]
+        window = None
+        if contacts:
+            value = True if any(item is True for item in contacts) else (False if all(item is False for item in contacts) else None)
+            window = Observation(value, "", now, now, ",".join(room.window_sensor_entity_ids), availability=Availability.AVAILABLE if value is not None else Availability.MISSING)
+        rooms.append(DecisionRoom(room_key, room.name, room_temp, room_humidity, co2, trend, window,
+            room.target_temperature_c_override if room.target_temperature_c_override_enabled else config.target_temperature_c,
+            room.target_humidity_percent_override if room.target_humidity_percent_override_enabled else config.target_humidity_percent))
+    smoke_state = state_getter(config.smoke_alert_entity_id) if config.smoke_alert_entity_id else None
+    smoke = observation_from_state(smoke_state, source_id=config.smoke_alert_entity_id, now=now, unit="", converter=lambda raw, _: state_to_bool(SimpleNamespace(state=raw))) if config.smoke_alert_entity_id else None
+    policy_source = "user_policy"
+    pollen_policy = Observation(config.pollen_policy, "", now, now, policy_source) if config.pollen_policy else None
+    pollution_policy = Observation(config.pollution_policy, "", now, now, policy_source) if config.pollution_policy else None
+    return DecisionSnapshot(tuple(rooms), DecisionOutdoor(temperature, humidity, wind, gust, condition, rain, forecast_temp, smoke, pollen_policy, pollution_policy), now)
 
 
 def is_quiet_hours_active(now: datetime, start_time: str, end_time: str) -> bool:
@@ -664,6 +825,64 @@ def build_debug_attributes(
         "quiet_hours_enabled": config.quiet_hours_enabled,
         "room_recommendations": room_details,
         "best_room_recommendation": best_room_details,
+        "decision": _decision_debug_attributes(snapshot.decision),
+    }
+
+
+def apply_decision_to_summary(
+    summary: RecommendationSummary,
+    decision: AggregateDecisionResult,
+) -> RecommendationSummary:
+    """Project the deterministic decision onto stable legacy entity models."""
+
+    by_id = {result.room_id: result for result in decision.room_results}
+    recommendations = []
+    for recommendation in summary.room_recommendations:
+        result = by_id.get(recommendation.room_id or recommendation.room_name)
+        if result is None:
+            recommendations.append(recommendation)
+            continue
+        score = max(result.candidate_scores.open, result.candidate_scores.ventilate, result.candidate_scores.close)
+        recommendations.append(replace(
+            recommendation,
+            action=result.delivered_action,
+            score=score if result.delivered_action != RecommendationAction.NONE else 0.0,
+            reason=result.reason_code,
+            reason_code=result.reason_code,
+            ventilation_duration_minutes=result.duration_minutes,
+        ))
+    actionable = [item for item in recommendations if item.action != RecommendationAction.NONE]
+    if not actionable:
+        return replace(summary, action=RecommendationAction.NONE, score=0.0,
+            reason="No actionable deterministic recommendation.", blocked_by="decision", best_room=None,
+            room_recommendations=tuple(recommendations))
+    best = max(actionable, key=lambda item: item.score)
+    return replace(summary, action=best.action, score=best.score, reason=best.reason,
+        best_room=best.room_name, blocked_by=None, room_recommendations=tuple(recommendations))
+
+
+def _decision_debug_attributes(decision: AggregateDecisionResult | None) -> dict[str, Any] | None:
+    if decision is None:
+        return None
+    return {
+        "core_action": decision.core_action.value,
+        "delivered_action": decision.delivered_action.value,
+        "trace": [{"code": item.code, "detail": item.detail} for item in decision.trace],
+        "rooms": [
+            {
+                "room_id": item.room_id,
+                "core_action": item.core_action.value,
+                "delivered_action": item.delivered_action.value,
+                "duration_minutes": item.duration_minutes,
+                "candidates": {"open": item.candidate_scores.open, "ventilate": item.candidate_scores.ventilate, "close": item.candidate_scores.close},
+                "trace": [{"code": trace.code, "detail": trace.detail} for trace in item.trace],
+                "blocked_conditions": list(item.blocked_conditions),
+                "applied_penalties": list(item.applied_penalties),
+                "data_quality": {"used": list(item.data_quality.used), "discarded": list(item.data_quality.discarded), "awaiting_source": list(item.data_quality.awaiting_source)},
+                "delivery_suppressed_by": item.delivery_suppressed_by,
+            }
+            for item in decision.room_results
+        ],
     }
 
 
@@ -728,6 +947,13 @@ def _diagnostic_notification_level(value: Any) -> str:
         if value == DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC
         else DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
     )
+
+
+def _exposure_policy(value: Any) -> str | None:
+    """Keep exposure advisory until the user selects reduce or avoid."""
+
+    text = _string_or_none(value)
+    return text if text in {"reduce", "avoid"} else None
 
 
 def _outdoor_value(

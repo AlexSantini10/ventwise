@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 
 from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
@@ -33,6 +33,7 @@ from custom_components.ventwise.application.runtime import (
     build_integration_config,
     build_debug_attributes,
     build_room_profiles,
+    build_decision_snapshot,
     dump_runtime_state,
     is_quiet_hours_active,
     load_runtime_state,
@@ -74,6 +75,34 @@ def test_state_helpers_parse_values() -> None:
     assert state_to_bool(SimpleNamespace(state="off")) is False
     assert state_to_bool(SimpleNamespace(state="1")) is True
     assert state_to_bool(SimpleNamespace(state="0")) is False
+
+
+def test_decision_snapshot_preserves_sources_and_requires_co2_history() -> None:
+    now = datetime(2026, 7, 20, 12, 0, tzinfo=timezone.utc)
+    config = build_integration_config({
+        CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+        "co2_enabled": True,
+        "co2_entity_id": "sensor.co2",
+        CONF_ROOMS: [{
+            CONF_ROOM_NAME: "Office",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temperature",
+            CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+        }],
+    })
+    states = {
+        "weather.home": SimpleNamespace(state="sunny", last_updated=now, attributes={"temperature": 20, "humidity": 50, "wind_speed": 1}),
+        "sensor.room_temperature": SimpleNamespace(state="26", last_updated=now, attributes={"unit_of_measurement": "°C"}),
+        "sensor.room_humidity": SimpleNamespace(state="55", last_updated=now, attributes={}),
+        "sensor.co2": SimpleNamespace(state="1100", last_updated=now, attributes={}),
+    }
+    history: dict[str, list[tuple[datetime, float]]] = {}
+    first = build_decision_snapshot(config, states.get, now, co2_history=history)
+    assert first.rooms[0].temperature_c.source_id == "sensor.room_temperature"
+    assert first.rooms[0].co2_trend_ppm_per_hour.availability.value == "awaiting_source"
+    later = now + timedelta(minutes=10)
+    states["sensor.co2"] = SimpleNamespace(state="1200", last_updated=later, attributes={})
+    second = build_decision_snapshot(config, states.get, later, co2_history=history)
+    assert second.rooms[0].co2_trend_ppm_per_hour.value == 600.0
 
 
 def test_quiet_hours_support_wraparound_midnight() -> None:
