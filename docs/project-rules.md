@@ -68,6 +68,18 @@ the implementation decisions agreed during development.
 
 ## Recommendation Rules
 
+- Keep the decision engine deterministic, explainable, local, and advisory;
+  it must not control physical devices.
+- Treat current, valid weather-critical data as a fail-closed prerequisite for
+  `open` or `ventilate` recommendations.
+- Safety/weather blocks, outdoor pollution, and the selected pollen policy
+  override comfort and indoor-air benefits.
+- CO2 is an operational ventilation indicator, not a universal indoor-air
+  quality or health limit.
+- Keep action selection separate from delivery guardrails: quiet hours,
+  cooldown, stability, and window contacts must not change the core decision.
+- Record the inputs, freshness, blocks, penalties, and delivery guardrail that
+  produced every recommendation in a deterministic explanation trace.
 - Base the recommendation on perceived temperature, not raw temperature alone.
 - Perceived temperature must consider humidity.
 - Open/close recommendations should be produced only when they create a
