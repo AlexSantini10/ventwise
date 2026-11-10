@@ -70,3 +70,20 @@ def test_migration_rejects_a_future_entry_version(caplog: pytest.LogCaptureFixtu
     assert asyncio.run(async_migrate_entry(hass, entry)) is False
     assert hass.config_entries.updates == []
     assert "unsupported future version" in caplog.text
+
+
+def test_migration_keeps_current_runtime_state_and_unknown_option_data() -> None:
+    """Version-two entries remain usable even when optional legacy data is sparse."""
+
+    hass = SimpleNamespace(config_entries=_FakeConfigEntries())
+    entry = _entry(
+        version=2,
+        data={"legacy_data": "kept"},
+        options={CONF_RUNTIME_STATE: {"future_marker": "kept"}, "future_option": True},
+    )
+
+    assert asyncio.run(async_migrate_entry(hass, entry)) is True
+    assert entry.version == 3
+    assert entry.data == {"legacy_data": "kept"}
+    assert entry.options[CONF_RUNTIME_STATE] == {"future_marker": "kept"}
+    assert entry.options["future_option"] is True

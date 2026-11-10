@@ -138,3 +138,22 @@ def test_awaiting_source_is_explicit_but_never_approximated() -> None:
     result = DecisionEngine().evaluate(data).room_results[0]
 
     assert "outdoor.smoke" in result.data_quality.awaiting_source
+
+
+def test_multi_room_snapshot_keeps_result_order_and_trace_deterministic() -> None:
+    """A single event snapshot must always yield the same per-room contract."""
+
+    data = snapshot()
+    second_room = DecisionRoom("study", "Study", obs(19.0, "°C"), obs(45.0, "%"))
+    multi_room = DecisionSnapshot((data.rooms[0], second_room), data.outdoor, NOW)
+
+    first = DecisionEngine().evaluate(multi_room)
+    repeated = DecisionEngine().evaluate(multi_room)
+
+    assert [result.room_id for result in first.room_results] == ["room", "study"]
+    assert [result.core_action for result in first.room_results] == [
+        result.core_action for result in repeated.room_results
+    ]
+    assert [[entry.code for entry in result.trace] for result in first.room_results] == [
+        [entry.code for entry in result.trace] for result in repeated.room_results
+    ]
