@@ -103,7 +103,7 @@ raccomandazione e ogni evidenza resta nel profilo isolato del Lab.
 | Umidità / CO₂ | Camera 22 °C, umidità 70%, esterno più secco; oppure CO₂ 1400 ppm | `ventilate`, con durata e trace di punteggio. |
 | Nessun beneficio | Camera ed esterno 22 °C | `none`. |
 | Contatti multipli | Prima tutti chiusi; poi apri uno dei due contatti Camera | Il primo consiglio è consegnabile; il secondo è soppresso come finestra già aperta. |
-| Pioggia, temporale, vento o raffica | Seleziona `rainy` o `thunderstorm`; oppure porta vento/raffica oltre 14 m/s; prova anche precipitazione attuale > 0 | Se la finestra è aperta: `close`; trace e blocco di sicurezza prevalgono su CO₂. |
+| Pioggia, temporale, vento o raffica | Seleziona `rainy` o `thunderstorm`; oppure porta vento/raffica oltre 14 m/s | Se la finestra è aperta: `close`; trace e blocco di sicurezza prevalgono su CO₂. |
 | Fumo, PM e polline | Attiva fumo; PM2.5 a 25; polline erba a 25 | Fumo e polline `avoid` bloccano; PM `reduce` applica una penalità. |
 | Conflitto CO₂ + pericolo esterno | CO₂ 1400 e uno fra pioggia, temporale, vento, fumo o polline avoid | Nessun `open`/`ventilate`; se aperta, `close`. |
 | Fonte assente / obsoleta | Spegni **Weather Source Available**; per obsolescenza lascia invariati tutti gli input meteo per oltre 15 minuti | `critical_weather_unavailable`, qualità dati e trace espliciti. |

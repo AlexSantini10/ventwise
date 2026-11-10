@@ -99,14 +99,6 @@ ventwise_test_wind_gust:
   initial: 2
   mode: box
   unit_of_measurement: "m/s"
-ventwise_test_current_precipitation:
-  name: VentWise Test Current Precipitation
-  min: 0
-  max: 50
-  step: 0.1
-  initial: 0
-  mode: box
-  unit_of_measurement: "mm"
 ventwise_test_pm25:
   name: VentWise Test PM2.5
   min: 0
@@ -187,8 +179,6 @@ TEMPLATE_YAML = """- binary_sensor:
       wind_speed_template: "{{ states('input_number.ventwise_test_wind_speed') | float(2) }}"
       wind_speed_unit: "m/s"
       wind_gust_speed_template: "{{ states('input_number.ventwise_test_wind_gust') | float(2) }}"
-      precipitation_template: "{{ states('input_number.ventwise_test_current_precipitation') | float(0) }}"
-      precipitation_unit: "mm"
 """
 
 DASHBOARD_CONFIG_YAML = """dashboards:
@@ -240,7 +230,6 @@ views:
           - input_number.ventwise_test_outdoor_humidity
           - input_number.ventwise_test_wind_speed
           - input_number.ventwise_test_wind_gust
-          - input_number.ventwise_test_current_precipitation
           - input_select.ventwise_test_weather_condition
           - input_number.ventwise_test_pm25
           - input_number.ventwise_test_grass_pollen
