@@ -20,17 +20,16 @@ python -m pip install -e ".[dev]"
 
 ## Common Commands
 
-```bash
-python -m pytest tests/unit -q
-coverage run -m pytest
-coverage report
-```
-
-The unit suite runs without Home Assistant. To execute the exact Python and
-Home Assistant test gates used by CI from any host with Docker Desktop, run:
+Run the complete automated suite with the exact Python, Home Assistant, pytest,
+and coverage versions used by CI. All tests are required to pass; coverage is
+reported for inspection rather than enforced as a percentage threshold:
 
 ```powershell
-.\scripts\test-ci-docker.ps1
+python scripts/run_tests.py
+```
+
+```bash
+python3 scripts/run_tests.py
 ```
 
 To enforce the same check automatically before every commit and push, enable
@@ -43,12 +42,15 @@ git config core.hooksPath .githooks
 The hooks use the cached Docker image and clean up the disposable container and
 Compose network when they finish. A failed test blocks the commit or push.
 
-The command builds a cached Python 3.14.2 image, mounts the checkout
-read-only, and runs `tests/unit`, `tests/integration`, and `tests/system` in a
-disposable container. Pass pytest paths or flags to narrow a run:
+The command needs Docker Desktop (Windows) or Docker Engine with Compose
+(Linux/macOS). It builds the pinned Python 3.14.2 image, mounts the checkout
+read-only, and runs all three layers in a disposable Linux container. Reports
+are written under the ignored `.test-artifacts/` directory. Use a layer for
+fast feedback or forward pytest options after `--`:
 
 ```powershell
-.\scripts\test-ci-docker.ps1 tests/integration tests/system -q
+python scripts/run_tests.py --layer unit
+python scripts/run_tests.py --layer integration -- -k notification
 ```
 
 It is independent of the [Docker Test Lab](docker-test-lab.md), which remains

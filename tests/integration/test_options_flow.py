@@ -164,3 +164,42 @@ def test_edit_room_replaces_the_selected_room() -> None:
     assert flow._rooms[0][CONF_ROOM_TEMPERATURE_ENTITY_ID] == "sensor.studio_temp"
     assert flow._rooms[0][CONF_ROOM_KIND] == "room"
     assert flow._current_config[CONF_ROOMS][0][CONF_ROOM_NAME] == "Studio"
+
+
+def test_options_flow_supports_units_macro_rooms_and_staged_room_changes() -> None:
+    """Cover each options navigation branch without relying on a live HA profile."""
+
+    flow = _make_flow(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Living room",
+                    CONF_ROOM_KIND: "room",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
+                }
+            ]
+        }
+    )
+
+    assert asyncio.run(flow.async_step_units()) ["type"] == "form"
+    assert asyncio.run(flow.async_step_units({"temperature_unit": "C", "wind_speed_unit": "km/h"}))["type"] == "create_entry"
+
+    rooms = asyncio.run(flow.async_step_rooms())
+    assert rooms["menu_options"] == ["add_room", "add_macro_room", "edit_room", "remove_room", "finish"]
+    assert asyncio.run(flow.async_step_add_macro_room())["step_id"] == "add_macro_room"
+    assert asyncio.run(
+        flow.async_step_add_macro_room(
+            {
+                CONF_ROOM_NAME: "Upstairs",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temp",
+            }
+        )
+    )["type"] == "menu"
+
+    selection = flow._room_selection_options()[0]
+    assert asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: selection}))["step_id"] == "edit_room_form"
+    assert asyncio.run(flow.async_step_edit_room_form())["step_id"] == "edit_room_form"
+    assert asyncio.run(flow.async_step_remove_room({CONF_ROOM_SELECTION: selection}))["type"] == "menu"
+    saved = asyncio.run(flow.async_step_finish())
+    assert saved["type"] == "create_entry"
+    assert saved["data"][CONF_ROOMS][0][CONF_ROOM_NAME] == "Upstairs"

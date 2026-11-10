@@ -162,6 +162,10 @@ Use this checklist before merging any change:
 - [ ] Quiet hours block notification delivery, not the entire scoring engine.
 - [ ] Every new scoring rule has a regression test.
 - [ ] Every bug fix that changes behavior has a regression test.
+- [ ] Every config-flow or options-flow change includes valid, invalid, and
+      persistence regression coverage in the appropriate test layer.
+- [ ] The canonical `python scripts/run_tests.py` workflow passes for code
+      changes; use a focused layer only for interim feedback.
 - [ ] Tests still reflect the current runtime API.
 - [ ] The repo tree stays clean after the change.
 - [ ] Release-related changes update the manifest-driven versioning flow.

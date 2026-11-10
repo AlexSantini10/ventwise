@@ -44,6 +44,11 @@ testpaths = ["tests"]
 pythonpath = ["src", "."]
 asyncio_mode = "auto"
 addopts = "-ra"
+markers = [
+  "unit: pure, dependency-free logic tests",
+  "integration: Home Assistant integration tests",
+  "system: end-to-end Home Assistant user journeys",
+]
 filterwarnings = [
   "error::DeprecationWarning",
   "error::PendingDeprecationWarning",
@@ -52,7 +57,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
-source = ["ventwise_core", "custom_components.ventwise"]
+source = ["custom_components.ventwise"]
 omit = [
   "tests/*",
 ]

@@ -177,6 +177,82 @@ def test_config_flow_prevents_a_second_ventwise_entry() -> None:
     assert result["reason"] == "single_instance_allowed"
 
 
+def test_config_flow_room_management_paths_preserve_staged_configuration() -> None:
+    """Exercise macro-room add, edit, remove and finish branches deterministically."""
+
+    async def run_flow() -> dict[str, object]:
+        flow = _StandaloneVentWiseConfigFlow()
+        flow.hass = SimpleNamespace(config=SimpleNamespace(language="it"))
+        await flow.async_step_user(
+            {
+                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.ventwise_test_weather",
+                CONF_TARGET_TEMPERATURE_C: 22.0,
+                CONF_NOTIFICATION_DEVICE_ID: [],
+            }
+        )
+        await flow.async_step_outdoor(
+            {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: False,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+                CONF_WIND_SPEED_OVERRIDE: False,
+            }
+        )
+        added = await flow.async_step_add_macro_room(
+            {
+                CONF_ROOM_ENABLED: True,
+                CONF_ROOM_NAME: "Piano superiore",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temperature",
+            }
+        )
+        assert added["type"] == "menu"
+        selection = flow._room_selection_options()[0]
+        assert (await flow.async_step_edit_room({"room_selection": selection}))["step_id"] == "edit_macro_room_form"
+        edited = await flow.async_step_edit_macro_room_form(
+            {
+                CONF_ROOM_NAME: "Studio",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.study_temperature",
+            }
+        )
+        assert edited["type"] == "menu"
+        assert (await flow.async_step_remove_room({"room_selection": flow._room_selection_options()[0]}))["type"] == "menu"
+        return await flow.async_step_finish()
+
+    result = asyncio.run(run_flow())
+
+    assert result["type"] == "create_entry"
+    assert result["options"][CONF_ROOMS] == []
+
+
+def test_config_flow_manual_source_and_validation_branches() -> None:
+    """Exercise validation feedback and the optional outdoor-source form."""
+
+    async def run_flow() -> None:
+        flow = _StandaloneVentWiseConfigFlow()
+        flow.hass = SimpleNamespace(config=SimpleNamespace(language="en"))
+        outdoor = await flow.async_step_user(
+            {CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.ventwise_test_weather", CONF_NOTIFICATION_DEVICE_ID: []}
+        )
+        assert outdoor["step_id"] == "outdoor"
+        overrides = await flow.async_step_outdoor(
+            {
+                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
+                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
+                CONF_WIND_SPEED_OVERRIDE: False,
+            }
+        )
+        assert overrides["step_id"] == "outdoor_overrides"
+        rooms = await flow.async_step_outdoor_overrides(
+            {
+                "outdoor_temperature_entity_id": "sensor.outdoor_temperature",
+                "outdoor_humidity_entity_id": None,
+                "wind_speed_entity_id": None,
+            }
+        )
+        assert rooms["type"] == "menu"
+
+    asyncio.run(run_flow())
+
+
 def test_setup_to_user_facing_open_and_close_recommendations() -> None:
     """Cover setup, sensor input, scoring, and the user-visible explanation."""
 

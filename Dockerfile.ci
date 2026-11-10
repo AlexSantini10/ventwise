@@ -6,9 +6,6 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 
 WORKDIR /workspace
 
-COPY requirements-dev.txt requirements-ci.txt ./
+COPY requirements-test.txt ./
 RUN python -m pip install --upgrade pip \
-    && python -m pip install -r requirements-dev.txt -r requirements-ci.txt
-
-ENTRYPOINT ["python", "-m", "pytest", "-p", "no:cacheprovider", "--basetemp=/tmp/pytest"]
-CMD ["tests/unit", "tests/integration", "tests/system", "-q"]
+    && python -m pip install -r requirements-test.txt
