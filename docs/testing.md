@@ -65,36 +65,37 @@ installed in CI.
 
 ## Local Workflow
 
-```bash
-python -m pytest tests/unit -q
-coverage run -m pytest
-coverage report
-```
-
-Before a commit, run the complete CI-equivalent suite through Docker Desktop:
+Run the complete local/CI-equivalent suite through Docker Desktop or Docker
+Engine:
 
 ```powershell
-.\scripts\test-ci-docker.ps1
+python scripts/run_tests.py
+```
+
+```bash
+python3 scripts/run_tests.py
 ```
 
 The repository also includes `pre-commit` and `pre-push` hooks. Enable them
 once with `git config core.hooksPath .githooks` to prevent an unverified
 commit or push.
 
-It uses Python 3.14.2 and the Home Assistant version pinned in
-`requirements-ci.txt`, with no Python packages installed on the host. The
-checkout is mounted read-only and the test container is removed after every
-run. Extra arguments are passed to pytest, for example:
+It uses the Python, Home Assistant and test dependency versions pinned in
+`requirements-test.txt`; no project Python packages are installed on the host.
+The checkout is mounted read-only, the container is removed after every run,
+and JUnit plus XML/HTML coverage reports are saved under
+`.test-artifacts/`. Select a layer or pass pytest flags after `--`:
 
 ```powershell
-.\scripts\test-ci-docker.ps1 tests/integration tests/system -q
+python scripts/run_tests.py --layer unit
+python scripts/run_tests.py --layer integration -- -k config_flow
 ```
 
-CI has two required gates: **unit tests** and **Home Assistant integration
-tests**. The latter use the same pinned Home Assistant version as release CI
-and create HA entity states in memory, so they require no physical sensors.
-The Docker command above runs the same framework on Windows before code is
-pushed.
+CI invokes the same command for unit, integration and system tests. All
+selected tests must pass; coverage is published as a diagnostic report, not a
+percentage gate. Hassfest, HACS and package validation remain separate CI-only
+gates. Home Assistant tests create states in memory and require no physical
+sensors or an installed Home Assistant profile.
 
 ## Local Home Assistant Sandbox
 
