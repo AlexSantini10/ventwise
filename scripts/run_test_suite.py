@@ -24,6 +24,7 @@ def main() -> int:
     parser.add_argument("--layer", choices=LAYER_PATHS, default="all")
     parser.add_argument("pytest_args", nargs=argparse.REMAINDER)
     args = parser.parse_args()
+    pytest_args = args.pytest_args[1:] if args.pytest_args[:1] == ["--"] else args.pytest_args
     artifacts = Path(os.environ.get("VENTWISE_TEST_ARTIFACTS", "/artifacts"))
     artifacts.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("COVERAGE_FILE", "/tmp/.coverage")
@@ -41,7 +42,7 @@ def main() -> int:
         "no:cacheprovider",
         "--junitxml",
         str(artifacts / "junit.xml"),
-        *args.pytest_args,
+        *pytest_args,
     )
     if test_exit:
         return test_exit
