@@ -88,13 +88,13 @@ def test_remove_room_updates_the_saved_list() -> None:
     assert flow._current_config[CONF_ROOMS][0][CONF_ROOM_NAME] == "Upstairs"
 
 
-def test_settings_screen_saves_everyday_and_comfort_values_together() -> None:
-    """Users do not need to navigate between technical settings sections."""
+def test_daily_screen_preserves_advanced_values() -> None:
+    """Everyday changes do not overwrite values hidden in Advanced."""
 
-    flow = _make_flow()
+    flow = _make_flow({CONF_COOLDOWN_MINUTES: 45})
 
     saved = asyncio.run(
-        flow.async_step_settings(
+        flow.async_step_daily(
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
                 CONF_TARGET_TEMPERATURE_C: 22.0,
@@ -102,11 +102,7 @@ def test_settings_screen_saves_everyday_and_comfort_values_together() -> None:
                 CONF_TARGET_HUMIDITY_PERCENT: 50.0,
                 CONF_STABILITY_MINUTES: 10,
                 CONF_NOTIFICATION_DEVICE_ID: [],
-                CONF_SOFT_OUTDOOR_THRESHOLD_C: 23.0,
-                CONF_COOLDOWN_MINUTES: 45,
-                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: False,
-                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
-                CONF_WIND_SPEED_OVERRIDE: False,
+                "home_assistant_notification_enabled": False,
             }
         )
     )
@@ -116,8 +112,8 @@ def test_settings_screen_saves_everyday_and_comfort_values_together() -> None:
     assert saved["data"][CONF_COOLDOWN_MINUTES] == 45
 
 
-def test_options_menu_has_one_settings_screen_and_rooms() -> None:
-    """The top level does not fragment everyday settings into submenus."""
+def test_options_menu_has_four_focused_sections() -> None:
+    """The top level keeps everyday and technical options distinct."""
 
     flow = _make_flow()
 
@@ -125,7 +121,29 @@ def test_options_menu_has_one_settings_screen_and_rooms() -> None:
 
     assert overview["type"] == "menu"
     assert overview["step_id"] == "init"
-    assert overview["menu_options"] == ["units", "settings", "rooms"]
+    assert overview["menu_options"] == ["daily", "rooms", "advanced", "units"]
+    advanced = asyncio.run(flow.async_step_advanced())
+    assert advanced["menu_options"] == ["recommendations", "manual_sources", "air_quality", "diagnostics"]
+
+
+def test_air_quality_source_updates_only_the_selected_source() -> None:
+    flow = _make_flow({"air_quality_entity_ids": {"pm10": "sensor.pm10"}})
+
+    asyncio.run(flow.async_step_air_quality_source_select({"air_quality_source": "pm2_5"}))
+    saved = asyncio.run(
+        flow.async_step_air_quality_source(
+            {
+                "air_quality_pm2_5_entity_id": "sensor.pm25",
+                "air_quality_pm2_5_policy": "avoid",
+                "air_quality_pm2_5_threshold": 25,
+                "air_quality_pm2_5_unit": "µg/m³",
+                "air_quality_pm2_5_averaging_period": "24h",
+            }
+        )
+    )
+
+    assert saved["data"]["air_quality_entity_ids"] == {"pm10": "sensor.pm10", "pm2_5": "sensor.pm25"}
+    assert saved["data"]["exposure_policies"]["pm2_5"]["threshold"] == 25.0
 
 
 def test_edit_room_replaces_the_selected_room() -> None:
@@ -197,8 +215,8 @@ def test_options_flow_supports_units_macro_rooms_and_staged_room_changes() -> No
     )["type"] == "menu"
 
     selection = flow._room_selection_options()[0]
-    assert asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: selection}))["step_id"] == "edit_room_form"
-    assert asyncio.run(flow.async_step_edit_room_form())["step_id"] == "edit_room_form"
+    assert asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: selection}))["step_id"] == "edit_room_details"
+    assert asyncio.run(flow.async_step_edit_room_base())["step_id"] == "edit_room_base"
     assert asyncio.run(flow.async_step_remove_room({CONF_ROOM_SELECTION: selection}))["type"] == "menu"
     saved = asyncio.run(flow.async_step_finish())
     assert saved["type"] == "create_entry"

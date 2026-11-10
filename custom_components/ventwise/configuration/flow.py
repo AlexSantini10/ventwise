@@ -480,17 +480,97 @@ def build_settings_schema(defaults: Mapping[str, object], hass=None) -> vol.Sche
     return vol.Schema(fields)
 
 
+def build_daily_options_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
+    """Create the small, everyday options form."""
+
+    unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
+    return vol.Schema({
+        vol.Required(CONF_OUTDOOR_WEATHER_ENTITY_ID, default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)): EntitySelector(EntitySelectorConfig(domain="weather")),
+        vol.Required(CONF_TARGET_TEMPERATURE_C, default=temperature_from_celsius(float(defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(10.0, unit), max=temperature_from_celsius(30.0, unit))),
+        vol.Required(CONF_TARGET_HUMIDITY_PERCENT, default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
+        vol.Required(CONF_AUTO_COMFORT_TEMPERATURE, default=defaults.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)): cv.boolean,
+        vol.Required(CONF_STABILITY_MINUTES, default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+        vol.Required(CONF_NOTIFICATION_DEVICE_ID, default=_notification_device_defaults(defaults, hass)): _notification_device_selector(hass),
+        vol.Required(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)): cv.boolean,
+    })
+
+
+def build_recommendation_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the technical recommendation behaviour form."""
+
+    unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
+    return vol.Schema({
+        vol.Required(CONF_SOFT_OUTDOOR_THRESHOLD_C, default=temperature_from_celsius(float(defaults.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(-10.0, unit), max=temperature_from_celsius(40.0, unit))),
+        vol.Required(CONF_COOLDOWN_MINUTES, default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+        vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
+        **_optional_selector_field(CONF_CO2_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_CO2_ENTITY_ID)),
+        vol.Required(CONF_CO2_THRESHOLD_PPM, default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)): vol.All(vol.Coerce(float), vol.Range(min=400.0, max=5000.0)),
+    })
+
+
+def build_manual_sources_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the manual outdoor source form."""
+
+    fields = dict(build_outdoor_source_schema(defaults).schema)
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        fields.update(_optional_selector_field(entity_field, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(entity_field)))
+    return vol.Schema(fields)
+
+
+def build_air_quality_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create global air-quality and pollen controls."""
+
+    return vol.Schema({
+        **_optional_selector_field(CONF_SMOKE_ALERT_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain="binary_sensor")), defaults.get(CONF_SMOKE_ALERT_ENTITY_ID)),
+        vol.Optional(CONF_POLLUTION_POLICY, default=defaults.get(CONF_POLLUTION_POLICY, "ignore")): SelectSelector(SelectSelectorConfig(options=["ignore", "reduce", "avoid"])),
+        vol.Optional(CONF_POLLEN_POLICY, default=defaults.get(CONF_POLLEN_POLICY, "ignore")): SelectSelector(SelectSelectorConfig(options=["ignore", "reduce", "avoid"])),
+        vol.Required(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, default=defaults.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)): cv.boolean,
+    })
+
+
+def build_air_quality_source_selection_schema() -> vol.Schema:
+    """Choose exactly one IAQ or pollen source to configure."""
+
+    return vol.Schema({vol.Required("air_quality_source"): SelectSelector(SelectSelectorConfig(options=list(AIR_QUALITY_VARIABLES)))})
+
+
+def build_air_quality_source_schema(defaults: Mapping[str, object], kind: str) -> vol.Schema:
+    """Create the form for one IAQ or pollen source."""
+
+    sources = defaults.get(CONF_AIR_QUALITY_ENTITY_IDS, {})
+    policies = defaults.get(CONF_EXPOSURE_POLICIES, {})
+    source = sources.get(kind) if isinstance(sources, Mapping) else None
+    policy = policies.get(kind, {}) if isinstance(policies, Mapping) else {}
+    policy = policy if isinstance(policy, Mapping) else {}
+    return vol.Schema({
+        **_optional_selector_field(_air_quality_entity_field(kind), EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), source),
+        vol.Optional(_exposure_policy_field(kind), default=policy.get("mode", "ignore")): SelectSelector(SelectSelectorConfig(options=["ignore", "reduce", "avoid"])),
+        **_optional_numeric_field(_exposure_threshold_field(kind), policy.get("threshold"), minimum=0.0, maximum=1_000_000.0),
+        vol.Optional(_exposure_unit_field(kind), default=policy.get("unit", "")): cv.string,
+        vol.Optional(_exposure_averaging_field(kind), default=policy.get("averaging_period", "instant")): SelectSelector(SelectSelectorConfig(options=["instant", "1h", "8h", "24h"])),
+    })
+
+
+def build_diagnostics_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create diagnostic notification and debug controls."""
+
+    return vol.Schema({
+        vol.Required(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, default=defaults.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL)): SelectSelector(SelectSelectorConfig(options=[DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL, DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC])),
+        vol.Required(CONF_DEBUG_MODE_ENABLED, default=defaults.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED)): cv.boolean,
+    })
+
+
 def build_room_schema(
     defaults: Mapping[str, object],
     room_number: int,
     room_kind: str,
     language: str | None = None,
+    section: str | None = None,
 ) -> vol.Schema:
     """Create the schema for a room or macro-room definition."""
 
     friendly_default = _localized_room_default(room_kind, room_number, language)
-    return vol.Schema(
-        {
+    fields = {
             vol.Required(
                 CONF_ROOM_ENABLED,
                 default=defaults.get(CONF_ROOM_ENABLED, True),
@@ -582,8 +662,30 @@ def build_room_schema(
             **_optional_selector_field(CONF_ROOM_VENTILATION_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["fan", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_VENTILATION_ENTITY_ID)),
             **_optional_selector_field(CONF_ROOM_AIR_CLEANER_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["fan", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_AIR_CLEANER_ENTITY_ID)),
             **_optional_selector_field(CONF_ROOM_RADIATION_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_ROOM_RADIATION_ENTITY_ID)),
+    }
+    if section == "base":
+        allowed = {
+            CONF_ROOM_ENABLED, CONF_ROOM_NAME, CONF_ROOM_TEMPERATURE_ENTITY_ID,
+            CONF_ROOM_HUMIDITY_ENTITY_ID, CONF_ROOM_CO2_ENTITY_ID,
+            CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+            CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+            CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+            CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+            CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
         }
-    )
+        fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
+    elif section == "advanced":
+        allowed = {
+            CONF_ROOM_START_ENTITY_ID, CONF_ROOM_STOP_ENTITY_ID,
+            CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES, CONF_ROOM_ACTION_LOCKOUT_MINUTES,
+            CONF_ROOM_VOLUME_M3, CONF_ROOM_OPENING_AREA_M2, CONF_ROOM_OPENING_FRACTION,
+            CONF_ROOM_EXPOSURE, CONF_ROOM_THERMAL_RESISTANCE, CONF_ROOM_THERMAL_MASS,
+            CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID, CONF_ROOM_HVAC_ENTITY_ID,
+            CONF_ROOM_VENTILATION_ENTITY_ID, CONF_ROOM_AIR_CLEANER_ENTITY_ID,
+            CONF_ROOM_RADIATION_ENTITY_ID,
+        }
+        fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
+    return vol.Schema(fields)
 
 
 def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object]:
