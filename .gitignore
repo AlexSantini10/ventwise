@@ -3,6 +3,7 @@ __pycache__/
 .coverage
 .coverage.*
 htmlcov/
+.test-artifacts/
 dist/
 build/
 *.pyc

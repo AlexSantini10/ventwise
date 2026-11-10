@@ -9,3 +9,4 @@ services:
       - /tmp
     volumes:
       - .:/workspace:ro
+      - ${VENTWISE_TEST_ARTIFACTS:-./.test-artifacts}:/artifacts
