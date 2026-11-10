@@ -48,6 +48,11 @@ ROOM_FORM_STEPS = (
     "add_macro_room",
     "edit_macro_room_form",
 )
+DDP_RECOMMENDATION_ATTRIBUTES = (
+    "core_action", "delivered_action", "duration_minutes", "confidence",
+    "candidates", "trace", "blocked_conditions", "applied_penalties",
+    "data_quality", "delivery_suppressed_by",
+)
 
 
 @pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
@@ -80,6 +85,26 @@ def test_room_forms_localize_the_window_contacts_field(language: str) -> None:
             assert (
                 translation[section]["step"][step]["data"]["window_sensor_entity_ids"]
             )
+
+
+@pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
+def test_ddp_forms_and_recommendation_attributes_are_localized(language: str) -> None:
+    """Keep DDP controls and its user-facing explanation translatable."""
+
+    translation = _load_translation(language)
+    settings = translation["options"]["step"]["settings"]["data"]
+    for field in (
+        "smoke_alert_entity_id", "pollution_policy", "pollen_policy",
+        "open_meteo_air_quality_enabled", "air_quality_pm2_5_entity_id",
+        "air_quality_ragweed_pollen_averaging_period",
+    ):
+        assert settings[field]
+    for section in ("config", "options"):
+        for step in ROOM_FORM_STEPS:
+            assert translation[section]["step"][step]["data"]["co2_entity_id"]
+    attributes = translation["entity"]["sensor"]["recommendation"]["state_attributes"]
+    for attribute in DDP_RECOMMENDATION_ATTRIBUTES:
+        assert attributes[attribute]["name"]
 
 
 def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -> None:
