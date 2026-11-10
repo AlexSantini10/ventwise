@@ -94,4 +94,5 @@ def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> Non
     template = (config_dir / "ventwise_test_template.yaml").read_text(encoding="utf-8")
     assert "condition_template:" in template
     assert "wind_gust_speed_template:" in template
+    assert "precipitation_template:" not in template
     assert (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py").exists()
