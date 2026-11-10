@@ -91,6 +91,22 @@ ventwise_test_wind_speed:
   initial: 2
   mode: box
   unit_of_measurement: "m/s"
+ventwise_test_wind_gust:
+  name: VentWise Test Wind Gust
+  min: 0
+  max: 45
+  step: 0.1
+  initial: 2
+  mode: box
+  unit_of_measurement: "m/s"
+ventwise_test_current_precipitation:
+  name: VentWise Test Current Precipitation
+  min: 0
+  max: 50
+  step: 0.1
+  initial: 0
+  mode: box
+  unit_of_measurement: "mm"
 ventwise_test_pm25:
   name: VentWise Test PM2.5
   min: 0
@@ -133,11 +149,14 @@ ventwise_test_living_room_stop:
   name: VentWise Test Living Room Stop Action
 ventwise_test_smoke_alert:
   name: VentWise Test Smoke Alert
+ventwise_test_weather_source_available:
+  name: VentWise Test Weather Source Available
+  initial: true
 """
 
 CONDITION_YAML = """ventwise_test_weather_condition:
   name: VentWise Test Weather Condition
-  options: [sunny, rainy, thunderstorm]
+  options: [sunny, rainy, thunderstorm, windy]
   initial: sunny
 """
 
@@ -161,12 +180,15 @@ TEMPLATE_YAML = """- binary_sensor:
 - weather:
     - name: VentWise Test Weather
       unique_id: ventwise_test_weather
-      condition: "{{ states('input_select.ventwise_test_weather_condition') }}"
-      temperature: "{{ states('input_number.ventwise_test_outdoor_temperature') | float(23) }}"
+      condition_template: "{{ states('input_select.ventwise_test_weather_condition') if is_state('input_boolean.ventwise_test_weather_source_available', 'on') else 'unknown' }}"
+      temperature_template: "{{ states('input_number.ventwise_test_outdoor_temperature') | float(23) }}"
       temperature_unit: "°C"
-      humidity: "{{ states('input_number.ventwise_test_outdoor_humidity') | float(45) }}"
-      wind_speed: "{{ states('input_number.ventwise_test_wind_speed') | float(2) }}"
+      humidity_template: "{{ states('input_number.ventwise_test_outdoor_humidity') | float(45) }}"
+      wind_speed_template: "{{ states('input_number.ventwise_test_wind_speed') | float(2) }}"
       wind_speed_unit: "m/s"
+      wind_gust_speed_template: "{{ states('input_number.ventwise_test_wind_gust') | float(2) }}"
+      precipitation_template: "{{ states('input_number.ventwise_test_current_precipitation') | float(0) }}"
+      precipitation_unit: "mm"
 """
 
 DASHBOARD_CONFIG_YAML = """dashboards:
@@ -217,10 +239,13 @@ views:
           - input_number.ventwise_test_outdoor_temperature
           - input_number.ventwise_test_outdoor_humidity
           - input_number.ventwise_test_wind_speed
+          - input_number.ventwise_test_wind_gust
+          - input_number.ventwise_test_current_precipitation
           - input_select.ventwise_test_weather_condition
           - input_number.ventwise_test_pm25
           - input_number.ventwise_test_grass_pollen
           - input_boolean.ventwise_test_smoke_alert
+          - input_boolean.ventwise_test_weather_source_available
           - weather.ventwise_test_weather
       - type: entities
         title: Dati simulati — Camera
@@ -268,6 +293,18 @@ views:
           - sensor.camera_test_recommendation
           - sensor.camera_test_window_state
           - binary_sensor.camera_test_active
+      - type: markdown
+        title: Trace e qualità dati — Camera
+        content: |
+          **Azione core/consegnata:** {{ state_attr('sensor.camera_test_recommendation', 'core_action') }} / {{ state_attr('sensor.camera_test_recommendation', 'delivered_action') }}
+
+          **Durata:** {{ state_attr('sensor.camera_test_recommendation', 'duration_minutes') }} min · **Soppressione:** {{ state_attr('sensor.camera_test_recommendation', 'delivery_suppressed_by') }}
+
+          **Blocchi:** {{ state_attr('sensor.camera_test_recommendation', 'blocked_conditions') }} · **Penalità:** {{ state_attr('sensor.camera_test_recommendation', 'applied_penalties') }}
+
+          **Qualità fonti:** {{ state_attr('sensor.camera_test_recommendation', 'data_quality') }}
+
+          **Trace:** {{ state_attr('sensor.camera_test_recommendation', 'trace') }}
       - type: entities
         title: Risultati VentWise — Soggiorno
         entities:
@@ -292,7 +329,10 @@ DATA = {
     "home_assistant_notification_enabled": True,
     "smoke_alert_entity_id": "binary_sensor.ventwise_test_smoke_alert",
     "air_quality_entity_ids": {"pm2_5": "input_number.ventwise_test_pm25", "grass_pollen": "input_number.ventwise_test_grass_pollen"},
-    "exposure_policies": {"pm2_5": {"mode": "reduce", "threshold": 25.0, "unit": "µg/m³", "averaging_period": "instant"}},
+    "exposure_policies": {
+        "pm2_5": {"mode": "reduce", "threshold": 25.0, "unit": "µg/m³", "averaging_period": "instant"},
+        "grass_pollen": {"mode": "avoid", "threshold": 25.0, "unit": "grains/m³", "averaging_period": "instant"},
+    },
     "rooms": [
         {"kind": "room", "room_id": "camera_test", "name": "Camera test", "enabled": True,
          "temperature_entity_id": "input_number.ventwise_test_bedroom_temperature",

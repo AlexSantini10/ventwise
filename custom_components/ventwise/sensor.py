@@ -240,6 +240,7 @@ class RoomRecommendationStateSensor(VentWiseRoomEntity, SensorEntity):
             "core_action": result.core_action.value,
             "delivered_action": result.delivered_action.value,
             "duration_minutes": result.duration_minutes,
+            "confidence": result.confidence,
             "candidates": {
                 "open": result.candidate_scores.open,
                 "ventilate": result.candidate_scores.ventilate,

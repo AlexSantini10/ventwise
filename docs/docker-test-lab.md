@@ -82,6 +82,38 @@ rifinire durata/confidenza o segnalare condensa, ma non cambia i blocchi.
 
 ## Comandi
 
+## Collaudo manuale DDP
+
+Esegui questa checklist solo dopo che tutti i test automatici sono verdi. Il
+Lab non controlla finestre o altri dispositivi: ogni risultato resta una
+raccomandazione e ogni evidenza resta nel profilo isolato del Lab.
+
+1. Avvia una prova pulita con `python scripts/ha-local-docker-test.py reset`,
+   poi `up`, completa l'onboarding e apri **VentWise Test Lab**.
+2. Per ogni scenario modifica soltanto i controlli della dashboard, premi
+   **Ricevi consiglio ora** e apri la card **Trace e qualità dati — Camera**.
+3. Registra sempre: `scenario`; valori impostati; risultato osservato
+   (`core_action`/`delivered_action`, durata, blocchi e soppressione); trace
+   completo o screenshot della card. Un'anomalia va riportata insieme a quei
+   quattro elementi, senza dati o endpoint personali.
+
+| Scenario | Valori da impostare | Risultato atteso |
+| --- | --- | --- |
+| Comfort caldo / freddo | Camera 28 °C, esterno 20 °C; poi inverti (camera 19 °C, esterno 31 °C con contatto aperto) | `open`; poi `close` se la finestra è già aperta. |
+| Umidità / CO₂ | Camera 22 °C, umidità 70%, esterno più secco; oppure CO₂ 1400 ppm | `ventilate`, con durata e trace di punteggio. |
+| Nessun beneficio | Camera ed esterno 22 °C | `none`. |
+| Contatti multipli | Prima tutti chiusi; poi apri uno dei due contatti Camera | Il primo consiglio è consegnabile; il secondo è soppresso come finestra già aperta. |
+| Pioggia, temporale, vento o raffica | Seleziona `rainy` o `thunderstorm`; oppure porta vento/raffica oltre 14 m/s; prova anche precipitazione attuale > 0 | Se la finestra è aperta: `close`; trace e blocco di sicurezza prevalgono su CO₂. |
+| Fumo, PM e polline | Attiva fumo; PM2.5 a 25; polline erba a 25 | Fumo e polline `avoid` bloccano; PM `reduce` applica una penalità. |
+| Conflitto CO₂ + pericolo esterno | CO₂ 1400 e uno fra pioggia, temporale, vento, fumo o polline avoid | Nessun `open`/`ventilate`; se aperta, `close`. |
+| Fonte assente / obsoleta | Spegni **Weather Source Available**; per obsolescenza lascia invariati tutti gli input meteo per oltre 15 minuti | `critical_weather_unavailable`, qualità dati e trace espliciti. |
+| Quiet hours, cooldown e stabilità | Usa i controlli VentWise; ripeti la stessa richiesta | L'azione core resta visibile, mentre quella consegnata può essere soppressa con la causa indicata. |
+| Riavvio e modifica configurazione | `restart`; poi `reset`/`up` per verificare l'onboarding | Stato persistente e configurazione vengono ripristinati o ricreati in modo leggibile. |
+
+La card trace mostra anche i dati utilizzati, scartati e in attesa; gli
+attributi completi restano cliccabili su `sensor.camera_test_recommendation`.
+La stessa procedura può essere ripetuta per il Soggiorno usando le sue entità.
+
 | Comando | Effetto |
 | --- | --- |
 | `python scripts/ha-local-docker-test.py up` | Genera lo ZIP dal checkout corrente, lo installa e avvia il Lab. |

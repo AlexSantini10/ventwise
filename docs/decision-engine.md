@@ -40,6 +40,21 @@ then regulate its presentation. Explanation exposes all material facts.
 | **close** | Opening is harmful or protection is required. |
 | **none** | No meaningful benefit or already consistent state. |
 
+`ventilate` duration is deliberately bounded generic guidance: 15 minutes
+without a usable forecast, 10 with one, and 5 where an imminent-rain forecast
+applies. Room volume, opening area, resistance and mass are not treated as an
+airflow calibration; complete parameters can reduce confidence, while
+condensation risk can cap the generic duration at five minutes. Below the
+warm-domain heat-index boundary the thermal comparison is dry-bulb only; it
+does not claim a cold/wind-chill model.
+
+Current precipitation is an immediate safety block, distinct from forecast
+precipitation probability. Outdoor humidity is optional: absent or invalid
+humidity removes apparent/moisture scoring but does not suppress safe
+temperature-only advice. Temperature, weather condition and wind remain
+safety-critical. Future-dated, stale, non-finite and source-implausible
+readings are discarded with their provenance retained in data quality.
+
 > [!TIP]
 > Read **At-a-glance ordered decision table** first. It is the shortest route
 > to the engine's actual decision priority and user-facing wording.

@@ -94,6 +94,10 @@ class DecisionOutdoor:
     pollen_policy: Observation[str] | None = None
     pollution_policy: Observation[str] | None = None
     exposure: Tuple["ExposureReading", ...] = ()
+    # A current precipitation measurement (for example mm) is different
+    # from a forecast probability. The former is an immediate safety input;
+    # the latter only penalises an otherwise safe recommendation.
+    current_precipitation_mm_h: Observation[float] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,7 +180,7 @@ class AggregateDecisionResult:
 class DecisionConfig:
     """Versioned physical and safety parameters for ``DecisionEngine``."""
 
-    version: str = "2026-11-09"
+    version: str = "2026-11-10"
     target_temperature_c: float = 22.0
     comfort_band_c: float = 1.0
     humidity_low_percent: float = 40.0

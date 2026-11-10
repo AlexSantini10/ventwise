@@ -106,6 +106,40 @@ def test_decision_snapshot_preserves_sources_and_requires_co2_history() -> None:
     assert second.rooms[0].co2_trend_ppm_per_hour.value == 600.0
 
 
+def test_decision_snapshot_adapts_current_precipitation_and_multiple_contacts() -> None:
+    """The HA adapter keeps present rain distinct from forecast probability."""
+
+    now = datetime(2026, 7, 20, 12, 0, tzinfo=timezone.utc)
+    config = build_integration_config({
+        CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+        CONF_ROOMS: [{
+            CONF_ROOM_NAME: "Office",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temperature",
+            CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.room_humidity",
+            CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: ["binary_sensor.left", "binary_sensor.right"],
+        }],
+    })
+    states = {
+        "weather.home": SimpleNamespace(
+            state="sunny", last_updated=now,
+            attributes={"temperature": 68, "temperature_unit": "°F", "humidity": 50,
+                        "wind_speed": 3, "wind_speed_unit": "m/s", "precipitation": 0.4,
+                        "precipitation_probability": 70},
+        ),
+        "sensor.room_temperature": SimpleNamespace(state="26", last_updated=now, attributes={}),
+        "sensor.room_humidity": SimpleNamespace(state="55", last_updated=now, attributes={}),
+        "binary_sensor.left": SimpleNamespace(state="off"),
+        "binary_sensor.right": SimpleNamespace(state="on"),
+    }
+
+    snapshot = build_decision_snapshot(config, states.get, now)
+
+    assert snapshot.outdoor.temperature_c.value == 20.0
+    assert snapshot.outdoor.current_precipitation_mm_h.value == 0.4
+    assert snapshot.outdoor.precipitation_probability_percent.value == 70.0
+    assert snapshot.rooms[0].window_open.value is True
+
+
 def test_decision_snapshot_prefers_configured_ha_air_source_over_provider() -> None:
     now = datetime(2026, 7, 20, 12, 0, tzinfo=timezone.utc)
     config = build_integration_config({

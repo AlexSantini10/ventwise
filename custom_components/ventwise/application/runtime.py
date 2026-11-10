@@ -570,6 +570,7 @@ def build_decision_snapshot(
     weather_state = state_getter(config.outdoor_weather_entity_id) if config.outdoor_weather_entity_id else None
     condition = observation_from_state(weather_state, source_id=config.outdoor_weather_entity_id, now=now, unit="", converter=lambda raw, _: str(raw).lower())
     rain = weather_attribute("precipitation_probability", "%", lambda raw, _: float(raw))
+    current_precipitation = weather_attribute("precipitation", "mm", lambda raw, _: float(raw))
     forecast_temp = Observation(
         forecast.temperature_c if forecast and forecast.temperature_c is not None else None,
         "°C", now if forecast and forecast.temperature_c is not None else None, now,
@@ -647,7 +648,14 @@ def build_decision_snapshot(
     pollution_mode = triggered.get("pollution")
     pollen_policy = Observation(pollen_mode, "", now, now, policy_source) if pollen_mode else None
     pollution_policy = Observation(pollution_mode, "", now, now, policy_source) if pollution_mode else None
-    return DecisionSnapshot(tuple(rooms), DecisionOutdoor(temperature, humidity, wind, gust, condition, rain, forecast_temp, smoke, pollen_policy, pollution_policy, tuple(exposure)), now)
+    return DecisionSnapshot(
+        tuple(rooms),
+        DecisionOutdoor(
+            temperature, humidity, wind, gust, condition, rain, forecast_temp,
+            smoke, pollen_policy, pollution_policy, tuple(exposure), current_precipitation,
+        ),
+        now,
+    )
 
 
 def is_quiet_hours_active(now: datetime, start_time: str, end_time: str) -> bool:

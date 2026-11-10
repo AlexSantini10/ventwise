@@ -96,12 +96,14 @@ class DecisionEngine:
         indoor_t = self._usable(room.temperature_c, "indoor.temperature", snapshot, self.config.indoor_freshness, used, discarded, awaiting)
         indoor_h = self._usable(room.humidity_percent, "indoor.humidity", snapshot, self.config.indoor_freshness, used, discarded, awaiting)
         outdoor_t = self._usable(snapshot.outdoor.temperature_c, "outdoor.temperature", snapshot, self.config.weather_freshness, used, discarded, awaiting)
-        outdoor_h = self._usable(snapshot.outdoor.humidity_percent, "outdoor.humidity", snapshot, self.config.weather_freshness, used, discarded, awaiting)
+        # Outdoor humidity refines comfort and moisture scoring, but is not an
+        # opening-safety signal. Its absence must not block dry-bulb advice.
+        outdoor_h = self._usable(snapshot.outdoor.humidity_percent, "outdoor.humidity", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
         weather = self._usable(snapshot.outdoor.weather_condition, "outdoor.weather", snapshot, self.config.weather_freshness, used, discarded, awaiting)
         wind = self._usable(snapshot.outdoor.wind_speed_m_s, "outdoor.wind", snapshot, self.config.weather_freshness, used, discarded, awaiting)
         gust = self._usable(snapshot.outdoor.wind_gust_m_s, "outdoor.gust", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
 
-        critical_missing = any(value is None for value in (outdoor_t, outdoor_h, weather, wind))
+        critical_missing = any(value is None for value in (outdoor_t, weather, wind))
         if critical_missing:
             blocks.append("critical_weather_unavailable")
             trace.append(TraceEntry("block.critical_weather_unavailable"))
@@ -109,6 +111,20 @@ class DecisionEngine:
         known_open = self._usable(room.window_open, "window.state", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         condition = str(weather).lower() if weather is not None else ""
         severe = any(token in condition for token in _SEVERE_WEATHER)
+        condition_reports_precipitation = any(token in condition for token in ("rain", "drizzle", "shower", "sleet"))
+        current_precipitation = self._usable(
+            snapshot.outdoor.current_precipitation_mm_h,
+            "outdoor.current_precipitation",
+            snapshot,
+            self.config.weather_freshness,
+            used,
+            discarded,
+            awaiting,
+            optional=True,
+        )
+        actively_precipitating = condition_reports_precipitation or (
+            current_precipitation is not None and current_precipitation > 0.0
+        )
         hazardous_wind = (wind is not None and wind >= self.config.wind_block_m_s) or (gust is not None and gust >= self.config.gust_block_m_s)
         smoke = self._usable(snapshot.outdoor.smoke_alert, "outdoor.smoke", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True) is True
         pollen = self._usable(snapshot.outdoor.pollen_policy, "outdoor.pollen", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
@@ -131,10 +147,13 @@ class DecisionEngine:
                         reading.coverage,
                     ))),
                 ))
-        hard_block = severe or hazardous_wind or smoke or pollen == "avoid" or pollution == "avoid"
+        hard_block = severe or actively_precipitating or hazardous_wind or smoke or pollen == "avoid" or pollution == "avoid"
         if severe:
             blocks.append("severe_weather")
             trace.append(TraceEntry("block.severe_weather", condition))
+        if actively_precipitating:
+            blocks.append("current_precipitation")
+            trace.append(TraceEntry("block.current_precipitation", condition if condition_reports_precipitation else f"{current_precipitation:.3f}"))
         if hazardous_wind:
             blocks.append("unsafe_wind")
             trace.append(TraceEntry("block.unsafe_wind"))
@@ -154,19 +173,19 @@ class DecisionEngine:
             code = blocks[0] if blocks else "critical_weather_unavailable"
             return self._finish(room, core, CandidateScores(close=close), 1.0 if hard_block else 0.4, code, trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open, urgent=hard_block)
 
-        assert outdoor_t is not None and outdoor_h is not None
+        assert outdoor_t is not None
         # Indoor RH is optional in long-lived configurations. Do not invent a
         # value for it: a dry-bulb thermal comparison remains valid, while
         # humidity, dew-point and moisture benefits are simply unavailable.
         indoor_apparent = apparent_temperature_c(float(indoor_t), float(indoor_h)) if indoor_h is not None else float(indoor_t)
-        outdoor_apparent = apparent_temperature_c(float(outdoor_t), float(outdoor_h))
+        outdoor_apparent = apparent_temperature_c(float(outdoor_t), float(outdoor_h)) if outdoor_h is not None else float(outdoor_t)
         target = room.target_temperature_c if room.target_temperature_c is not None else self.config.target_temperature_c
         indoor_distance = max(0.0, abs(indoor_apparent - target) - self.config.comfort_band_c)
         outdoor_distance = max(0.0, abs(outdoor_apparent - target) - self.config.comfort_band_c)
         thermal_benefit = max(0.0, indoor_distance - outdoor_distance)
         indoor_ah = absolute_humidity_g_m3(float(indoor_t), float(indoor_h)) if indoor_h is not None else None
-        outdoor_ah = absolute_humidity_g_m3(float(outdoor_t), float(outdoor_h))
-        moisture_benefit = max(0.0, indoor_ah - outdoor_ah) if indoor_ah is not None else 0.0
+        outdoor_ah = absolute_humidity_g_m3(float(outdoor_t), float(outdoor_h)) if outdoor_h is not None else None
+        moisture_benefit = max(0.0, indoor_ah - outdoor_ah) if indoor_ah is not None and outdoor_ah is not None else 0.0
         co2 = self._usable(room.co2_ppm, "indoor.co2", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         co2_trend = self._usable(room.co2_trend_ppm_per_hour, "indoor.co2_trend", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         co2_signal = (co2 is not None and co2 >= self.config.co2_threshold_ppm) or (co2_trend is not None and co2_trend >= self.config.co2_positive_trend_ppm_per_hour)
@@ -217,10 +236,8 @@ class DecisionEngine:
         elif required.issubset(values):
             trace.append(TraceEntry("physical.parameters", ",".join(f"{key}={values[key]}" for key in sorted(values))))
             if duration is not None:
-                opening = float(values["opening_area_m2"]) * float(values["opening_fraction"])
-                # A deliberately bounded heuristic: calibrated geometry can
-                # refine duration but never assert a deterministic forecast.
-                duration = max(5, min(30, round(float(values["volume_m3"]) / max(1.0, opening * 6.0))))
+                # This data is not a calibrated airflow model. It may lower
+                # confidence, but duration stays bounded generic advice.
                 confidence = 0.9
         surface = self._usable(room.surface_temperature_c, "indoor.surface_temperature", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         if surface is not None and indoor_h is not None:
@@ -247,7 +264,11 @@ class DecisionEngine:
             discarded.append(name)
             return None
         effective_limit = min(limit, observation.freshness) if observation.freshness is not None else limit
-        if observation.observed_at is None or snapshot.evaluated_at - observation.observed_at > effective_limit:
+        if (
+            observation.observed_at is None
+            or observation.observed_at > snapshot.evaluated_at
+            or snapshot.evaluated_at - observation.observed_at > effective_limit
+        ):
             discarded.append(name)
             return None
         value = observation.value
@@ -263,6 +284,12 @@ class DecisionEngine:
             return 0.0 <= value <= 100.0
         if "temperature" in name:
             return -90.0 <= value <= 70.0
+        if "co2" in name:
+            return 0.0 <= value <= 10_000.0
+        if "wind" in name or "gust" in name:
+            return 0.0 <= value <= 150.0
+        if "precipitation" in name:
+            return 0.0 <= value <= 500.0
         return value >= 0.0
 
     def _select(self, scores: CandidateScores) -> tuple[RecommendationAction, str]:

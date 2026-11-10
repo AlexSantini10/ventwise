@@ -75,14 +75,25 @@ def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> Non
     dashboard = (config_dir / "ventwise_test_dashboard.yaml").read_text(encoding="utf-8")
     assert "input_number.ventwise_test_bedroom_co2" in dashboard
     assert "input_number.ventwise_test_pm25" in dashboard
+    assert "input_number.ventwise_test_wind_gust" in dashboard
+    assert "input_number.ventwise_test_current_precipitation" in dashboard
     assert "input_boolean.ventwise_test_smoke_alert" in dashboard
+    assert "input_boolean.ventwise_test_weather_source_available" in dashboard
     assert "button.ventwise_test_lab_request_recommendation" in dashboard
     assert "switch.ventwise_test_lab_quiet_hours_enable" in dashboard
     assert "sensor.camera_test_recommendation" in dashboard
+    assert "Trace e qualità dati" in dashboard
     assert '"home_assistant_notification_enabled": True' in (
         config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py"
     ).read_text(encoding="utf-8")
     assert '"smoke_alert_entity_id": "binary_sensor.ventwise_test_smoke_alert"' in (
         config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py"
     ).read_text(encoding="utf-8")
+    assert '"grass_pollen": {"mode": "avoid"' in (
+        config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py"
+    ).read_text(encoding="utf-8")
+    template = (config_dir / "ventwise_test_template.yaml").read_text(encoding="utf-8")
+    assert "condition_template:" in template
+    assert "wind_gust_speed_template:" in template
+    assert "precipitation_template:" in template
     assert (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py").exists()

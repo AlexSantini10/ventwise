@@ -144,6 +144,26 @@ async def test_real_config_entry_setup_creates_entities_and_unloads_cleanly(
 
 
 @pytest.mark.asyncio
+async def test_recommendation_entity_exposes_core_delivery_and_readable_trace(
+    hass: HomeAssistant,
+) -> None:
+    """The user-facing entity retains the complete deterministic artifact."""
+
+    _seed_states(hass)
+    coordinator = await _setup_coordinator(hass, _options())
+    state = hass.states.get("sensor.test_room_recommendation")
+
+    assert state is not None
+    assert state.attributes["core_action"] == "open"
+    assert state.attributes["delivered_action"] in {"open", "none"}
+    assert state.attributes["duration_minutes"] is None
+    assert state.attributes["confidence"] > 0.0
+    assert state.attributes["data_quality"]["used"]
+    assert state.attributes["trace"][0]["code"] == "config.version"
+    assert coordinator.data.decision.room_results[0].core_action is RecommendationAction.OPEN
+
+
+@pytest.mark.asyncio
 async def test_entity_ids_stay_english_when_home_assistant_uses_italian(
     hass: HomeAssistant,
 ) -> None:
@@ -273,7 +293,9 @@ async def test_quiet_hours_block_automatic_delivery_in_a_real_ha_runtime(
         return True
 
     monkeypatch.setattr(coordinator_module, "async_send_notification", _capture_delivery)
-    fixed_now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+    # Use the HA clock before patching it so seeded state timestamps cannot be
+    # future-dated relative to this deterministic refresh.
+    fixed_now = coordinator_module.dt_util.utcnow()
     monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
     monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
     options = _options(
