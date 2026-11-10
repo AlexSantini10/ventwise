@@ -73,7 +73,10 @@ jobs:
       - name: Set up runner Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14.2"
+          # The host Python only launches the Docker-backed canonical runner.
+          # Keep the exact test runtime pinned in Dockerfile.ci instead of
+          # requiring that patch release on every ubuntu-latest image.
+          python-version: "3.14"
       - name: Run the canonical local/CI test workflow
         run: python scripts/run_tests.py
 
