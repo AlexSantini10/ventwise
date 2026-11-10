@@ -166,7 +166,7 @@ def test_edit_room_replaces_the_selected_room() -> None:
 
     asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
     asyncio.run(
-        flow.async_step_edit_room_details(
+        flow.async_step_edit_room_base(
             {
                 CONF_ROOM_NAME: "Studio",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.studio_temp",
