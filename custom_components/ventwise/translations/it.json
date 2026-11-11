@@ -43,6 +43,7 @@
         "title": "Configurazione opzionale",
         "description": "Aggiungi solo le funzionalità che vuoi usare ora. Potrai modificare tutto in seguito da «Configura».",
         "menu_options": {
+          "back_to_initial_rooms": "Torna alle stanze",
           "initial_rooms": "Stanze",
           "initial_co2": "CO2",
           "initial_outdoor_air": "Aria esterna e pollini",
@@ -51,6 +52,7 @@
           "finish": "Completa configurazione"
         },
         "menu_option_descriptions": {
+          "back_to_initial_rooms": "Torna al menu delle stanze.",
           "initial_rooms": "Aggiungi gli ambienti che VentWise deve monitorare.",
           "initial_co2": "Usa le letture di CO2 per migliorare i consigli sulla ventilazione.",
           "initial_outdoor_air": "Configura le informazioni su inquinamento e polline.",
@@ -172,6 +174,7 @@
         "title": "Stanze",
         "description": "Aggiungi, modifica o rimuovi stanze e macro-stanze per gli spazi che condividono la stessa aria.",
         "menu_options": {
+          "back_to_user": "Torna alle impostazioni essenziali",
           "add_room": "Aggiungi stanza",
           "add_macro_room": "Aggiungi macro-stanza",
           "edit_room": "Modifica stanza",
@@ -179,6 +182,7 @@
           "finish": "Fine"
         },
         "menu_option_descriptions": {
+          "back_to_user": "Torna alle impostazioni essenziali.",
           "add_room": "Crea una stanza per uno spazio singolo.",
           "add_macro_room": "Crea un'area raggruppata per spazi che condividono le stesse finestre.",
           "edit_room": "Aggiorna una stanza o un'area raggruppata esistente.",
@@ -371,6 +375,7 @@
         "title": "Stanze",
         "description": "Aggiungi, modifica o rimuovi stanze e aree raggruppate.",
         "menu_options": {
+          "back_to_init": "Torna alle impostazioni principali",
           "add_room": "Aggiungi stanza",
           "add_macro_room": "Aggiungi macro-stanza",
           "edit_room": "Modifica stanza",
@@ -378,6 +383,7 @@
           "finish": "Fine"
         },
         "menu_option_descriptions": {
+          "back_to_init": "Torna al menu principale delle impostazioni.",
           "add_room": "Crea una stanza per uno spazio singolo.",
           "add_macro_room": "Crea un'area raggruppata per spazi che condividono le stesse finestre.",
           "edit_room": "Aggiorna una stanza o un'area raggruppata esistente.",
@@ -637,12 +643,14 @@
         "title": "Impostazioni comfort",
         "description": "Rifinisci i valori di comfort usati da VentWise.",
         "menu_options": {
+          "back_to_init": "Torna alle impostazioni principali",
           "recommendations": "Consigli",
           "manual_sources": "Sorgenti manuali",
           "air_quality": "Qualità dell'aria",
           "diagnostics": "Diagnostica"
         },
         "menu_option_descriptions": {
+          "back_to_init": "Torna al menu principale delle impostazioni.",
           "recommendations": "Regola il comportamento dei consigli.",
           "manual_sources": "Configura le sorgenti esterne manuali.",
           "air_quality": "Configura le sorgenti e le regole per la qualità dell'aria.",
@@ -691,10 +699,12 @@
         "title": "Qualità dell'aria",
         "description": "Scegli un gruppo di impostazioni globali per la qualità dell'aria.",
         "menu_options": {
+          "back_to_advanced": "Torna alle impostazioni avanzate",
           "air_quality_global": "Qualità dell'aria globale",
           "air_quality_source_select": "Sorgente qualità dell'aria"
         },
         "menu_option_descriptions": {
+          "back_to_advanced": "Torna al menu delle impostazioni avanzate.",
           "air_quality_global": "Configura le regole globali per inquinamento e pollini.",
           "air_quality_source_select": "Scegli una singola sorgente di qualità dell'aria."
         }
@@ -909,6 +919,7 @@
         "title": "Modifica stanza",
         "description": "Scegli quale parte della stanza selezionata modificare.",
         "menu_options": {
+          "back_to_rooms": "Torna alle stanze",
           "edit_room_base": "Impostazioni di base della stanza",
           "edit_room_advanced": "Impostazioni avanzate della stanza",
           "edit_room_basics": "Basi e sensori",
@@ -916,6 +927,7 @@
           "edit_room_co2_windows": "CO2 e finestre"
         },
         "menu_option_descriptions": {
+          "back_to_rooms": "Torna al menu delle stanze.",
           "edit_room_base": "Modifica il nome e le misurazioni della stanza.",
           "edit_room_advanced": "Modifica i valori alternativi e le automazioni della stanza.",
           "edit_room_basics": "Modifica il nome e i riferimenti ai sensori della stanza.",

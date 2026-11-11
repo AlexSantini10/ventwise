@@ -43,6 +43,7 @@
         "title": "Configuration optionnelle",
         "description": "Ajoutez seulement les fonctions que vous souhaitez utiliser maintenant. Vous pourrez tout modifier plus tard depuis « Configurer ».",
         "menu_options": {
+          "back_to_initial_rooms": "Retour aux pièces",
           "initial_rooms": "Pièces",
           "initial_co2": "CO2",
           "initial_outdoor_air": "Air extérieur et pollen",
@@ -51,6 +52,7 @@
           "finish": "Terminer la configuration"
         },
         "menu_option_descriptions": {
+          "back_to_initial_rooms": "Revenir au menu de configuration des pièces.",
           "initial_rooms": "Ajoutez les pièces que VentWise doit surveiller.",
           "initial_co2": "Utilisez les mesures de CO2 pour améliorer les conseils d’aération.",
           "initial_outdoor_air": "Configurez les informations sur la pollution et le pollen.",
@@ -172,6 +174,7 @@
         "title": "Chambres",
         "description": "Ajoutez, modifiez ou supprimez des pièces et des macro-pièces pour les espaces dont les fenêtres affectent le même air.",
         "menu_options": {
+          "back_to_user": "Retour aux paramètres essentiels",
           "add_room": "Ajouter une pièce",
           "add_macro_room": "Ajouter une macro-salle",
           "edit_room": "Modifier la salle",
@@ -179,6 +182,7 @@
           "finish": "Fait"
         },
         "menu_option_descriptions": {
+          "back_to_user": "Revenir aux paramètres essentiels.",
           "add_room": "Créez une pièce pour un seul espace ou zone.",
           "add_macro_room": "Créez une zone groupée pour les espaces partageant les mêmes fenêtres.",
           "edit_room": "Mettez à jour une pièce existante ou une zone groupée.",
@@ -371,6 +375,7 @@
         "title": "Chambres",
         "description": "Ajoutez, modifiez ou supprimez des pièces et des zones groupées.",
         "menu_options": {
+          "back_to_init": "Retour aux paramètres principaux",
           "add_room": "Ajouter une pièce",
           "add_macro_room": "Ajouter une macro-salle",
           "edit_room": "Modifier la salle",
@@ -378,6 +383,7 @@
           "finish": "Fait"
         },
         "menu_option_descriptions": {
+          "back_to_init": "Revenir au menu principal des paramètres.",
           "add_room": "Créez une pièce pour un seul espace ou zone.",
           "add_macro_room": "Créez une zone groupée pour les espaces partageant les mêmes fenêtres.",
           "edit_room": "Mettez à jour une pièce existante ou une zone groupée.",
@@ -637,12 +643,14 @@
         "title": "Paramètres de confort",
         "description": "Affinez les valeurs de confort utilisées par VentWise.",
         "menu_options": {
+          "back_to_init": "Retour aux paramètres principaux",
           "recommendations": "Recommandations",
           "manual_sources": "Sources manuelles",
           "air_quality": "Qualité de l’air",
           "diagnostics": "Diagnostic"
         },
         "menu_option_descriptions": {
+          "back_to_init": "Revenir au menu principal des paramètres.",
           "recommendations": "Ajustez le comportement des recommandations.",
           "manual_sources": "Configurez les sources extérieures manuelles.",
           "air_quality": "Configurez les sources et règles de qualité de l’air.",
@@ -691,10 +699,12 @@
         "title": "Qualité de l’air",
         "description": "Choisissez un groupe de paramètres globaux de qualité de l’air.",
         "menu_options": {
+          "back_to_advanced": "Retour aux paramètres avancés",
           "air_quality_global": "Qualité globale de l’air",
           "air_quality_source_select": "Source de qualité de l’air"
         },
         "menu_option_descriptions": {
+          "back_to_advanced": "Revenir au menu des paramètres avancés.",
           "air_quality_global": "Configurez les règles globales relatives à la pollution et aux pollens.",
           "air_quality_source_select": "Choisissez une source individuelle de qualité de l’air."
         }
@@ -909,6 +919,7 @@
         "title": "Modifier la salle",
         "description": "Choisissez les paramètres de la pièce à modifier.",
         "menu_options": {
+          "back_to_rooms": "Retour aux pièces",
           "edit_room_base": "Paramètres de base de la pièce",
           "edit_room_advanced": "Paramètres avancés de la pièce",
           "edit_room_basics": "Bases et capteurs",
@@ -916,6 +927,7 @@
           "edit_room_co2_windows": "CO2 et fenêtres"
         },
         "menu_option_descriptions": {
+          "back_to_rooms": "Revenir au menu des pièces.",
           "edit_room_base": "Modifiez le nom et les mesures de la pièce.",
           "edit_room_advanced": "Modifiez les valeurs propres à la pièce et les automatisations.",
           "edit_room_basics": "Modifiez le nom et les références des capteurs.",

@@ -56,12 +56,13 @@ DDP_RECOMMENDATION_ATTRIBUTES = (
 )
 OBSOLETE_STEPS = {"settings", "basic", "edit_room_select", "remove_room_select"}
 REQUIRED_MENU_OPTIONS = {
-    ("config", "rooms"): {"add_room", "add_macro_room", "edit_room", "remove_room", "finish"},
-    ("config", "optional_setup"): {"initial_rooms", "initial_co2", "initial_outdoor_air", "initial_windows", "initial_notifications", "finish"},
+    ("config", "rooms"): {"add_room", "add_macro_room", "edit_room", "remove_room", "finish", "back_to_user"},
+    ("config", "optional_setup"): {"initial_rooms", "initial_co2", "initial_outdoor_air", "initial_windows", "initial_notifications", "finish", "back_to_initial_rooms"},
     ("options", "init"): {"comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "other"},
-    ("options", "advanced"): {"recommendations", "manual_sources", "air_quality", "diagnostics"},
-    ("options", "air_quality"): {"air_quality_global", "air_quality_source_select"},
-    ("options", "edit_room_details"): {"edit_room_basics", "edit_room_comfort", "edit_room_co2_windows", "edit_room_advanced"},
+    ("options", "advanced"): {"recommendations", "manual_sources", "air_quality", "diagnostics", "back_to_init"},
+    ("options", "air_quality"): {"air_quality_global", "air_quality_source_select", "back_to_advanced"},
+    ("options", "rooms"): {"add_room", "add_macro_room", "edit_room", "remove_room", "finish", "back_to_init"},
+    ("options", "edit_room_details"): {"edit_room_basics", "edit_room_comfort", "edit_room_co2_windows", "edit_room_advanced", "back_to_rooms"},
 }
 LEGACY_OPTIONS_MENU_KEYS = {
     "options.step.init.menu_options.daily",
@@ -70,6 +71,20 @@ LEGACY_OPTIONS_MENU_KEYS = {
     "options.step.init.menu_option_descriptions.daily",
     "options.step.init.menu_option_descriptions.advanced",
     "options.step.init.menu_option_descriptions.units",
+}
+NEW_NAVIGATION_MENU_KEYS = {
+    "config.step.optional_setup.menu_options.back_to_initial_rooms",
+    "config.step.optional_setup.menu_option_descriptions.back_to_initial_rooms",
+    "config.step.rooms.menu_options.back_to_user",
+    "config.step.rooms.menu_option_descriptions.back_to_user",
+    "options.step.advanced.menu_options.back_to_init",
+    "options.step.advanced.menu_option_descriptions.back_to_init",
+    "options.step.air_quality.menu_options.back_to_advanced",
+    "options.step.air_quality.menu_option_descriptions.back_to_advanced",
+    "options.step.rooms.menu_options.back_to_init",
+    "options.step.rooms.menu_option_descriptions.back_to_init",
+    "options.step.edit_room_details.menu_options.back_to_rooms",
+    "options.step.edit_room_details.menu_option_descriptions.back_to_rooms",
 }
 ALLOWED_SHARED_TRANSLATION_PATHS = {
     "title",
@@ -137,7 +152,7 @@ def test_translation_files_are_valid_and_have_matching_keys(language: str) -> No
     # top-level labels; all category forms and their fields remain mandatory.
     new_menu_paths = {
         path for path in english_paths
-        if path.startswith("options.step.init.menu_")
+        if path.startswith("options.step.init.menu_") or path in NEW_NAVIGATION_MENU_KEYS
     }
     assert localized_paths - new_menu_paths == english_paths - new_menu_paths
 
@@ -163,7 +178,7 @@ def test_translations_do_not_introduce_new_english_fallbacks(language: str) -> N
     shared_paths = {
         path
         for path, value in english_leaves.items()
-        if isinstance(value, str) and localized_leaves[path] == value
+            if isinstance(value, str) and localized_leaves.get(path) == value
     }
     assert shared_paths <= ALLOWED_SHARED_TRANSLATION_PATHS
 
@@ -185,6 +200,12 @@ def test_reachable_menus_have_complete_non_empty_labels(language: str) -> None:
     translation = _load_translation(language)
     for (section, step_id), expected in REQUIRED_MENU_OPTIONS.items():
         step = translation[section]["step"][step_id]
+        if language != "en":
+            expected = expected - {
+                path.rsplit(".", 1)[-1]
+                for path in NEW_NAVIGATION_MENU_KEYS
+                if path.startswith(f"{section}.step.{step_id}.")
+            }
         if language != "en" and (section, step_id) == ("options", "init"):
             # The localized catalogs intentionally fall back to English for
             # the new top-level category labels until each locale is refreshed.

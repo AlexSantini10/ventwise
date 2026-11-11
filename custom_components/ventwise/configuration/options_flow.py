@@ -96,6 +96,11 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             },
         )
 
+    async def async_step_back_to_init(self, user_input: dict[str, Any] | None = None):
+        """Return to the top-level options menu."""
+
+        return await self.async_step_init(user_input)
+
     async def async_step_units(self, user_input: dict[str, Any] | None = None):
         """Change display units without reinterpreting saved values."""
 
@@ -225,7 +230,15 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
 
         if user_input is not None:
             return self.async_abort(reason="invalid_step")
-        return self.async_show_menu(step_id="advanced", menu_options=["recommendations", "manual_sources", "air_quality", "diagnostics"])
+        return self.async_show_menu(
+            step_id="advanced",
+            menu_options=["recommendations", "manual_sources", "air_quality", "diagnostics", "back_to_init"],
+        )
+
+    async def async_step_back_to_advanced(self, user_input: dict[str, Any] | None = None):
+        """Return to the advanced settings menu."""
+
+        return await self.async_step_advanced(user_input)
 
     async def async_step_recommendations(self, user_input: dict[str, Any] | None = None):
         return await self._save_advanced_form("recommendations", build_recommendation_options_schema, user_input, validate_co2=True)
@@ -246,7 +259,10 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
     async def async_step_air_quality(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
             return self.async_abort(reason="invalid_step")
-        return self.async_show_menu(step_id="air_quality", menu_options=["air_quality_global", "air_quality_source_select"])
+        return self.async_show_menu(
+            step_id="air_quality",
+            menu_options=["air_quality_global", "air_quality_source_select", "back_to_advanced"],
+        )
 
     async def async_step_air_quality_global(self, user_input: dict[str, Any] | None = None):
         return await self._save_advanced_form("air_quality_global", build_air_quality_options_schema, user_input)
@@ -339,6 +355,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         if self._rooms:
             menu_options.extend(["edit_room", "remove_room"])
         menu_options.append("finish")
+        menu_options.append("back_to_init")
         return self.async_show_menu(
             step_id="rooms",
             menu_options=menu_options,
@@ -346,6 +363,11 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 "room_count": str(len(self._rooms)),
             },
         )
+
+    async def async_step_back_to_rooms(self, user_input: dict[str, Any] | None = None):
+        """Return to the room management menu."""
+
+        return await self.async_step_rooms(user_input)
 
     async def async_step_add_room(self, user_input: dict[str, Any] | None = None):
         """Add a normal room."""
@@ -393,6 +415,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 "edit_room_comfort",
                 "edit_room_co2_windows",
                 "edit_room_advanced",
+                "back_to_rooms",
             ],
         )
 

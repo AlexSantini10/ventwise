@@ -43,6 +43,7 @@
         "title": "可选设置",
         "description": "现在只添加要使用的功能。稍后可以在“配置”中修改所有设置。",
         "menu_options": {
+          "back_to_initial_rooms": "返回房间",
           "initial_rooms": "房间",
           "initial_co2": "CO2",
           "initial_outdoor_air": "室外空气和花粉",
@@ -51,6 +52,7 @@
           "finish": "完成设置"
         },
         "menu_option_descriptions": {
+          "back_to_initial_rooms": "返回房间设置菜单。",
           "initial_rooms": "添加 VentWise 要监测的房间。",
           "initial_co2": "使用 CO2 读数来改进通风建议。",
           "initial_outdoor_air": "配置污染和花粉信息。",
@@ -172,6 +174,7 @@
         "title": "房间",
         "description": "添加、编辑或删除共享同一空气的房间和宏房间。",
         "menu_options": {
+          "back_to_user": "返回基本设置",
           "add_room": "添加房间",
           "add_macro_room": "添加宏房间",
           "edit_room": "编辑房间",
@@ -179,6 +182,7 @@
           "finish": "完成"
         },
         "menu_option_descriptions": {
+          "back_to_user": "返回基本设置。",
           "add_room": "为一个独立空间创建一个房间。",
           "add_macro_room": "为共享同一扇窗的空间创建一个分组区域。",
           "edit_room": "更新现有的房间或分组区域。",
@@ -371,6 +375,7 @@
         "title": "房间",
         "description": "为共享同一空气的空间添加、编辑或删除房间和宏房间。",
         "menu_options": {
+          "back_to_init": "返回主设置",
           "add_room": "添加房间",
           "add_macro_room": "添加宏房间",
           "edit_room": "编辑房间",
@@ -378,6 +383,7 @@
           "finish": "完成"
         },
         "menu_option_descriptions": {
+          "back_to_init": "返回主设置菜单。",
           "add_room": "为一个独立空间创建一个房间。",
           "add_macro_room": "为共享同一扇窗的空间创建一个分组区域。",
           "edit_room": "更新现有的房间或分组区域。",
@@ -637,12 +643,14 @@
         "title": "舒适设置",
         "description": "微调 VentWise 使用的舒适值。",
         "menu_options": {
+          "back_to_init": "返回主设置",
           "recommendations": "建议",
           "manual_sources": "手动来源",
           "air_quality": "空气质量",
           "diagnostics": "诊断"
         },
         "menu_option_descriptions": {
+          "back_to_init": "返回主设置菜单。",
           "recommendations": "调整建议行为。",
           "manual_sources": "配置手动室外数据来源。",
           "air_quality": "配置空气质量输入和策略。",
@@ -691,10 +699,12 @@
         "title": "空气质量",
         "description": "选择一组全局空气质量设置。",
         "menu_options": {
+          "back_to_advanced": "返回高级设置",
           "air_quality_global": "全局空气质量",
           "air_quality_source_select": "空气质量来源"
         },
         "menu_option_descriptions": {
+          "back_to_advanced": "返回高级设置菜单。",
           "air_quality_global": "配置全局污染和花粉策略。",
           "air_quality_source_select": "选择单个空气质量来源。"
         }
@@ -909,6 +919,7 @@
         "title": "编辑房间",
         "description": "选择要更新所选房间的哪部分设置。",
         "menu_options": {
+          "back_to_rooms": "返回房间",
           "edit_room_base": "房间基本设置",
           "edit_room_advanced": "房间高级设置",
           "edit_room_basics": "基础和传感器",
@@ -916,6 +927,7 @@
           "edit_room_co2_windows": "CO2 和窗户"
         },
         "menu_option_descriptions": {
+          "back_to_rooms": "返回房间管理菜单。",
           "edit_room_base": "更新房间名称和测量值。",
           "edit_room_advanced": "更新房间覆盖设置和自动化。",
           "edit_room_basics": "更新房间名称和传感器引用。",
