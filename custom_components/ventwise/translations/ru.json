@@ -220,7 +220,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой комнате.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "edit_room_form": {
@@ -249,7 +250,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой комнате.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "add_macro_room": {
@@ -282,7 +284,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой зоне.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "edit_macro_room_form": {
@@ -311,7 +314,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой зоне.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "edit_room": {
@@ -352,7 +356,8 @@
           "windows": "Окна и защита",
           "rooms": "Комнаты",
           "notifications": "Уведомления",
-          "other": "Другие настройки"
+          "other": "Другие настройки",
+          "units": "Единицы измерения"
         },
         "menu_option_descriptions": {
           "comfort": "Настройте желаемые температуру, влажность и поведение комфорта.",
@@ -361,7 +366,8 @@
           "windows": "Выберите погодные и наружные данные для защиты окон.",
           "rooms": "Добавляйте, изменяйте или удаляйте комнаты。",
           "notifications": "Выберите, где VentWise должен отправлять уведомления.",
-          "other": "Изменить единицы измерения и диагностику."
+          "other": "Изменить единицы измерения и диагностику.",
+          "units": "Выберите единицы температуры и скорости ветра."
         }
       },
       "units": {
@@ -369,7 +375,8 @@
         "data": {
           "temperature_unit": "Единица температуры",
           "wind_speed_unit": "Единица скорости ветра"
-        }
+        },
+        "description": "Выберите единицы температуры и скорости ветра."
       },
       "rooms": {
         "title": "Комнаты",
@@ -421,7 +428,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой комнате.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "edit_room_form": {
@@ -450,7 +458,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой комнате.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "add_macro_room": {
@@ -483,7 +492,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой зоне.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "edit_macro_room_form": {
@@ -512,7 +522,8 @@
           "stop_entity_id": "Необязательно. Выберите автоматизацию, которую VentWise запустит, когда предложит закрыть окна в этой зоне.",
           "action_change_hold_minutes": "Сколько ждать, прежде чем рекомендация «открыть» сменится на «закрыть» или наоборот.",
           "action_lockout_minutes": "После рекомендации открыть или закрыть окна не выдавать противоположную рекомендацию в течение этого времени. Срочные закрытия по соображениям безопасности никогда не откладываются.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
         }
       },
       "comfort": {
@@ -607,15 +618,7 @@
       },
       "other": {
         "title": "Другие настройки",
-        "description": "Изменить единицы измерения и диагностику.",
-        "menu_options": {
-          "units": "Единицы измерения",
-          "diagnostics": "Диагностика"
-        },
-        "menu_option_descriptions": {
-          "units": "Выберите единицы температуры и скорости ветра.",
-          "diagnostics": "Управлять режимом отладки и диагностическими уведомлениями."
-        }
+        "description": "Изменить единицы измерения и диагностику."
       },
       "daily": {
         "title": "Повседневные настройки",
@@ -1193,6 +1196,23 @@
         "1h": "1 час",
         "8h": "8 часов",
         "24h": "24 часа"
+      }
+    },
+    "air_quality_source": {
+      "options": {
+        "pm2_5": "Правило PM2.5",
+        "pm10": "Правило PM10",
+        "nitrogen_dioxide": "Правило диоксида азота",
+        "ozone": "Правило озона",
+        "carbon_monoxide": "Правило угарного газа",
+        "sulphur_dioxide": "Правило диоксида серы",
+        "european_aqi": "Правило европейского индекса качества воздуха",
+        "alder_pollen": "Правило пыльцы ольхи",
+        "birch_pollen": "Правило пыльцы берёзы",
+        "grass_pollen": "Правило пыльцы злаков",
+        "mugwort_pollen": "Правило пыльцы полыни",
+        "olive_pollen": "Правило пыльцы оливы",
+        "ragweed_pollen": "Правило пыльцы амброзии"
       }
     }
   },

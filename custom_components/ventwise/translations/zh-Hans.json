@@ -220,7 +220,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "edit_room_form": {
@@ -249,7 +250,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "add_macro_room": {
@@ -282,7 +284,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "edit_macro_room_form": {
@@ -311,7 +314,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "edit_room": {
@@ -352,7 +356,8 @@
           "windows": "窗户与保护",
           "rooms": "房间",
           "notifications": "通知",
-          "other": "其他设置"
+          "other": "其他设置",
+          "units": "测量单位"
         },
         "menu_option_descriptions": {
           "comfort": "设置首选的温度、湿度和舒适度行为。",
@@ -361,7 +366,8 @@
           "windows": "选择用于保护窗户的天气和室外数据。",
           "rooms": "添加、编辑或删除房间。",
           "notifications": "选择 VentWise 应在哪里通知您。",
-          "other": "修改单位和诊断行为。"
+          "other": "修改单位和诊断行为。",
+          "units": "选择温度和风速单位。"
         }
       },
       "units": {
@@ -369,7 +375,8 @@
         "data": {
           "temperature_unit": "温度单位",
           "wind_speed_unit": "风速单位"
-        }
+        },
+        "description": "选择温度和风速单位。"
       },
       "rooms": {
         "title": "房间",
@@ -421,7 +428,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "edit_room_form": {
@@ -450,7 +458,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "add_macro_room": {
@@ -483,7 +492,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "edit_macro_room_form": {
@@ -512,7 +522,8 @@
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "comfort": {
@@ -607,15 +618,7 @@
       },
       "other": {
         "title": "其他设置",
-        "description": "修改单位和诊断行为。",
-        "menu_options": {
-          "units": "测量单位",
-          "diagnostics": "诊断"
-        },
-        "menu_option_descriptions": {
-          "units": "选择温度和风速单位。",
-          "diagnostics": "控制调试模式和诊断通知。"
-        }
+        "description": "修改单位和诊断行为。"
       },
       "daily": {
         "title": "日常设置",
@@ -1193,6 +1196,23 @@
         "1h": "1 小时",
         "8h": "8 小时",
         "24h": "24 小时"
+      }
+    },
+    "air_quality_source": {
+      "options": {
+        "pm2_5": "PM2.5策略",
+        "pm10": "PM10策略",
+        "nitrogen_dioxide": "二氧化氮策略",
+        "ozone": "臭氧策略",
+        "carbon_monoxide": "一氧化碳策略",
+        "sulphur_dioxide": "二氧化硫策略",
+        "european_aqi": "欧洲空气质量指数策略",
+        "alder_pollen": "桤木花粉策略",
+        "birch_pollen": "桦树花粉策略",
+        "grass_pollen": "禾草花粉策略",
+        "mugwort_pollen": "蒿属花粉策略",
+        "olive_pollen": "橄榄树花粉策略",
+        "ragweed_pollen": "豚草花粉策略"
       }
     }
   },

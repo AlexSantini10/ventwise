@@ -118,11 +118,15 @@ def test_options_menu_has_purpose_based_sections() -> None:
     assert overview["type"] == "menu"
     assert overview["step_id"] == "init"
     assert overview["menu_options"] == [
-        "comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "other"
+        "comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "units", "other"
     ]
+    units = asyncio.run(flow.async_step_units())
+    assert units["type"] == "form"
+    assert set(units["data_schema"].schema) >= {"temperature_unit", "wind_speed_unit"}
     other = asyncio.run(flow.async_step_other())
     assert other["type"] == "form"
-    assert set(other["data_schema"].schema) >= {"temperature_unit", "wind_speed_unit", "debug_mode_enabled"}
+    assert set(other["data_schema"].schema) >= {"diagnostic_notification_level", "debug_mode_enabled"}
+    assert "temperature_unit" not in other["data_schema"].schema
 
 
 def test_room_edit_menu_exposes_four_purpose_based_sections() -> None:
