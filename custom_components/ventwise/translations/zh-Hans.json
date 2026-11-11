@@ -65,14 +65,12 @@
         "title": "CO2",
         "description": "CO2 是通风建议信号；VentWise 从不控制设备。",
         "data": {
-          "soft_outdoor_threshold_c": "室外舒适阈值",
           "cooldown_minutes": "通知冷却时间（分钟）",
           "co2_enabled": "在建议中使用 CO2",
           "co2_entity_id": "CO2 传感器",
           "co2_threshold_ppm": "CO2 阈值（ppm）"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "室外温度高于此值时，开窗的作用会降低。",
           "cooldown_minutes": "相同通知被抑制的时长。",
           "co2_enabled": "使用室内 CO2 读数来改进通风建议。",
           "co2_entity_id": "选择一个数值型 CO2 传感器（如有）。",
@@ -100,7 +98,6 @@
         "description": "选择用于保护开窗建议的天气和室外测量值。",
         "data": {
           "outdoor_weather_entity_id": "天气来源",
-          "soft_outdoor_threshold_c": "室外舒适阈值",
           "outdoor_temperature_override": "使用手动设置的室外温度",
           "outdoor_humidity_override": "使用手动设置的室外湿度",
           "wind_speed_override": "使用手动设置的室外风速",
@@ -110,7 +107,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "选择用于室外状况的天气实体。",
-          "soft_outdoor_threshold_c": "温度高于此值时，开窗的作用会降低。",
           "outdoor_temperature_override": "启用此项以使用数值型温度实体。",
           "outdoor_humidity_override": "启用此项以使用数值型湿度实体。",
           "wind_speed_override": "启用此项以使用数值型风速实体。",
@@ -546,14 +542,12 @@
         "title": "CO2",
         "description": "CO2 是通风建议信号；VentWise 从不控制设备。",
         "data": {
-          "soft_outdoor_threshold_c": "室外舒适阈值",
           "cooldown_minutes": "通知冷却时间（分钟）",
           "co2_enabled": "在建议中使用 CO2",
           "co2_entity_id": "CO2 传感器",
           "co2_threshold_ppm": "CO2 阈值（ppm）"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "室外温度高于此值时，开窗的作用会降低。",
           "cooldown_minutes": "相同通知被抑制的时长。",
           "co2_enabled": "使用室内 CO2 读数来改进通风建议。",
           "co2_entity_id": "选择一个数值型 CO2 传感器（如有）。",
@@ -581,7 +575,6 @@
         "description": "选择用于保护开窗建议的天气和室外测量值。",
         "data": {
           "outdoor_weather_entity_id": "天气来源",
-          "soft_outdoor_threshold_c": "室外舒适阈值",
           "outdoor_temperature_override": "使用手动设置的室外温度",
           "outdoor_humidity_override": "使用手动设置的室外湿度",
           "wind_speed_override": "使用手动设置的室外风速",
@@ -591,7 +584,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "选择用于室外状况的天气实体。",
-          "soft_outdoor_threshold_c": "温度高于此值时，开窗的作用会降低。",
           "outdoor_temperature_override": "启用此项以使用数值型温度实体。",
           "outdoor_humidity_override": "启用此项以使用数值型湿度实体。",
           "wind_speed_override": "启用此项以使用数值型风速实体。",
@@ -664,14 +656,12 @@
         "title": "建议设置",
         "description": "调整舒适度和通风建议行为。",
         "data": {
-          "soft_outdoor_threshold_c": "室外舒适度阈值",
           "cooldown_minutes": "通知冷却时间（分钟）",
           "co2_enabled": "启用 CO2",
           "co2_entity_id": "CO2 实体 ID",
           "co2_threshold_ppm": "CO2 阈值 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "室外温度高于此值时，开窗的效果会降低。",
           "cooldown_minutes": "VentWise 发送更新通知前等待的时间。相同建议不会重复发送。",
           "co2_enabled": "配置是否启用 CO2。",
           "co2_entity_id": "配置 CO2 实体 ID。",

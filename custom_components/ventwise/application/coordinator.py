@@ -20,7 +20,6 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from ..ventwise_core import (
-    ComfortRecommender,
     ForecastObservation,
     RecommendationAction,
     RecommendationContext,
@@ -37,10 +36,8 @@ from .runtime import (
     RuntimeSnapshot,
     RuntimeState,
     build_integration_config,
-    build_room_profiles,
     build_decision_snapshot,
-    apply_decision_to_summary,
-    build_scoring_config,
+    build_recommendation_summary,
     dump_runtime_state,
     load_runtime_state,
     is_quiet_hours_active,
@@ -112,7 +109,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     ) -> None:
         self._config_entry = config_entry
         self._config = build_integration_config(config_entry_data)
-        self._recommender = ComfortRecommender(build_scoring_config(self._config))
         self._runtime_state = self._load_runtime_state()
         self._last_action_signature = self._runtime_state.last_action_signature
         self._last_action_started_at = self._runtime_state.last_action_started_at or dt_util.utcnow()
@@ -340,8 +336,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._config = build_integration_config(
             {**self._config_entry.data, **self._config_entry.options}
         )
-        self._recommender = ComfortRecommender(build_scoring_config(self._config))
-
         if not self._config.enabled:
             await self._set_diagnostic_issue(None)
             snapshot = RuntimeSnapshot(
@@ -373,11 +367,19 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return snapshot
 
         forecast = await self._async_forecast(now=dt_util.now())
-        rooms, outdoor = build_room_profiles(
+        now = dt_util.now()
+        provider_exposure = await self._async_provider_exposure(now)
+        decision_snapshot = build_decision_snapshot(
             self._config,
             self.hass.states.get,
+            now,
             forecast=forecast,
+            co2_history=self._co2_history,
+            provider_exposure=provider_exposure,
         )
+        rooms = decision_snapshot.rooms
+        outdoor_temperature = decision_snapshot.outdoor.temperature_c.value
+        outdoor_humidity = decision_snapshot.outdoor.humidity_percent.value
         window_states = room_window_states(self._config, self.hass.states.get)
         notification_entity_ids = (
             notification_entity_ids_for_device_ids(
@@ -387,7 +389,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             if self._config.notification_device_ids
             else ()
         )
-        if outdoor is None:
+        if outdoor_temperature is None:
             await self._set_diagnostic_issue("unavailable_data")
             snapshot = RuntimeSnapshot(
                 summary=RecommendationSummary(
@@ -397,10 +399,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     suggested_comfort_temperature_c=None,
                     blocked_by="unavailable",
                 ),
-                weather_condition=_weather_condition(
-                    self._config.outdoor_weather_entity_id,
-                    self.hass.states.get,
-                ),
+                weather_condition=decision_snapshot.outdoor.weather_condition.value if decision_snapshot.outdoor.weather_condition else None,
                 target_perceived_c=None,
                 suggested_comfort_temperature_c=None,
                 outdoor_perceived_c=None,
@@ -434,17 +433,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 ),
                 target_perceived_c=self._config.target_temperature_c,
                 suggested_comfort_temperature_c=None,
-                outdoor_perceived_c=outdoor.temperature_c
-                + (
-                    (outdoor.humidity_percent - self._config.target_humidity_percent)
-                    * self._recommender.config.humidity_weight
+                outdoor_perceived_c=(
+                    float(outdoor_temperature)
+                    + (float(outdoor_humidity) - self._config.target_humidity_percent) * 0.04
+                    if outdoor_humidity is not None else float(outdoor_temperature)
                 ),
                 active_indoor_perceived_c=None,
-                outdoor_temperature_c=outdoor.temperature_c,
+                outdoor_temperature_c=float(outdoor_temperature),
                 forecast_temperature_c=forecast.temperature_c if forecast else None,
-                outdoor_humidity_percent=outdoor.humidity_percent,
-                wind_speed_m_s=outdoor.wind_speed_m_s,
-                wind_gust_m_s=outdoor.wind_gust_m_s,
+                outdoor_humidity_percent=float(outdoor_humidity) if outdoor_humidity is not None else None,
+                wind_speed_m_s=decision_snapshot.outdoor.wind_speed_m_s.value if decision_snapshot.outdoor.wind_speed_m_s else None,
+                wind_gust_m_s=decision_snapshot.outdoor.wind_gust_m_s.value if decision_snapshot.outdoor.wind_gust_m_s else None,
                 notification_allowed=False,
                 quiet_hours_active=False,
                 cooldown_active=False,
@@ -457,43 +456,18 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         await self._set_diagnostic_issue(None)
 
-        now = dt_util.now()
-        provider_exposure = await self._async_provider_exposure(now)
-        outdoor_perceived_c = outdoor.temperature_c + (
-            (outdoor.humidity_percent - self._config.target_humidity_percent)
-            * self._recommender.config.humidity_weight
+        outdoor_perceived_c = (
+            float(outdoor_temperature)
+            + (float(outdoor_humidity) - self._config.target_humidity_percent) * 0.04
+            if outdoor_humidity is not None else float(outdoor_temperature)
         )
         suggested_target = suggested_comfort_temperature(
-            self._config.target_temperature_c,
-            outdoor_perceived_c,
+            self._config.target_temperature_c, outdoor_perceived_c
         )
         effective_target_temperature_c = (
             suggested_target
             if self._config.auto_comfort_temperature_enabled
             else self._config.target_temperature_c
-        )
-        scoring_config = build_scoring_config(
-            replace(
-                self._config,
-                target_temperature_c=effective_target_temperature_c,
-            )
-        )
-        # Keep the presentation calculation for backwards-compatible entity
-        # fields, but let the source-neutral decision engine own the action.
-        summary = ComfortRecommender(scoring_config).evaluate(
-            rooms=rooms,
-            outdoor=outdoor,
-            context=RecommendationContext(
-                quiet_hours_active=False,
-                cooldown_active=False,
-                stable_for_seconds=10**6,
-            ),
-        )
-        summary = _with_suggested_comfort_temperature(summary, suggested_target)
-        decision_snapshot = build_decision_snapshot(
-            self._config, self.hass.states.get, now, forecast=forecast,
-            co2_history=self._co2_history,
-            provider_exposure=provider_exposure,
         )
         decision_engine = DecisionEngine(DecisionConfig(
             target_temperature_c=effective_target_temperature_c,
@@ -501,7 +475,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             co2_threshold_ppm=self._config.co2_threshold_ppm,
         ))
         core_decision = decision_engine.evaluate(decision_snapshot)
-        core_summary = apply_decision_to_summary(summary, core_decision)
+        core_summary = build_recommendation_summary(core_decision, decision_snapshot, self._config)
         signature = self._signature(core_summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -541,7 +515,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             ),
         )
         decision = decision_engine.evaluate(decision_snapshot)
-        summary = apply_decision_to_summary(summary, decision)
+        summary = build_recommendation_summary(decision, decision_snapshot, self._config)
 
         notification_channel_available = (
             self._config.notification_enabled
@@ -683,11 +657,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             suggested_comfort_temperature_c=suggested_target,
             outdoor_perceived_c=outdoor_perceived_c,
             active_indoor_perceived_c=active_indoor_perceived_c,
-            outdoor_temperature_c=outdoor.temperature_c,
+            outdoor_temperature_c=float(outdoor_temperature),
             forecast_temperature_c=forecast.temperature_c if forecast else None,
-            outdoor_humidity_percent=outdoor.humidity_percent,
-            wind_speed_m_s=outdoor.wind_speed_m_s,
-            wind_gust_m_s=outdoor.wind_gust_m_s,
+            outdoor_humidity_percent=float(outdoor_humidity) if outdoor_humidity is not None else None,
+            wind_speed_m_s=decision_snapshot.outdoor.wind_speed_m_s.value if decision_snapshot.outdoor.wind_speed_m_s else None,
+            wind_gust_m_s=decision_snapshot.outdoor.wind_gust_m_s.value if decision_snapshot.outdoor.wind_gust_m_s else None,
             notification_allowed=notification_allowed,
             quiet_hours_active=quiet_hours_active,
             cooldown_active=cooldown_active,
@@ -1484,26 +1458,6 @@ def _forecast_risk(forecast: ForecastObservation) -> float:
     return max(
         forecast.precipitation_probability or 0.0,
         forecast.wind_gust_m_s or forecast.wind_speed_m_s or 0.0,
-    )
-
-
-def _with_suggested_comfort_temperature(
-    summary: RecommendationSummary,
-    suggested_temperature_c: float,
-) -> RecommendationSummary:
-    """Keep the exposed adaptive target consistent across summary and rooms."""
-
-    room_recommendations = tuple(
-        replace(
-            recommendation,
-            suggested_comfort_temperature_c=suggested_temperature_c,
-        )
-        for recommendation in summary.room_recommendations
-    )
-    return replace(
-        summary,
-        suggested_comfort_temperature_c=suggested_temperature_c,
-        room_recommendations=room_recommendations,
     )
 
 

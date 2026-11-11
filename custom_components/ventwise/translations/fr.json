@@ -65,14 +65,12 @@
         "title": "CO2",
         "description": "Le CO2 est un indicateur pour l’aération ; VentWise ne contrôle jamais les appareils.",
         "data": {
-          "soft_outdoor_threshold_c": "Seuil de confort extérieur",
           "cooldown_minutes": "Délai entre les notifications (minutes)",
           "co2_enabled": "Utiliser le CO2 dans les conseils",
           "co2_entity_id": "Capteur de CO2",
           "co2_threshold_ppm": "Seuil de CO2 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Au-dessus de cette température extérieure, ouvrir les fenêtres devient moins utile.",
           "cooldown_minutes": "Durée de suppression des notifications identiques.",
           "co2_enabled": "Utilisez les mesures de CO2 intérieur pour améliorer les conseils d’aération.",
           "co2_entity_id": "Choisissez un capteur numérique de CO2, s’il est disponible.",
@@ -100,7 +98,6 @@
         "description": "Choisissez les mesures météo et extérieures utilisées pour protéger les conseils d’ouverture des fenêtres.",
         "data": {
           "outdoor_weather_entity_id": "Source météo",
-          "soft_outdoor_threshold_c": "Seuil de confort extérieur",
           "outdoor_temperature_override": "Utiliser la température extérieure manuelle",
           "outdoor_humidity_override": "Utiliser l’humidité extérieure manuelle",
           "wind_speed_override": "Utiliser la vitesse du vent extérieure manuelle",
@@ -110,7 +107,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choisissez l’entité météo utilisée pour les conditions extérieures.",
-          "soft_outdoor_threshold_c": "Au-dessus de cette température, ouvrir les fenêtres devient moins utile.",
           "outdoor_temperature_override": "Activez cette option pour utiliser une entité numérique de température.",
           "outdoor_humidity_override": "Activez cette option pour utiliser une entité numérique d’humidité.",
           "wind_speed_override": "Activez cette option pour utiliser une entité numérique de vitesse du vent.",
@@ -546,14 +542,12 @@
         "title": "CO2",
         "description": "Le CO2 est un indicateur pour l’aération ; VentWise ne contrôle jamais les appareils.",
         "data": {
-          "soft_outdoor_threshold_c": "Seuil de confort extérieur",
           "cooldown_minutes": "Délai entre les notifications (minutes)",
           "co2_enabled": "Utiliser le CO2 dans les conseils",
           "co2_entity_id": "Capteur de CO2",
           "co2_threshold_ppm": "Seuil de CO2 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Au-dessus de cette température extérieure, ouvrir les fenêtres devient moins utile.",
           "cooldown_minutes": "Durée de suppression des notifications identiques.",
           "co2_enabled": "Utilisez les mesures de CO2 intérieur pour améliorer les conseils d’aération.",
           "co2_entity_id": "Choisissez un capteur numérique de CO2, s’il est disponible.",
@@ -581,7 +575,6 @@
         "description": "Choisissez les mesures météo et extérieures utilisées pour protéger les conseils d’ouverture des fenêtres.",
         "data": {
           "outdoor_weather_entity_id": "Source météo",
-          "soft_outdoor_threshold_c": "Seuil de confort extérieur",
           "outdoor_temperature_override": "Utiliser la température extérieure manuelle",
           "outdoor_humidity_override": "Utiliser l’humidité extérieure manuelle",
           "wind_speed_override": "Utiliser la vitesse du vent extérieure manuelle",
@@ -591,7 +584,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choisissez l’entité météo utilisée pour les conditions extérieures.",
-          "soft_outdoor_threshold_c": "Au-dessus de cette température, ouvrir les fenêtres devient moins utile.",
           "outdoor_temperature_override": "Activez cette option pour utiliser une entité numérique de température.",
           "outdoor_humidity_override": "Activez cette option pour utiliser une entité numérique d’humidité.",
           "wind_speed_override": "Activez cette option pour utiliser une entité numérique de vitesse du vent.",
@@ -664,14 +656,12 @@
         "title": "Paramètres des recommandations",
         "description": "Ajustez le confort et les conseils de ventilation.",
         "data": {
-          "soft_outdoor_threshold_c": "Seuil de confort extérieur",
           "cooldown_minutes": "Délai entre notifications (minutes)",
           "co2_enabled": "Prise en compte du CO2",
           "co2_entity_id": "Identifiant de l’entité CO2",
           "co2_threshold_ppm": "Seuil de CO2 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Au-dessus de cette température extérieure, ouvrir les fenêtres devient moins utile.",
           "cooldown_minutes": "Délai avant une notification mise à jour. Les recommandations identiques ne sont pas répétées.",
           "co2_enabled": "Configurez la prise en compte du CO2.",
           "co2_entity_id": "Configurez l’entité CO2.",

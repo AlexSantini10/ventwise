@@ -65,14 +65,12 @@
         "title": "CO2",
         "description": "El CO2 es una señal orientativa para la ventilación; VentWise nunca controla dispositivos.",
         "data": {
-          "soft_outdoor_threshold_c": "Umbral de confort exterior",
           "cooldown_minutes": "Intervalo entre notificaciones (minutos)",
           "co2_enabled": "Usar CO2 en los consejos",
           "co2_entity_id": "Sensor de CO2",
           "co2_threshold_ppm": "Umbral de CO2 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Por encima de esta temperatura exterior, abrir las ventanas resulta menos útil.",
           "cooldown_minutes": "Durante cuánto tiempo se suprimen las notificaciones idénticas.",
           "co2_enabled": "Usa las lecturas de CO2 interior para mejorar los consejos de ventilación.",
           "co2_entity_id": "Elige un sensor numérico de CO2, si está disponible.",
@@ -100,7 +98,6 @@
         "description": "Elige las mediciones meteorológicas y exteriores que protegen los consejos de apertura de ventanas.",
         "data": {
           "outdoor_weather_entity_id": "Fuente meteorológica",
-          "soft_outdoor_threshold_c": "Umbral de confort exterior",
           "outdoor_temperature_override": "Usar temperatura exterior manual",
           "outdoor_humidity_override": "Usar humedad exterior manual",
           "wind_speed_override": "Usar velocidad del viento exterior manual",
@@ -110,7 +107,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica que se usará para las condiciones exteriores.",
-          "soft_outdoor_threshold_c": "Por encima de esta temperatura, abrir las ventanas resulta menos útil.",
           "outdoor_temperature_override": "Activa esta opción para usar una entidad numérica de temperatura.",
           "outdoor_humidity_override": "Activa esta opción para usar una entidad numérica de humedad.",
           "wind_speed_override": "Activa esta opción para usar una entidad numérica de velocidad del viento.",
@@ -546,14 +542,12 @@
         "title": "CO2",
         "description": "El CO2 es una señal orientativa para la ventilación; VentWise nunca controla dispositivos.",
         "data": {
-          "soft_outdoor_threshold_c": "Umbral de confort exterior",
           "cooldown_minutes": "Intervalo entre notificaciones (minutos)",
           "co2_enabled": "Usar CO2 en los consejos",
           "co2_entity_id": "Sensor de CO2",
           "co2_threshold_ppm": "Umbral de CO2 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Por encima de esta temperatura exterior, abrir las ventanas resulta menos útil.",
           "cooldown_minutes": "Durante cuánto tiempo se suprimen las notificaciones idénticas.",
           "co2_enabled": "Usa las lecturas de CO2 interior para mejorar los consejos de ventilación.",
           "co2_entity_id": "Elige un sensor numérico de CO2, si está disponible.",
@@ -581,7 +575,6 @@
         "description": "Elige las mediciones meteorológicas y exteriores que protegen los consejos de apertura de ventanas.",
         "data": {
           "outdoor_weather_entity_id": "Fuente meteorológica",
-          "soft_outdoor_threshold_c": "Umbral de confort exterior",
           "outdoor_temperature_override": "Usar temperatura exterior manual",
           "outdoor_humidity_override": "Usar humedad exterior manual",
           "wind_speed_override": "Usar velocidad del viento exterior manual",
@@ -591,7 +584,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica que se usará para las condiciones exteriores.",
-          "soft_outdoor_threshold_c": "Por encima de esta temperatura, abrir las ventanas resulta menos útil.",
           "outdoor_temperature_override": "Activa esta opción para usar una entidad numérica de temperatura.",
           "outdoor_humidity_override": "Activa esta opción para usar una entidad numérica de humedad.",
           "wind_speed_override": "Activa esta opción para usar una entidad numérica de velocidad del viento.",
@@ -664,14 +656,12 @@
         "title": "Configuración de recomendaciones",
         "description": "Ajusta el confort y las recomendaciones de ventilación.",
         "data": {
-          "soft_outdoor_threshold_c": "Umbral de confort exterior",
           "cooldown_minutes": "Intervalo entre notificaciones (minutos)",
           "co2_enabled": "CO2 activado",
           "co2_entity_id": "ID de entidad de CO2",
           "co2_threshold_ppm": "Umbral de CO2 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Por encima de esta temperatura exterior, abrir las ventanas es menos útil.",
           "cooldown_minutes": "Tiempo que espera VentWise antes de enviar una notificación actualizada. Las recomendaciones idénticas no se repiten.",
           "co2_enabled": "Configura el uso del CO2.",
           "co2_entity_id": "Configura el ID de la entidad de CO2.",

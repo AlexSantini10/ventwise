@@ -276,3 +276,100 @@ def test_thresholds_are_inclusive_and_just_below_remains_eligible() -> None:
 
     assert co2_at_threshold.core_action is RecommendationAction.VENTILATE
     assert wind_below_threshold.core_action is RecommendationAction.OPEN
+
+
+@pytest.mark.parametrize(
+    ("label", "data", "expected_action"),
+    [
+        ("dry_bulb_open", snapshot(room_temp=28.0, outdoor_temp=20.0), RecommendationAction.OPEN),
+        ("humid_room_ventilation", snapshot(room_temp=22.0, room_humidity=85.0, outdoor_temp=22.0, outdoor_humidity=40.0), RecommendationAction.VENTILATE),
+        ("co2_ventilation", snapshot(room_temp=22.0, outdoor_temp=22.0, room={"co2_ppm": obs(1400.0, "ppm")}), RecommendationAction.VENTILATE),
+        ("cold_outdoor_close", snapshot(room_temp=20.0, outdoor_temp=31.0, room={"window_open": obs(True)}), RecommendationAction.CLOSE),
+        ("neutral_none", snapshot(room_temp=22.0, outdoor_temp=22.0), RecommendationAction.NONE),
+    ],
+)
+def test_recommendation_matrix_covers_all_core_actions(label, data, expected_action) -> None:
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is expected_action, label
+    assert result.reason_code
+    assert all(value >= 0.0 for value in (
+        result.candidate_scores.open,
+        result.candidate_scores.ventilate,
+        result.candidate_scores.close,
+    ))
+
+
+@pytest.mark.parametrize(
+    ("window_open", "action", "suppression"),
+    [
+        (True, RecommendationAction.OPEN, "window_already_open"),
+        (True, RecommendationAction.VENTILATE, "window_already_open"),
+        (False, RecommendationAction.CLOSE, "window_already_closed"),
+    ],
+)
+def test_window_contacts_suppress_only_already_satisfied_advice(window_open, action, suppression) -> None:
+    if action is RecommendationAction.CLOSE:
+        data = snapshot(room_temp=20.0, outdoor_temp=31.0, room={"window_open": obs(window_open)})
+    else:
+        data = snapshot(room_temp=28.0, outdoor_temp=20.0, room={"window_open": obs(window_open)})
+        if action is RecommendationAction.VENTILATE:
+            data = snapshot(room_temp=22.0, outdoor_temp=22.0, room={"window_open": obs(window_open), "co2_ppm": obs(1400.0, "ppm")})
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is action
+    assert result.delivered_action is RecommendationAction.NONE
+    assert result.delivery_suppressed_by == suppression
+
+
+@pytest.mark.parametrize("context_field", ["quiet_hours_active", "cooldown_active"])
+def test_delivery_gates_preserve_core_recommendation(context_field) -> None:
+    data = snapshot()
+    data = replace(data, operational=RecommendationContext(**{context_field: True}))
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.OPEN
+    assert result.delivered_action is RecommendationAction.NONE
+    assert result.delivery_suppressed_by == context_field.removesuffix("_active")
+
+
+def test_stability_gate_preserves_core_recommendation() -> None:
+    data = replace(
+        snapshot(),
+        operational=RecommendationContext(stable_for_seconds=10, stability_seconds_required=60),
+    )
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.OPEN
+    assert result.delivered_action is RecommendationAction.NONE
+    assert result.delivery_suppressed_by == "stability"
+
+
+def test_urgent_safety_close_bypasses_delivery_gates() -> None:
+    data = replace(
+        snapshot(weather="thunderstorm", room={"window_open": obs(True)}),
+        operational=RecommendationContext(quiet_hours_active=True, cooldown_active=True),
+    )
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.delivered_action is RecommendationAction.CLOSE
+    assert result.delivery_suppressed_by is None
+
+
+def test_forecast_rain_penalizes_opening_and_records_trace() -> None:
+    data = snapshot(
+        room_temp=28.0,
+        outdoor_temp=20.0,
+        precipitation_probability_percent=obs(80.0, "%"),
+    )
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.candidate_scores.open == 0.0
+    assert "imminent_rain" in result.applied_penalties
+    assert any(item.code == "penalty.imminent_rain" for item in result.trace)

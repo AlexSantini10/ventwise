@@ -60,6 +60,13 @@ def absolute_humidity_g_m3(temperature_c: float, humidity_percent: float) -> flo
     return 216.7 * (humidity_percent / 100.0) * saturation_hpa / (temperature_c + 273.15)
 
 
+def suggested_comfort_temperature(target_temperature_c: float, outdoor_perceived_c: float) -> float:
+    """Return the climate-adaptive presentation target used by the engine."""
+
+    adjustment = max(-2.0, min(2.0, (outdoor_perceived_c - 20.0) * 0.25))
+    return round(max(18.0, min(26.0, target_temperature_c + adjustment)), 1)
+
+
 class DecisionEngine:
     """Apply validation, blocks, scoring, selection and delivery in order."""
 

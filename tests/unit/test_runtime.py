@@ -27,7 +27,6 @@ from custom_components.ventwise.const import (
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
-    CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
 from custom_components.ventwise.application.runtime import (
     build_integration_config,
@@ -55,8 +54,6 @@ from custom_components.ventwise.const import (
 from custom_components.ventwise.application.runtime import RuntimeSnapshot
 from ventwise_core import (
     ComfortObservation,
-    ComfortRecommender,
-    RecommendationContext,
     RoomObservation,
     RoomProfile,
 )
@@ -195,6 +192,7 @@ def test_build_runtime_config_and_room_profiles() -> None:
     config = build_integration_config(
         {
             CONF_TARGET_TEMPERATURE_C: 22.0,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
             CONF_AUTO_COMFORT_TEMPERATURE: True,
             CONF_COOLDOWN_MINUTES: 60,
             CONF_STABILITY_MINUTES: 10,
@@ -506,7 +504,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     config = build_integration_config(
         {
             CONF_TARGET_TEMPERATURE_C: 22.0,
-            CONF_SOFT_OUTDOOR_THRESHOLD_C: 22.0,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
             CONF_COOLDOWN_MINUTES: 60,
             CONF_STABILITY_MINUTES: 10,
             CONF_ROOMS: [
@@ -518,19 +516,21 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
             ],
         }
     )
-    recommender = ComfortRecommender()
-    room_profiles = [
-        RoomProfile(
-            name="Camera",
-            indoor=RoomObservation(temperature_c=26.0, humidity_percent=60.0),
-        )
-    ]
-    outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
-    summary = recommender.evaluate(
-        room_profiles,
-        outdoor,
-        RecommendationContext(stable_for_seconds=900),
-    )
+    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 20.0, "humidity": 45.0, "wind_speed": 1.0},
+        ),
+        "sensor.room_temp": SimpleNamespace(state="26.0"),
+        "sensor.room_humidity": SimpleNamespace(state="60.0"),
+    }
+    decision_snapshot = build_decision_snapshot(config, states.get, now)
+    from ventwise_core import DecisionConfig, DecisionEngine
+    from custom_components.ventwise.application.runtime import build_recommendation_summary
+
+    decision = DecisionEngine(DecisionConfig()).evaluate(decision_snapshot)
+    summary = build_recommendation_summary(decision, decision_snapshot, config)
     snapshot = RuntimeSnapshot(
         summary=summary,
         weather_condition="sunny",
@@ -548,7 +548,7 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         cooldown_active=False,
         enabled=True,
         stable_for_seconds=900,
-        last_updated=datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc),
+        last_updated=now,
     )
 
     attributes = build_debug_attributes(config, snapshot)

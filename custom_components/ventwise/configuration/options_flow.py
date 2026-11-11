@@ -12,10 +12,8 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
-    CONF_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_COOLDOWN_MINUTES,
-    DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
@@ -210,7 +208,6 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         if user_input is not None:
             try:
                 data = {**self._current_config, **user_input}
-                data.setdefault(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
                 data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
                 self._current_config = normalize_advanced_config(data)
                 return self.async_create_entry(title=NAME, data=self._result_data())
@@ -293,7 +290,6 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             try:
                 data = dict(self._current_config)
                 data.setdefault(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)
-                data.setdefault(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
                 data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
                 sources = data.get("air_quality_entity_ids", {})
                 policies = data.get("exposure_policies", {})
@@ -325,7 +321,6 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         if user_input is not None:
             try:
                 data = dict(self._current_config)
-                data.setdefault(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
                 data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
                 data.update(user_input)
                 candidate = normalize_basic_config(data) if step_id == "comfort" else normalize_advanced_config(data)
