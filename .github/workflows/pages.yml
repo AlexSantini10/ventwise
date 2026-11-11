@@ -34,7 +34,9 @@ jobs:
           import re
 
           root = Path("docs/decision-model")
+          root_entrypoint = Path("docs/index.html")
           required = [
+              root_entrypoint,
               root / "index.html",
               root / "overview.html",
               root / "inputs.html",
@@ -44,7 +46,11 @@ jobs:
               root / "site.css",
               Path("docs/.nojekyll"),
           ]
-          missing = [str(path) for path in required if not path.is_file() or path.stat().st_size == 0]
+          missing = [
+              str(path)
+              for path in required
+              if not path.is_file() or (path.name != ".nojekyll" and path.stat().st_size == 0)
+          ]
           if missing:
               raise SystemExit(f"Missing or empty documentation files: {missing}")
 

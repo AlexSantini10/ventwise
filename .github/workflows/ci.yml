@@ -114,6 +114,7 @@ jobs:
       - name: Verify decision-model documentation
         run: |
           test -s docs/decision-model/decision-model-report.html
+          test -s docs/index.html
           test -s docs/decision-model/decision-model-explainability.md
           test -s docs/decision-model/index.html
           test -s docs/decision-model/overview.html
