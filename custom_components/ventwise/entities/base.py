@@ -77,8 +77,3 @@ def _localized_name(name_key: str, language: str | None) -> str:
 
     labels = runtime_catalog(language)["entity_name"]
     return labels.get(name_key, name_key.replace("_", " ").title())
-    english_labels = ENTITY_NAME_LABELS["en"]
-    return labels.get(
-        name_key,
-        english_labels.get(name_key, name_key.replace("_", " ").title()),
-    )
