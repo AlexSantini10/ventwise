@@ -1,0 +1,78 @@
+{
+  "notification": {
+    "open": "打开窗户。",
+    "close": "关闭窗户。",
+    "none": "无需操作。",
+    "open_reason": "现在室外更舒适：更接近舒适温度 {delta:.1f}°C。",
+    "close_reason": "现在室内更舒适：更接近舒适温度 {delta:.1f}°C。",
+    "forecast_reason": "短期预报：室外条件预计很快会变得不那么舒适。",
+    "failed_title": "VentWise 通知发送失败",
+    "failed_targets": "失败目标"
+  },
+  "on_demand_title": "VentWise · 已请求当前建议",
+  "diagnostic": {
+    "unavailable_data": {
+      "title": "VentWise 数据不可用",
+      "message": "无法获取必需的天气或房间传感器数据。"
+    },
+    "no_enabled_rooms": {
+      "title": "VentWise 需要启用的房间",
+      "message": "未配置启用的房间。"
+    }
+  },
+  "status": {
+    "quiet_hours": "建议会在静默时段暂停。",
+    "cooldown": "相同的建议最近已发送。",
+    "stability": "正在等待建议保持稳定。",
+    "unavailable": "正在等待所需的传感器数据。",
+    "disabled": "VentWise 已禁用。"
+  },
+  "confirmation": {
+    "open": "确认打开",
+    "close": "确认关闭"
+  },
+  "ventilate_title": "短时通风",
+  "ventilation_reason": "通风约 {minutes} 分钟，然后关闭并再次检查。",
+  "entity_name": {
+    "window_state": "窗户状态",
+    "weather_condition": "天气状况",
+    "average_perceived_indoor_temperature": "平均感知室内温度",
+    "perceived_outdoor_temperature": "感知室外温度",
+    "effective_comfort_temperature": "实际舒适温度",
+    "suggested_comfort_temperature": "建议舒适温度",
+    "outdoor_temperature": "室外温度",
+    "outdoor_humidity": "室外湿度",
+    "wind_speed": "室外风速",
+    "recommendation": "建议",
+    "recommendation_score": "建议分数",
+    "recommendation_reason": "建议原因",
+    "perceived_indoor_temperature": "感知室内温度",
+    "temperature": "室内温度",
+    "indoor_humidity": "室内湿度",
+    "integration_enabled": "集成已启用",
+    "notifications_enabled": "通知已启用",
+    "automatic_comfort_temperature": "自动舒适温度",
+    "quiet_hours_enabled": "静默时段已启用",
+    "quiet_hours_active": "静默时段已生效",
+    "quiet_hours_start_time": "静默时段开始时间",
+    "quiet_hours_end_time": "静默时段结束时间",
+    "notifications_currently_allowed": "当前允许通知",
+    "notification_cooldown_active": "通知冷却已启用",
+    "recommendation_active": "建议已启用",
+    "comfort_temperature": "舒适温度",
+    "comfort_humidity": "舒适湿度",
+    "recommendation_stability_window": "建议稳定窗口",
+    "enabled": "已启用",
+    "temperature_override_enabled": "温度覆盖已启用",
+    "humidity_override_enabled": "湿度覆盖已启用",
+    "temperature_override": "温度覆盖",
+    "humidity_override": "湿度覆盖",
+    "request_recommendation": "立即请求建议",
+    "debug_open_notification": "接收打开通知",
+    "debug_close_notification": "接收关闭通知"
+  },
+  "room_kind": {
+    "room": "房间",
+    "macro_room": "宏房间"
+  }
+}

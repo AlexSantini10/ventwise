@@ -9,6 +9,8 @@ import pytest
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import UNIT_CELSIUS
+from custom_components.ventwise.entities.base import _localized_name
+from custom_components.ventwise.translation import runtime_catalog
 from custom_components.ventwise.button import (
     VentWiseDebugCloseNotificationButton,
     VentWiseDebugOpenNotificationButton,
@@ -32,6 +34,17 @@ from custom_components.ventwise.sensor import (
     RoomOutdoorTemperatureSensor,
     SuggestedComfortTemperatureSensor,
 )
+
+
+@pytest.mark.parametrize("language", ["it", "es", "fr", "de", "ru", "zh-hans"])
+def test_entity_labels_cover_all_supported_languages(language: str) -> None:
+    names = runtime_catalog(language)["entity_name"]
+    assert set(names) == set(runtime_catalog("en")["entity_name"])
+    assert all(names.values())
+
+
+def test_regional_simplified_chinese_entity_name() -> None:
+    assert _localized_name("request_recommendation", "zh-Hans-CN") == "立即请求建议"
 
 
 def _coordinator() -> SimpleNamespace:

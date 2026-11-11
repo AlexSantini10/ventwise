@@ -361,6 +361,14 @@ def test_room_selection_label_localizes_room_kind() -> None:
     ) == "1. Camera (Stanza)"
 
 
+@pytest.mark.parametrize(
+    ("language", "label"),
+    [("fr-FR", "Pièce"), ("de-DE", "Raum"), ("zh-Hans-CN", "房间")],
+)
+def test_room_kind_supports_regional_languages(language: str, label: str) -> None:
+    assert _localized_room_kind_label("room", language) == label
+
+
 def test_room_labels_fall_back_to_english_and_readable_ids() -> None:
     """Unsupported languages and unknown keys must still produce useful labels."""
 

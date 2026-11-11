@@ -1,0 +1,78 @@
+{
+  "notification": {
+    "open": "откройте окна.",
+    "close": "закройте окна.",
+    "none": "действие не требуется.",
+    "open_reason": "Снаружи сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
+    "close_reason": "Внутри сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
+    "forecast_reason": "Краткосрочный прогноз: вскоре наружные условия станут менее комфортными.",
+    "failed_title": "Сбой доставки уведомления VentWise",
+    "failed_targets": "Не удалось доставить"
+  },
+  "on_demand_title": "VentWise · Рекомендация запрошена",
+  "diagnostic": {
+    "unavailable_data": {
+      "title": "Данные VentWise недоступны",
+      "message": "Недоступны необходимые данные погоды или датчиков комнаты."
+    },
+    "no_enabled_rooms": {
+      "title": "VentWise нужна активная комната",
+      "message": "Нет настроенных активных комнат."
+    }
+  },
+  "status": {
+    "quiet_hours": "Рекомендации приостановлены в режиме тишины.",
+    "cooldown": "Та же рекомендация была отправлена недавно.",
+    "stability": "Ожидание стабилизации рекомендации.",
+    "unavailable": "Ожидание необходимых данных датчиков.",
+    "disabled": "VentWise отключён."
+  },
+  "confirmation": {
+    "open": "Подтвердить открытие",
+    "close": "Подтвердить закрытие"
+  },
+  "ventilate_title": "Кратко проветрите",
+  "ventilation_reason": "Проветривайте около {minutes} минут, затем закройте и проверьте снова.",
+  "entity_name": {
+    "window_state": "Состояние окон",
+    "weather_condition": "Погодные условия",
+    "average_perceived_indoor_temperature": "Средняя ощущаемая температура в помещении",
+    "perceived_outdoor_temperature": "Ощущаемая температура на улице",
+    "effective_comfort_temperature": "Действующая комфортная температура",
+    "suggested_comfort_temperature": "Адаптивная целевая комфортная температура",
+    "outdoor_temperature": "Температура на улице",
+    "outdoor_humidity": "Влажность на улице",
+    "wind_speed": "Скорость ветра на улице",
+    "recommendation": "Рекомендация",
+    "recommendation_score": "Оценка рекомендации",
+    "recommendation_reason": "Обоснование рекомендации",
+    "perceived_indoor_temperature": "Ощущаемая температура в помещении",
+    "temperature": "Температура в помещении",
+    "indoor_humidity": "Влажность в помещении",
+    "integration_enabled": "Интеграция включена",
+    "notifications_enabled": "Уведомления включены",
+    "automatic_comfort_temperature": "Автоматическая комфортная температура",
+    "quiet_hours_enabled": "Режим тишины включён",
+    "quiet_hours_active": "Режим тишины активен",
+    "quiet_hours_start_time": "Начало режима тишины",
+    "quiet_hours_end_time": "Конец режима тишины",
+    "notifications_currently_allowed": "Уведомления сейчас разрешены",
+    "notification_cooldown_active": "Пауза между уведомлениями активна",
+    "recommendation_active": "Рекомендация активна",
+    "comfort_temperature": "Комфортная температура",
+    "comfort_humidity": "Комфортная влажность",
+    "recommendation_stability_window": "Окно стабильности рекомендации",
+    "enabled": "Включено",
+    "temperature_override_enabled": "Переопределение температуры включено",
+    "humidity_override_enabled": "Переопределение влажности включено",
+    "temperature_override": "Переопределение температуры",
+    "humidity_override": "Переопределение влажности",
+    "request_recommendation": "Запросить рекомендацию сейчас",
+    "debug_open_notification": "Получить уведомление об открытии",
+    "debug_close_notification": "Получить уведомление о закрытии"
+  },
+  "room_kind": {
+    "room": "Комната",
+    "macro_room": "Макрокомната"
+  }
+}

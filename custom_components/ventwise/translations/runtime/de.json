@@ -1,0 +1,78 @@
+{
+  "notification": {
+    "open": "Fenster öffnen.",
+    "close": "Fenster schließen.",
+    "none": "keine Aktion erforderlich.",
+    "open_reason": "Draußen ist es derzeit angenehmer: {delta:.1f} °C näher am Komfortwert.",
+    "close_reason": "Drinnen ist es derzeit angenehmer: {delta:.1f} °C näher am Komfortwert.",
+    "forecast_reason": "Kurzfristige Vorhersage: Die Außenbedingungen werden voraussichtlich bald weniger angenehm.",
+    "failed_title": "Zustellung der VentWise-Benachrichtigung fehlgeschlagen",
+    "failed_targets": "Fehlgeschlagene Ziele"
+  },
+  "on_demand_title": "VentWise · Empfehlung jetzt angefordert",
+  "diagnostic": {
+    "unavailable_data": {
+      "title": "VentWise-Daten nicht verfügbar",
+      "message": "Erforderliche Wetter- oder Raumsensordaten sind nicht verfügbar."
+    },
+    "no_enabled_rooms": {
+      "title": "VentWise benötigt einen aktivierten Raum",
+      "message": "Es sind keine aktivierten Räume konfiguriert."
+    }
+  },
+  "status": {
+    "quiet_hours": "Während der Ruhezeiten sind Empfehlungen pausiert.",
+    "cooldown": "Dieselbe Empfehlung wurde kürzlich gesendet.",
+    "stability": "Es wird gewartet, bis die Empfehlung stabil bleibt.",
+    "unavailable": "Es wird auf die erforderlichen Sensordaten gewartet.",
+    "disabled": "VentWise ist deaktiviert."
+  },
+  "confirmation": {
+    "open": "Öffnen bestätigen",
+    "close": "Schließen bestätigen"
+  },
+  "ventilate_title": "Kurz lüften",
+  "ventilation_reason": "Etwa {minutes} Minuten lüften, dann schließen und erneut prüfen.",
+  "entity_name": {
+    "weather_condition": "Wetterzustand",
+    "average_perceived_indoor_temperature": "Durchschnittliche gefühlte Innentemperatur",
+    "perceived_outdoor_temperature": "Gefühlte Außentemperatur",
+    "effective_comfort_temperature": "Wirksame Komforttemperatur",
+    "suggested_comfort_temperature": "Klimaangepasste Komforttemperatur",
+    "outdoor_temperature": "Außentemperatur",
+    "outdoor_humidity": "Außenluftfeuchtigkeit",
+    "wind_speed": "Windgeschwindigkeit außen",
+    "recommendation": "Empfehlung",
+    "recommendation_score": "Empfehlungsbewertung",
+    "recommendation_reason": "Grund der Empfehlung",
+    "window_state": "Fensterzustand",
+    "perceived_indoor_temperature": "Gefühlte Innentemperatur",
+    "temperature": "Innentemperatur",
+    "indoor_humidity": "Innenluftfeuchtigkeit",
+    "integration_enabled": "Integration aktiviert",
+    "notifications_enabled": "Benachrichtigungen aktiviert",
+    "automatic_comfort_temperature": "Automatische Komforttemperatur",
+    "quiet_hours_enabled": "Ruhezeiten aktiviert",
+    "quiet_hours_active": "Ruhezeiten aktiv",
+    "quiet_hours_start_time": "Beginn der Ruhezeiten",
+    "quiet_hours_end_time": "Ende der Ruhezeiten",
+    "notifications_currently_allowed": "Benachrichtigungen derzeit erlaubt",
+    "notification_cooldown_active": "Wartezeit zwischen Benachrichtigungen aktiv",
+    "recommendation_active": "Empfehlung aktiv",
+    "comfort_temperature": "Komforttemperatur",
+    "comfort_humidity": "Komfortluftfeuchtigkeit",
+    "recommendation_stability_window": "Stabilitätszeitraum der Empfehlung",
+    "enabled": "Aktiviert",
+    "temperature_override_enabled": "Abweichende Temperatur aktiviert",
+    "humidity_override_enabled": "Abweichende Luftfeuchtigkeit aktiviert",
+    "temperature_override": "Abweichende Temperatur",
+    "humidity_override": "Abweichende Luftfeuchtigkeit",
+    "request_recommendation": "Jetzt Empfehlung anfordern",
+    "debug_open_notification": "Öffnungsbenachrichtigung empfangen",
+    "debug_close_notification": "Schließbenachrichtigung empfangen"
+  },
+  "room_kind": {
+    "room": "Raum",
+    "macro_room": "Raumgruppe"
+  }
+}
