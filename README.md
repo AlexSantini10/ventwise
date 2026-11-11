@@ -39,7 +39,7 @@ VentWise helps users decide when opening or closing windows is likely to improve
 > an explicit Companion App notification confirmation. Always assess the actual conditions
 > before opening or closing anything, and do not rely on VentWise to prevent
 > injury, property damage, intrusion, rain exposure, or equipment damage. See
-> the full [license, disclaimer, and reporting guidance](docs/NOTICE.md).
+> the full [license, disclaimer, and reporting guidance](docs/operations/NOTICE.md).
 
 ## At a glance
 
@@ -67,13 +67,13 @@ Stable releases are published from `main`. Experimental prereleases from the
 
 ## Documentation
 
-- [User guide: installation, setup, updates, and removal](docs/user-guide.md)
-- [Docker Test Lab: local manual testing without hardware](docs/docker-test-lab.md)
-- [How the Home Assistant integration works](docs/home-assistant-integration.md)
-- [Safety, beta status, and reporting guidance](docs/NOTICE.md)
+- [User guide: installation, setup, updates, and removal](docs/guides/user-guide.md)
+- [Docker Test Lab: local manual testing without hardware](docs/guides/docker-test-lab.md)
+- [How the Home Assistant integration works](docs/architecture/home-assistant-integration.md)
+- [Safety, beta status, and reporting guidance](docs/operations/NOTICE.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Documentation index](docs/INDEX.md)
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](docs/NOTICE.md).
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](docs/operations/NOTICE.md).

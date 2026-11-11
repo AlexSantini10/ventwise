@@ -49,11 +49,11 @@ as `icon.png` (256x256) and `icon@2x.png` (512x512); Home Assistant uses the
 icon as the logo fallback because VentWise has no separate logo mark.
 
 Repository marketing artwork is kept outside the packaged integration in
-`docs/assets/brand/`. See [Brand assets](brand-assets.md) for the asset map and
+`docs/assets/brand/`. See [Brand assets](../brand-assets.md) for the asset map and
 maintenance rules.
 
 For user-facing installation, update, and removal instructions, see the
-[user guide](user-guide.md). This document is for maintainers and release work.
+[user guide](../guides/user-guide.md). This document is for maintainers and release work.
 
 ## Discoverability
 

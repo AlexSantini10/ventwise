@@ -8,7 +8,7 @@ does not directly open windows, control shutters, or change a thermostat/HVAC
 setpoint.
 
 For installation, first setup, updates, and removal, use the
-[user guide](user-guide.md).
+[user guide](../guides/user-guide.md).
 
 ## User Configuration
 

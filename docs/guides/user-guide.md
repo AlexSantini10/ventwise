@@ -3,7 +3,7 @@
 VentWise is a Home Assistant custom integration that suggests when opening or
 closing windows may improve indoor comfort. It is beta software and provides
 recommendations only: always check the actual conditions before acting. Read
-the [safety notice](NOTICE.md) before using it in a real home.
+the [safety notice](../operations/NOTICE.md) before using it in a real home.
 
 ## Before You Start
 

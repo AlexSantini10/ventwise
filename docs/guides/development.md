@@ -70,13 +70,23 @@ physical hardware.
 - `custom_components/ventwise/entities/` for shared entity behavior
 - `custom_components/ventwise/` root for Home Assistant discovery entry points and platforms
 - `tests/unit/`, `tests/integration/`, and `tests/system/` for focused test layers
-- `docs/` for architecture and packaging notes
+- `docs/architecture/` for architecture and integration notes
+- `docs/decision-model/` for the decision engine, explainability, scoring, forecast, and guardrail model
+- `docs/guides/` for user and developer workflows
+- `docs/operations/` for release, safety, project, and notification operations
 
 Keep only Home Assistant discovery entry points and platform modules at the
 integration root. All implementation imports should target the internal module
 that owns the behavior.
 
 ## CI / Release
+
+The decision-model explainability pages are maintained directly in
+`docs/decision-model/decision-model-report.html` and
+`docs/decision-model/decision-model-explainability.md`. Keep the exhaustive parameter tables,
+scenario registry, proposal template, and focused regression tests aligned
+when the decision model changes. CI checks that both pages contain the required
+sections; it does not generate or overwrite the documentation.
 
 - pushes to `main` run unit tests, HACS validation, Hassfest, and package build
 - pushes to `test` branches run the same checks and can publish prerelease artifacts
@@ -87,7 +97,7 @@ that owns the behavior.
 
 - keep the reusable core independent from Home Assistant APIs
 - keep user-facing configuration in the integration UI
-- keep the project rules documented in `docs/project-rules.md`
+- keep the project rules documented in `docs/operations/project-rules.md`
 - keep release and packaging concerns documented here rather than in ad hoc notes
 - keep the backlog in GitHub issues
 

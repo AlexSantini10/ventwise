@@ -27,6 +27,7 @@ on:
       - "requirements-dev.txt"
       - "hacs.json"
       - "README.md"
+      - "docs/**"
       - "LICENSE"
       - "NOTICE"
   pull_request:
@@ -51,6 +52,7 @@ on:
       - "requirements-dev.txt"
       - "hacs.json"
       - "README.md"
+      - "docs/**"
       - "LICENSE"
       - "NOTICE"
   workflow_dispatch:
@@ -101,6 +103,22 @@ jobs:
           name: automated-test-artifacts
           path: .test-artifacts
           if-no-files-found: ignore
+
+  decision-model-docs:
+    name: decision-model-docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Verify decision-model documentation
+        run: |
+          test -s docs/decision-model/decision-model-report.html
+          test -s docs/decision-model/decision-model-explainability.md
+          grep -q "Exhaustive data inventory" docs/decision-model/decision-model-report.html
+          grep -q "Scenario registry" docs/decision-model/decision-model-report.html
+          grep -q "Propose an unlisted scenario" docs/decision-model/decision-model-report.html
+          grep -q "New scenario proposal template" docs/decision-model/decision-model-explainability.md
 
   hassfest:
     name: hassfest

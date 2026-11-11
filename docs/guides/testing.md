@@ -174,5 +174,5 @@ the user. It runs in the Home Assistant CI job.
 - add a focused regression test for every new scoring rule
 - prefer parametrized tests for scenario matrices
 - keep runtime helper tests small and deterministic
-- use `docs/project-rules.md` as the pre-merge checklist for quality gates and
+- use `docs/operations/project-rules.md` as the pre-merge checklist for quality gates and
   product rules

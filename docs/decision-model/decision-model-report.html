@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VentWise Decision Model Explainability</title>
+  <style>
+    :root { --ink:#17232d; --muted:#5d6b76; --blue:#185f91; --blue-pale:#eaf3fa; --line:#d6e0e7; --green:#167044; --red:#a42c2c; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; background:#f7f9fb; }
+    main { max-width:1240px; margin:auto; padding:42px 24px 72px; }
+    h1 { font-size:clamp(2.1rem,5vw,4rem); line-height:1.02; margin:0 0 12px; }
+    h2 { margin:48px 0 12px; padding-bottom:8px; border-bottom:2px solid var(--line); }
+    h3 { margin:26px 0 8px; }
+    .lede { max-width:900px; font-size:1.15rem; color:var(--muted); }
+    .meta { color:var(--muted); font-size:.9rem; }
+    .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:22px 0; }
+    .step,.tag { background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 12px; }
+    .arrow { color:var(--blue); font-size:1.3rem; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(275px,1fr)); gap:16px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:0 3px 14px #1b33440d; }
+    .card h3 { margin-top:0; }
+    .action { display:inline-block; color:#fff; border-radius:999px; padding:3px 12px; font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+    .open { background:var(--green); } .ventilate { background:var(--blue); } .close { background:var(--red); } .none { background:var(--muted); }
+    table { width:100%; border-collapse:collapse; margin:12px 0 26px; background:#fff; }
+    th,td { padding:9px 11px; border:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:#fff; background:#1f4e79; }
+    tr:nth-child(even) td { background:#f2f6f8; }
+    code { background:#edf1f4; padding:1px 4px; border-radius:4px; }
+    pre { overflow:auto; white-space:pre-wrap; color:#dce8f0; background:#101820; padding:14px; border-radius:8px; }
+    .diagram { overflow:auto; padding:14px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+    .proposal { border-left:5px solid var(--blue); background:var(--blue-pale); padding:14px 18px; }
+    footer { margin-top:52px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); }
+    a { color:var(--blue); }
+    @media(max-width:650px) { main { padding:26px 14px 50px; } .flow { display:block; } .arrow { display:inline-block; margin:4px 6px; } }
+  </style>
+</head>
+<body>
+<main>
+  <p class="meta">VENTWISE / DECISION MODEL EXPLAINABILITY</p>
+  <h1>How VentWise decides</h1>
+  <p class="lede">A maintained, practical reference for every data item, parameter, transformation, guardrail, and known scenario in the VentWise decision model.</p>
+  <p class="meta">Model version: <code>2026-11-10</code> · Primary source: <a href="../custom_components/ventwise/ventwise_core/models.py">core models</a> and <a href="../custom_components/ventwise/ventwise_core/decision.py">decision engine</a> · Companion: <a href="decision-model-explainability.md">written Markdown reference</a></p>
+
+  <h2>1 Decision at a glance</h2>
+  <div class="flow"><span class="step">Acquire</span><span class="arrow">→</span><span class="step">Normalize</span><span class="arrow">→</span><span class="step">Validate</span><span class="arrow">→</span><span class="step">Block safety</span><span class="arrow">→</span><span class="step">Derive</span><span class="arrow">→</span><span class="step">Score</span><span class="arrow">→</span><span class="step">Select</span><span class="arrow">→</span><span class="step">Deliver</span><span class="arrow">→</span><span class="step">Explain</span></div>
+  <div class="diagram"><svg viewBox="0 0 1000 170" role="img" aria-label="VentWise decision pipeline"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#185f91"/></marker></defs><path d="M60 84 H940" stroke="#185f91" stroke-width="4" marker-end="url(#arrow)"/><g fill="#eaf3fa" stroke="#185f91" stroke-width="2"><rect x="20" y="48" width="105" height="70" rx="9"/><rect x="135" y="48" width="105" height="70" rx="9"/><rect x="250" y="48" width="105" height="70" rx="9"/><rect x="365" y="48" width="105" height="70" rx="9"/><rect x="480" y="48" width="105" height="70" rx="9"/><rect x="595" y="48" width="105" height="70" rx="9"/><rect x="710" y="48" width="105" height="70" rx="9"/><rect x="825" y="48" width="105" height="70" rx="9"/></g><g font-family="system-ui" font-size="14" text-anchor="middle" fill="#17232d"><text x="72" y="78">Acquire</text><text x="187" y="78">Validate</text><text x="302" y="78">Block</text><text x="417" y="78">Derive</text><text x="532" y="78">Score</text><text x="647" y="78">Select</text><text x="762" y="78">Deliver</text><text x="877" y="78">Explain</text><text x="72" y="100" font-size="11">sources</text><text x="187" y="100" font-size="11">quality</text><text x="302" y="100" font-size="11">safety</text><text x="417" y="100" font-size="11">features</text><text x="532" y="100" font-size="11">candidates</text><text x="647" y="100" font-size="11">winner</text><text x="762" y="100" font-size="11">guardrails</text><text x="877" y="100" font-size="11">trace</text></g></svg></div>
+  <div class="grid">
+    <article class="card"><h3>Core actions</h3><p><span class="action open">open</span> stable benefit · <span class="action ventilate">ventilate</span> bounded temporary benefit · <span class="action close">close</span> harmful or unsafe opening · <span class="action none">none</span> no meaningful winner.</p></article>
+    <article class="card"><h3>Safety first</h3><p>Missing or stale critical weather fails closed for opening. Severe weather, current precipitation, unsafe wind/gusts, smoke, and explicit exposure <code>avoid</code> policies win before comfort scoring.</p></article>
+    <article class="card"><h3>Delivery is separate</h3><p>Contacts, stability, cooldown, and quiet hours may suppress delivery, but never rewrite <code>core_action</code>. The result always preserves both core and delivered truth.</p></article>
+  </div>
+
+  <h2>2 Exhaustive data inventory</h2>
+  <p>Every observation is retained as value, canonical unit, source identifier, observation time, receipt time, validity, freshness, and availability. The engine records whether each input was used, discarded, or awaiting a source. “Optional” means the engine continues without guessing it.</p>
+  <h3>2.1 Core room fields</h3>
+  <table><tr><th>Field</th><th>Type / unit</th><th>Required</th><th>Use</th><th>Missing or invalid</th></tr>
+    <tr><td><code>room_id</code></td><td>string</td><td>yes</td><td>Stable room identity, aggregate selection, persistence.</td><td>Configuration error; no reliable room result.</td></tr>
+    <tr><td><code>name</code></td><td>string</td><td>yes</td><td>User-facing room scope and explanation.</td><td>Configuration error; no reliable room result.</td></tr>
+    <tr><td><code>temperature_c</code></td><td>Observation[float], °C</td><td>yes</td><td>Indoor perceived-temperature and comfort-distance input.</td><td><code>none</code>; explains insufficient indoor evidence.</td></tr>
+    <tr><td><code>humidity_percent</code></td><td>Observation[float], %</td><td>yes in core type, optional in scoring</td><td>Apparent temperature, dew point, absolute humidity, condensation.</td><td>Dry-bulb comparison continues; humidity evidence is absent.</td></tr>
+    <tr><td><code>co2_ppm</code></td><td>Observation[float], ppm</td><td>no</td><td>Ventilation signal at configured threshold.</td><td>No CO2 benefit; never inferred.</td></tr>
+    <tr><td><code>co2_trend_ppm_per_hour</code></td><td>Observation[float], ppm/hour</td><td>no</td><td>Ventilation signal when rise exceeds configured trend.</td><td>No trend signal.</td></tr>
+    <tr><td><code>window_open</code></td><td>Observation[bool]</td><td>no</td><td>Suppresses duplicate delivery only; never changes core advice.</td><td>Delivery remains possible; state is explicit.</td></tr>
+    <tr><td><code>target_temperature_c</code></td><td>float, °C</td><td>no</td><td>Per-room comfort target override.</td><td>Global target is used.</td></tr>
+    <tr><td><code>target_humidity_percent</code></td><td>float, %</td><td>no</td><td>Per-room humidity preference metadata.</td><td>Global preference is used where applicable.</td></tr>
+    <tr><td><code>surface_temperature_c</code></td><td>Observation[float], °C</td><td>no</td><td>Compares surface temperature with dew point.</td><td>Condensation risk is not estimated; it is not “no risk”.</td></tr>
+    <tr><td><code>hvac_active</code>, <code>ventilation_active</code>, <code>air_cleaner_active</code></td><td>Observation[bool]</td><td>no</td><td>Optional physical context and trace.</td><td>No operating state is inferred.</td></tr>
+    <tr><td><code>radiation_w_m2</code></td><td>Observation[float], W/m²</td><td>no</td><td>Optional physical context and trace.</td><td>Ignored for current score.</td></tr>
+    <tr><td><code>physical_parameters</code></td><td>named values; SI units</td><td>no</td><td>Room volume, opening, resistance, thermal mass context.</td><td>Incomplete set is marked awaiting source; no airflow is invented.</td></tr>
+  </table>
+  <h3>2.2 Core outdoor fields</h3>
+  <table><tr><th>Field</th><th>Type / unit</th><th>Required</th><th>Use</th><th>Missing or invalid</th></tr>
+    <tr><td><code>temperature_c</code></td><td>Observation[float], °C</td><td>yes</td><td>Outdoor comfort comparison.</td><td>Critical-weather block; never open/ventilate.</td></tr>
+    <tr><td><code>humidity_percent</code></td><td>Observation[float], %</td><td>no for scoring</td><td>Outdoor apparent temperature and moisture comparison.</td><td>Dry-bulb advice can continue.</td></tr>
+    <tr><td><code>wind_speed_m_s</code></td><td>Observation[float], m/s</td><td>yes</td><td>Opening safety threshold.</td><td>Critical-weather block; never open/ventilate.</td></tr>
+    <tr><td><code>wind_gust_m_s</code></td><td>Observation[float], m/s</td><td>no</td><td>Opening safety threshold.</td><td>Wind speed still applies; missing gust is explicit.</td></tr>
+    <tr><td><code>weather_condition</code></td><td>Observation[string]</td><td>yes</td><td>Detects precipitation and severe-weather tokens.</td><td>Critical-weather block.</td></tr>
+    <tr><td><code>current_precipitation_mm_h</code></td><td>Observation[float], mm/hour</td><td>no</td><td>Immediate precipitation safety block.</td><td>Condition text remains the available precipitation signal.</td></tr>
+    <tr><td><code>precipitation_probability_percent</code></td><td>Observation[float], %</td><td>no</td><td>Near-term rain penalty; distinct from current rain.</td><td>No forecast-rain penalty.</td></tr>
+    <tr><td><code>forecast_temperature_c</code></td><td>Observation[float], °C</td><td>no</td><td>Ventilation duration and near-term deterioration context.</td><td>Generic duration fallback.</td></tr>
+    <tr><td><code>smoke_alert</code></td><td>Observation[bool]</td><td>no</td><td>Hard safety block when true.</td><td>No smoke block is invented.</td></tr>
+    <tr><td><code>pollen_policy</code>, <code>pollution_policy</code></td><td>Observation[string]</td><td>no</td><td><code>reduce</code> penalizes; <code>avoid</code> blocks.</td><td>Exposure remains informational.</td></tr>
+    <tr><td><code>exposure</code></td><td>ExposureReading[]</td><td>no</td><td>Pollutants/pollen with unit, average, attribution, resolution, coverage.</td><td>Reading cannot activate a policy if absent or mismatched.</td></tr>
+  </table>
+  <h3>2.3 Exposure variables</h3>
+  <table><tr><th>Variable</th><th>Typical unit</th><th>Meaning</th><th>Decision condition</th></tr>
+    <tr><td><code>pm2_5</code>, <code>pm10</code></td><td>µg/m³</td><td>Particulate exposure.</td><td>Only matching configured policy, unit, and averaging period.</td></tr>
+    <tr><td><code>nitrogen_dioxide</code>, <code>ozone</code>, <code>carbon_monoxide</code>, <code>sulphur_dioxide</code></td><td>provider/sensor unit</td><td>Pollutant exposure.</td><td>Never generic health equivalence; explicit policy required.</td></tr>
+    <tr><td><code>european_aqi</code></td><td>provider index</td><td>Provider-specific air-quality index.</td><td>Never compared with a different index standard.</td></tr>
+    <tr><td><code>alder_pollen</code>, <code>birch_pollen</code>, <code>grass_pollen</code>, <code>mugwort_pollen</code>, <code>olive_pollen</code>, <code>ragweed_pollen</code></td><td>grains/m³</td><td>Open-Meteo/CAMS model pollen.</td><td>Species, threshold, source, season, coverage, and averaging remain visible.</td></tr>
+  </table>
+  <h3>2.4 Home Assistant configuration fields</h3>
+  <table><tr><th>Configuration family</th><th>Fields</th><th>How retained or used</th></tr>
+    <tr><td>Outdoor sources</td><td><code>outdoor_weather_entity_id</code>, <code>outdoor_temperature_source</code>, <code>outdoor_temperature_entity_id</code>, <code>outdoor_humidity_source</code>, <code>outdoor_humidity_entity_id</code>, <code>wind_speed_source</code>, <code>wind_speed_entity_id</code></td><td>Entity references and source selection. Values are normalized before entering the core.</td></tr>
+    <tr><td>Comfort</td><td><code>target_temperature_c</code>, <code>target_humidity_percent</code>, <code>auto_comfort_temperature_enabled</code>, <code>temperature_unit</code>, <code>wind_speed_unit</code>, <code>minimum_score</code></td><td>Preference, display, conversion, and integration-level delivery threshold.</td></tr>
+    <tr><td>CO2</td><td><code>co2_enabled</code>, <code>co2_entity_id</code>, <code>co2_threshold_ppm</code></td><td>Enables the optional ventilation signal; no health conclusion.</td></tr>
+    <tr><td>Exposure</td><td><code>smoke_alert_entity_id</code>, <code>pollution_policy</code>, <code>pollen_policy</code>, <code>open_meteo_air_quality_enabled</code>, <code>air_quality_entity_ids</code>, <code>exposure_policies</code></td><td>Provider/entity references, explicit policy, and policy-critical metadata.</td></tr>
+    <tr><td>Delivery</td><td><code>notification_enabled</code>, <code>home_assistant_notification_enabled</code>, <code>notification_device_ids</code>, <code>quiet_hours_enabled</code>, <code>quiet_hours_start</code>, <code>quiet_hours_end</code>, <code>stability_minutes</code>, <code>cooldown_minutes</code>, <code>enabled</code></td><td>Presentation and operational gates. Does not alter core scoring.</td></tr>
+    <tr><td>Diagnostics</td><td><code>diagnostic_notification_level</code>, <code>debug_mode_enabled</code></td><td>Controls diagnostics/debug exposure, not the physical recommendation.</td></tr>
+    <tr><td>Rooms</td><td><code>rooms</code></td><td>Collection of per-room configurations; each room is evaluated independently.</td></tr>
+  </table>
+  <h3>2.5 Per-room configuration fields</h3>
+  <table><tr><th>Fields</th><th>Use</th></tr>
+    <tr><td><code>room_id</code>, <code>name</code>, <code>kind</code>, <code>enabled</code></td><td>Room identity, label, type, and participation.</td></tr>
+    <tr><td><code>temperature_entity_id</code>, <code>humidity_entity_id</code>, <code>co2_entity_id</code></td><td>Indoor sensor references.</td></tr>
+    <tr><td><code>target_temperature_c_override_enabled</code>, <code>target_temperature_c_override</code>, <code>target_humidity_percent_override_enabled</code>, <code>target_humidity_percent_override</code></td><td>Room-specific comfort preferences.</td></tr>
+    <tr><td><code>window_sensor_entity_ids</code>, <code>start_entity_id</code>, <code>stop_entity_id</code></td><td>Window state and optional room action controls; delivery context only.</td></tr>
+    <tr><td><code>action_change_hold_minutes</code>, <code>action_lockout_minutes</code></td><td>Room reversal and lockout guardrails.</td></tr>
+    <tr><td><code>volume_m3</code>, <code>opening_area_m2</code>, <code>opening_fraction</code>, <code>exposure</code>, <code>thermal_resistance_m2k_w</code>, <code>thermal_mass_kj_k</code></td><td>Optional physical context. Incomplete data waits; complete data can lower confidence but does not become exact airflow calibration.</td></tr>
+    <tr><td><code>surface_temperature_entity_id</code>, <code>hvac_entity_id</code>, <code>ventilation_entity_id</code>, <code>air_cleaner_entity_id</code>, <code>radiation_entity_id</code></td><td>Optional physical/context entity references.</td></tr>
+  </table>
+
+  <h2>3 Validation and retention rules</h2>
+  <table><tr><th>Rule</th><th>Current treatment</th><th>Traceable explanation</th></tr>
+    <tr><td>Canonical units</td><td>°C, %, g/m³, ppm, m/s, mm, W/m², seconds.</td><td>Unit and source retained on the observation.</td></tr>
+    <tr><td>Freshness</td><td>Indoor 15 minutes; critical weather 15 minutes; forecast 90 minutes by default.</td><td>Age and limit appear in data quality/trace.</td></tr>
+    <tr><td>Plausibility</td><td>RH/rain 0–100%; temperature −90–70 °C; CO2 0–10,000 ppm; wind 0–150 m/s; precipitation 0–500.</td><td>Invalid values are discarded, never clipped.</td></tr>
+    <tr><td>Future timestamps</td><td>Discarded.</td><td>Input is listed as discarded.</td></tr>
+    <tr><td>Missing required outdoor data</td><td>Fail closed; no open/ventilate.</td><td><code>critical_weather_unavailable</code>.</td></tr>
+    <tr><td>Missing optional data</td><td>Continue without a guessed value.</td><td>Input is awaiting or unavailable.</td></tr>
+    <tr><td>Provider failure</td><td>Optional provider data fails silent.</td><td>Absence remains visible; core engine continues.</td></tr>
+  </table>
+
+  <h2>4 Transformations and scoring</h2>
+  <div class="grid">
+    <article class="card"><h3>Apparent temperature</h3><p>Warm-domain heat index uses temperature and relative humidity. Outside the supported warm domain, dry-bulb temperature is used with reduced confidence.</p></article>
+    <article class="card"><h3>Humidity</h3><p>Magnus dew point and absolute humidity are derived only from valid temperature and RH. Outdoor absolute humidity lower than indoor can create a moisture benefit.</p></article>
+    <article class="card"><h3>Comfort distance</h3><p>Distance outside the target band is computed for indoor and outdoor perceived temperature. Positive thermal benefit means outdoor air is materially closer to target.</p></article>
+    <article class="card"><h3>Candidate scores</h3><p><code>open</code> uses sustained thermal benefit; <code>ventilate</code> uses transient thermal, moisture, or CO2 benefit; <code>close</code> uses outdoor materially worse.</p></article>
+    <article class="card"><h3>Selection</h3><p>The top score must reach the meaningful-benefit threshold and beat the next candidate by the winner margin. Otherwise the action is <code>none</code>.</p></article>
+    <article class="card"><h3>Duration</h3><p>Ventilation guidance is 15 minutes without forecast, 10 with forecast, and 5 with imminent rain. Condensation risk can cap it at 5 minutes.</p></article>
+  </div>
+
+  <h2>5 Scenario registry</h2>
+  <p>This registry is intentionally practical: each row identifies the evidence, expected precedence, and the test/documentation gap a contributor should close when adding a new scenario.</p>
+  <table><tr><th>Scenario</th><th>Evidence</th><th>Expected core action</th><th>Precedence / outcome</th><th>Coverage</th></tr>
+    <tr><td>Hot room, cool outside</td><td>Indoor comfort distance exceeds outdoor distance.</td><td><span class="action open">open</span></td><td>Sustained thermal benefit.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Humid room, drier outside</td><td>Indoor RH above preference; outdoor absolute humidity lower.</td><td><span class="action ventilate">ventilate</span></td><td>Targeted moisture benefit.</td><td>Implemented and tested.</td></tr>
+    <tr><td>High CO2 or rising CO2</td><td>CO2 or trend reaches configured threshold.</td><td><span class="action ventilate">ventilate</span></td><td>Ventilation signal cannot override safety.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Current rain or rain condition</td><td>Positive current precipitation or condition token.</td><td><span class="action close">close</span></td><td>Observed precipitation block.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Severe weather</td><td>Thunder, lightning, storm, hail, tornado, hurricane, ice/snow tokens.</td><td><span class="action close">close</span></td><td>Safety block wins all comfort evidence.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Unsafe wind or gust</td><td>Wind ≥35 km/h or gust ≥50 km/h after normalization.</td><td><span class="action close">close</span></td><td>Opening-safety block.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Smoke alert</td><td>Usable smoke alert is true.</td><td><span class="action close">close</span></td><td>Safety block.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Pollution/pollen reduce</td><td>Reading matches policy threshold, unit, and averaging period.</td><td>Reduced open/ventilate score</td><td>Penalty; comfort may still win.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Pollution/pollen avoid</td><td>Reading matches explicit avoid policy.</td><td><span class="action close">close</span></td><td>Exposure block.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Stale critical weather</td><td>Outdoor temperature, condition, or wind exceeds freshness.</td><td><span class="action none">none</span></td><td>Fail closed without inventing a hazard.</td><td>Implemented and tested.</td></tr>
+    <tr><td>High CO2 plus storm</td><td>Ventilation need conflicts with severe weather.</td><td><span class="action close">close</span></td><td>Safety precedence; CO2 remains losing evidence.</td><td>Required regression scenario.</td></tr>
+    <tr><td>Condensation risk</td><td>Indoor dew point reaches estimated surface temperature.</td><td>Ventilation duration ≤5 min</td><td>Penalty and confidence reduction.</td><td>Required regression scenario.</td></tr>
+    <tr><td>Window already satisfies advice</td><td>Contact state matches core action.</td><td>Core retained; delivery suppressed</td><td><code>window_already_closed</code> or <code>window_already_open</code>.</td><td>Implemented and tested.</td></tr>
+    <tr><td>Quiet hours, cooldown, instability</td><td>Operational guardrail active.</td><td>Core retained; delivery suppressed</td><td>Delivery-only suppression.</td><td>Implemented and tested.</td></tr>
+  </table>
+
+  <div class="proposal"><h3>Propose an unlisted scenario</h3><p>Copy this template into the relevant GitHub issue or pull request. A good proposal names the inputs, source and units, expected precedence, expected core/delivered actions, explanation text, and regression test.</p><pre>Scenario name:
+Room and outdoor inputs:
+Source, unit, averaging window, and freshness:
+Expected core_action:
+Expected delivered_action:
+Which existing rule wins or what new precedence is needed:
+Expected trace / reason code:
+Missing-data behavior:
+Regression test name:
+Safety or privacy implications:</pre></div>
+
+  <h2>6 Output and explainability contract</h2>
+  <table><tr><th>Output</th><th>Meaning</th></tr>
+    <tr><td><code>core_action</code></td><td>Physical advice selected by the decision engine.</td></tr>
+    <tr><td><code>delivered_action</code></td><td>Advice remaining after contacts and delivery guardrails.</td></tr>
+    <tr><td><code>duration_minutes</code></td><td>Bounded ventilation prompt only.</td></tr>
+    <tr><td><code>candidate_scores</code></td><td>Open, ventilate, close scores before winner selection.</td></tr>
+    <tr><td><code>confidence</code></td><td>Evidence-quality indicator, not a probability of correctness.</td></tr>
+    <tr><td><code>reason_code</code> and <code>trace</code></td><td>Stable ordered explanation codes and details.</td></tr>
+    <tr><td><code>blocked_conditions</code>, <code>applied_penalties</code></td><td>Safety blocks and non-blocking penalties.</td></tr>
+    <tr><td><code>data_quality</code></td><td>Used, discarded, and awaiting-source input inventory.</td></tr>
+    <tr><td><code>delivery_suppressed_by</code></td><td>Why presentation was suppressed while core truth remained.</td></tr>
+  </table>
+
+  <h2>7 Limits and non-claims</h2>
+  <ul><li>Advisory only: not a medical, safety, security, weather-protection, or regulatory system.</li><li>CO2 is a ventilation indicator, not a universal indoor-air-quality or health threshold.</li><li>Room physics are not an exact airflow calibration.</li><li>Forecast and Open-Meteo/CAMS exposure values remain model data with provenance.</li><li>Missing data stays missing; no occupancy, airflow, HVAC state, or hazard is invented.</li></ul>
+  <footer>Maintained directly in this HTML and its Markdown companion. When the decision model changes, update both documents, the scenario registry, and the narrowest regression test. CI verifies that both documentation files are present and contain the required explainability sections.</footer>
+</main>
+</body>
+</html>

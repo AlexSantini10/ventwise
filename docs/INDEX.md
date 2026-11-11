@@ -5,20 +5,21 @@ Start with the document for your role.
 ## Using VentWise
 
 1. [README](../README.md) for the short introduction and HACS button.
-2. [User guide](user-guide.md) for installation, first setup, updates, and removal.
-3. [Home Assistant integration](home-assistant-integration.md) for the configured data and entities.
-4. [Notice](NOTICE.md) for beta status, safe use, and defect reporting.
+2. [User guide](guides/user-guide.md) for installation, first setup, updates, and removal.
+3. [Home Assistant integration](architecture/home-assistant-integration.md) for the configured data and entities.
+4. [Notice](operations/NOTICE.md) for beta status, safe use, and defect reporting.
 
 ## Contributing to VentWise
 
 1. [Contributing guide](../CONTRIBUTING.md) for issues, branches, and pull requests.
-2. [Development workflow](development.md) for local setup and common commands.
-3. [Testing](testing.md) for the test layers and Home Assistant sandbox.
-4. [Docker Test Lab](docker-test-lab.md) for local manual testing without hardware.
-5. [Decision-engine contract](decision-engine.md) for the canonical pre-implementation decision model.
-6. [Architecture](ARCHITECTURE.md), [domain model](domain-model.md), and [scoring model](scoring-model.md) for design details.
-7. [HACS packaging](hacs-packaging.md) for releases, discovery, and packaging.
-8. [Brand assets](brand-assets.md) for Home Assistant and repository artwork.
+2. [Development workflow](guides/development.md) for local setup and common commands.
+3. [Testing](guides/testing.md) for the test layers and Home Assistant sandbox.
+4. [Docker Test Lab](guides/docker-test-lab.md) for local manual testing without hardware.
+5. [Decision model hub](decision-model/decision-model-explainability.md) for the important model reference, including the [visual report](decision-model/decision-model-report.html).
+6. [Decision-engine contract](decision-model/decision-engine.md), [scoring model](decision-model/scoring-model.md), forecast guidance, and room guardrails.
+7. [Architecture](architecture/ARCHITECTURE.md), [domain model](architecture/domain-model.md), and [Home Assistant integration](architecture/home-assistant-integration.md).
+8. [HACS packaging](operations/hacs-packaging.md), [project rules](operations/project-rules.md), and [notification deduplication](operations/notification-deduplication.md).
+9. [Brand assets](brand-assets.md) for Home Assistant and repository artwork.
 
 ## Purpose
 

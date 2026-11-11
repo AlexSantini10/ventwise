@@ -107,4 +107,4 @@ The user should be able to:
 
 VentWise is installable now as a HACS custom repository. Inclusion in HACS's
 public catalogue is a separate publication step; see
-[HACS packaging](hacs-packaging.md).
+[HACS packaging](../operations/hacs-packaging.md).
