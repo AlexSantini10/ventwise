@@ -17,9 +17,6 @@ from homeassistant.helpers.selector import (
     EntitySelectorConfig,
     SelectSelector,
     SelectSelectorConfig,
-    TextSelector,
-    TextSelectorConfig,
-    TextSelectorType,
 )
 
 from ..const import (
@@ -90,12 +87,9 @@ from ..const import (
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
-    DEFAULT_MINIMUM_SCORE,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
-    DEFAULT_TEMPERATURE_UNIT,
-    DEFAULT_WIND_SPEED_UNIT,
     DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
     DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
     OUTDOOR_SOURCE_FORECAST,
@@ -487,6 +481,73 @@ def build_daily_options_schema(defaults: Mapping[str, object], hass=None) -> vol
         vol.Required(CONF_STABILITY_MINUTES, default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
         vol.Required(CONF_NOTIFICATION_DEVICE_ID, default=_notification_device_defaults(defaults, hass)): _notification_device_selector(hass),
         vol.Required(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)): cv.boolean,
+    })
+
+
+def build_initial_essentials_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
+    """Create the short first-run form containing only essential settings."""
+
+    unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
+    return vol.Schema({
+        **build_unit_schema(defaults).schema,
+        vol.Required(CONF_OUTDOOR_WEATHER_ENTITY_ID, default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)): EntitySelector(EntitySelectorConfig(domain="weather")),
+        vol.Required(CONF_TARGET_TEMPERATURE_C, default=temperature_from_celsius(float(defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(10.0, unit), max=temperature_from_celsius(30.0, unit))),
+        vol.Required(CONF_TARGET_HUMIDITY_PERCENT, default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
+        vol.Required(CONF_AUTO_COMFORT_TEMPERATURE, default=defaults.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)): cv.boolean,
+        vol.Required(CONF_STABILITY_MINUTES, default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+    })
+
+
+def build_comfort_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the comfort category form."""
+
+    unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
+    return vol.Schema({
+        vol.Required(CONF_TARGET_TEMPERATURE_C, default=temperature_from_celsius(float(defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(10.0, unit), max=temperature_from_celsius(30.0, unit))),
+        vol.Required(CONF_TARGET_HUMIDITY_PERCENT, default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
+        vol.Required(CONF_AUTO_COMFORT_TEMPERATURE, default=defaults.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)): cv.boolean,
+        vol.Required(CONF_STABILITY_MINUTES, default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+    })
+
+
+def build_co2_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the CO2 category form."""
+
+    return vol.Schema({
+        vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
+        **_optional_selector_field(CONF_CO2_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_CO2_ENTITY_ID)),
+        vol.Required(CONF_CO2_THRESHOLD_PPM, default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)): vol.All(vol.Coerce(float), vol.Range(min=400.0, max=5000.0)),
+    })
+
+
+def build_outdoor_air_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the outdoor air and pollen category form."""
+
+    return build_air_quality_options_schema(defaults)
+
+
+def build_windows_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the window and protection category form."""
+
+    unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
+    fields = {
+        vol.Required(CONF_OUTDOOR_WEATHER_ENTITY_ID, default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)): EntitySelector(EntitySelectorConfig(domain="weather")),
+        vol.Required(CONF_SOFT_OUTDOOR_THRESHOLD_C, default=temperature_from_celsius(float(defaults.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(-10.0, unit), max=temperature_from_celsius(40.0, unit))),
+    }
+    fields.update(build_outdoor_source_schema(defaults).schema)
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        fields.update(_optional_selector_field(entity_field, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(entity_field)))
+    return vol.Schema(fields)
+
+
+def build_notification_options_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
+    """Create the notification category form."""
+
+    return vol.Schema({
+        vol.Required(CONF_NOTIFICATION_DEVICE_ID, default=_notification_device_defaults(defaults, hass)): _notification_device_selector(hass),
+        vol.Required(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)): cv.boolean,
+        vol.Required(CONF_COOLDOWN_MINUTES, default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+        vol.Required(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, default=defaults.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL)): SelectSelector(SelectSelectorConfig(options=[DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL, DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC])),
     })
 
 

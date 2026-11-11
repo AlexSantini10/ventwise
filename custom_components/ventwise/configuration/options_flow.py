@@ -26,6 +26,11 @@ from .flow import (
     ConfigValidationError,
     build_room_schema,
     build_daily_options_schema,
+    build_comfort_options_schema,
+    build_co2_options_schema,
+    build_outdoor_air_options_schema,
+    build_windows_options_schema,
+    build_notification_options_schema,
     build_recommendation_options_schema,
     build_manual_sources_schema,
     build_air_quality_options_schema,
@@ -65,7 +70,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return getattr(config, "language", None)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        """Show the small top-level navigation menu."""
+        """Show the purpose-based top-level navigation menu."""
 
         if user_input is not None:
             return self.async_abort(reason="invalid_step")
@@ -75,7 +80,15 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._room_index = len(current_rooms)
         return self.async_show_menu(
             step_id="init",
-            menu_options=["daily", "rooms", "advanced", "units"],
+            menu_options=[
+                "comfort",
+                "co2",
+                "outdoor_air",
+                "windows",
+                "rooms",
+                "notifications",
+                "other",
+            ],
             description_placeholders={
                 "room_count": str(len(current_rooms)),
             },
@@ -108,6 +121,50 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
         return self.async_show_form(step_id="daily", data_schema=build_daily_options_schema(self._current_config, self.hass), errors=errors)
+
+    async def async_step_comfort(self, user_input: dict[str, Any] | None = None):
+        """Edit comfort preferences."""
+
+        return await self._save_category_form("comfort", build_comfort_options_schema, user_input)
+
+    async def async_step_co2(self, user_input: dict[str, Any] | None = None):
+        """Edit CO2 preferences."""
+
+        return await self._save_category_form("co2", build_co2_options_schema, user_input, validate_co2=True)
+
+    async def async_step_outdoor_air(self, user_input: dict[str, Any] | None = None):
+        """Edit outdoor air and pollen preferences."""
+
+        return await self._save_category_form("outdoor_air", build_outdoor_air_options_schema, user_input)
+
+    async def async_step_windows(self, user_input: dict[str, Any] | None = None):
+        """Edit window and outdoor-condition protection preferences."""
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                data = normalize_outdoor_source_config({**self._current_config, **user_input})
+                data = normalize_outdoor_override_config(data, data)
+                data = normalize_advanced_config({**data, **user_input})
+                self._current_config = data
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        return self.async_show_form(step_id="windows", data_schema=build_windows_options_schema(self._current_config), errors=errors)
+
+    async def async_step_notifications(self, user_input: dict[str, Any] | None = None):
+        """Edit notification preferences."""
+
+        return await self._save_category_form("notifications", build_notification_options_schema, user_input)
+
+    async def async_step_other(self, user_input: dict[str, Any] | None = None):
+        """Show less frequently used settings."""
+
+        if user_input is not None:
+            return self.async_abort(reason="invalid_step")
+        return self.async_show_menu(step_id="other", menu_options=["units", "diagnostics"])
 
     async def async_step_advanced(self, user_input: dict[str, Any] | None = None):
         """Show technical settings."""
@@ -191,6 +248,28 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
         return self.async_show_form(step_id=step_id, data_schema=schema_builder(self._current_config), errors=errors)
+
+    async def _save_category_form(self, step_id: str, schema_builder, user_input, *, validate_co2: bool = False):
+        """Save one purpose-based category while retaining all other values."""
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                data = dict(self._current_config)
+                data.update(user_input)
+                candidate = normalize_basic_config(data) if step_id == "comfort" else normalize_advanced_config(data)
+                if validate_co2 and candidate.get("co2_enabled") and not candidate.get("co2_entity_id") and not any(room.get("co2_entity_id") for room in self._rooms):
+                    raise ConfigValidationError("co2_entity_id")
+                validate_room_automation_confirmation(self._rooms, candidate, self.hass)
+                self._current_config = candidate
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        hass = self.hass if step_id == "notifications" else None
+        schema = schema_builder(self._current_config, hass) if step_id == "notifications" else schema_builder(self._current_config)
+        return self.async_show_form(step_id=step_id, data_schema=schema, errors=errors)
 
     async def async_step_rooms(self, user_input: dict[str, Any] | None = None):
         """Show room management actions."""

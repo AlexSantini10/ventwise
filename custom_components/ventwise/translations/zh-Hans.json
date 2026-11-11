@@ -39,6 +39,100 @@
           "co2_threshold_ppm": "Optional. Used only for advisory ventilation recommendations."
         }
       },
+      "optional_setup": {
+        "title": "可选设置",
+        "description": "现在只添加要使用的功能。稍后可以在“配置”中修改所有设置。",
+        "menu_options": {
+          "initial_rooms": "房间",
+          "initial_co2": "CO2",
+          "initial_outdoor_air": "室外空气和花粉",
+          "initial_windows": "窗户与保护",
+          "initial_notifications": "通知",
+          "finish": "完成设置"
+        },
+        "menu_option_descriptions": {
+          "initial_rooms": "添加 VentWise 要监测的房间。",
+          "initial_co2": "使用 CO2 读数来改进通风建议。",
+          "initial_outdoor_air": "配置污染和花粉信息。",
+          "initial_windows": "选择用于保护窗户的天气和室外数据。",
+          "initial_notifications": "选择 VentWise 应在哪里通知您。",
+          "finish": "保存设置，稍后再配置可选功能。"
+        }
+      },
+      "initial_co2": {
+        "title": "CO2",
+        "description": "CO2 是通风建议信号；VentWise 从不控制设备。",
+        "data": {
+          "soft_outdoor_threshold_c": "室外舒适阈值",
+          "cooldown_minutes": "通知冷却时间（分钟）",
+          "co2_enabled": "在建议中使用 CO2",
+          "co2_entity_id": "CO2 传感器",
+          "co2_threshold_ppm": "CO2 阈值（ppm）"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "室外温度高于此值时，开窗的作用会降低。",
+          "cooldown_minutes": "相同通知被抑制的时长。",
+          "co2_enabled": "使用室内 CO2 读数来改进通风建议。",
+          "co2_entity_id": "选择一个数值型 CO2 传感器（如有）。",
+          "co2_threshold_ppm": "超过此水平时，VentWise 可以建议通风。"
+        }
+      },
+      "initial_outdoor_air": {
+        "title": "室外空气和花粉",
+        "description": "配置污染和花粉对通风建议的影响。",
+        "data": {
+          "smoke_alert_entity_id": "烟雾或火灾警报",
+          "pollution_policy": "污染响应",
+          "pollen_policy": "花粉响应",
+          "open_meteo_air_quality_enabled": "使用室外空气质量数据"
+        },
+        "data_description": {
+          "smoke_alert_entity_id": "表示烟雾或火灾风险的可选二进制传感器。",
+          "pollution_policy": "选择忽略污染、降低通风建议，还是阻止通风建议。",
+          "pollen_policy": "选择忽略花粉、降低通风建议，还是阻止通风建议。",
+          "open_meteo_air_quality_enabled": "在可用时使用受支持的室外空气质量预报。"
+        }
+      },
+      "initial_windows": {
+        "title": "窗户与保护",
+        "description": "选择用于保护开窗建议的天气和室外测量值。",
+        "data": {
+          "outdoor_weather_entity_id": "天气来源",
+          "soft_outdoor_threshold_c": "室外舒适阈值",
+          "outdoor_temperature_override": "使用手动设置的室外温度",
+          "outdoor_humidity_override": "使用手动设置的室外湿度",
+          "wind_speed_override": "使用手动设置的室外风速",
+          "outdoor_temperature_entity_id": "手动室外温度",
+          "outdoor_humidity_entity_id": "手动室外湿度",
+          "wind_speed_entity_id": "手动室外风速"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "选择用于室外状况的天气实体。",
+          "soft_outdoor_threshold_c": "温度高于此值时，开窗的作用会降低。",
+          "outdoor_temperature_override": "启用此项以使用数值型温度实体。",
+          "outdoor_humidity_override": "启用此项以使用数值型湿度实体。",
+          "wind_speed_override": "启用此项以使用数值型风速实体。",
+          "outdoor_temperature_entity_id": "仅在启用手动温度时需要。",
+          "outdoor_humidity_entity_id": "仅在启用手动湿度时需要。",
+          "wind_speed_entity_id": "仅在启用手动风速时需要。"
+        }
+      },
+      "initial_notifications": {
+        "title": "通知",
+        "description": "选择 VentWise 应在哪里以及多久通知您一次。",
+        "data": {
+          "notification_device_id": "通知设备",
+          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
+          "cooldown_minutes": "通知冷却时间（分钟）",
+          "diagnostic_notification_level": "诊断通知"
+        },
+        "data_description": {
+          "notification_device_id": "应接收 VentWise 通知的可选设备。",
+          "home_assistant_notification_enabled": "在 Home Assistant 通知面板中显示建议。",
+          "cooldown_minutes": "相同通知被抑制的时长。",
+          "diagnostic_notification_level": "选择是否显示配置和传感器问题。"
+        }
+      },
       "units": {
         "title": "测量单位",
         "data": {
@@ -246,18 +340,24 @@
     "step": {
       "init": {
         "title": "调整 VentWise",
-        "description": "选择你想编辑的内容。",
+        "description": "选择要管理的内容。",
         "menu_options": {
-          "daily": "日常设置",
+          "comfort": "舒适度",
+          "co2": "CO2",
+          "outdoor_air": "室外空气和花粉",
+          "windows": "窗户与保护",
           "rooms": "房间",
-          "advanced": "高级设置",
-          "units": "Units of measurement"
+          "notifications": "通知",
+          "other": "其他设置"
         },
         "menu_option_descriptions": {
-          "daily": "配置日常舒适度和通知设置。",
-          "rooms": "添加房间和宏房间。",
-          "advanced": "配置技术设置。",
-          "units": "更改显示单位。"
+          "comfort": "设置首选的温度、湿度和舒适度行为。",
+          "co2": "使用 CO2 读数来改进通风建议。",
+          "outdoor_air": "配置污染和花粉信息。",
+          "windows": "选择用于保护窗户的天气和室外数据。",
+          "rooms": "添加、编辑或删除房间。",
+          "notifications": "选择 VentWise 应在哪里通知您。",
+          "other": "修改单位和诊断行为。"
         }
       },
       "units": {
@@ -407,6 +507,108 @@
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+        }
+      },
+      "comfort": {
+        "title": "舒适度",
+        "description": "设置让您感到舒适的室内条件。",
+        "data": {
+          "target_temperature_c": "舒适温度",
+          "target_humidity_percent": "舒适湿度",
+          "auto_comfort_temperature": "使用气候自适应舒适目标",
+          "stability_minutes": "建议前等待（分钟）"
+        },
+        "data_description": {
+          "target_temperature_c": "设置您在家时感到舒适的室内温度。",
+          "target_humidity_percent": "设置您在家时感到舒适的室内湿度。",
+          "auto_comfort_temperature": "根据体感室外温度逐步调整舒适目标。",
+          "stability_minutes": "建议需保持不变多久后，VentWise 才会通知您。"
+        }
+      },
+      "co2": {
+        "title": "CO2",
+        "description": "CO2 是通风建议信号；VentWise 从不控制设备。",
+        "data": {
+          "soft_outdoor_threshold_c": "室外舒适阈值",
+          "cooldown_minutes": "通知冷却时间（分钟）",
+          "co2_enabled": "在建议中使用 CO2",
+          "co2_entity_id": "CO2 传感器",
+          "co2_threshold_ppm": "CO2 阈值（ppm）"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "室外温度高于此值时，开窗的作用会降低。",
+          "cooldown_minutes": "相同通知被抑制的时长。",
+          "co2_enabled": "使用室内 CO2 读数来改进通风建议。",
+          "co2_entity_id": "选择一个数值型 CO2 传感器（如有）。",
+          "co2_threshold_ppm": "超过此水平时，VentWise 可以建议通风。"
+        }
+      },
+      "outdoor_air": {
+        "title": "室外空气和花粉",
+        "description": "配置污染和花粉对通风建议的影响。",
+        "data": {
+          "smoke_alert_entity_id": "烟雾或火灾警报",
+          "pollution_policy": "污染响应",
+          "pollen_policy": "花粉响应",
+          "open_meteo_air_quality_enabled": "使用室外空气质量数据"
+        },
+        "data_description": {
+          "smoke_alert_entity_id": "表示烟雾或火灾风险的可选二进制传感器。",
+          "pollution_policy": "选择忽略污染、降低通风建议，还是阻止通风建议。",
+          "pollen_policy": "选择忽略花粉、降低通风建议，还是阻止通风建议。",
+          "open_meteo_air_quality_enabled": "在可用时使用受支持的室外空气质量预报。"
+        }
+      },
+      "windows": {
+        "title": "窗户与保护",
+        "description": "选择用于保护开窗建议的天气和室外测量值。",
+        "data": {
+          "outdoor_weather_entity_id": "天气来源",
+          "soft_outdoor_threshold_c": "室外舒适阈值",
+          "outdoor_temperature_override": "使用手动设置的室外温度",
+          "outdoor_humidity_override": "使用手动设置的室外湿度",
+          "wind_speed_override": "使用手动设置的室外风速",
+          "outdoor_temperature_entity_id": "手动室外温度",
+          "outdoor_humidity_entity_id": "手动室外湿度",
+          "wind_speed_entity_id": "手动室外风速"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "选择用于室外状况的天气实体。",
+          "soft_outdoor_threshold_c": "温度高于此值时，开窗的作用会降低。",
+          "outdoor_temperature_override": "启用此项以使用数值型温度实体。",
+          "outdoor_humidity_override": "启用此项以使用数值型湿度实体。",
+          "wind_speed_override": "启用此项以使用数值型风速实体。",
+          "outdoor_temperature_entity_id": "仅在启用手动温度时需要。",
+          "outdoor_humidity_entity_id": "仅在启用手动湿度时需要。",
+          "wind_speed_entity_id": "仅在启用手动风速时需要。"
+        }
+      },
+      "notifications": {
+        "title": "通知",
+        "description": "选择 VentWise 应在哪里以及多久通知您一次。",
+        "data": {
+          "notification_device_id": "通知设备",
+          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
+          "cooldown_minutes": "通知冷却时间（分钟）",
+          "diagnostic_notification_level": "诊断通知"
+        },
+        "data_description": {
+          "notification_device_id": "应接收 VentWise 通知的可选设备。",
+          "home_assistant_notification_enabled": "在 Home Assistant 通知面板中显示建议。",
+          "cooldown_minutes": "相同通知被抑制的时长。",
+          "diagnostic_notification_level": "选择是否显示配置和传感器问题。"
+        }
+      },
+      "other": {
+        "title": "其他设置",
+        "description": "修改单位和诊断行为。",
+        "menu_options": {
+          "units": "测量单位",
+          "diagnostics": "诊断"
+        },
+        "menu_option_descriptions": {
+          "units": "选择温度和风速单位。",
+          "diagnostics": "控制调试模式和诊断通知。"
         }
       },
       "daily": {

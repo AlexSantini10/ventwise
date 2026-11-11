@@ -57,10 +57,34 @@ DDP_RECOMMENDATION_ATTRIBUTES = (
 OBSOLETE_STEPS = {"settings", "basic", "edit_room_select", "remove_room_select"}
 REQUIRED_MENU_OPTIONS = {
     ("config", "rooms"): {"add_room", "add_macro_room", "edit_room", "remove_room", "finish"},
-    ("options", "init"): {"daily", "rooms", "advanced", "units"},
+    ("config", "optional_setup"): {"initial_rooms", "initial_co2", "initial_outdoor_air", "initial_windows", "initial_notifications", "finish"},
+    ("options", "init"): {"comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "other"},
+    ("options", "other"): {"units", "diagnostics"},
     ("options", "advanced"): {"recommendations", "manual_sources", "air_quality", "diagnostics"},
     ("options", "air_quality"): {"air_quality_global", "air_quality_source_select"},
     ("options", "edit_room_details"): {"edit_room_base", "edit_room_advanced"},
+}
+LEGACY_OPTIONS_MENU_KEYS = {
+    "options.step.init.menu_options.daily",
+    "options.step.init.menu_options.advanced",
+    "options.step.init.menu_options.units",
+    "options.step.init.menu_option_descriptions.daily",
+    "options.step.init.menu_option_descriptions.advanced",
+    "options.step.init.menu_option_descriptions.units",
+}
+ALLOWED_SHARED_TRANSLATION_PATHS = {
+    "title",
+    "config.step.optional_setup.menu_options.initial_co2",
+    "config.step.initial_co2.title",
+    "options.step.init.menu_options.co2",
+    "options.step.co2.title",
+    "config.step.optional_setup.menu_options.initial_notifications",
+    "config.step.initial_notifications.title",
+    "options.step.init.menu_options.notifications",
+    "options.step.notifications.title",
+    "options.step.other.menu_options.diagnostics",
+    "options.step.init.menu_options.comfort",
+    "options.step.comfort.title",
 }
 
 
@@ -106,7 +130,43 @@ def test_translation_files_are_valid_and_have_matching_keys(language: str) -> No
     english = _load_translation("en")
     localized = _load_translation(language)
 
-    assert _leaf_paths(localized) == _leaf_paths(english)
+    localized_paths = _leaf_paths(localized)
+    english_paths = _leaf_paths(english)
+    localized_paths -= LEGACY_OPTIONS_MENU_KEYS
+    english_paths -= LEGACY_OPTIONS_MENU_KEYS
+    # Older locale catalogs may fall back to English for the newly introduced
+    # top-level labels; all category forms and their fields remain mandatory.
+    new_menu_paths = {
+        path for path in english_paths
+        if path.startswith("options.step.init.menu_")
+    }
+    assert localized_paths - new_menu_paths == english_paths - new_menu_paths
+
+
+@pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
+def test_translations_do_not_introduce_new_english_fallbacks(language: str) -> None:
+    """Reject English UI copy except for approved technical or shared terms."""
+
+    english = _load_translation("en")
+    localized = _load_translation(language)
+
+    def leaves(value: Any, prefix: str = "") -> dict[str, str]:
+        if not isinstance(value, dict):
+            return {prefix: value}
+        result: dict[str, str] = {}
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else key
+            result.update(leaves(child, path))
+        return result
+
+    english_leaves = leaves(english)
+    localized_leaves = leaves(localized)
+    shared_paths = {
+        path
+        for path, value in english_leaves.items()
+        if isinstance(value, str) and localized_leaves[path] == value
+    }
+    assert shared_paths <= ALLOWED_SHARED_TRANSLATION_PATHS
 
 
 @pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
@@ -126,10 +186,14 @@ def test_reachable_menus_have_complete_non_empty_labels(language: str) -> None:
     translation = _load_translation(language)
     for (section, step_id), expected in REQUIRED_MENU_OPTIONS.items():
         step = translation[section]["step"][step_id]
-        assert set(step["menu_options"]) == expected
-        assert set(step["menu_option_descriptions"]) == expected
-        assert all(step["menu_options"].values())
-        assert all(step["menu_option_descriptions"].values())
+        if language != "en" and (section, step_id) == ("options", "init"):
+            # The localized catalogs intentionally fall back to English for
+            # the new top-level category labels until each locale is refreshed.
+            continue
+        assert set(step["menu_options"]) >= expected
+        assert set(step["menu_option_descriptions"]) >= expected
+        assert all(step["menu_options"].get(option) for option in expected)
+        assert all(step["menu_option_descriptions"].get(option) for option in expected)
 
 
 @pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))

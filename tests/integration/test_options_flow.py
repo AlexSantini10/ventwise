@@ -13,19 +13,15 @@ from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
     CONF_NOTIFICATION_DEVICE_ID,
-    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
-    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
-    CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
-    CONF_WIND_SPEED_OVERRIDE,
 )
 from custom_components.ventwise.configuration.options_flow import VentWiseOptionsFlowHandler
 
@@ -112,8 +108,8 @@ def test_daily_screen_preserves_advanced_values() -> None:
     assert saved["data"][CONF_COOLDOWN_MINUTES] == 45
 
 
-def test_options_menu_has_four_focused_sections() -> None:
-    """The top level keeps everyday and technical options distinct."""
+def test_options_menu_has_purpose_based_sections() -> None:
+    """The top level makes settings discoverable by user goal."""
 
     flow = _make_flow()
 
@@ -121,9 +117,10 @@ def test_options_menu_has_four_focused_sections() -> None:
 
     assert overview["type"] == "menu"
     assert overview["step_id"] == "init"
-    assert overview["menu_options"] == ["daily", "rooms", "advanced", "units"]
-    advanced = asyncio.run(flow.async_step_advanced())
-    assert advanced["menu_options"] == ["recommendations", "manual_sources", "air_quality", "diagnostics"]
+    assert overview["menu_options"] == [
+        "comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "other"
+    ]
+    assert asyncio.run(flow.async_step_other())["menu_options"] == ["units", "diagnostics"]
 
 
 def test_air_quality_source_updates_only_the_selected_source() -> None:

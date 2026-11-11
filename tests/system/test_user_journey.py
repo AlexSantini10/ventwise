@@ -123,11 +123,6 @@ def test_config_flow_creates_a_room_from_the_user_journey() -> None:
         CONF_STABILITY_MINUTES: 0,
         CONF_NOTIFICATION_DEVICE_ID: [],
     }
-    outdoor_input = {
-        CONF_OUTDOOR_TEMPERATURE_OVERRIDE: False,
-        CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
-        CONF_WIND_SPEED_OVERRIDE: False,
-    }
     room_input = {
         CONF_ROOM_ENABLED: True,
         CONF_ROOM_NAME: "Camera test",
@@ -141,12 +136,13 @@ def test_config_flow_creates_a_room_from_the_user_journey() -> None:
 
     async def run_flow() -> tuple[dict[str, object], dict[str, object], str | None]:
         flow = _StandaloneVentWiseConfigFlow()
-        outdoor_result = await flow.async_step_user(basic_input)
-        assert outdoor_result["step_id"] == "outdoor"
-        rooms_result = await flow.async_step_outdoor(outdoor_input)
+        optional_result = await flow.async_step_user(basic_input)
+        assert optional_result["step_id"] == "optional_setup"
+        rooms_result = await flow.async_step_initial_rooms()
         assert rooms_result["step_id"] == "rooms"
         updated_rooms_result = await flow.async_step_add_room(room_input)
         assert updated_rooms_result["step_id"] == "rooms"
+        assert (await flow.async_step_finish())["step_id"] == "optional_setup"
         result = await flow.async_step_finish()
         repeated_result = await flow.async_step_finish()
         return result, repeated_result, flow._test_unique_id
@@ -229,26 +225,22 @@ def test_config_flow_manual_source_and_validation_branches() -> None:
     async def run_flow() -> None:
         flow = _StandaloneVentWiseConfigFlow()
         flow.hass = SimpleNamespace(config=SimpleNamespace(language="en"))
-        outdoor = await flow.async_step_user(
+        optional = await flow.async_step_user(
             {CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.ventwise_test_weather", CONF_NOTIFICATION_DEVICE_ID: []}
         )
-        assert outdoor["step_id"] == "outdoor"
-        overrides = await flow.async_step_outdoor(
+        assert optional["step_id"] == "optional_setup"
+        overrides = await flow.async_step_initial_windows(
             {
+                "soft_outdoor_threshold_c": 28.0,
                 CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
                 CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
                 CONF_WIND_SPEED_OVERRIDE: False,
-            }
-        )
-        assert overrides["step_id"] == "outdoor_overrides"
-        rooms = await flow.async_step_outdoor_overrides(
-            {
                 "outdoor_temperature_entity_id": "sensor.outdoor_temperature",
                 "outdoor_humidity_entity_id": None,
                 "wind_speed_entity_id": None,
             }
         )
-        assert rooms["type"] == "menu"
+        assert overrides["step_id"] == "optional_setup"
 
     asyncio.run(run_flow())
 

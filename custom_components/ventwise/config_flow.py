@@ -12,7 +12,6 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
-    CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
@@ -24,11 +23,16 @@ from .const import (
 )
 from .configuration.flow import (
     ConfigValidationError,
-    build_config_schema,
+    build_initial_essentials_schema,
+    build_co2_options_schema,
+    build_outdoor_air_options_schema,
+    build_windows_options_schema,
+    build_notification_options_schema,
     build_outdoor_override_schema,
     build_outdoor_source_schema,
     build_room_schema,
     normalize_basic_config,
+    normalize_advanced_config,
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
@@ -50,9 +54,10 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._room_index = 0
         self._selected_room_index: int | None = None
         self._setup_completed = False
+        self._initial_category: str | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
-        """Collect the minimal setup required to start."""
+        """Collect the essential settings required to start."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -66,7 +71,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._rooms = []
                 self._room_index = 0
                 self._selected_room_index = None
-                return await self.async_step_outdoor()
+                return await self.async_step_optional_setup()
             except ConfigValidationError as err:
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
@@ -74,9 +79,68 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_config_schema(self._setup_data, self.hass),
+            data_schema=build_initial_essentials_schema(self._setup_data, self.hass),
             errors=errors,
         )
+
+    async def async_step_optional_setup(self, user_input: dict[str, Any] | None = None):
+        """Offer optional categories after the essential first-run setup."""
+
+        if user_input is not None:
+            return self.async_abort(reason="invalid_step")
+        return self.async_show_menu(
+            step_id="optional_setup",
+            menu_options=["initial_rooms", "initial_co2", "initial_outdoor_air", "initial_windows", "initial_notifications", "finish"],
+        )
+
+    async def async_step_initial_rooms(self, user_input: dict[str, Any] | None = None):
+        """Open the optional room setup menu."""
+
+        self._initial_category = "rooms"
+        return await self.async_step_rooms(user_input)
+
+    async def async_step_initial_co2(self, user_input: dict[str, Any] | None = None):
+        """Configure CO2 during optional first-run setup."""
+
+        return await self._handle_initial_category("initial_co2", build_co2_options_schema, user_input)
+
+    async def async_step_initial_outdoor_air(self, user_input: dict[str, Any] | None = None):
+        """Configure outdoor air and pollen during optional setup."""
+
+        return await self._handle_initial_category("initial_outdoor_air", build_outdoor_air_options_schema, user_input)
+
+    async def async_step_initial_windows(self, user_input: dict[str, Any] | None = None):
+        """Configure window and outdoor-condition protection during setup."""
+
+        return await self._handle_initial_category("initial_windows", build_windows_options_schema, user_input, outdoor=True)
+
+    async def async_step_initial_notifications(self, user_input: dict[str, Any] | None = None):
+        """Configure notifications during optional setup."""
+
+        return await self._handle_initial_category("initial_notifications", build_notification_options_schema, user_input, notifications=True)
+
+    async def _handle_initial_category(self, step_id: str, schema_builder, user_input, *, outdoor: bool = False, notifications: bool = False):
+        """Stage an optional category and return to the first-run menu."""
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                data = {**self._current_config, **user_input}
+                if outdoor:
+                    data = normalize_outdoor_source_config(data)
+                    data = normalize_outdoor_override_config(data, data)
+                elif notifications:
+                    data = normalize_basic_config(data)
+                else:
+                    data = normalize_advanced_config(data)
+                self._current_config = data
+                return await self.async_step_optional_setup()
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        schema = schema_builder(self._current_config, self.hass) if notifications else schema_builder(self._current_config)
+        return self.async_show_form(step_id=step_id, data_schema=schema, errors=errors)
 
     async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):
         """Collect the outdoor override preferences."""
@@ -247,6 +311,10 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="invalid_step")
         if self._setup_completed:
             return self.async_abort(reason="single_instance_allowed")
+
+        if self._initial_category == "rooms":
+            self._initial_category = None
+            return await self.async_step_optional_setup()
 
         self._setup_completed = True
         self._current_config[CONF_ROOMS] = deepcopy(self._rooms)

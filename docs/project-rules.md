@@ -41,6 +41,9 @@ the implementation decisions agreed during development.
 - Initial setup should collect only the minimum needed to make VentWise work.
 - Post-setup settings should be grouped by purpose, not by internal technical
   details.
+- The post-setup menu should expose clear categories for comfort, CO2, outdoor
+  air and pollen, windows and protection, rooms, notifications, and other
+  settings.
 - Rooms and macro-rooms should be configurable from the UI.
 - A room can be added during the initial setup, but it must not be required.
 - Supported forecast sources should be explicit in the UI.

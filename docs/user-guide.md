@@ -55,19 +55,25 @@ for your own installation if it differs.
 
 ## First Setup
 
-The setup form asks for:
+The first setup asks only for the essentials:
 
 - a Home Assistant weather entity;
 - your preferred indoor comfort temperature and humidity;
 - the temperature unit (`°C` or `°F`) and wind-speed unit (`m/s`, `km/h`,
   `mph`, or `kn`) used by VentWise;
 - whether to use the climate-adaptive comfort target;
-- a stability delay before sending recommendations; and
-- optional notification devices or Home Assistant persistent notifications.
+- a stability delay before sending recommendations.
 
-After initial setup, open **Configure** on the VentWise integration to add a
-room. Give it a clear name and select its indoor temperature and humidity
-sensors. You can add, edit, disable, or remove rooms later from the same menu.
+After saving the essentials, an optional setup menu lets you add rooms, CO2,
+outdoor air and pollen, window protection, and notifications. Every optional
+section can be skipped and configured later.
+
+After initial setup, open **Configure** on the VentWise integration. Settings
+are grouped by purpose: **Comfort**, **CO2**, **Outdoor air and pollen**,
+**Windows and protection**, **Rooms**, **Notifications**, and **Other settings**.
+To add a room, open **Rooms**, give it a clear name, and select its indoor
+temperature and humidity sensors. You can add, edit, disable, or remove rooms
+later from the same menu.
 If your room has door or window contacts, select them in the room form as well.
 VentWise treats the room as open when any selected contact is open, and only
 asks you to open or close windows when that action has not already happened.
@@ -90,8 +96,7 @@ Its comfort score also treats temperatures below 18 °C and above 26 °C as
 health-relevant conditions, even if a personal comfort target is outside that
 range.
 
-Use **Configure** on the integration to change units, comfort values, notification
-settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
+Use the category that matches the task when changing VentWise settings. The
 climate-adaptive option changes only VentWise's recommendation target; it does
 not change a thermostat or HVAC setpoint.
 

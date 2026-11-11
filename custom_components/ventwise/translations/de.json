@@ -39,6 +39,100 @@
           "co2_threshold_ppm": "Optional. Used only for advisory ventilation recommendations."
         }
       },
+      "optional_setup": {
+        "title": "Optionale Einrichtung",
+        "description": "Fügen Sie nur die gewünschten Funktionen hinzu. Später können Sie alles über „Konfigurieren“ ändern.",
+        "menu_options": {
+          "initial_rooms": "Räume",
+          "initial_co2": "CO2",
+          "initial_outdoor_air": "Außenluft und Pollen",
+          "initial_windows": "Fenster und Schutz",
+          "initial_notifications": "Benachrichtigungen",
+          "finish": "Einrichtung abschließen"
+        },
+        "menu_option_descriptions": {
+          "initial_rooms": "Fügen Sie die Räume hinzu, die VentWise überwachen soll.",
+          "initial_co2": "Verwenden Sie CO2-Messwerte, um die Lüftungsempfehlungen zu verbessern.",
+          "initial_outdoor_air": "Konfigurieren Sie Informationen zu Luftverschmutzung und Pollen.",
+          "initial_windows": "Wählen Sie Wetter- und Außendaten zum Schutz Ihrer Fenster.",
+          "initial_notifications": "Wählen Sie, wo VentWise Sie benachrichtigen soll.",
+          "finish": "Speichern Sie die Einrichtung und konfigurieren Sie optionale Funktionen später."
+        }
+      },
+      "initial_co2": {
+        "title": "CO2",
+        "description": "CO2 ist ein Hinweis für die Lüftung; VentWise steuert niemals Geräte.",
+        "data": {
+          "soft_outdoor_threshold_c": "Außenkomfortgrenze",
+          "cooldown_minutes": "Benachrichtigungspause (Minuten)",
+          "co2_enabled": "CO2 in Empfehlungen verwenden",
+          "co2_entity_id": "CO2-Sensor",
+          "co2_threshold_ppm": "CO2-Grenzwert (ppm)"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "Oberhalb dieser Außentemperatur ist das Öffnen der Fenster weniger sinnvoll.",
+          "cooldown_minutes": "Wie lange identische Benachrichtigungen unterdrückt werden.",
+          "co2_enabled": "Verwenden Sie CO2-Messwerte in Innenräumen, um die Lüftungsempfehlungen zu verbessern.",
+          "co2_entity_id": "Wählen Sie, falls vorhanden, einen numerischen CO2-Sensor.",
+          "co2_threshold_ppm": "Ab diesem Wert kann VentWise zum Lüften raten."
+        }
+      },
+      "initial_outdoor_air": {
+        "title": "Außenluft und Pollen",
+        "description": "Legen Sie fest, wie Luftverschmutzung und Pollen die Lüftungsempfehlungen beeinflussen.",
+        "data": {
+          "smoke_alert_entity_id": "Rauch- oder Feuerwarnung",
+          "pollution_policy": "Reaktion auf Schadstoffe",
+          "pollen_policy": "Reaktion auf Pollen",
+          "open_meteo_air_quality_enabled": "Daten zur Außenluftqualität verwenden"
+        },
+        "data_description": {
+          "smoke_alert_entity_id": "Optionaler Binärsensor für Rauch- oder Brandgefahr.",
+          "pollution_policy": "Wählen Sie, ob Verschmutzung ignoriert wird, die Lüftungsempfehlungen reduziert oder blockiert.",
+          "pollen_policy": "Wählen Sie, ob Pollen ignoriert werden, die Lüftungsempfehlungen reduzieren oder blockieren.",
+          "open_meteo_air_quality_enabled": "Verwenden Sie die unterstützte Vorhersage der Außenluftqualität, sofern verfügbar."
+        }
+      },
+      "initial_windows": {
+        "title": "Fenster und Schutz",
+        "description": "Wählen Sie Wetter- und Außenmesswerte zum Schutz der Empfehlungen zum Öffnen von Fenstern.",
+        "data": {
+          "outdoor_weather_entity_id": "Wetterquelle",
+          "soft_outdoor_threshold_c": "Außenkomfortgrenze",
+          "outdoor_temperature_override": "Manuelle Außentemperatur verwenden",
+          "outdoor_humidity_override": "Manuelle Außenfeuchtigkeit verwenden",
+          "wind_speed_override": "Manuelle Windgeschwindigkeit verwenden",
+          "outdoor_temperature_entity_id": "Manuelle Außentemperatur",
+          "outdoor_humidity_entity_id": "Manuelle Außenfeuchtigkeit",
+          "wind_speed_entity_id": "Manuelle Windgeschwindigkeit"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Wählen Sie die Wetterentität für die Außenbedingungen.",
+          "soft_outdoor_threshold_c": "Oberhalb dieser Temperatur ist das Öffnen der Fenster weniger sinnvoll.",
+          "outdoor_temperature_override": "Aktivieren Sie diese Option, um eine numerische Temperaturentität zu verwenden.",
+          "outdoor_humidity_override": "Aktivieren Sie diese Option, um eine numerische Feuchtigkeitsentität zu verwenden.",
+          "wind_speed_override": "Aktivieren Sie diese Option, um eine numerische Windgeschwindigkeitsentität zu verwenden.",
+          "outdoor_temperature_entity_id": "Nur erforderlich, wenn die manuelle Temperatur aktiviert ist.",
+          "outdoor_humidity_entity_id": "Nur erforderlich, wenn die manuelle Feuchtigkeit aktiviert ist.",
+          "wind_speed_entity_id": "Nur erforderlich, wenn die manuelle Windgeschwindigkeit aktiviert ist."
+        }
+      },
+      "initial_notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Wählen Sie, wo und wie oft VentWise Sie benachrichtigen soll.",
+        "data": {
+          "notification_device_id": "Benachrichtigungsgeräte",
+          "home_assistant_notification_enabled": "Benachrichtigungen in Home Assistant anzeigen",
+          "cooldown_minutes": "Benachrichtigungspause (Minuten)",
+          "diagnostic_notification_level": "Diagnosebenachrichtigungen"
+        },
+        "data_description": {
+          "notification_device_id": "Optionale Geräte, die VentWise-Benachrichtigungen erhalten sollen.",
+          "home_assistant_notification_enabled": "Empfehlungen im Benachrichtigungsbereich von Home Assistant anzeigen.",
+          "cooldown_minutes": "Wie lange identische Benachrichtigungen unterdrückt werden.",
+          "diagnostic_notification_level": "Wählen Sie, ob Konfigurations- und Sensorprobleme angezeigt werden."
+        }
+      },
       "units": {
         "title": "Maßeinheiten",
         "data": {
@@ -245,19 +339,25 @@
   "options": {
     "step": {
       "init": {
-        "title": "Passen Sie VentWise an",
-        "description": "Wählen Sie aus, was Sie verwalten möchten.",
+        "title": "VentWise anpassen",
+        "description": "Wählen Sie, was Sie verwalten möchten.",
         "menu_options": {
-          "daily": "Alltagseinstellungen",
-          "rooms": "Zimmer",
-          "advanced": "Komforteinstellungen",
-          "units": "Maßeinheiten"
+          "comfort": "Komfort",
+          "co2": "CO2",
+          "outdoor_air": "Außenluft und Pollen",
+          "windows": "Fenster und Schutz",
+          "rooms": "Räume",
+          "notifications": "Benachrichtigungen",
+          "other": "Weitere Einstellungen"
         },
         "menu_option_descriptions": {
-          "daily": "Komfort und Benachrichtigungen für den Alltag konfigurieren.",
-          "rooms": "Räume und gruppierte Bereiche hinzufügen, bearbeiten oder entfernen.",
-          "advanced": "Technische Einstellungen konfigurieren.",
-          "units": "Anzeigeeinheiten ändern."
+          "comfort": "Legen Sie Temperatur, Feuchtigkeit und gewünschtes Komfortverhalten fest.",
+          "co2": "Verwenden Sie CO2-Messwerte, um die Lüftungsempfehlungen zu verbessern.",
+          "outdoor_air": "Konfigurieren Sie Informationen zu Luftverschmutzung und Pollen.",
+          "windows": "Wählen Sie Wetter- und Außendaten zum Schutz Ihrer Fenster.",
+          "rooms": "Räume hinzufügen, bearbeiten oder entfernen.",
+          "notifications": "Wählen Sie, wo VentWise Sie benachrichtigen soll.",
+          "other": "Einheiten und Diagnoseverhalten ändern."
         }
       },
       "units": {
@@ -407,6 +507,108 @@
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
           "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+        }
+      },
+      "comfort": {
+        "title": "Komfort",
+        "description": "Legen Sie die für Sie angenehmen Bedingungen in Innenräumen fest.",
+        "data": {
+          "target_temperature_c": "Komforttemperatur",
+          "target_humidity_percent": "Komfortfeuchte",
+          "auto_comfort_temperature": "Klimaanpassendes Komfortziel verwenden",
+          "stability_minutes": "Vor der Empfehlung warten (Minuten)"
+        },
+        "data_description": {
+          "target_temperature_c": "Legen Sie die angenehme Raumtemperatur für Ihre Anwesenheit fest.",
+          "target_humidity_percent": "Legen Sie die angenehme Raumfeuchtigkeit für Ihre Anwesenheit fest.",
+          "auto_comfort_temperature": "Passen Sie das Komfortziel schrittweise anhand der gefühlten Außentemperatur an.",
+          "stability_minutes": "Wie lange eine Empfehlung unverändert bleiben muss, bevor VentWise Sie benachrichtigt."
+        }
+      },
+      "co2": {
+        "title": "CO2",
+        "description": "CO2 ist ein Hinweis für die Lüftung; VentWise steuert niemals Geräte.",
+        "data": {
+          "soft_outdoor_threshold_c": "Außenkomfortgrenze",
+          "cooldown_minutes": "Benachrichtigungspause (Minuten)",
+          "co2_enabled": "CO2 in Empfehlungen verwenden",
+          "co2_entity_id": "CO2-Sensor",
+          "co2_threshold_ppm": "CO2-Grenzwert (ppm)"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "Oberhalb dieser Außentemperatur ist das Öffnen der Fenster weniger sinnvoll.",
+          "cooldown_minutes": "Wie lange identische Benachrichtigungen unterdrückt werden.",
+          "co2_enabled": "Verwenden Sie CO2-Messwerte in Innenräumen, um die Lüftungsempfehlungen zu verbessern.",
+          "co2_entity_id": "Wählen Sie, falls vorhanden, einen numerischen CO2-Sensor.",
+          "co2_threshold_ppm": "Ab diesem Wert kann VentWise zum Lüften raten."
+        }
+      },
+      "outdoor_air": {
+        "title": "Außenluft und Pollen",
+        "description": "Legen Sie fest, wie Luftverschmutzung und Pollen die Lüftungsempfehlungen beeinflussen.",
+        "data": {
+          "smoke_alert_entity_id": "Rauch- oder Feuerwarnung",
+          "pollution_policy": "Reaktion auf Schadstoffe",
+          "pollen_policy": "Reaktion auf Pollen",
+          "open_meteo_air_quality_enabled": "Daten zur Außenluftqualität verwenden"
+        },
+        "data_description": {
+          "smoke_alert_entity_id": "Optionaler Binärsensor für Rauch- oder Brandgefahr.",
+          "pollution_policy": "Wählen Sie, ob Verschmutzung ignoriert wird, die Lüftungsempfehlungen reduziert oder blockiert.",
+          "pollen_policy": "Wählen Sie, ob Pollen ignoriert werden, die Lüftungsempfehlungen reduzieren oder blockieren.",
+          "open_meteo_air_quality_enabled": "Verwenden Sie die unterstützte Vorhersage der Außenluftqualität, sofern verfügbar."
+        }
+      },
+      "windows": {
+        "title": "Fenster und Schutz",
+        "description": "Wählen Sie Wetter- und Außenmesswerte zum Schutz der Empfehlungen zum Öffnen von Fenstern.",
+        "data": {
+          "outdoor_weather_entity_id": "Wetterquelle",
+          "soft_outdoor_threshold_c": "Außenkomfortgrenze",
+          "outdoor_temperature_override": "Manuelle Außentemperatur verwenden",
+          "outdoor_humidity_override": "Manuelle Außenfeuchtigkeit verwenden",
+          "wind_speed_override": "Manuelle Windgeschwindigkeit verwenden",
+          "outdoor_temperature_entity_id": "Manuelle Außentemperatur",
+          "outdoor_humidity_entity_id": "Manuelle Außenfeuchtigkeit",
+          "wind_speed_entity_id": "Manuelle Windgeschwindigkeit"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Wählen Sie die Wetterentität für die Außenbedingungen.",
+          "soft_outdoor_threshold_c": "Oberhalb dieser Temperatur ist das Öffnen der Fenster weniger sinnvoll.",
+          "outdoor_temperature_override": "Aktivieren Sie diese Option, um eine numerische Temperaturentität zu verwenden.",
+          "outdoor_humidity_override": "Aktivieren Sie diese Option, um eine numerische Feuchtigkeitsentität zu verwenden.",
+          "wind_speed_override": "Aktivieren Sie diese Option, um eine numerische Windgeschwindigkeitsentität zu verwenden.",
+          "outdoor_temperature_entity_id": "Nur erforderlich, wenn die manuelle Temperatur aktiviert ist.",
+          "outdoor_humidity_entity_id": "Nur erforderlich, wenn die manuelle Feuchtigkeit aktiviert ist.",
+          "wind_speed_entity_id": "Nur erforderlich, wenn die manuelle Windgeschwindigkeit aktiviert ist."
+        }
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Wählen Sie, wo und wie oft VentWise Sie benachrichtigen soll.",
+        "data": {
+          "notification_device_id": "Benachrichtigungsgeräte",
+          "home_assistant_notification_enabled": "Benachrichtigungen in Home Assistant anzeigen",
+          "cooldown_minutes": "Benachrichtigungspause (Minuten)",
+          "diagnostic_notification_level": "Diagnosebenachrichtigungen"
+        },
+        "data_description": {
+          "notification_device_id": "Optionale Geräte, die VentWise-Benachrichtigungen erhalten sollen.",
+          "home_assistant_notification_enabled": "Empfehlungen im Benachrichtigungsbereich von Home Assistant anzeigen.",
+          "cooldown_minutes": "Wie lange identische Benachrichtigungen unterdrückt werden.",
+          "diagnostic_notification_level": "Wählen Sie, ob Konfigurations- und Sensorprobleme angezeigt werden."
+        }
+      },
+      "other": {
+        "title": "Weitere Einstellungen",
+        "description": "Einheiten und Diagnoseverhalten ändern.",
+        "menu_options": {
+          "units": "Maßeinheiten",
+          "diagnostics": "Diagnose"
+        },
+        "menu_option_descriptions": {
+          "units": "Wähle Temperatur- und Windgeschwindigkeitseinheiten.",
+          "diagnostics": "Debug-Modus und Diagnosebenachrichtigungen steuern."
         }
       },
       "daily": {

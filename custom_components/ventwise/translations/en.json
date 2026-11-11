@@ -39,6 +39,100 @@
           "co2_threshold_ppm": "Optional. Used only for advisory ventilation recommendations; VentWise does not control devices."
         }
       },
+      "optional_setup": {
+        "title": "Optional setup",
+        "description": "Add only the features you want to use now. You can change everything later from Configure.",
+        "menu_options": {
+          "initial_rooms": "Rooms",
+          "initial_co2": "CO2",
+          "initial_outdoor_air": "Outdoor air and pollen",
+          "initial_windows": "Windows and protection",
+          "initial_notifications": "Notifications",
+          "finish": "Finish setup"
+        },
+        "menu_option_descriptions": {
+          "initial_rooms": "Add the rooms VentWise should observe.",
+          "initial_co2": "Use CO2 readings to improve ventilation advice.",
+          "initial_outdoor_air": "Configure pollution and pollen information.",
+          "initial_windows": "Choose weather and outdoor data used to protect windows.",
+          "initial_notifications": "Choose where VentWise should notify you.",
+          "finish": "Save the setup and configure optional features later."
+        }
+      },
+      "initial_co2": {
+        "title": "CO2",
+        "description": "CO2 is an advisory ventilation signal; VentWise never controls devices.",
+        "data": {
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "cooldown_minutes": "Notification cooldown (minutes)",
+          "co2_enabled": "Use CO2 in recommendations",
+          "co2_entity_id": "CO2 sensor",
+          "co2_threshold_ppm": "CO2 threshold (ppm)"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "Above this outdoor temperature, opening windows becomes less useful.",
+          "cooldown_minutes": "How long identical notifications stay suppressed.",
+          "co2_enabled": "Use indoor CO2 readings to improve ventilation advice.",
+          "co2_entity_id": "Choose a numeric CO2 sensor, if available.",
+          "co2_threshold_ppm": "The level above which VentWise can suggest ventilation."
+        }
+      },
+      "initial_outdoor_air": {
+        "title": "Outdoor air and pollen",
+        "description": "Configure how pollution and pollen affect ventilation advice.",
+        "data": {
+          "smoke_alert_entity_id": "Smoke or fire alert",
+          "pollution_policy": "Pollution response",
+          "pollen_policy": "Pollen response",
+          "open_meteo_air_quality_enabled": "Use outdoor air-quality data"
+        },
+        "data_description": {
+          "smoke_alert_entity_id": "Optional binary sensor that signals smoke or fire risk.",
+          "pollution_policy": "Choose whether pollution is ignored, reduces, or blocks ventilation advice.",
+          "pollen_policy": "Choose whether pollen is ignored, reduces, or blocks ventilation advice.",
+          "open_meteo_air_quality_enabled": "Use the supported outdoor air-quality forecast when available."
+        }
+      },
+      "initial_windows": {
+        "title": "Windows and protection",
+        "description": "Choose weather and outdoor measurements used to protect window-opening advice.",
+        "data": {
+          "outdoor_weather_entity_id": "Weather source",
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "outdoor_temperature_override": "Use manual outdoor temperature",
+          "outdoor_humidity_override": "Use manual outdoor humidity",
+          "wind_speed_override": "Use manual outdoor wind speed",
+          "outdoor_temperature_entity_id": "Manual outdoor temperature",
+          "outdoor_humidity_entity_id": "Manual outdoor humidity",
+          "wind_speed_entity_id": "Manual outdoor wind speed"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Choose the weather entity used for outdoor conditions.",
+          "soft_outdoor_threshold_c": "Above this temperature, opening windows becomes less useful.",
+          "outdoor_temperature_override": "Turn this on to use a numeric temperature entity.",
+          "outdoor_humidity_override": "Turn this on to use a numeric humidity entity.",
+          "wind_speed_override": "Turn this on to use a numeric wind-speed entity.",
+          "outdoor_temperature_entity_id": "Required only when manual temperature is enabled.",
+          "outdoor_humidity_entity_id": "Required only when manual humidity is enabled.",
+          "wind_speed_entity_id": "Required only when manual wind speed is enabled."
+        }
+      },
+      "initial_notifications": {
+        "title": "Notifications",
+        "description": "Choose where VentWise should notify you and how often.",
+        "data": {
+          "notification_device_id": "Notification devices",
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "cooldown_minutes": "Notification cooldown (minutes)",
+          "diagnostic_notification_level": "Diagnostic notifications"
+        },
+        "data_description": {
+          "notification_device_id": "Optional devices that should receive VentWise notifications.",
+          "home_assistant_notification_enabled": "Show recommendations in the Home Assistant notification panel.",
+          "cooldown_minutes": "How long identical notifications stay suppressed.",
+          "diagnostic_notification_level": "Choose whether configuration and sensor problems are shown."
+        }
+      },
       "units": {
         "title": "Units of measurement",
         "data": {
@@ -248,16 +342,124 @@
         "title": "Adjust VentWise",
         "description": "Choose what you want to manage.",
         "menu_options": {
-          "daily": "Daily settings",
+          "comfort": "Comfort",
+          "co2": "CO2",
+          "outdoor_air": "Outdoor air and pollen",
+          "windows": "Windows and protection",
           "rooms": "Rooms",
-          "advanced": "Advanced settings",
-          "units": "Units"
+          "notifications": "Notifications",
+          "other": "Other settings"
         },
         "menu_option_descriptions": {
-          "daily": "Configure everyday comfort and notification settings.",
+          "comfort": "Set the temperature, humidity, and comfort behavior you prefer.",
+          "co2": "Use CO2 readings to improve ventilation advice.",
+          "outdoor_air": "Configure pollution and pollen information.",
+          "windows": "Choose weather and outdoor data used to protect windows.",
           "rooms": "Add, edit, or remove rooms.",
-          "advanced": "Configure technical settings.",
-          "units": "Change display units."
+          "notifications": "Choose where VentWise should notify you.",
+          "other": "Change units and diagnostic behavior."
+        }
+      },
+      "comfort": {
+        "title": "Comfort",
+        "description": "Set the indoor conditions that feel comfortable to you.",
+        "data": {
+          "target_temperature_c": "Comfort temperature",
+          "target_humidity_percent": "Comfort humidity",
+          "auto_comfort_temperature": "Use a climate-adaptive comfort target",
+          "stability_minutes": "Wait before recommending (minutes)"
+        },
+        "data_description": {
+          "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
+          "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
+          "auto_comfort_temperature": "Adjust the comfort target gradually using perceived outdoor temperature.",
+          "stability_minutes": "How long a recommendation must stay unchanged before VentWise notifies you."
+        }
+      },
+      "co2": {
+        "title": "CO2",
+        "description": "CO2 is an advisory ventilation signal; VentWise never controls devices.",
+        "data": {
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "cooldown_minutes": "Notification cooldown (minutes)",
+          "co2_enabled": "Use CO2 in recommendations",
+          "co2_entity_id": "CO2 sensor",
+          "co2_threshold_ppm": "CO2 threshold (ppm)"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "Above this outdoor temperature, opening windows becomes less useful.",
+          "cooldown_minutes": "How long identical notifications stay suppressed.",
+          "co2_enabled": "Use indoor CO2 readings to improve ventilation advice.",
+          "co2_entity_id": "Choose a numeric CO2 sensor, if available.",
+          "co2_threshold_ppm": "The level above which VentWise can suggest ventilation."
+        }
+      },
+      "outdoor_air": {
+        "title": "Outdoor air and pollen",
+        "description": "Configure how pollution and pollen affect ventilation advice.",
+        "data": {
+          "smoke_alert_entity_id": "Smoke or fire alert",
+          "pollution_policy": "Pollution response",
+          "pollen_policy": "Pollen response",
+          "open_meteo_air_quality_enabled": "Use outdoor air-quality data"
+        },
+        "data_description": {
+          "smoke_alert_entity_id": "Optional binary sensor that signals smoke or fire risk.",
+          "pollution_policy": "Choose whether pollution is ignored, reduces, or blocks ventilation advice.",
+          "pollen_policy": "Choose whether pollen is ignored, reduces, or blocks ventilation advice.",
+          "open_meteo_air_quality_enabled": "Use the supported outdoor air-quality forecast when available."
+        }
+      },
+      "windows": {
+        "title": "Windows and protection",
+        "description": "Choose weather and outdoor measurements used to protect window-opening advice.",
+        "data": {
+          "outdoor_weather_entity_id": "Weather source",
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "outdoor_temperature_override": "Use manual outdoor temperature",
+          "outdoor_humidity_override": "Use manual outdoor humidity",
+          "wind_speed_override": "Use manual outdoor wind speed",
+          "outdoor_temperature_entity_id": "Manual outdoor temperature",
+          "outdoor_humidity_entity_id": "Manual outdoor humidity",
+          "wind_speed_entity_id": "Manual outdoor wind speed"
+        },
+        "data_description": {
+          "outdoor_weather_entity_id": "Choose the weather entity used for outdoor conditions.",
+          "soft_outdoor_threshold_c": "Above this temperature, opening windows becomes less useful.",
+          "outdoor_temperature_override": "Turn this on to use a numeric temperature entity.",
+          "outdoor_humidity_override": "Turn this on to use a numeric humidity entity.",
+          "wind_speed_override": "Turn this on to use a numeric wind-speed entity.",
+          "outdoor_temperature_entity_id": "Required only when manual temperature is enabled.",
+          "outdoor_humidity_entity_id": "Required only when manual humidity is enabled.",
+          "wind_speed_entity_id": "Required only when manual wind speed is enabled."
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose where VentWise should notify you and how often.",
+        "data": {
+          "notification_device_id": "Notification devices",
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "cooldown_minutes": "Notification cooldown (minutes)",
+          "diagnostic_notification_level": "Diagnostic notifications"
+        },
+        "data_description": {
+          "notification_device_id": "Optional devices that should receive VentWise notifications.",
+          "home_assistant_notification_enabled": "Show recommendations in the Home Assistant notification panel.",
+          "cooldown_minutes": "How long identical notifications stay suppressed.",
+          "diagnostic_notification_level": "Choose whether configuration and sensor problems are shown."
+        }
+      },
+      "other": {
+        "title": "Other settings",
+        "description": "Change units and diagnostic behavior.",
+        "menu_options": {
+          "units": "Units of measurement",
+          "diagnostics": "Diagnostics"
+        },
+        "menu_option_descriptions": {
+          "units": "Choose temperature and wind-speed units.",
+          "diagnostics": "Control debug mode and diagnostic notifications."
         }
       },
       "units": {
