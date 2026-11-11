@@ -1,5 +1,6 @@
 services:
   ci:
+    image: ${VENTWISE_TEST_IMAGE:-ventwise-test:local}
     build:
       context: .
       dockerfile: Dockerfile.ci

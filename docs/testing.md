@@ -91,6 +91,9 @@ python scripts/run_tests.py --layer unit
 python scripts/run_tests.py --layer integration -- -k config_flow
 ```
 
+The command reports locally that the tests are running in Docker. CI uses the
+same image definition and a persistent BuildKit cache for its dependency layer.
+
 CI invokes the same command for unit, integration and system tests. All
 selected tests must pass; coverage is published as a diagnostic report, not a
 percentage gate. Hassfest, HACS and package validation remain separate CI-only

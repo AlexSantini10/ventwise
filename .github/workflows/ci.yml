@@ -77,7 +77,21 @@ jobs:
           # Keep the exact test runtime pinned in Dockerfile.ci instead of
           # requiring that patch release on every ubuntu-latest image.
           python-version: "3.14"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build cached test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ci
+          tags: ventwise-ci:latest
+          load: true
+          cache-from: type=gha,scope=ventwise-test
+          cache-to: type=gha,mode=max,scope=ventwise-test
       - name: Run the canonical local/CI test workflow
+        env:
+          VENTWISE_TEST_IMAGE: ventwise-ci:latest
+          VENTWISE_TEST_SKIP_BUILD: "1"
         run: python scripts/run_tests.py
 
       - name: Upload test diagnostics
@@ -91,7 +105,6 @@ jobs:
   hassfest:
     name: hassfest
     runs-on: ubuntu-latest
-    needs: automated-tests
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -102,7 +115,6 @@ jobs:
   hacs:
     name: hacs
     runs-on: ubuntu-latest
-    needs: automated-tests
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
