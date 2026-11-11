@@ -432,3 +432,136 @@ def test_forecast_rain_penalizes_opening_and_records_trace() -> None:
     assert result.candidate_scores.open == 0.0
     assert "imminent_rain" in result.applied_penalties
     assert any(item.code == "penalty.imminent_rain" for item in result.trace)
+
+
+@pytest.mark.parametrize(
+    ("label", "data", "expected_action", "expected_reason"),
+    [
+        (
+            "cold_room_warm_outside",
+            snapshot(room_temp=16.0, outdoor_temp=22.0),
+            RecommendationAction.OPEN,
+            "thermal_sustained_benefit",
+        ),
+        (
+            "cold_room_colder_outside",
+            snapshot(room_temp=16.0, outdoor_temp=5.0, room={"window_open": obs(True)}),
+            RecommendationAction.CLOSE,
+            "outdoor_materially_worse",
+        ),
+        (
+            "hot_room_hotter_outside",
+            snapshot(room_temp=28.0, outdoor_temp=35.0, room={"window_open": obs(True)}),
+            RecommendationAction.CLOSE,
+            "outdoor_materially_worse",
+        ),
+        (
+            "comfortable_room_equal_outside",
+            snapshot(room_temp=22.0, outdoor_temp=22.0),
+            RecommendationAction.NONE,
+            "insufficient_or_tied_benefit",
+        ),
+    ],
+)
+def test_seasonal_comfort_scenarios_are_explicit(label, data, expected_action, expected_reason) -> None:
+    """Warm and cold rooms use the same bidirectional comfort model."""
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is expected_action, label
+    assert result.reason_code == expected_reason, label
+
+
+def test_transient_cooling_uses_ventilate_when_outdoor_air_is_not_a_stable_endpoint() -> None:
+    result = DecisionEngine().evaluate(
+        snapshot(room_temp=25.0, outdoor_temp=18.0),
+    ).room_results[0]
+
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.duration_minutes == 15
+    assert result.reason_code == "targeted_ventilation_benefit"
+
+
+def test_transient_warming_uses_ventilate_when_outdoor_air_is_not_a_stable_endpoint() -> None:
+    result = DecisionEngine().evaluate(
+        snapshot(room_temp=19.0, outdoor_temp=26.0),
+    ).room_results[0]
+
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.duration_minutes == 15
+    assert result.reason_code == "targeted_ventilation_benefit"
+
+
+def test_safety_precedence_is_explicit_when_co2_requests_ventilation() -> None:
+    result = DecisionEngine().evaluate(
+        snapshot(
+            room_temp=22.0,
+            outdoor_temp=22.0,
+            weather="thunderstorm",
+            room={"co2_ppm": obs(1800.0, "ppm"), "window_open": obs(True)},
+        ),
+    ).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.delivered_action is RecommendationAction.CLOSE
+    assert result.reason_code == "severe_weather"
+    assert result.duration_minutes is None
+
+
+@pytest.mark.parametrize(
+    ("data", "expected_duration"),
+    [
+        (snapshot(room_temp=26.0, outdoor_temp=18.0), 15),
+        (snapshot(room_temp=26.0, outdoor_temp=18.0, forecast_temperature_c=obs(19.0, "°C")), 10),
+        (snapshot(room_temp=26.0, outdoor_temp=18.0, precipitation_probability_percent=obs(80.0, "%")), 5),
+    ],
+    ids=["no-forecast", "usable-forecast", "imminent-rain"],
+)
+def test_ventilation_duration_is_bounded_by_forecast_context(data, expected_duration) -> None:
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.duration_minutes == expected_duration
+
+
+def test_condensation_risk_shortens_ventilation_and_reduces_confidence() -> None:
+    result = DecisionEngine().evaluate(
+        snapshot(
+            room_temp=22.0,
+            room_humidity=80.0,
+            outdoor_temp=22.0,
+            outdoor_humidity=40.0,
+            room={"co2_ppm": obs(1400.0, "ppm"), "surface_temperature_c": obs(18.0, "°C")},
+        ),
+    ).room_results[0]
+
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.duration_minutes == 5
+    assert "condensation_risk" in result.applied_penalties
+    assert result.confidence < 1.0
+
+
+def test_aggregate_selection_prefers_deliverable_room_and_preserves_all_results() -> None:
+    first = snapshot(room_temp=28.0, outdoor_temp=22.0, room={"window_open": obs(True)})
+    second = replace(
+        snapshot(room_temp=22.0, outdoor_temp=22.0),
+        rooms=(
+            DecisionRoom(
+                "study",
+                "Study",
+                obs(22.0, "°C"),
+                obs(50.0, "%"),
+                co2_ppm=obs(1400.0, "ppm"),
+            ),
+        ),
+    )
+    data = DecisionSnapshot(first.rooms + second.rooms, first.outdoor, NOW)
+
+    result = DecisionEngine().evaluate(data)
+
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.delivered_action is RecommendationAction.VENTILATE
+    assert [item.room_id for item in result.room_results] == ["room", "study"]
+    assert result.trace[0].code == "aggregate.selected"
+    assert result.room_results[0].core_action is RecommendationAction.OPEN
+    assert result.room_results[0].delivered_action is RecommendationAction.NONE

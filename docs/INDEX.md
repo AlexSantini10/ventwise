@@ -15,7 +15,7 @@ Start with the document for your role.
 2. [Development workflow](guides/development.md) for local setup and common commands.
 3. [Testing](guides/testing.md) for the test layers and Home Assistant sandbox.
 4. [Docker Test Lab](guides/docker-test-lab.md) for local manual testing without hardware.
-5. [Decision model hub](decision-model/decision-model-explainability.md) for the important model reference, including the [visual report](decision-model/decision-model-report.html).
+5. [Decision model hub](decision-model/index.html) for the navigable model reference, including [overview](decision-model/overview.html), [inputs and quality](decision-model/inputs.html), [scenarios](decision-model/scenarios.html), [operations](decision-model/operations.html), the [full report](decision-model/decision-model-report.html), and the [Markdown reference](decision-model/decision-model-explainability.md).
 6. [Decision-engine contract](decision-model/decision-engine.md), [scoring model](decision-model/scoring-model.md), forecast guidance, and room guardrails.
 7. [Architecture](architecture/ARCHITECTURE.md), [domain model](architecture/domain-model.md), and [Home Assistant integration](architecture/home-assistant-integration.md).
 8. [HACS packaging](operations/hacs-packaging.md), [project rules](operations/project-rules.md), and [notification deduplication](operations/notification-deduplication.md).

@@ -229,7 +229,21 @@ class DecisionEngine:
         # being a transient-only correction.  The meaningful-benefit setting
         # is the documented tolerance for that practical boundary.
         open_score = thermal_benefit if outdoor_distance <= self.config.meaningful_benefit else 0.0
-        transient = thermal_benefit if outdoor_distance > self.config.meaningful_benefit else 0.0
+        # Air on the other side of the comfort band can still be useful for a
+        # short correction when it moves the room toward the target, even if
+        # it would be a poor stable endpoint.  This covers both directions:
+        # cool a hot room and warm a cold room.  The bounded duration keeps
+        # this distinct from a sustained open recommendation.
+        moves_toward_target = (
+            indoor_distance > 0.0
+            and (
+                (indoor_apparent > target and outdoor_apparent < indoor_apparent)
+                or (indoor_apparent < target and outdoor_apparent > indoor_apparent)
+            )
+        )
+        transient = indoor_distance if moves_toward_target and outdoor_distance > self.config.meaningful_benefit else (
+            thermal_benefit if outdoor_distance > self.config.meaningful_benefit else 0.0
+        )
         # Vapour exchange is a targeted signal only when the room is actually
         # above its humidity preference.  A warmer room naturally has higher
         # absolute humidity at the same RH; treating that alone as a competing

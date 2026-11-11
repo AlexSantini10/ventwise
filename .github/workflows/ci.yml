@@ -115,6 +115,12 @@ jobs:
         run: |
           test -s docs/decision-model/decision-model-report.html
           test -s docs/decision-model/decision-model-explainability.md
+          test -s docs/decision-model/index.html
+          test -s docs/decision-model/overview.html
+          test -s docs/decision-model/inputs.html
+          test -s docs/decision-model/scenarios.html
+          test -s docs/decision-model/operations.html
+          test -s docs/decision-model/site.css
           grep -q "Exhaustive data inventory" docs/decision-model/decision-model-report.html
           grep -q "Scenario registry" docs/decision-model/decision-model-report.html
           grep -q "Propose an unlisted scenario" docs/decision-model/decision-model-report.html

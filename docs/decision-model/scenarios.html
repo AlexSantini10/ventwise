@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>VentWise · Scenarios</title><link rel="stylesheet" href="site.css"></head>
+<body><a class="skip-link" href="#main">Skip to content</a><main id="main">
+  <nav aria-label="Decision model navigation"><a href="index.html">Hub</a><a href="overview.html">Overview</a><a href="inputs.html">Inputs &amp; quality</a><a href="scenarios.html" aria-current="page">Scenarios</a><a href="operations.html">Operations</a><a href="decision-model-report.html">Full report</a><a href="decision-model-explainability.md">Markdown</a></nav>
+  <p class="meta">VENTWISE / 03 · SCENARIO REGISTRY</p><h1>Scenario registry</h1><p class="lede">This is the compact contract index. Each row is backed by executable regression coverage; the <a href="decision-model-report.html">full report</a> contains the complete evidence and precedence columns.</p>
+  <table><tr><th>Scenario</th><th>Expected core</th><th>Delivered outcome</th><th>Required evidence / precedence</th><th>Coverage</th></tr>
+    <tr><td>Hot/cold room, outdoor air closer to target</td><td><span class="action open">open</span></td><td>Same unless delivery is gated</td><td>Bidirectional thermal benefit.</td><td>Implemented and tested</td></tr>
+    <tr><td>Outdoor air moves toward target but is a poor endpoint</td><td><span class="action ventilate">ventilate</span></td><td>15, 10, or 5 minute bounded advice</td><td>Transient thermal benefit; forecast/rain bounds duration.</td><td>Implemented and tested</td></tr>
+    <tr><td>Outdoor air materially worsens comfort</td><td><span class="action close">close</span></td><td>Close unless already closed</td><td>Outdoor materially worse wins comfort scoring.</td><td>Implemented and tested</td></tr>
+    <tr><td>Neutral conditions</td><td><span class="action none">none</span></td><td><span class="action none">none</span></td><td>No meaningful score or winner margin.</td><td>Implemented and tested</td></tr>
+    <tr><td>High humidity or high/rising CO₂</td><td><span class="action ventilate">ventilate</span></td><td>Same unless delivery is gated</td><td>Targeted ventilation; safety still wins.</td><td>Implemented and tested</td></tr>
+    <tr><td>Rain, storm, wind/gust, smoke, exposure avoid</td><td><span class="action close">close</span></td><td>Urgent close bypasses delivery gates</td><td>Safety block precedes comfort and CO₂.</td><td>Implemented and tested</td></tr>
+    <tr><td>Exposure reduce with matching metadata</td><td>Penalized candidate</td><td>Core action remains truthful</td><td>Unit and averaging period must match.</td><td>Implemented and tested</td></tr>
+    <tr><td>Missing, invalid, future, stale, implausible critical data</td><td><span class="action none">none</span> or safety <span class="action close">close</span></td><td>Core preserved</td><td>Data is discarded or awaiting source; never guessed.</td><td>Implemented and tested</td></tr>
+    <tr><td>Condensation risk</td><td>Core preserved</td><td>Duration ≤5 minutes; confidence reduced</td><td>Dew point reaches estimated surface temperature.</td><td>Implemented and tested</td></tr>
+    <tr><td>Contacts, quiet hours, cooldown, stability</td><td>Core preserved</td><td>Delivery may become <span class="action none">none</span></td><td>Delivery-only guardrails.</td><td>Implemented and tested</td></tr>
+    <tr><td>Multi-room evaluation</td><td>Best actionable room</td><td>All per-room results retained</td><td>Aggregate selection is deterministic.</td><td>Implemented and tested</td></tr>
+  </table>
+  <div class="callout"><strong>Adding a scenario:</strong> define inputs, units, freshness, expected core and delivered actions, precedence, trace/reason code, missing-data behavior, and a regression test before documenting it as implemented.</div>
+  <footer><a href="inputs.html">Previous: Inputs &amp; quality</a> · <a href="index.html">Hub</a> · <a href="operations.html">Next: Operations</a></footer>
+</main></body></html>

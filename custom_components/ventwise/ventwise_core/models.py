@@ -180,7 +180,7 @@ class AggregateDecisionResult:
 class DecisionConfig:
     """Versioned physical and safety parameters for ``DecisionEngine``."""
 
-    version: str = "2026-11-10"
+    version: str = "2026-11-11"
     target_temperature_c: float = 22.0
     comfort_band_c: float = 1.0
     humidity_low_percent: float = 40.0

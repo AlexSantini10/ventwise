@@ -81,12 +81,13 @@ that owns the behavior.
 
 ## CI / Release
 
-The decision-model explainability pages are maintained directly in
-`docs/decision-model/decision-model-report.html` and
-`docs/decision-model/decision-model-explainability.md`. Keep the exhaustive parameter tables,
-scenario registry, proposal template, and focused regression tests aligned
-when the decision model changes. CI checks that both pages contain the required
-sections; it does not generate or overwrite the documentation.
+The decision-model explainability site is maintained directly in
+`docs/decision-model/`. Start at `index.html`, then use the overview, inputs,
+scenarios, and operations pages. Keep the exhaustive parameter tables, scenario
+registry, proposal template, and focused regression tests aligned when the
+decision model changes. The full report and Markdown reference remain available
+for detailed review. GitHub Pages publishes the `docs/` tree from `main`; the
+site is static and is not generated or overwritten by a build step.
 
 - pushes to `main` run unit tests, HACS validation, Hassfest, and package build
 - pushes to `test` branches run the same checks and can publish prerelease artifacts

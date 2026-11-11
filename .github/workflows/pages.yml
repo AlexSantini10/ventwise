@@ -1,0 +1,85 @@
+name: Publish documentation to GitHub Pages
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate documentation site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Validate required files and HTML links
+        shell: python
+        run: |
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+
+          root = Path("docs/decision-model")
+          required = [
+              root / "index.html",
+              root / "overview.html",
+              root / "inputs.html",
+              root / "scenarios.html",
+              root / "operations.html",
+              root / "decision-model-report.html",
+              root / "site.css",
+              Path("docs/.nojekyll"),
+          ]
+          missing = [str(path) for path in required if not path.is_file() or path.stat().st_size == 0]
+          if missing:
+              raise SystemExit(f"Missing or empty documentation files: {missing}")
+
+          for page in root.glob("*.html"):
+              parser = HTMLParser()
+              parser.feed(page.read_text(encoding="utf-8"))
+              for href in re.findall(r'href="([^"]+)"', page.read_text(encoding="utf-8")):
+                  if href.startswith(("http:", "https:", "#")):
+                      continue
+                  target = (page.parent / href).resolve()
+                  if not target.is_file():
+                      raise SystemExit(f"Broken link in {page}: {href}")
+          print(f"Validated {len(list(root.glob('*.html')))} HTML pages")
+
+  deploy:
+    name: Build and publish documentation
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload documentation artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
