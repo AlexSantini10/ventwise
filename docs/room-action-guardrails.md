@@ -14,6 +14,12 @@ explains that the changed advice is settling. This avoids presenting a stale,
 potentially incorrect instruction.
 
 An urgent **close** recommendation always bypasses both guardrails, so weather
-or safety-related close advice is not delayed. The accepted action, lockout,
-and pending reversal are stored in the configuration entry and therefore
-survive a Home Assistant restart.
+or safety-related close advice is not delayed. An active observed safety block
+always selects close before indoor temperature or contact delivery checks. The
+close is delivered when the window is open, its state is unknown, or no window
+contact is configured; only a contact already reporting closed suppresses the
+duplicate delivery as `window_already_closed`. Missing or stale critical
+weather remains fail-closed and does not itself imply that a window is open or
+that a hazard was observed. The accepted action, lockout, and pending reversal
+are stored in the configuration entry and therefore survive a Home Assistant
+restart.

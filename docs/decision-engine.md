@@ -55,6 +55,16 @@ temperature-only advice. Temperature, weather condition and wind remain
 safety-critical. Future-dated, stale, non-finite and source-implausible
 readings are discarded with their provenance retained in data quality.
 
+Observed safety blocks have precedence over indoor scoring. Current rain,
+severe weather, unsafe wind or gusts, smoke alerts, and `avoid` pollen or
+pollution policies always produce `core_action=close`; an open, unknown, or
+unconfigured window contact receives `delivered_action=close`. A contact that
+already reports the window closed suppresses only the duplicate delivery with
+`delivery_suppressed_by=window_already_closed`. Urgent safety closes bypass
+stability, cooldown, and quiet-hours delivery gates. This rule applies only to
+observed hazards: `critical_weather_unavailable` remains fail-closed for
+opening and does not invent a close when the window state is unknown.
+
 > [!TIP]
 > Read **At-a-glance ordered decision table** first. It is the shortest route
 > to the engine's actual decision priority and user-facing wording.

@@ -66,11 +66,12 @@ def test_stale_critical_weather_fails_closed() -> None:
     assert "critical_weather_unavailable" in result.blocked_conditions
 
 
-def test_severe_weather_only_urges_close_when_window_known_open() -> None:
+def test_severe_weather_recommends_close_without_window_contact() -> None:
     closed = DecisionEngine().evaluate(snapshot(weather="thunderstorm")).room_results[0]
     opened = DecisionEngine().evaluate(snapshot(weather="thunderstorm", room={"window_open": obs(True)})).room_results[0]
 
-    assert closed.core_action == RecommendationAction.NONE
+    assert closed.core_action == RecommendationAction.CLOSE
+    assert closed.delivered_action == RecommendationAction.CLOSE
     assert opened.core_action == RecommendationAction.CLOSE
     assert opened.delivered_action == RecommendationAction.CLOSE
 
@@ -214,6 +215,64 @@ def test_safety_blocks_override_co2_and_thermal_benefit(label, outdoor, expected
     assert result.delivered_action is RecommendationAction.CLOSE, label
     assert expected_block in result.blocked_conditions
     assert result.reason_code == expected_block
+
+
+@pytest.mark.parametrize(
+    ("label", "outdoor", "expected_block"),
+    [
+        ("rain_condition", {"weather": "rainy"}, "current_precipitation"),
+        ("rain_measurement", {"current_precipitation_mm_h": obs(0.1, "mm/h")}, "current_precipitation"),
+        ("thunderstorm", {"weather": "thunderstorm"}, "severe_weather"),
+        ("wind", {"wind": DecisionConfig().wind_block_m_s}, "unsafe_wind"),
+        ("gust", {"wind_gust_m_s": obs(DecisionConfig().gust_block_m_s, "m/s")}, "unsafe_wind"),
+        ("smoke", {"smoke_alert": obs(True)}, "smoke_alert"),
+        ("pollen", {"pollen_policy": obs("avoid")}, "outdoor_exposure_avoid"),
+        ("pollution", {"pollution_policy": obs("avoid")}, "outdoor_exposure_avoid"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("window_observation", "expected_delivery_suppression"),
+    [
+        (obs(True), None),
+        (obs(False), "window_already_closed"),
+        (None, None),
+    ],
+    ids=["open", "closed", "unknown-or-unconfigured"],
+)
+def test_active_safety_blocks_always_close_and_only_suppress_closed_window(
+    label, outdoor, expected_block, window_observation, expected_delivery_suppression
+) -> None:
+    data = snapshot(
+        room={"window_open": window_observation, "co2_ppm": obs(1800.0, "ppm")},
+        **outdoor,
+    )
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE, label
+    assert result.delivered_action is (
+        RecommendationAction.NONE
+        if expected_delivery_suppression
+        else RecommendationAction.CLOSE
+    ), label
+    assert result.reason_code == expected_block
+    assert expected_block in result.blocked_conditions
+    assert result.delivery_suppressed_by == expected_delivery_suppression
+
+
+def test_active_safety_block_closes_even_when_indoor_temperature_is_missing() -> None:
+    data = snapshot(weather="thunderstorm", room={"window_open": None})
+    room = data.rooms[0]
+    data = replace(
+        data,
+        rooms=(replace(room, temperature_c=Observation(None, "°C", NOW, NOW, "room", availability=Availability.MISSING)),),
+    )
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.delivered_action is RecommendationAction.CLOSE
+    assert result.reason_code == "severe_weather"
 
 
 @pytest.mark.parametrize(

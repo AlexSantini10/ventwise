@@ -171,14 +171,42 @@ class DecisionEngine:
             blocks.append("outdoor_exposure_avoid")
             trace.append(TraceEntry("block.outdoor_exposure_avoid"))
 
+        if hard_block:
+            # An observed safety hazard is independent of the indoor thermal
+            # evidence and of the contact state: opening or ventilating is
+            # never valid while the hazard is active.  The delivery layer
+            # suppresses only a close that is already satisfied.
+            hard_block_code = next(
+                code for code in (
+                    "severe_weather",
+                    "current_precipitation",
+                    "unsafe_wind",
+                    "smoke_alert",
+                    "outdoor_exposure_avoid",
+                )
+                if code in blocks
+            )
+            return self._finish(
+                room,
+                RecommendationAction.CLOSE,
+                CandidateScores(close=1.0),
+                1.0,
+                hard_block_code,
+                trace,
+                blocks,
+                penalties,
+                used,
+                discarded,
+                awaiting,
+                snapshot,
+                known_open,
+                urgent=True,
+            )
         if indoor_t is None:
             trace.append(TraceEntry("selection.insufficient_indoor_evidence"))
             return self._finish(room, RecommendationAction.NONE, CandidateScores(), 0.0, "insufficient_indoor_evidence", trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open)
-        if critical_missing or hard_block:
-            close = 1.0 if known_open is True else 0.0
-            core = RecommendationAction.CLOSE if close else RecommendationAction.NONE
-            code = blocks[0] if blocks else "critical_weather_unavailable"
-            return self._finish(room, core, CandidateScores(close=close), 1.0 if hard_block else 0.4, code, trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open, urgent=hard_block)
+        if critical_missing:
+            return self._finish(room, RecommendationAction.NONE, CandidateScores(), 0.4, "critical_weather_unavailable", trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open)
 
         assert outdoor_t is not None
         # Indoor RH is optional in long-lived configurations. Do not invent a
