@@ -32,7 +32,6 @@ from .flow import (
     build_windows_options_schema,
     build_windows_manual_schema,
     build_notification_options_schema,
-    build_other_options_schema,
     build_recommendation_options_schema,
     build_manual_sources_schema,
     build_air_quality_options_schema,
@@ -89,6 +88,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 "windows",
                 "rooms",
                 "notifications",
+                "units",
                 "other",
             ],
             description_placeholders={
@@ -204,13 +204,12 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return await self._save_category_form("notifications", build_notification_options_schema, user_input)
 
     async def async_step_other(self, user_input: dict[str, Any] | None = None):
-        """Edit units and debug mode."""
+        """Edit diagnostic and debug settings."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
                 data = {**self._current_config, **user_input}
-                data.update(normalize_unit_config(data))
                 data.setdefault(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
                 data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
                 self._current_config = normalize_advanced_config(data)
@@ -221,7 +220,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 errors["base"] = "invalid_input"
         return self.async_show_form(
             step_id="other",
-            data_schema=build_other_options_schema(self._current_config),
+            data_schema=build_diagnostics_options_schema(self._current_config),
             errors=errors,
         )
 

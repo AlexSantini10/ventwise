@@ -220,7 +220,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres de cette pièce.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "edit_room_form": {
@@ -249,7 +250,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres de cette pièce.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "add_macro_room": {
@@ -282,7 +284,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres dans cette zone.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "edit_macro_room_form": {
@@ -311,7 +314,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres dans cette zone.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "edit_room": {
@@ -352,7 +356,8 @@
           "windows": "Fenêtres et protection",
           "rooms": "Pièces",
           "notifications": "Notifications",
-          "other": "Autres paramètres"
+          "other": "Autres paramètres",
+          "units": "Unités de mesure"
         },
         "menu_option_descriptions": {
           "comfort": "Définissez la température, l’humidité et le comportement de confort souhaités.",
@@ -361,7 +366,8 @@
           "windows": "Choisissez les données météo et extérieures utilisées pour protéger les fenêtres.",
           "rooms": "Ajoutez, modifiez ou supprimez des pièces.",
           "notifications": "Choisissez où VentWise doit vous envoyer des notifications.",
-          "other": "Modifiez les unités et le comportement du diagnostic."
+          "other": "Modifiez les unités et le comportement du diagnostic.",
+          "units": "Choisissez les unités de température et de vitesse du vent."
         }
       },
       "units": {
@@ -369,7 +375,8 @@
         "data": {
           "temperature_unit": "Unité de température",
           "wind_speed_unit": "Unité de vitesse du vent"
-        }
+        },
+        "description": "Choisissez les unités de température et de vitesse du vent."
       },
       "rooms": {
         "title": "Chambres",
@@ -421,7 +428,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres de cette pièce.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "edit_room_form": {
@@ -450,7 +458,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres de cette pièce.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "add_macro_room": {
@@ -483,7 +492,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres dans cette zone.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "edit_macro_room_form": {
@@ -512,7 +522,8 @@
           "stop_entity_id": "Facultatif. Sélectionnez l'automatisation que VentWise doit exécuter lorsqu'il demande de fermer les fenêtres dans cette zone.",
           "action_change_hold_minutes": "Attendez aussi longtemps avant de transformer une recommandation ouverte en recommandation fermée, ou inversement.",
           "action_lockout_minutes": "Après une recommandation d'ouverture ou de fermeture, évitez une recommandation opposée pendant cette période. Les fermetures de sécurité urgentes ne sont jamais retardées.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
         }
       },
       "comfort": {
@@ -607,15 +618,7 @@
       },
       "other": {
         "title": "Autres paramètres",
-        "description": "Modifiez les unités et le comportement du diagnostic.",
-        "menu_options": {
-          "units": "Unités de mesure",
-          "diagnostics": "Diagnostics"
-        },
-        "menu_option_descriptions": {
-          "units": "Choisissez les unités de température et de vitesse du vent.",
-          "diagnostics": "Contrôlez le mode débogage et les notifications de diagnostic."
-        }
+        "description": "Modifiez les unités et le comportement du diagnostic."
       },
       "daily": {
         "title": "Réglages quotidiens",
@@ -1193,6 +1196,23 @@
         "1h": "1 heure",
         "8h": "8 heures",
         "24h": "24 heures"
+      }
+    },
+    "air_quality_source": {
+      "options": {
+        "pm2_5": "Règle — PM2,5",
+        "pm10": "Règle — PM10",
+        "nitrogen_dioxide": "Règle — dioxyde d’azote",
+        "ozone": "Règle — ozone",
+        "carbon_monoxide": "Règle — monoxyde de carbone",
+        "sulphur_dioxide": "Règle — dioxyde de soufre",
+        "european_aqi": "Règle — indice européen de qualité de l’air",
+        "alder_pollen": "Règle — pollen d’aulne",
+        "birch_pollen": "Règle — pollen de bouleau",
+        "grass_pollen": "Règle — pollen de graminées",
+        "mugwort_pollen": "Règle — pollen d’armoise",
+        "olive_pollen": "Règle — pollen d’olivier",
+        "ragweed_pollen": "Règle — pollen d’ambroisie"
       }
     }
   },

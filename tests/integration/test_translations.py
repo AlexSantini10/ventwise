@@ -58,7 +58,7 @@ OBSOLETE_STEPS = {"settings", "basic", "edit_room_select", "remove_room_select"}
 REQUIRED_MENU_OPTIONS = {
     ("config", "rooms"): {"add_room", "add_macro_room", "edit_room", "remove_room", "finish", "back_to_user"},
     ("config", "optional_setup"): {"initial_rooms", "initial_co2", "initial_outdoor_air", "initial_windows", "initial_notifications", "finish", "back_to_initial_rooms"},
-    ("options", "init"): {"comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "other"},
+    ("options", "init"): {"comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "units", "other"},
     ("options", "advanced"): {"recommendations", "manual_sources", "air_quality", "diagnostics", "back_to_init"},
     ("options", "air_quality"): {"air_quality_global", "air_quality_source_select", "back_to_advanced"},
     ("options", "rooms"): {"add_room", "add_macro_room", "edit_room", "remove_room", "finish", "back_to_init"},
@@ -99,6 +99,7 @@ ALLOWED_SHARED_TRANSLATION_PATHS = {
     "options.step.other.menu_options.diagnostics",
     "options.step.init.menu_options.comfort",
     "options.step.comfort.title",
+    "selector.air_quality_source.options.pm10",
 }
 
 
@@ -251,6 +252,11 @@ def test_room_forms_localize_the_window_contacts_field(language: str) -> None:
             assert (
                 translation[section]["step"][step]["data"]["window_sensor_entity_ids"]
             )
+            assert (
+                translation[section]["step"][step]["data_description"][
+                    "window_sensor_entity_ids"
+                ]
+            )
 
 
 @pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
@@ -274,6 +280,25 @@ def test_ddp_forms_and_recommendation_attributes_are_localized(language: str) ->
     attributes = translation["entity"]["sensor"]["recommendation"]["state_attributes"]
     for attribute in DDP_RECOMMENDATION_ATTRIBUTES:
         assert attributes[attribute]["name"]
+
+
+@pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
+def test_air_quality_controls_use_friendly_labels_and_policy_choices(language: str) -> None:
+    """Keep dynamic air-quality controls readable for non-technical users."""
+
+    translation = _load_translation(language)
+    source = translation["options"]["step"]["air_quality_source"]
+    assert source["data"]["air_quality_pm2_5_policy"] != "Air quality pm2 5 policy"
+    assert "_" not in source["data"]["air_quality_pm2_5_policy"]
+    assert source["data_description"]["air_quality_pm2_5_policy"]
+    assert set(translation["selector"]["air_quality_source"]["options"]) == {
+        "pm2_5", "pm10", "nitrogen_dioxide", "ozone", "carbon_monoxide",
+        "sulphur_dioxide", "european_aqi", "alder_pollen", "birch_pollen",
+        "grass_pollen", "mugwort_pollen", "olive_pollen", "ragweed_pollen",
+    }
+    choices = translation["selector"]["air_quality_pm2_5_policy"]["options"]
+    assert all(choices[key] for key in ("ignore", "reduce", "avoid"))
+    assert choices["ignore"] != "Ignore"
 
 
 def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -> None:
