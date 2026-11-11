@@ -1,36 +1,39 @@
 {
   "title": "VentWise",
   "config": {
+    "abort": {
+      "single_instance_allowed": "VentWise 已配置。使用配置来更新它。"
+    },
     "step": {
       "user": {
         "title": "初始设置",
         "description": "选择天气来源，设置室内舒适值，如果需要，还可以选择一个或多个通知设备。",
         "data": {
-          "debug_mode_enabled": "Debug mode",
-          "outdoor_weather_entity_id": "天气来源",
           "temperature_unit": "温度单位",
           "wind_speed_unit": "风速单位",
+          "outdoor_weather_entity_id": "天气来源",
           "target_temperature_c": "室内舒适温度",
+          "auto_comfort_temperature": "使用适应气候的舒适度目标",
           "target_humidity_percent": "室内舒适湿度",
           "stability_minutes": "稳定窗口（分钟）",
           "notification_device_id": "通知设备",
-          "diagnostic_notification_level": "诊断通知",
-          "auto_comfort_temperature": "使用适应气候的舒适度目标",
           "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
-          "co2_enabled": "Consider CO? in recommendations",
-          "co2_entity_id": "?? CO? ???",
-          "co2_threshold_ppm": "CO? threshold (ppm)"
+          "diagnostic_notification_level": "诊断通知",
+          "debug_mode_enabled": "Debug mode",
+          "co2_enabled": "Consider CO2 in recommendations",
+          "co2_entity_id": "Room CO2 sensor",
+          "co2_threshold_ppm": "CO2 threshold (ppm)"
         },
         "data_description": {
-          "debug_mode_enabled": "Shows per-room open and close notification test controls.",
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
           "target_temperature_c": "设置你在家时感觉舒适的室内温度。",
+          "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
           "target_humidity_percent": "设置你在家时感觉舒适的室内湿度。",
           "stability_minutes": "VentWise 在采取行动前，建议需要保持相同多久。如果不确定，就保留默认值。",
           "notification_device_id": "选择一个或多个接收 VentWise 通知的设备。",
-          "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
           "home_assistant_notification_enabled": "在 Home Assistant 的通知面板中显示每个 VentWise 建议。",
           "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。",
+          "debug_mode_enabled": "Shows per-room open and close notification test controls.",
           "co2_enabled": "Optional. Used only for advisory ventilation recommendations.",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations.",
           "co2_threshold_ppm": "Optional. Used only for advisory ventilation recommendations."
@@ -89,26 +92,6 @@
           "finish": "先跳过房间设置并保存。"
         }
       },
-      "edit_room_select": {
-        "title": "编辑房间",
-        "description": "选择要更新的房间。",
-        "data": {
-          "room_selection": "房间"
-        },
-        "data_description": {
-          "room_selection": "选择 VentWise 中已保存的一个房间。"
-        }
-      },
-      "remove_room_select": {
-        "title": "删除房间",
-        "description": "选择要删除的房间。",
-        "data": {
-          "room_selection": "房间"
-        },
-        "data_description": {
-          "room_selection": "选择 VentWise 中已保存的一个房间。"
-        }
-      },
       "add_room": {
         "title": "添加房间",
         "description": "创建一个带有自己窗户的普通房间。你也可以为此房间设置舒适温度覆盖值。",
@@ -116,27 +99,27 @@
           "enabled": "包含此房间",
           "name": "房间名称",
           "temperature_entity_id": "室内温度传感器",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "humidity_entity_id": "室内湿度传感器",
           "window_sensor_entity_ids": "窗户传感器",
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
-          "target_temperature_c_override_enabled": "启用室温覆盖",
-          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
           "name": "一个容易识别的名字，例如卧室或书房。",
           "temperature_entity_id": "选择房间温度传感器。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
           "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "humidity_entity_id": "可选。选择房间湿度传感器。",
           "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
-          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
-          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
@@ -156,7 +139,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
@@ -178,27 +161,27 @@
           "enabled": "包含此房间",
           "name": "宏房间名称",
           "temperature_entity_id": "室内温度传感器",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "humidity_entity_id": "室内湿度传感器",
           "window_sensor_entity_ids": "窗户传感器",
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
-          "target_temperature_c_override_enabled": "启用室温覆盖",
-          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
           "temperature_entity_id": "选择该区域的主要温度传感器。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
           "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "humidity_entity_id": "可选。选择该区域的湿度传感器。",
           "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
-          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
-          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
@@ -218,7 +201,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
@@ -232,14 +215,31 @@
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
         }
+      },
+      "edit_room": {
+        "title": "Edit room",
+        "description": "Choose the room you want to update.",
+        "data": {
+          "room_selection": "Room"
+        },
+        "data_description": {
+          "room_selection": "Select one of the rooms already saved in VentWise."
+        }
+      },
+      "remove_room": {
+        "title": "Remove room",
+        "description": "Choose the room you want to delete.",
+        "data": {
+          "room_selection": "Room"
+        },
+        "data_description": {
+          "room_selection": "Select one of the rooms already saved in VentWise."
+        }
       }
     },
     "error": {
       "invalid_input": "一个或多个值无效。",
       "companion_app_required": "配置房间自动化前，请先选择 Home Assistant Companion App 通知设备。"
-    },
-    "abort": {
-      "single_instance_allowed": "VentWise 已配置。使用配置来更新它。"
     }
   },
   "options": {
@@ -248,53 +248,23 @@
         "title": "调整 VentWise",
         "description": "选择你想编辑的内容。",
         "menu_options": {
-          "units": "Units of measurement",
+          "daily": "Daily settings",
           "rooms": "房间",
-          "settings": "设置"
+          "advanced": "Advanced settings",
+          "units": "Units of measurement"
         },
         "menu_option_descriptions": {
+          "daily": "Configure everyday comfort and notification settings.",
           "rooms": "添加房间和宏房间。",
-          "settings": "天气、舒适度、通知和户外数据尽在一个屏幕上。"
+          "advanced": "Configure technical settings.",
+          "units": "Change display units."
         }
       },
-      "outdoor": {
-        "title": "室外数据",
-        "description": "使用复选框决定哪些室外测量值来自 Home Assistant 实体，而不是天气预报。",
+      "units": {
+        "title": "Units of measurement",
         "data": {
-          "outdoor_temperature_override": "使用手动室外温度",
-          "outdoor_humidity_override": "使用手动室外湿度",
-          "wind_speed_override": "使用手动室外风速"
-        },
-        "data_description": {
-          "outdoor_temperature_override": "启用后，输入手动温度而不是使用天气预报。",
-          "outdoor_humidity_override": "启用后，输入手动湿度而不是使用天气预报。",
-          "wind_speed_override": "启用后，输入手动风速而不是使用天气预报。"
-        }
-      },
-      "basic": {
-        "title": "基础设置",
-        "description": "把日常控制放在这里。",
-        "data": {
-          "outdoor_weather_entity_id": "天气来源",
-          "notification_device_id": "通知设备"
-        },
-        "data_description": {
-          "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
-          "notification_device_id": "选择一个或多个接收通知的设备。"
-        }
-      },
-      "advanced": {
-        "title": "舒适设置",
-        "description": "微调 VentWise 使用的舒适值。",
-        "data": {
-          "soft_outdoor_threshold_c": "室外舒适阈值",
-          "cooldown_minutes": "通知冷却时间（分钟）",
-          "auto_comfort_temperature": "使用适应气候的舒适度目标"
-        },
-        "data_description": {
-          "soft_outdoor_threshold_c": "高于这个室外温度时，开窗的价值会更低。",
-          "cooldown_minutes": "VentWise 发送更新通知前等待的时间；相同的建议会一直被抑制。",
-          "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。"
+          "temperature_unit": "Temperature unit",
+          "wind_speed_unit": "Wind speed unit"
         }
       },
       "rooms": {
@@ -315,26 +285,6 @@
           "finish": "先跳过房间并保存设置。"
         }
       },
-      "edit_room_select": {
-        "title": "编辑房间",
-        "description": "选择要更新的房间。",
-        "data": {
-          "room_selection": "房间"
-        },
-        "data_description": {
-          "room_selection": "从 VentWise 已保存的房间中选择一个。"
-        }
-      },
-      "remove_room_select": {
-        "title": "删除房间",
-        "description": "选择要删除的房间。",
-        "data": {
-          "room_selection": "房间"
-        },
-        "data_description": {
-          "room_selection": "从 VentWise 已保存的房间中选择一个。"
-        }
-      },
       "add_room": {
         "title": "添加房间",
         "description": "创建一个标准房间。",
@@ -343,26 +293,26 @@
           "temperature_entity_id": "室内温度传感器",
           "humidity_entity_id": "室内湿度传感器",
           "window_sensor_entity_ids": "窗户传感器",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
-          "target_temperature_c_override_enabled": "启用室温覆盖",
-          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如卧室、书房或办公室。",
           "temperature_entity_id": "选择房间温度传感器。",
           "humidity_entity_id": "可选。选择房间湿度传感器。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
           "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "target_humidity_percent_override": "可选。使用该房间专属的舒适湿度百分比，而不是全局值。",
           "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
-          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
-          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
@@ -382,7 +332,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如卧室、书房或办公室。",
@@ -405,26 +355,26 @@
           "temperature_entity_id": "室内温度传感器",
           "humidity_entity_id": "室内湿度传感器",
           "window_sensor_entity_ids": "窗户传感器",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_temperature_c_override": "房间舒适温度覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
-          "target_temperature_c_override_enabled": "启用室温覆盖",
-          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
           "temperature_entity_id": "选择该区域的主要温度传感器。",
           "humidity_entity_id": "可选。选择该区域的湿度传感器。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
           "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "target_humidity_percent_override": "可选。使用该区域专属的舒适湿度百分比，而不是全局值。",
           "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
-          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
-          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
@@ -444,7 +394,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "?? CO? ???"
+          "co2_entity_id": "Room CO2 sensor"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
@@ -459,199 +409,348 @@
           "co2_entity_id": "Optional. Used only for advisory ventilation recommendations."
         }
       },
-      "units": {
-        "title": "Units of measurement",
+      "daily": {
+        "title": "Daily settings",
+        "description": "Configure the everyday comfort and notification settings.",
         "data": {
-          "temperature_unit": "Temperature unit",
-          "wind_speed_unit": "Wind speed unit"
-        }
-      },
-      "settings": {
-        "title": "VentWise 设置",
-        "description": "在此设置日常舒适度、通知和户外数据。仅当室外实体匹配的开关启用时，才需要手动操作。",
-        "data": {
-          "debug_mode_enabled": "启用调试模式",
-          "outdoor_weather_entity_id": "天气来源",
-          "temperature_unit": "温度单位",
-          "wind_speed_unit": "风速单位",
-          "target_temperature_c": "舒适温度",
-          "auto_comfort_temperature": "自动适应舒适温度",
-          "target_humidity_percent": "舒适湿度",
-          "stability_minutes": "推荐前等待（分钟）",
-          "notification_device_id": "通知设备",
-          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
-          "diagnostic_notification_level": "诊断通知",
-          "co2_enabled": "在建议中考虑二氧化碳",
-          "co2_entity_id": "家用二氧化碳传感器",
-          "co2_threshold_ppm": "CO2 阈值 (ppm)",
-          "soft_outdoor_threshold_c": "户外舒适阈值",
-          "cooldown_minutes": "每个房间的通知冷却时间（分钟）",
-          "outdoor_temperature_override": "使用手动室外温度",
-          "outdoor_humidity_override": "使用手动室外湿度",
-          "wind_speed_override": "使用手动室外风速",
-          "outdoor_temperature_entity_id": "手动室外温度",
-          "outdoor_humidity_entity_id": "手动室外湿度",
-          "wind_speed_entity_id": "手动室外风速",
-          "smoke_alert_entity_id": "???????",
-          "pollution_policy": "??????",
-          "pollen_policy": "??????",
-          "open_meteo_air_quality_enabled": "?? Open-Meteo ??????",
-          "air_quality_pm2_5_entity_id": "??? PM2 5",
-          "air_quality_pm2_5_policy": "PM2 5 ??",
-          "air_quality_pm2_5_threshold": "PM2 5 ??",
-          "air_quality_pm2_5_unit": "PM2 5 ??",
-          "air_quality_pm2_5_averaging_period": "PM2 5 ????",
-          "air_quality_pm10_entity_id": "??? PM10",
-          "air_quality_pm10_policy": "PM10 ??",
-          "air_quality_pm10_threshold": "PM10 ??",
-          "air_quality_pm10_unit": "PM10 ??",
-          "air_quality_pm10_averaging_period": "PM10 ????",
-          "air_quality_nitrogen_dioxide_entity_id": "??? nitrogen dioxide",
-          "air_quality_nitrogen_dioxide_policy": "nitrogen dioxide ??",
-          "air_quality_nitrogen_dioxide_threshold": "nitrogen dioxide ??",
-          "air_quality_nitrogen_dioxide_unit": "nitrogen dioxide ??",
-          "air_quality_nitrogen_dioxide_averaging_period": "nitrogen dioxide ????",
-          "air_quality_ozone_entity_id": "??? ozone",
-          "air_quality_ozone_policy": "ozone ??",
-          "air_quality_ozone_threshold": "ozone ??",
-          "air_quality_ozone_unit": "ozone ??",
-          "air_quality_ozone_averaging_period": "ozone ????",
-          "air_quality_carbon_monoxide_entity_id": "??? carbon monoxide",
-          "air_quality_carbon_monoxide_policy": "carbon monoxide ??",
-          "air_quality_carbon_monoxide_threshold": "carbon monoxide ??",
-          "air_quality_carbon_monoxide_unit": "carbon monoxide ??",
-          "air_quality_carbon_monoxide_averaging_period": "carbon monoxide ????",
-          "air_quality_sulphur_dioxide_entity_id": "??? sulphur dioxide",
-          "air_quality_sulphur_dioxide_policy": "sulphur dioxide ??",
-          "air_quality_sulphur_dioxide_threshold": "sulphur dioxide ??",
-          "air_quality_sulphur_dioxide_unit": "sulphur dioxide ??",
-          "air_quality_sulphur_dioxide_averaging_period": "sulphur dioxide ????",
-          "air_quality_european_aqi_entity_id": "??? european aqi",
-          "air_quality_european_aqi_policy": "european aqi ??",
-          "air_quality_european_aqi_threshold": "european aqi ??",
-          "air_quality_european_aqi_unit": "european aqi ??",
-          "air_quality_european_aqi_averaging_period": "european aqi ????",
-          "air_quality_alder_pollen_entity_id": "??? alder pollen",
-          "air_quality_alder_pollen_policy": "alder pollen ??",
-          "air_quality_alder_pollen_threshold": "alder pollen ??",
-          "air_quality_alder_pollen_unit": "alder pollen ??",
-          "air_quality_alder_pollen_averaging_period": "alder pollen ????",
-          "air_quality_birch_pollen_entity_id": "??? birch pollen",
-          "air_quality_birch_pollen_policy": "birch pollen ??",
-          "air_quality_birch_pollen_threshold": "birch pollen ??",
-          "air_quality_birch_pollen_unit": "birch pollen ??",
-          "air_quality_birch_pollen_averaging_period": "birch pollen ????",
-          "air_quality_grass_pollen_entity_id": "??? grass pollen",
-          "air_quality_grass_pollen_policy": "grass pollen ??",
-          "air_quality_grass_pollen_threshold": "grass pollen ??",
-          "air_quality_grass_pollen_unit": "grass pollen ??",
-          "air_quality_grass_pollen_averaging_period": "grass pollen ????",
-          "air_quality_mugwort_pollen_entity_id": "??? mugwort pollen",
-          "air_quality_mugwort_pollen_policy": "mugwort pollen ??",
-          "air_quality_mugwort_pollen_threshold": "mugwort pollen ??",
-          "air_quality_mugwort_pollen_unit": "mugwort pollen ??",
-          "air_quality_mugwort_pollen_averaging_period": "mugwort pollen ????",
-          "air_quality_olive_pollen_entity_id": "??? olive pollen",
-          "air_quality_olive_pollen_policy": "olive pollen ??",
-          "air_quality_olive_pollen_threshold": "olive pollen ??",
-          "air_quality_olive_pollen_unit": "olive pollen ??",
-          "air_quality_olive_pollen_averaging_period": "olive pollen ????",
-          "air_quality_ragweed_pollen_entity_id": "??? ragweed pollen",
-          "air_quality_ragweed_pollen_policy": "ragweed pollen ??",
-          "air_quality_ragweed_pollen_threshold": "ragweed pollen ??",
-          "air_quality_ragweed_pollen_unit": "ragweed pollen ??",
-          "air_quality_ragweed_pollen_averaging_period": "ragweed pollen ????"
+          "outdoor_weather_entity_id": "Weather source",
+          "target_temperature_c": "Comfort temperature",
+          "target_humidity_percent": "Comfort humidity",
+          "auto_comfort_temperature": "Adapt comfort temperature automatically",
+          "stability_minutes": "Wait before recommending (minutes)",
+          "notification_device_id": "Notification devices",
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant"
         },
         "data_description": {
-          "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试按钮。",
-          "outdoor_weather_entity_id": "选择 VentWise 使用的标准 Home Assistant 天气实体。",
-          "target_temperature_c": "设置您在家时感觉舒适的室内温度。",
-          "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
-          "target_humidity_percent": "设置您在家时感觉舒适的室内湿度。",
-          "stability_minutes": "在 VentWise 通知您之前，建议必须保持不变多长时间。",
-          "notification_device_id": "选修的。选择应接收 VentWise 通知的设备。",
-          "home_assistant_notification_enabled": "在 Home Assistant 的通知面板中显示每个 VentWise 建议。",
-          "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。",
-          "co2_enabled": "当有 CO2 传感器可用时推荐使用。当二氧化碳浓度较高时，它会优先考虑新鲜空气。",
-          "co2_entity_id": "没有自己的传感器的房间使用可选的默认二氧化碳传感器。",
-          "co2_threshold_ppm": "VentWise 开始优先考虑新鲜空气的二氧化碳水平。",
-          "soft_outdoor_threshold_c": "室外温度高于这个温度，打开窗户就没那么有用了。",
-          "cooldown_minutes": "VentWise 在发送每个房间的更新推荐之前要等待多长时间。相同的建议仍然受到抑制。",
-          "outdoor_temperature_override": "使用下面的手动温度实体代替天气预报。",
-          "outdoor_humidity_override": "使用下面的手动湿度实体代替天气预报。",
-          "wind_speed_override": "使用下面的手动风速实体代替天气预报。",
-          "outdoor_temperature_entity_id": "仅当启用手动室外温度时才需要。",
-          "outdoor_humidity_entity_id": "仅当启用手动室外湿度时才需要。",
-          "wind_speed_entity_id": "仅当启用手动室外风速时才需要。",
-          "smoke_alert_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "pollution_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "pollen_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "open_meteo_air_quality_enabled": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm2_5_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm2_5_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm2_5_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm2_5_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm2_5_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm10_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm10_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm10_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm10_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_pm10_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_nitrogen_dioxide_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_nitrogen_dioxide_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_nitrogen_dioxide_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_nitrogen_dioxide_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_nitrogen_dioxide_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ozone_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ozone_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ozone_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ozone_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ozone_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_carbon_monoxide_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_carbon_monoxide_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_carbon_monoxide_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_carbon_monoxide_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_carbon_monoxide_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_sulphur_dioxide_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_sulphur_dioxide_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_sulphur_dioxide_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_sulphur_dioxide_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_sulphur_dioxide_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_european_aqi_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_european_aqi_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_european_aqi_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_european_aqi_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_european_aqi_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_alder_pollen_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_alder_pollen_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_alder_pollen_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_alder_pollen_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_alder_pollen_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_birch_pollen_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_birch_pollen_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_birch_pollen_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_birch_pollen_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_birch_pollen_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_grass_pollen_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_grass_pollen_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_grass_pollen_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_grass_pollen_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_grass_pollen_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_mugwort_pollen_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_mugwort_pollen_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_mugwort_pollen_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_mugwort_pollen_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_mugwort_pollen_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_olive_pollen_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_olive_pollen_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_olive_pollen_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_olive_pollen_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_olive_pollen_averaging_period": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ragweed_pollen_entity_id": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ragweed_pollen_policy": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ragweed_pollen_threshold": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ragweed_pollen_unit": "Optional. Used only for advisory ventilation recommendations.",
-          "air_quality_ragweed_pollen_averaging_period": "Optional. Used only for advisory ventilation recommendations."
+          "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity used by VentWise.",
+          "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
+          "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
+          "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
+          "stability_minutes": "How long a recommendation must remain unchanged before VentWise notifies you.",
+          "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
+          "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel."
+        }
+      },
+      "advanced": {
+        "title": "舒适设置",
+        "description": "微调 VentWise 使用的舒适值。",
+        "menu_options": {
+          "recommendations": "Recommendations",
+          "manual_sources": "Manual sources",
+          "air_quality": "Air quality",
+          "diagnostics": "Diagnostics"
+        },
+        "menu_option_descriptions": {
+          "recommendations": "Tune recommendation behaviour.",
+          "manual_sources": "Configure manual outdoor sources.",
+          "air_quality": "Configure air-quality inputs and policies.",
+          "diagnostics": "Configure diagnostics and debug notifications."
+        }
+      },
+      "recommendations": {
+        "title": "Recommendation settings",
+        "description": "Tune the comfort and advisory ventilation behaviour.",
+        "data": {
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "cooldown_minutes": "Notification cooldown (minutes)",
+          "co2_enabled": "Co2 enabled",
+          "co2_entity_id": "Co2 entity id",
+          "co2_threshold_ppm": "Co2 threshold ppm"
+        },
+        "data_description": {
+          "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
+          "cooldown_minutes": "How long VentWise waits before sending an updated notification. Identical recommendations stay suppressed.",
+          "co2_enabled": "Configure co2 enabled.",
+          "co2_entity_id": "Configure co2 entity id.",
+          "co2_threshold_ppm": "Configure co2 threshold ppm."
+        }
+      },
+      "manual_sources": {
+        "title": "Manual outdoor sources",
+        "description": "Choose which outdoor measurements come from Home Assistant entities.",
+        "data": {
+          "outdoor_temperature_override": "Outdoor temperature override",
+          "outdoor_humidity_override": "Outdoor humidity override",
+          "wind_speed_override": "Wind speed override",
+          "outdoor_temperature_entity_id": "Outdoor temperature entity id",
+          "outdoor_humidity_entity_id": "Outdoor humidity entity id",
+          "wind_speed_entity_id": "Wind speed entity id"
+        },
+        "data_description": {
+          "outdoor_temperature_override": "Configure outdoor temperature override.",
+          "outdoor_humidity_override": "Configure outdoor humidity override.",
+          "wind_speed_override": "Configure wind speed override.",
+          "outdoor_temperature_entity_id": "Configure outdoor temperature entity id.",
+          "outdoor_humidity_entity_id": "Configure outdoor humidity entity id.",
+          "wind_speed_entity_id": "Configure wind speed entity id."
+        }
+      },
+      "air_quality": {
+        "title": "Air quality",
+        "description": "Choose a global air-quality setting group.",
+        "menu_options": {
+          "air_quality_global": "Global air quality",
+          "air_quality_source_select": "Air-quality source"
+        },
+        "menu_option_descriptions": {
+          "air_quality_global": "Configure global pollution and pollen policies.",
+          "air_quality_source_select": "Choose an individual air-quality source."
+        }
+      },
+      "air_quality_global": {
+        "title": "Global air quality",
+        "description": "Configure global pollution and pollen policies.",
+        "data": {
+          "smoke_alert_entity_id": "Smoke alert entity id",
+          "pollution_policy": "Pollution policy",
+          "pollen_policy": "Pollen policy",
+          "open_meteo_air_quality_enabled": "Open meteo air quality enabled"
+        },
+        "data_description": {
+          "smoke_alert_entity_id": "Configure smoke alert entity id.",
+          "pollution_policy": "Configure pollution policy.",
+          "pollen_policy": "Configure pollen policy.",
+          "open_meteo_air_quality_enabled": "Configure open meteo air quality enabled."
+        }
+      },
+      "air_quality_source_select": {
+        "title": "Air-quality source",
+        "description": "Choose an individual air-quality or pollen source.",
+        "data": {
+          "air_quality_source": "Air quality source"
+        },
+        "data_description": {
+          "air_quality_source": "Configure air quality source."
+        }
+      },
+      "air_quality_source": {
+        "title": "Air-quality source settings",
+        "description": "Configure the selected air-quality source.",
+        "data": {
+          "air_quality_entity_id": "Air quality entity id",
+          "air_quality_policy": "Air quality policy",
+          "air_quality_threshold": "Air quality threshold",
+          "air_quality_unit": "Air quality unit",
+          "air_quality_averaging_period": "Air quality averaging period",
+          "air_quality_pm2_5_entity_id": "Air quality pm2 5 entity id",
+          "air_quality_pm2_5_policy": "Air quality pm2 5 policy",
+          "air_quality_pm2_5_threshold": "Air quality pm2 5 threshold",
+          "air_quality_pm2_5_unit": "Air quality pm2 5 unit",
+          "air_quality_pm2_5_averaging_period": "Air quality pm2 5 averaging period",
+          "air_quality_pm10_entity_id": "Air quality pm10 entity id",
+          "air_quality_pm10_policy": "Air quality pm10 policy",
+          "air_quality_pm10_threshold": "Air quality pm10 threshold",
+          "air_quality_pm10_unit": "Air quality pm10 unit",
+          "air_quality_pm10_averaging_period": "Air quality pm10 averaging period",
+          "air_quality_nitrogen_dioxide_entity_id": "Air quality nitrogen dioxide entity id",
+          "air_quality_nitrogen_dioxide_policy": "Air quality nitrogen dioxide policy",
+          "air_quality_nitrogen_dioxide_threshold": "Air quality nitrogen dioxide threshold",
+          "air_quality_nitrogen_dioxide_unit": "Air quality nitrogen dioxide unit",
+          "air_quality_nitrogen_dioxide_averaging_period": "Air quality nitrogen dioxide averaging period",
+          "air_quality_ozone_entity_id": "Air quality ozone entity id",
+          "air_quality_ozone_policy": "Air quality ozone policy",
+          "air_quality_ozone_threshold": "Air quality ozone threshold",
+          "air_quality_ozone_unit": "Air quality ozone unit",
+          "air_quality_ozone_averaging_period": "Air quality ozone averaging period",
+          "air_quality_carbon_monoxide_entity_id": "Air quality carbon monoxide entity id",
+          "air_quality_carbon_monoxide_policy": "Air quality carbon monoxide policy",
+          "air_quality_carbon_monoxide_threshold": "Air quality carbon monoxide threshold",
+          "air_quality_carbon_monoxide_unit": "Air quality carbon monoxide unit",
+          "air_quality_carbon_monoxide_averaging_period": "Air quality carbon monoxide averaging period",
+          "air_quality_sulphur_dioxide_entity_id": "Air quality sulphur dioxide entity id",
+          "air_quality_sulphur_dioxide_policy": "Air quality sulphur dioxide policy",
+          "air_quality_sulphur_dioxide_threshold": "Air quality sulphur dioxide threshold",
+          "air_quality_sulphur_dioxide_unit": "Air quality sulphur dioxide unit",
+          "air_quality_sulphur_dioxide_averaging_period": "Air quality sulphur dioxide averaging period",
+          "air_quality_european_aqi_entity_id": "Air quality european aqi entity id",
+          "air_quality_european_aqi_policy": "Air quality european aqi policy",
+          "air_quality_european_aqi_threshold": "Air quality european aqi threshold",
+          "air_quality_european_aqi_unit": "Air quality european aqi unit",
+          "air_quality_european_aqi_averaging_period": "Air quality european aqi averaging period",
+          "air_quality_alder_pollen_entity_id": "Air quality alder pollen entity id",
+          "air_quality_alder_pollen_policy": "Air quality alder pollen policy",
+          "air_quality_alder_pollen_threshold": "Air quality alder pollen threshold",
+          "air_quality_alder_pollen_unit": "Air quality alder pollen unit",
+          "air_quality_alder_pollen_averaging_period": "Air quality alder pollen averaging period",
+          "air_quality_birch_pollen_entity_id": "Air quality birch pollen entity id",
+          "air_quality_birch_pollen_policy": "Air quality birch pollen policy",
+          "air_quality_birch_pollen_threshold": "Air quality birch pollen threshold",
+          "air_quality_birch_pollen_unit": "Air quality birch pollen unit",
+          "air_quality_birch_pollen_averaging_period": "Air quality birch pollen averaging period",
+          "air_quality_grass_pollen_entity_id": "Air quality grass pollen entity id",
+          "air_quality_grass_pollen_policy": "Air quality grass pollen policy",
+          "air_quality_grass_pollen_threshold": "Air quality grass pollen threshold",
+          "air_quality_grass_pollen_unit": "Air quality grass pollen unit",
+          "air_quality_grass_pollen_averaging_period": "Air quality grass pollen averaging period",
+          "air_quality_mugwort_pollen_entity_id": "Air quality mugwort pollen entity id",
+          "air_quality_mugwort_pollen_policy": "Air quality mugwort pollen policy",
+          "air_quality_mugwort_pollen_threshold": "Air quality mugwort pollen threshold",
+          "air_quality_mugwort_pollen_unit": "Air quality mugwort pollen unit",
+          "air_quality_mugwort_pollen_averaging_period": "Air quality mugwort pollen averaging period",
+          "air_quality_olive_pollen_entity_id": "Air quality olive pollen entity id",
+          "air_quality_olive_pollen_policy": "Air quality olive pollen policy",
+          "air_quality_olive_pollen_threshold": "Air quality olive pollen threshold",
+          "air_quality_olive_pollen_unit": "Air quality olive pollen unit",
+          "air_quality_olive_pollen_averaging_period": "Air quality olive pollen averaging period",
+          "air_quality_ragweed_pollen_entity_id": "Air quality ragweed pollen entity id",
+          "air_quality_ragweed_pollen_policy": "Air quality ragweed pollen policy",
+          "air_quality_ragweed_pollen_threshold": "Air quality ragweed pollen threshold",
+          "air_quality_ragweed_pollen_unit": "Air quality ragweed pollen unit",
+          "air_quality_ragweed_pollen_averaging_period": "Air quality ragweed pollen averaging period"
+        },
+        "data_description": {
+          "air_quality_entity_id": "Configure air quality entity id.",
+          "air_quality_policy": "Configure air quality policy.",
+          "air_quality_threshold": "Configure air quality threshold.",
+          "air_quality_unit": "Configure air quality unit.",
+          "air_quality_averaging_period": "Configure air quality averaging period.",
+          "air_quality_pm2_5_entity_id": "Configure air quality pm2 5 entity id.",
+          "air_quality_pm2_5_policy": "Configure air quality pm2 5 policy.",
+          "air_quality_pm2_5_threshold": "Configure air quality pm2 5 threshold.",
+          "air_quality_pm2_5_unit": "Configure air quality pm2 5 unit.",
+          "air_quality_pm2_5_averaging_period": "Configure air quality pm2 5 averaging period.",
+          "air_quality_pm10_entity_id": "Configure air quality pm10 entity id.",
+          "air_quality_pm10_policy": "Configure air quality pm10 policy.",
+          "air_quality_pm10_threshold": "Configure air quality pm10 threshold.",
+          "air_quality_pm10_unit": "Configure air quality pm10 unit.",
+          "air_quality_pm10_averaging_period": "Configure air quality pm10 averaging period.",
+          "air_quality_nitrogen_dioxide_entity_id": "Configure air quality nitrogen dioxide entity id.",
+          "air_quality_nitrogen_dioxide_policy": "Configure air quality nitrogen dioxide policy.",
+          "air_quality_nitrogen_dioxide_threshold": "Configure air quality nitrogen dioxide threshold.",
+          "air_quality_nitrogen_dioxide_unit": "Configure air quality nitrogen dioxide unit.",
+          "air_quality_nitrogen_dioxide_averaging_period": "Configure air quality nitrogen dioxide averaging period.",
+          "air_quality_ozone_entity_id": "Configure air quality ozone entity id.",
+          "air_quality_ozone_policy": "Configure air quality ozone policy.",
+          "air_quality_ozone_threshold": "Configure air quality ozone threshold.",
+          "air_quality_ozone_unit": "Configure air quality ozone unit.",
+          "air_quality_ozone_averaging_period": "Configure air quality ozone averaging period.",
+          "air_quality_carbon_monoxide_entity_id": "Configure air quality carbon monoxide entity id.",
+          "air_quality_carbon_monoxide_policy": "Configure air quality carbon monoxide policy.",
+          "air_quality_carbon_monoxide_threshold": "Configure air quality carbon monoxide threshold.",
+          "air_quality_carbon_monoxide_unit": "Configure air quality carbon monoxide unit.",
+          "air_quality_carbon_monoxide_averaging_period": "Configure air quality carbon monoxide averaging period.",
+          "air_quality_sulphur_dioxide_entity_id": "Configure air quality sulphur dioxide entity id.",
+          "air_quality_sulphur_dioxide_policy": "Configure air quality sulphur dioxide policy.",
+          "air_quality_sulphur_dioxide_threshold": "Configure air quality sulphur dioxide threshold.",
+          "air_quality_sulphur_dioxide_unit": "Configure air quality sulphur dioxide unit.",
+          "air_quality_sulphur_dioxide_averaging_period": "Configure air quality sulphur dioxide averaging period.",
+          "air_quality_european_aqi_entity_id": "Configure air quality european aqi entity id.",
+          "air_quality_european_aqi_policy": "Configure air quality european aqi policy.",
+          "air_quality_european_aqi_threshold": "Configure air quality european aqi threshold.",
+          "air_quality_european_aqi_unit": "Configure air quality european aqi unit.",
+          "air_quality_european_aqi_averaging_period": "Configure air quality european aqi averaging period.",
+          "air_quality_alder_pollen_entity_id": "Configure air quality alder pollen entity id.",
+          "air_quality_alder_pollen_policy": "Configure air quality alder pollen policy.",
+          "air_quality_alder_pollen_threshold": "Configure air quality alder pollen threshold.",
+          "air_quality_alder_pollen_unit": "Configure air quality alder pollen unit.",
+          "air_quality_alder_pollen_averaging_period": "Configure air quality alder pollen averaging period.",
+          "air_quality_birch_pollen_entity_id": "Configure air quality birch pollen entity id.",
+          "air_quality_birch_pollen_policy": "Configure air quality birch pollen policy.",
+          "air_quality_birch_pollen_threshold": "Configure air quality birch pollen threshold.",
+          "air_quality_birch_pollen_unit": "Configure air quality birch pollen unit.",
+          "air_quality_birch_pollen_averaging_period": "Configure air quality birch pollen averaging period.",
+          "air_quality_grass_pollen_entity_id": "Configure air quality grass pollen entity id.",
+          "air_quality_grass_pollen_policy": "Configure air quality grass pollen policy.",
+          "air_quality_grass_pollen_threshold": "Configure air quality grass pollen threshold.",
+          "air_quality_grass_pollen_unit": "Configure air quality grass pollen unit.",
+          "air_quality_grass_pollen_averaging_period": "Configure air quality grass pollen averaging period.",
+          "air_quality_mugwort_pollen_entity_id": "Configure air quality mugwort pollen entity id.",
+          "air_quality_mugwort_pollen_policy": "Configure air quality mugwort pollen policy.",
+          "air_quality_mugwort_pollen_threshold": "Configure air quality mugwort pollen threshold.",
+          "air_quality_mugwort_pollen_unit": "Configure air quality mugwort pollen unit.",
+          "air_quality_mugwort_pollen_averaging_period": "Configure air quality mugwort pollen averaging period.",
+          "air_quality_olive_pollen_entity_id": "Configure air quality olive pollen entity id.",
+          "air_quality_olive_pollen_policy": "Configure air quality olive pollen policy.",
+          "air_quality_olive_pollen_threshold": "Configure air quality olive pollen threshold.",
+          "air_quality_olive_pollen_unit": "Configure air quality olive pollen unit.",
+          "air_quality_olive_pollen_averaging_period": "Configure air quality olive pollen averaging period.",
+          "air_quality_ragweed_pollen_entity_id": "Configure air quality ragweed pollen entity id.",
+          "air_quality_ragweed_pollen_policy": "Configure air quality ragweed pollen policy.",
+          "air_quality_ragweed_pollen_threshold": "Configure air quality ragweed pollen threshold.",
+          "air_quality_ragweed_pollen_unit": "Configure air quality ragweed pollen unit.",
+          "air_quality_ragweed_pollen_averaging_period": "Configure air quality ragweed pollen averaging period."
+        }
+      },
+      "diagnostics": {
+        "title": "Diagnostics",
+        "description": "Configure diagnostic notifications and debug mode.",
+        "data": {
+          "diagnostic_notification_level": "Diagnostic notification level",
+          "debug_mode_enabled": "Debug mode enabled"
+        },
+        "data_description": {
+          "diagnostic_notification_level": "Configure diagnostic notification level.",
+          "debug_mode_enabled": "Configure debug mode enabled."
+        }
+      },
+      "edit_room": {
+        "title": "Edit room",
+        "description": "Choose the room you want to update.",
+        "data": {
+          "room_selection": "Room"
+        },
+        "data_description": {
+          "room_selection": "Select one of the rooms already saved in VentWise."
+        }
+      },
+      "remove_room": {
+        "title": "Remove room",
+        "description": "Choose the room you want to delete.",
+        "data": {
+          "room_selection": "Room"
+        },
+        "data_description": {
+          "room_selection": "Select one of the rooms already saved in VentWise."
+        }
+      },
+      "edit_room_details": {
+        "title": "Edit room",
+        "description": "Choose which part of the selected room to update.",
+        "menu_options": {
+          "edit_room_base": "Basic room settings",
+          "edit_room_advanced": "Advanced room settings"
+        },
+        "menu_option_descriptions": {
+          "edit_room_base": "Update the room name and measurements.",
+          "edit_room_advanced": "Update room overrides and automations."
+        }
+      },
+      "edit_room_base": {
+        "title": "Edit room",
+        "description": "Update the selected room's basic settings.",
+        "data": {
+          "name": "Room name",
+          "temperature_entity_id": "Indoor temperature sensor",
+          "humidity_entity_id": "Indoor humidity sensor",
+          "window_sensor_entity_ids": "Window contacts"
+        },
+        "data_description": {
+          "name": "A friendly name for this room, like Bedroom, Study, or Office.",
+          "temperature_entity_id": "Pick the room temperature sensor.",
+          "humidity_entity_id": "Optional. Pick the room humidity sensor.",
+          "window_sensor_entity_ids": "Configure window sensor entity ids."
+        }
+      },
+      "edit_room_advanced": {
+        "title": "Edit room",
+        "description": "Update the selected room's advanced settings.",
+        "data": {
+          "target_temperature_c_override": "Room comfort temperature override",
+          "target_humidity_percent_override": "Room comfort humidity override (%)",
+          "start_entity_id": "Open windows automation",
+          "stop_entity_id": "Close windows automation",
+          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "co2_entity_id": "Room CO2 sensor"
+        },
+        "data_description": {
+          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
+          "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
+          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
+          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
+          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations; VentWise does not control devices."
         }
       }
     },
@@ -661,9 +760,6 @@
     }
   },
   "selector": {
-    "outdoor_source": {
-      "options": {}
-    },
     "diagnostic_notification_level": {
       "options": {
         "essential": "基本",
@@ -672,23 +768,23 @@
     },
     "pollution_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "pollen_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_pm2_5_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_pm2_5_averaging_period": {
@@ -701,9 +797,9 @@
     },
     "air_quality_pm10_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_pm10_averaging_period": {
@@ -716,9 +812,9 @@
     },
     "air_quality_nitrogen_dioxide_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_nitrogen_dioxide_averaging_period": {
@@ -731,9 +827,9 @@
     },
     "air_quality_ozone_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_ozone_averaging_period": {
@@ -746,9 +842,9 @@
     },
     "air_quality_carbon_monoxide_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_carbon_monoxide_averaging_period": {
@@ -761,9 +857,9 @@
     },
     "air_quality_sulphur_dioxide_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_sulphur_dioxide_averaging_period": {
@@ -776,9 +872,9 @@
     },
     "air_quality_european_aqi_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_european_aqi_averaging_period": {
@@ -791,9 +887,9 @@
     },
     "air_quality_alder_pollen_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_alder_pollen_averaging_period": {
@@ -806,9 +902,9 @@
     },
     "air_quality_birch_pollen_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_birch_pollen_averaging_period": {
@@ -821,9 +917,9 @@
     },
     "air_quality_grass_pollen_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_grass_pollen_averaging_period": {
@@ -836,9 +932,9 @@
     },
     "air_quality_mugwort_pollen_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_mugwort_pollen_averaging_period": {
@@ -851,9 +947,9 @@
     },
     "air_quality_olive_pollen_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_olive_pollen_averaging_period": {
@@ -866,9 +962,9 @@
     },
     "air_quality_ragweed_pollen_policy": {
       "options": {
-        "ignore": "??",
-        "reduce": "????",
-        "avoid": "????"
+        "ignore": "Ignore",
+        "reduce": "Reduce ventilation",
+        "avoid": "Avoid ventilation"
       }
     },
     "air_quality_ragweed_pollen_averaging_period": {
@@ -941,34 +1037,34 @@
         "name": "建议",
         "state_attributes": {
           "core_action": {
-            "name": "????"
+            "name": "Core action"
           },
           "delivered_action": {
-            "name": "?????"
+            "name": "Delivered action"
           },
           "duration_minutes": {
-            "name": "????????"
+            "name": "Suggested duration (minutes)"
           },
           "confidence": {
-            "name": "???"
+            "name": "Confidence"
           },
           "candidates": {
-            "name": "????"
+            "name": "Candidate scores"
           },
           "trace": {
-            "name": "????"
+            "name": "Decision trace"
           },
           "blocked_conditions": {
-            "name": "????"
+            "name": "Blocked conditions"
           },
           "applied_penalties": {
-            "name": "?????"
+            "name": "Applied penalties"
           },
           "data_quality": {
-            "name": "????"
+            "name": "Data quality"
           },
           "delivery_suppressed_by": {
-            "name": "?????????"
+            "name": "Delivery suppressed by"
           }
         }
       },
