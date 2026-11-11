@@ -16,9 +16,6 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
-    CONF_NOTIFICATION_DEVICE_ID,
-    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
-    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_ROOM_ENABLED,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
@@ -31,7 +28,6 @@ from custom_components.ventwise.const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
-    CONF_WIND_SPEED_OVERRIDE,
     DOMAIN,
 )
 from custom_components.ventwise.ventwise_core import RecommendationAction
@@ -64,19 +60,10 @@ async def test_onboarding_sensor_update_and_reload_journey(hass: HomeAssistant) 
             CONF_AUTO_COMFORT_TEMPERATURE: False,
             CONF_TARGET_HUMIDITY_PERCENT: 50.0,
             CONF_STABILITY_MINUTES: 0,
-            CONF_NOTIFICATION_DEVICE_ID: [],
-        },
-    )
-    assert result["step_id"] == "outdoor"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {
-            CONF_OUTDOOR_TEMPERATURE_OVERRIDE: False,
-            CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
-            CONF_WIND_SPEED_OVERRIDE: False,
         },
     )
     assert result["type"] == "menu"
+    assert result["step_id"] == "rooms"
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": "add_room"}
     )
@@ -95,6 +82,11 @@ async def test_onboarding_sensor_update_and_reload_journey(hass: HomeAssistant) 
         },
     )
     assert result["type"] == "menu"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "finish"}
+    )
+    assert result["type"] == "menu"
+    assert result["step_id"] == "optional_setup"
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": "finish"}
     )

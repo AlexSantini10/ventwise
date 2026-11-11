@@ -201,8 +201,8 @@ async def test_real_flow_manager_starts_the_ventwise_config_flow(
             CONF_TARGET_TEMPERATURE_C: 22.0,
         },
     )
-    assert result["type"] == "form"
-    assert result["step_id"] == "outdoor"
+    assert result["type"] == "menu"
+    assert result["step_id"] == "rooms"
 
 
 @pytest.mark.asyncio
