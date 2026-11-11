@@ -64,7 +64,6 @@ from ..const import (
     CONF_ROOM_RADIATION_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
-    CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
@@ -87,7 +86,6 @@ from ..const import (
     DEFAULT_AUTO_COMFORT_TEMPERATURE,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
-    DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_TARGET_TEMPERATURE_C,
     DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
@@ -401,18 +399,6 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 ),
             ): cv.boolean,
             vol.Required(
-                CONF_SOFT_OUTDOOR_THRESHOLD_C,
-                default=temperature_from_celsius(float(defaults.get(
-                    CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
-                )), selected_temperature_unit),
-            ): vol.All(
-                vol.Coerce(float),
-                vol.Range(
-                    min=temperature_from_celsius(-10.0, selected_temperature_unit),
-                    max=temperature_from_celsius(40.0, selected_temperature_unit),
-                ),
-            ),
-            vol.Required(
                 CONF_COOLDOWN_MINUTES,
                 default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
@@ -532,10 +518,8 @@ def build_outdoor_air_options_schema(defaults: Mapping[str, object]) -> vol.Sche
 def build_windows_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     """Create the window and protection category form."""
 
-    unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
     fields = {
         vol.Required(CONF_OUTDOOR_WEATHER_ENTITY_ID, default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)): EntitySelector(EntitySelectorConfig(domain="weather")),
-        vol.Required(CONF_SOFT_OUTDOOR_THRESHOLD_C, default=temperature_from_celsius(float(defaults.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(-10.0, unit), max=temperature_from_celsius(40.0, unit))),
     }
     fields.update(build_outdoor_source_schema(defaults).schema)
     return vol.Schema(fields)
@@ -572,9 +556,7 @@ def build_other_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
 def build_recommendation_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     """Create the technical recommendation behaviour form."""
 
-    unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
     return vol.Schema({
-        vol.Required(CONF_SOFT_OUTDOOR_THRESHOLD_C, default=temperature_from_celsius(float(defaults.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(-10.0, unit), max=temperature_from_celsius(40.0, unit))),
         vol.Required(CONF_COOLDOWN_MINUTES, default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
         vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
         **_optional_selector_field(CONF_CO2_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_CO2_ENTITY_ID)),
@@ -780,6 +762,7 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     """Normalize minimal setup data."""
 
     data = dict(user_input)
+    data.pop("soft_outdoor_threshold_c", None)
     data[CONF_TEMPERATURE_UNIT] = temperature_unit(data.get(CONF_TEMPERATURE_UNIT))
     data[CONF_WIND_SPEED_UNIT] = wind_speed_unit(data.get(CONF_WIND_SPEED_UNIT))
     data[CONF_OUTDOOR_WEATHER_ENTITY_ID] = _normalize_required_entity_id(
@@ -897,15 +880,11 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     """Normalize advanced flow data for storage."""
 
     data = dict(user_input)
+    data.pop("soft_outdoor_threshold_c", None)
     data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(
         data.get(CONF_AUTO_COMFORT_TEMPERATURE),
         CONF_AUTO_COMFORT_TEMPERATURE,
         default=DEFAULT_AUTO_COMFORT_TEMPERATURE,
-    )
-    selected_temperature_unit = temperature_unit(data.get(CONF_TEMPERATURE_UNIT))
-    data[CONF_SOFT_OUTDOOR_THRESHOLD_C] = _normalize_float(
-        temperature_to_celsius(float(data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C)), selected_temperature_unit),
-        CONF_SOFT_OUTDOOR_THRESHOLD_C, -10.0, 40.0,
     )
     data[CONF_COOLDOWN_MINUTES] = _normalize_int(
         data.get(CONF_COOLDOWN_MINUTES),

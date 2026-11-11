@@ -232,7 +232,6 @@ def test_config_flow_manual_source_and_validation_branches() -> None:
         assert optional["step_id"] == "rooms"
         overrides = await flow.async_step_initial_windows(
             {
-                "soft_outdoor_threshold_c": 28.0,
                 CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,
                 CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
                 CONF_WIND_SPEED_OVERRIDE: False,

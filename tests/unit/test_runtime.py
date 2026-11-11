@@ -27,7 +27,6 @@ from custom_components.ventwise.const import (
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
-    CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
 from custom_components.ventwise.application.runtime import (
     build_integration_config,
@@ -506,7 +505,6 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
     config = build_integration_config(
         {
             CONF_TARGET_TEMPERATURE_C: 22.0,
-            CONF_SOFT_OUTDOOR_THRESHOLD_C: 22.0,
             CONF_COOLDOWN_MINUTES: 60,
             CONF_STABILITY_MINUTES: 10,
             CONF_ROOMS: [

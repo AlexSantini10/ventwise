@@ -69,7 +69,6 @@ block.
 
 ## Soft Threshold
 
-- A soft outside threshold of `22 C` is used to suppress pointless alerts.
 - This threshold is not absolute.
 - Winter situations are still valid when outside is more comfortable.
 

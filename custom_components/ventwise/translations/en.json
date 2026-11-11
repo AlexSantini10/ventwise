@@ -65,14 +65,12 @@
         "title": "CO2",
         "description": "CO2 is an advisory ventilation signal; VentWise never controls devices.",
         "data": {
-          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Notification cooldown (minutes)",
           "co2_enabled": "Use CO2 in recommendations",
           "co2_entity_id": "CO2 sensor",
           "co2_threshold_ppm": "CO2 threshold (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Above this outdoor temperature, opening windows becomes less useful.",
           "cooldown_minutes": "How long identical notifications stay suppressed.",
           "co2_enabled": "Use indoor CO2 readings to improve ventilation advice.",
           "co2_entity_id": "Choose a numeric CO2 sensor, if available.",
@@ -100,7 +98,6 @@
         "description": "Choose weather and outdoor measurements used to protect window-opening advice.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "outdoor_temperature_override": "Use manual outdoor temperature",
           "outdoor_humidity_override": "Use manual outdoor humidity",
           "wind_speed_override": "Use manual outdoor wind speed",
@@ -110,7 +107,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the weather entity used for outdoor conditions.",
-          "soft_outdoor_threshold_c": "Above this temperature, opening windows becomes less useful.",
           "outdoor_temperature_override": "Turn this on to use a numeric temperature entity.",
           "outdoor_humidity_override": "Turn this on to use a numeric humidity entity.",
           "wind_speed_override": "Turn this on to use a numeric wind-speed entity.",
@@ -390,14 +386,12 @@
         "title": "CO2",
         "description": "CO2 is an advisory ventilation signal; VentWise never controls devices.",
         "data": {
-          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Notification cooldown (minutes)",
           "co2_enabled": "Use CO2 in recommendations",
           "co2_entity_id": "CO2 sensor",
           "co2_threshold_ppm": "CO2 threshold (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Above this outdoor temperature, opening windows becomes less useful.",
           "cooldown_minutes": "How long identical notifications stay suppressed.",
           "co2_enabled": "Use indoor CO2 readings to improve ventilation advice.",
           "co2_entity_id": "Choose a numeric CO2 sensor, if available.",
@@ -425,7 +419,6 @@
         "description": "Choose weather and outdoor measurements used to protect window-opening advice.",
         "data": {
           "outdoor_weather_entity_id": "Weather source",
-          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "outdoor_temperature_override": "Use manual outdoor temperature",
           "outdoor_humidity_override": "Use manual outdoor humidity",
           "wind_speed_override": "Use manual outdoor wind speed",
@@ -435,7 +428,6 @@
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the weather entity used for outdoor conditions.",
-          "soft_outdoor_threshold_c": "Above this temperature, opening windows becomes less useful.",
           "outdoor_temperature_override": "Turn this on to use a numeric temperature entity.",
           "outdoor_humidity_override": "Turn this on to use a numeric humidity entity.",
           "wind_speed_override": "Turn this on to use a numeric wind-speed entity.",
@@ -664,14 +656,12 @@
         "title": "Recommendation settings",
         "description": "Tune the comfort and advisory ventilation behaviour.",
         "data": {
-          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Notification cooldown (minutes)",
           "co2_enabled": "Co2 enabled",
           "co2_entity_id": "Co2 entity id",
           "co2_threshold_ppm": "Co2 threshold ppm"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending an updated notification. Identical recommendations stay suppressed.",
           "co2_enabled": "Configure co2 enabled.",
           "co2_entity_id": "Configure co2 entity id.",

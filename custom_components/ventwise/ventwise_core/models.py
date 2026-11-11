@@ -260,7 +260,6 @@ class ScoringConfig:
 
     target_temperature_c: float = 22.0
     target_humidity_percent: float = 50.0
-    soft_outdoor_threshold_c: float = 22.0
     minimum_score: float = 0.35
     minimum_stability_seconds: int = 0
     decision_threshold_c: float = 1.0
@@ -297,7 +296,6 @@ class ScoringConfig:
         "windy",
         "gust",
     )
-    soft_threshold_penalty: float = 0.7
     season_mode: SeasonMode = SeasonMode.AUTO
     open_bias: float = 0.0
     close_bias: float = 0.0

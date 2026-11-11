@@ -217,26 +217,6 @@ def test_recommender_needs_a_minimum_perceived_gap() -> None:
     assert result.action == RecommendationAction.NONE
 
 
-def test_recommender_applies_soft_outdoor_threshold_to_open_actions() -> None:
-    recommender = ComfortRecommender(
-        ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)
-    )
-    room = RoomProfile(
-        room_id="room-1",
-        name="Camera",
-        indoor=RoomObservation(temperature_c=28.0, humidity_percent=55.0),
-    )
-    cool_outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
-    warm_outdoor = ComfortObservation(temperature_c=24.0, humidity_percent=45.0)
-
-    cool_result = recommender.evaluate([room], cool_outdoor)
-    warm_result = recommender.evaluate([room], warm_outdoor)
-
-    assert cool_result.action == RecommendationAction.OPEN
-    assert warm_result.action == RecommendationAction.OPEN
-    assert warm_result.score < cool_result.score
-
-
 def test_recommender_penalizes_strong_wind_for_open_actions() -> None:
     recommender = ComfortRecommender(
         ScoringConfig(target_temperature_c=22.0, minimum_score=0.0)

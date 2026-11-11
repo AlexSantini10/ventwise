@@ -424,12 +424,6 @@ class ComfortRecommender:
             ),
         )
         weighted_score = best_room.score
-        if (
-            best_room.action == RecommendationAction.OPEN
-            and outdoor.temperature_c > self._config.soft_outdoor_threshold_c
-        ):
-            weighted_score *= self._config.soft_threshold_penalty
-
         weighted_score = self._clamp(weighted_score)
         if weighted_score < self._config.minimum_score or best_room.action == RecommendationAction.NONE:
             suppressed_reason = (

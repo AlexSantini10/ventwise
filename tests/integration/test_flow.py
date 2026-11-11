@@ -36,7 +36,6 @@ from custom_components.ventwise.const import (
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOMS,
-    CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
@@ -303,7 +302,6 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     schema_dict = schema.schema
 
     assert callable(schema_dict[CONF_AUTO_COMFORT_TEMPERATURE])
-    assert schema_dict[CONF_SOFT_OUTDOOR_THRESHOLD_C].__class__.__name__ == "All"
     assert schema_dict[CONF_COOLDOWN_MINUTES].__class__.__name__ == "All"
     assert CONF_STABILITY_MINUTES not in schema_dict
     assert CONF_QUIET_HOURS_START not in schema_dict
@@ -573,7 +571,6 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
 
     data = normalize_advanced_config(
         {
-            CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
             CONF_COOLDOWN_MINUTES: 60,
             CONF_AUTO_COMFORT_TEMPERATURE: True,
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "input_number.outdoor_temp",
@@ -592,7 +589,6 @@ def test_normalize_advanced_config_normalizes_times_and_entities() -> None:
 def test_normalize_advanced_config_stores_explicit_exposure_policy() -> None:
     data = normalize_advanced_config(
         {
-            CONF_SOFT_OUTDOOR_THRESHOLD_C: 24.0,
             CONF_COOLDOWN_MINUTES: 60,
             "air_quality_pm2_5_entity_id": "sensor.pm25",
             "air_quality_pm2_5_policy": "avoid",
@@ -605,21 +601,6 @@ def test_normalize_advanced_config_stores_explicit_exposure_policy() -> None:
     assert data[CONF_EXPOSURE_POLICIES]["pm2_5"] == {
         "mode": "avoid", "threshold": 25.0, "unit": "µg/m³", "averaging_period": "instant"
     }
-
-
-def test_normalize_advanced_config_rejects_out_of_range_numeric_values() -> None:
-    with pytest.raises(ConfigValidationError) as exc_info:
-        normalize_advanced_config(
-            {
-                CONF_QUIET_HOURS_START: "22:00",
-                CONF_QUIET_HOURS_END: "07:00",
-                CONF_SOFT_OUTDOOR_THRESHOLD_C: 60.0,
-                CONF_COOLDOWN_MINUTES: 60,
-                CONF_STABILITY_MINUTES: 10,
-            }
-        )
-
-    assert exc_info.value.field == CONF_SOFT_OUTDOOR_THRESHOLD_C
 
 
 def test_normalize_room_config_sets_kind_and_trims_names() -> None:

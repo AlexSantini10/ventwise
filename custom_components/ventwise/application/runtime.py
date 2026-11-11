@@ -83,7 +83,6 @@ from ..const import (
     CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_RUNTIME_ROOM_ACTION_GUARDS,
     CONF_RUNTIME_DIAGNOSTIC_ISSUE,
-    CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
@@ -107,7 +106,6 @@ from ..const import (
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
     DEFAULT_QUIET_HOURS_START,
-    DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
@@ -164,7 +162,6 @@ class IntegrationConfig:
     wind_speed_unit: str = DEFAULT_WIND_SPEED_UNIT
     auto_comfort_temperature_enabled: bool = DEFAULT_AUTO_COMFORT_TEMPERATURE
     target_humidity_percent: float = 50.0
-    soft_outdoor_threshold_c: float = DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
     minimum_score: float = DEFAULT_MINIMUM_SCORE
     cooldown_minutes: int = DEFAULT_COOLDOWN_MINUTES
     stability_minutes: int = DEFAULT_STABILITY_MINUTES
@@ -328,9 +325,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             data.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)
         ),
         target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)),
-        soft_outdoor_threshold_c=float(
-            data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
-        ),
         minimum_score=float(data.get(CONF_MINIMUM_SCORE, DEFAULT_MINIMUM_SCORE)),
         cooldown_minutes=int(data.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)),
         stability_minutes=int(data.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)),
@@ -382,7 +376,6 @@ def build_scoring_config(config: IntegrationConfig) -> ScoringConfig:
     return ScoringConfig(
         target_temperature_c=config.target_temperature_c,
         target_humidity_percent=config.target_humidity_percent,
-        soft_outdoor_threshold_c=config.soft_outdoor_threshold_c,
         minimum_score=config.minimum_score,
         minimum_stability_seconds=config.stability_minutes * 60,
         co2_enabled=config.co2_enabled,
@@ -903,7 +896,6 @@ def build_debug_attributes(
         "wind_speed_unit": config.wind_speed_unit,
         "auto_comfort_temperature_enabled": config.auto_comfort_temperature_enabled,
         "target_humidity_percent": config.target_humidity_percent,
-        "soft_outdoor_threshold_c": config.soft_outdoor_threshold_c,
         "minimum_score": config.minimum_score,
         "stability_minutes": config.stability_minutes,
         "cooldown_minutes": config.cooldown_minutes,
