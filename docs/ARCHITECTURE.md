@@ -49,6 +49,10 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 - Collects the weather source during setup and lets each outdoor metric
   choose between the forecast value and a numeric override.
 - Lets the user skip room creation entirely during initial setup.
+- Uses a four-stage guided setup: essential defaults, optional rooms, an
+  optional category menu, and final save. Every optional stage can be skipped.
+- Exposes the options flow through purpose-based categories while preserving
+  the existing normalized configuration keys and persistence contract.
 - Falls back to the standard weather forecast whenever a metric is left on
   forecast.
 - Treats the standard Home Assistant weather entity as the only supported

@@ -60,6 +60,7 @@ from custom_components.ventwise.configuration.flow import (
     build_basic_options_schema,
     build_outdoor_override_schema,
     build_outdoor_source_schema,
+    build_windows_options_schema,
     build_config_schema,
     build_room_schema,
     _notification_device_defaults,
@@ -309,6 +310,18 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert CONF_QUIET_HOURS_END not in schema_dict
     assert _schema_entry(schema, "air_quality_pm2_5_entity_id")
     assert _schema_entry(schema, "air_quality_grass_pollen_policy")
+
+
+def test_windows_schema_keeps_manual_selectors_out_of_disabled_state() -> None:
+    schema = build_windows_options_schema({
+        "outdoor_temperature_override": False,
+        "outdoor_humidity_override": False,
+        "wind_speed_override": False,
+    })
+
+    assert "outdoor_temperature_entity_id" not in schema.schema
+    assert "outdoor_humidity_entity_id" not in schema.schema
+    assert "wind_speed_entity_id" not in schema.schema
 
 
 def test_room_schema_supports_room_and_macro_room_defaults() -> None:

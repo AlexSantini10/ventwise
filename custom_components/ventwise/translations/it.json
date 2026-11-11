@@ -910,11 +910,17 @@
         "description": "Scegli quale parte della stanza selezionata modificare.",
         "menu_options": {
           "edit_room_base": "Impostazioni di base della stanza",
-          "edit_room_advanced": "Impostazioni avanzate della stanza"
+          "edit_room_advanced": "Impostazioni avanzate della stanza",
+          "edit_room_basics": "Basi e sensori",
+          "edit_room_comfort": "Override comfort",
+          "edit_room_co2_windows": "CO2 e finestre"
         },
         "menu_option_descriptions": {
           "edit_room_base": "Modifica il nome e le misurazioni della stanza.",
-          "edit_room_advanced": "Modifica i valori alternativi e le automazioni della stanza."
+          "edit_room_advanced": "Modifica i valori alternativi e le automazioni della stanza.",
+          "edit_room_basics": "Modifica il nome e i riferimenti ai sensori della stanza.",
+          "edit_room_comfort": "Modifica gli override di comfort della stanza.",
+          "edit_room_co2_windows": "Modifica il sensore CO2 e i contatti delle finestre."
         }
       },
       "edit_room_base": {

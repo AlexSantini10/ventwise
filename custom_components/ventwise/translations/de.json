@@ -910,11 +910,17 @@
         "description": "Wähle den zu bearbeitenden Bereich des Raums aus.",
         "menu_options": {
           "edit_room_base": "Raumgrundeinstellungen",
-          "edit_room_advanced": "Erweiterte Raumeinstellungen"
+          "edit_room_advanced": "Erweiterte Raumeinstellungen",
+          "edit_room_basics": "Grundlagen und Sensoren",
+          "edit_room_comfort": "Komfortüberschreibungen",
+          "edit_room_co2_windows": "CO2 und Fenster"
         },
         "menu_option_descriptions": {
           "edit_room_base": "Raumname und Messwerte bearbeiten.",
-          "edit_room_advanced": "Raumspezifische Werte und Automatisierungen bearbeiten."
+          "edit_room_advanced": "Raumspezifische Werte und Automatisierungen bearbeiten.",
+          "edit_room_basics": "Raumname und Sensoren bearbeiten.",
+          "edit_room_comfort": "Raumspezifische Komfortwerte bearbeiten.",
+          "edit_room_co2_windows": "CO2-Sensor und Fensterkontakte bearbeiten."
         }
       },
       "edit_room_base": {

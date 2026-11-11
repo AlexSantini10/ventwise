@@ -523,7 +523,10 @@ def build_co2_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
 def build_outdoor_air_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
     """Create the outdoor air and pollen category form."""
 
-    return build_air_quality_options_schema(defaults)
+    fields = dict(build_air_quality_options_schema(defaults).schema)
+    for kind in AIR_QUALITY_VARIABLES:
+        fields.update(build_air_quality_source_schema(defaults, kind).schema)
+    return vol.Schema(fields)
 
 
 def build_windows_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
@@ -535,9 +538,13 @@ def build_windows_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
         vol.Required(CONF_SOFT_OUTDOOR_THRESHOLD_C, default=temperature_from_celsius(float(defaults.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(-10.0, unit), max=temperature_from_celsius(40.0, unit))),
     }
     fields.update(build_outdoor_source_schema(defaults).schema)
-    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
-        fields.update(_optional_selector_field(entity_field, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(entity_field)))
     return vol.Schema(fields)
+
+
+def build_windows_manual_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create only the enabled manual outdoor measurement selectors."""
+
+    return build_outdoor_override_schema(defaults)
 
 
 def build_notification_options_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
@@ -549,6 +556,17 @@ def build_notification_options_schema(defaults: Mapping[str, object], hass=None)
         vol.Required(CONF_COOLDOWN_MINUTES, default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
         vol.Required(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, default=defaults.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL)): SelectSelector(SelectSelectorConfig(options=[DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL, DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC])),
     })
+
+
+def build_other_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
+    """Create the units and debug settings category form."""
+
+    fields = dict(build_unit_schema(defaults).schema)
+    fields[vol.Required(
+        CONF_DEBUG_MODE_ENABLED,
+        default=defaults.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED),
+    )] = cv.boolean
+    return vol.Schema(fields)
 
 
 def build_recommendation_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
@@ -719,16 +737,30 @@ def build_room_schema(
             **_optional_selector_field(CONF_ROOM_AIR_CLEANER_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["fan", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_AIR_CLEANER_ENTITY_ID)),
             **_optional_selector_field(CONF_ROOM_RADIATION_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_ROOM_RADIATION_ENTITY_ID)),
     }
-    if section == "base":
+    if section in {"basics", "base"}:
         allowed = {
             CONF_ROOM_ENABLED, CONF_ROOM_NAME, CONF_ROOM_TEMPERATURE_ENTITY_ID,
-            CONF_ROOM_HUMIDITY_ENTITY_ID, CONF_ROOM_CO2_ENTITY_ID,
-            CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+            CONF_ROOM_HUMIDITY_ENTITY_ID,
+        }
+        if section == "base":
+            allowed.update({
+                CONF_ROOM_CO2_ENTITY_ID, CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
+                CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+                CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+                CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+            })
+        fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
+    elif section == "comfort":
+        allowed = {
             CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
             CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
             CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
             CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
         }
+        fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
+    elif section == "co2_windows":
+        allowed = {CONF_ROOM_CO2_ENTITY_ID, CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS}
         fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
     elif section == "advanced":
         allowed = {

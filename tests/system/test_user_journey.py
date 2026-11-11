@@ -137,7 +137,7 @@ def test_config_flow_creates_a_room_from_the_user_journey() -> None:
     async def run_flow() -> tuple[dict[str, object], dict[str, object], str | None]:
         flow = _StandaloneVentWiseConfigFlow()
         optional_result = await flow.async_step_user(basic_input)
-        assert optional_result["step_id"] == "optional_setup"
+        assert optional_result["step_id"] == "rooms"
         rooms_result = await flow.async_step_initial_rooms()
         assert rooms_result["step_id"] == "rooms"
         updated_rooms_result = await flow.async_step_add_room(room_input)
@@ -211,6 +211,7 @@ def test_config_flow_room_management_paths_preserve_staged_configuration() -> No
         )
         assert edited["type"] == "menu"
         assert (await flow.async_step_remove_room({"room_selection": flow._room_selection_options()[0]}))["type"] == "menu"
+        await flow.async_step_finish()
         return await flow.async_step_finish()
 
     result = asyncio.run(run_flow())
@@ -228,7 +229,7 @@ def test_config_flow_manual_source_and_validation_branches() -> None:
         optional = await flow.async_step_user(
             {CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.ventwise_test_weather", CONF_NOTIFICATION_DEVICE_ID: []}
         )
-        assert optional["step_id"] == "optional_setup"
+        assert optional["step_id"] == "rooms"
         overrides = await flow.async_step_initial_windows(
             {
                 "soft_outdoor_threshold_c": 28.0,

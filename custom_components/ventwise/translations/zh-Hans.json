@@ -910,11 +910,17 @@
         "description": "选择要更新所选房间的哪部分设置。",
         "menu_options": {
           "edit_room_base": "房间基本设置",
-          "edit_room_advanced": "房间高级设置"
+          "edit_room_advanced": "房间高级设置",
+          "edit_room_basics": "基础和传感器",
+          "edit_room_comfort": "舒适度覆盖",
+          "edit_room_co2_windows": "CO2 和窗户"
         },
         "menu_option_descriptions": {
           "edit_room_base": "更新房间名称和测量值。",
-          "edit_room_advanced": "更新房间覆盖设置和自动化。"
+          "edit_room_advanced": "更新房间覆盖设置和自动化。",
+          "edit_room_basics": "更新房间名称和传感器引用。",
+          "edit_room_comfort": "更新房间特定的舒适度覆盖。",
+          "edit_room_co2_windows": "更新房间 CO2 传感器和窗户触点。"
         }
       },
       "edit_room_base": {

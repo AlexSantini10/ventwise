@@ -71,9 +71,20 @@ section can be skipped and configured later.
 After initial setup, open **Configure** on the VentWise integration. Settings
 are grouped by purpose: **Comfort**, **CO2**, **Outdoor air and pollen**,
 **Windows and protection**, **Rooms**, **Notifications**, and **Other settings**.
+Comfort contains the global temperature, humidity, adaptive comfort, and
+recommendation stability defaults. CO2 contains enablement, the global sensor,
+and its threshold. Outdoor air and pollen contains smoke, pollution, pollen,
+Open-Meteo, source, and threshold settings. Windows and protection contains the
+weather source, manual outdoor measurements, and outdoor comfort guardrails.
+Notifications contains notification targets, Home Assistant notifications,
+cooldown, and diagnostic preferences; **Other settings** contains units and
+debug mode.
 To add a room, open **Rooms**, give it a clear name, and select its indoor
 temperature and humidity sensors. You can add, edit, disable, or remove rooms
 later from the same menu.
+Room editing is split into **Basics and sensors**, **Comfort overrides**,
+**CO2 and windows**, and **Advanced room behavior**. Each subsection preserves
+values staged in the other subsections.
 If your room has door or window contacts, select them in the room form as well.
 VentWise treats the room as open when any selected contact is open, and only
 asks you to open or close windows when that action has not already happened.

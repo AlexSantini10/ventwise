@@ -910,11 +910,17 @@
         "description": "Elige qué parte de la habitación seleccionada deseas actualizar.",
         "menu_options": {
           "edit_room_base": "Ajustes básicos de la habitación",
-          "edit_room_advanced": "Ajustes avanzados de la habitación"
+          "edit_room_advanced": "Ajustes avanzados de la habitación",
+          "edit_room_basics": "Datos básicos y sensores",
+          "edit_room_comfort": "Anulaciones de confort",
+          "edit_room_co2_windows": "CO2 y ventanas"
         },
         "menu_option_descriptions": {
           "edit_room_base": "Actualiza el nombre y las mediciones de la habitación.",
-          "edit_room_advanced": "Actualiza los valores alternativos y las automatizaciones de la habitación."
+          "edit_room_advanced": "Actualiza los valores alternativos y las automatizaciones de la habitación.",
+          "edit_room_basics": "Actualiza el nombre y los sensores de la habitación.",
+          "edit_room_comfort": "Actualiza los valores de confort de la habitación.",
+          "edit_room_co2_windows": "Actualiza el sensor de CO2 y los contactos de ventanas."
         }
       },
       "edit_room_base": {

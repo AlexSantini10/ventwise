@@ -30,7 +30,9 @@ from .flow import (
     build_co2_options_schema,
     build_outdoor_air_options_schema,
     build_windows_options_schema,
+    build_windows_manual_schema,
     build_notification_options_schema,
+    build_other_options_schema,
     build_recommendation_options_schema,
     build_manual_sources_schema,
     build_air_quality_options_schema,
@@ -135,7 +137,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
     async def async_step_outdoor_air(self, user_input: dict[str, Any] | None = None):
         """Edit outdoor air and pollen preferences."""
 
-        return await self._save_category_form("outdoor_air", build_outdoor_air_options_schema, user_input)
+        return await self._save_advanced_form("outdoor_air", build_outdoor_air_options_schema, user_input)
 
     async def async_step_windows(self, user_input: dict[str, Any] | None = None):
         """Edit window and outdoor-condition protection preferences."""
@@ -144,6 +146,24 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         if user_input is not None:
             try:
                 data = normalize_outdoor_source_config({**self._current_config, **user_input})
+                if any(data.get(field) for field in ("outdoor_temperature_override", "outdoor_humidity_override", "wind_speed_override")):
+                    enabled_entities = {
+                        "outdoor_temperature_override": "outdoor_temperature_entity_id",
+                        "outdoor_humidity_override": "outdoor_humidity_entity_id",
+                        "wind_speed_override": "wind_speed_entity_id",
+                    }
+                    if all(
+                        not data.get(override) or data.get(entity)
+                        for override, entity in enabled_entities.items()
+                    ):
+                        data = normalize_outdoor_override_config(data, data)
+                        self._current_config = normalize_advanced_config({**data, **user_input})
+                        return self.async_create_entry(title=NAME, data=self._result_data())
+                    self._current_config = data
+                    return self.async_show_form(
+                        step_id="outdoor_overrides",
+                        data_schema=build_windows_manual_schema(data),
+                    )
                 data = normalize_outdoor_override_config(data, data)
                 data = normalize_advanced_config({**data, **user_input})
                 self._current_config = data
@@ -154,17 +174,51 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 errors["base"] = "invalid_input"
         return self.async_show_form(step_id="windows", data_schema=build_windows_options_schema(self._current_config), errors=errors)
 
+    async def async_step_windows_manual(self, user_input: dict[str, Any] | None = None):
+        """Collect only the manual outdoor sensors enabled in the previous step."""
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                data = normalize_outdoor_override_config(user_input, self._current_config)
+                self._current_config = normalize_advanced_config(data)
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        return self.async_show_form(
+            step_id="outdoor_overrides",
+            data_schema=build_windows_manual_schema(self._current_config),
+            errors=errors,
+        )
+
     async def async_step_notifications(self, user_input: dict[str, Any] | None = None):
         """Edit notification preferences."""
 
         return await self._save_category_form("notifications", build_notification_options_schema, user_input)
 
     async def async_step_other(self, user_input: dict[str, Any] | None = None):
-        """Show less frequently used settings."""
+        """Edit units and debug mode."""
 
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_abort(reason="invalid_step")
-        return self.async_show_menu(step_id="other", menu_options=["units", "diagnostics"])
+            try:
+                data = {**self._current_config, **user_input}
+                data.update(normalize_unit_config(data))
+                data.setdefault(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
+                data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
+                self._current_config = normalize_advanced_config(data)
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        return self.async_show_form(
+            step_id="other",
+            data_schema=build_other_options_schema(self._current_config),
+            errors=errors,
+        )
 
     async def async_step_advanced(self, user_input: dict[str, Any] | None = None):
         """Show technical settings."""
@@ -256,6 +310,8 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         if user_input is not None:
             try:
                 data = dict(self._current_config)
+                data.setdefault(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
+                data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
                 data.update(user_input)
                 candidate = normalize_basic_config(data) if step_id == "comfort" else normalize_advanced_config(data)
                 if validate_co2 and candidate.get("co2_enabled") and not candidate.get("co2_entity_id") and not any(room.get("co2_entity_id") for room in self._rooms):
@@ -332,13 +388,33 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             return self.async_abort(reason="invalid_step")
         return self.async_show_menu(
             step_id="edit_room_details",
-            menu_options=["edit_room_base", "edit_room_advanced"],
+            menu_options=[
+                "edit_room_basics",
+                "edit_room_comfort",
+                "edit_room_co2_windows",
+                "edit_room_advanced",
+            ],
         )
 
     async def async_step_edit_room_base(self, user_input: dict[str, Any] | None = None):
         """Edit the base fields of a selected room."""
 
         return await self._handle_selected_room_section(user_input, "base")
+
+    async def async_step_edit_room_basics(self, user_input: dict[str, Any] | None = None):
+        """Edit room basics and sensor references."""
+
+        return await self._handle_selected_room_section(user_input, "basics")
+
+    async def async_step_edit_room_comfort(self, user_input: dict[str, Any] | None = None):
+        """Edit room comfort overrides."""
+
+        return await self._handle_selected_room_section(user_input, "comfort")
+
+    async def async_step_edit_room_co2_windows(self, user_input: dict[str, Any] | None = None):
+        """Edit room CO2 and window sensors."""
+
+        return await self._handle_selected_room_section(user_input, "co2_windows")
 
     async def async_step_edit_room_advanced(self, user_input: dict[str, Any] | None = None):
         """Edit the advanced fields of a selected room."""
@@ -354,7 +430,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             user_input,
             room_index=self._selected_room_index,
             default_room=selected_room,
-            step_id=f"edit_room_{section}",
+            # Reuse the established translated room forms while keeping the
+            # subsection-specific schemas independent.
+            step_id="edit_room_advanced" if section == "advanced" else "edit_room_base",
             section=section,
         )
 
@@ -427,7 +505,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         room_index: int | None = None,
         default_room: dict[str, Any] | None = None,
         step_id: str | None = None,
-        section: str | None = "base",
+        section: str | None = None,
     ):
         errors: dict[str, str] = {}
         if user_input is not None:

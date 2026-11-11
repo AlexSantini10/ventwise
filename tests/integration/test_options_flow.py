@@ -120,7 +120,23 @@ def test_options_menu_has_purpose_based_sections() -> None:
     assert overview["menu_options"] == [
         "comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "other"
     ]
-    assert asyncio.run(flow.async_step_other())["menu_options"] == ["units", "diagnostics"]
+    other = asyncio.run(flow.async_step_other())
+    assert other["type"] == "form"
+    assert set(other["data_schema"].schema) >= {"temperature_unit", "wind_speed_unit", "debug_mode_enabled"}
+
+
+def test_room_edit_menu_exposes_four_purpose_based_sections() -> None:
+    flow = _make_flow({CONF_ROOMS: [{CONF_ROOM_NAME: "Living room", CONF_ROOM_KIND: "room"}]})
+
+    asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
+    details = asyncio.run(flow.async_step_edit_room_details())
+
+    assert details["menu_options"] == [
+        "edit_room_basics",
+        "edit_room_comfort",
+        "edit_room_co2_windows",
+        "edit_room_advanced",
+    ]
 
 
 def test_air_quality_source_updates_only_the_selected_source() -> None:

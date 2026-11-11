@@ -910,11 +910,17 @@
         "description": "Choisissez les paramètres de la pièce à modifier.",
         "menu_options": {
           "edit_room_base": "Paramètres de base de la pièce",
-          "edit_room_advanced": "Paramètres avancés de la pièce"
+          "edit_room_advanced": "Paramètres avancés de la pièce",
+          "edit_room_basics": "Bases et capteurs",
+          "edit_room_comfort": "Remplacements de confort",
+          "edit_room_co2_windows": "CO2 et fenêtres"
         },
         "menu_option_descriptions": {
           "edit_room_base": "Modifiez le nom et les mesures de la pièce.",
-          "edit_room_advanced": "Modifiez les valeurs propres à la pièce et les automatisations."
+          "edit_room_advanced": "Modifiez les valeurs propres à la pièce et les automatisations.",
+          "edit_room_basics": "Modifiez le nom et les références des capteurs.",
+          "edit_room_comfort": "Modifiez les remplacements de confort de la pièce.",
+          "edit_room_co2_windows": "Modifiez le capteur CO2 et les contacts des fenêtres."
         }
       },
       "edit_room_base": {

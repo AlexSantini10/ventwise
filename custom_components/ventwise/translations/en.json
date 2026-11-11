@@ -910,11 +910,17 @@
         "description": "Choose which part of the selected room to update.",
         "menu_options": {
           "edit_room_base": "Basic room settings",
-          "edit_room_advanced": "Advanced room settings"
+          "edit_room_advanced": "Advanced room settings",
+          "edit_room_basics": "Basics and sensors",
+          "edit_room_comfort": "Comfort overrides",
+          "edit_room_co2_windows": "CO2 and windows"
         },
         "menu_option_descriptions": {
           "edit_room_base": "Update the room name and measurements.",
-          "edit_room_advanced": "Update room overrides and automations."
+          "edit_room_advanced": "Update room overrides and automations.",
+          "edit_room_basics": "Update the room name and sensor references.",
+          "edit_room_comfort": "Update room-specific comfort overrides.",
+          "edit_room_co2_windows": "Update the room CO2 sensor and window contacts."
         }
       },
       "edit_room_base": {

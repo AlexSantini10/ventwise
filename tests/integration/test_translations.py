@@ -59,10 +59,9 @@ REQUIRED_MENU_OPTIONS = {
     ("config", "rooms"): {"add_room", "add_macro_room", "edit_room", "remove_room", "finish"},
     ("config", "optional_setup"): {"initial_rooms", "initial_co2", "initial_outdoor_air", "initial_windows", "initial_notifications", "finish"},
     ("options", "init"): {"comfort", "co2", "outdoor_air", "windows", "rooms", "notifications", "other"},
-    ("options", "other"): {"units", "diagnostics"},
     ("options", "advanced"): {"recommendations", "manual_sources", "air_quality", "diagnostics"},
     ("options", "air_quality"): {"air_quality_global", "air_quality_source_select"},
-    ("options", "edit_room_details"): {"edit_room_base", "edit_room_advanced"},
+    ("options", "edit_room_details"): {"edit_room_basics", "edit_room_comfort", "edit_room_co2_windows", "edit_room_advanced"},
 }
 LEGACY_OPTIONS_MENU_KEYS = {
     "options.step.init.menu_options.daily",
