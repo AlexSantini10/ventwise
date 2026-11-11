@@ -55,11 +55,22 @@ def main() -> int:
     env = os.environ.copy()
     env["VENTWISE_TEST_ARTIFACTS"] = str(ARTIFACTS.resolve())
     compose = ["docker", "compose", "-p", "ventwise-test", "-f", str(COMPOSE_FILE)]
+    image = env.get("VENTWISE_TEST_IMAGE")
+    skip_build = env.get("VENTWISE_TEST_SKIP_BUILD") == "1"
+    if skip_build and not image:
+        print(
+            "VENTWISE_TEST_SKIP_BUILD=1 requires VENTWISE_TEST_IMAGE to be set.",
+            file=sys.stderr,
+        )
+        return 2
+    build_args = [] if skip_build else ["--build"]
+    execution_mode = "pre-built Docker image" if skip_build else "Docker image"
+    print(f"Running VentWise tests in {execution_mode}...")
     command = [
         *compose,
         "run",
         "--rm",
-        "--build",
+        *build_args,
         "ci",
         "python",
         "scripts/run_test_suite.py",

@@ -53,6 +53,11 @@ python scripts/run_tests.py --layer unit
 python scripts/run_tests.py --layer integration -- -k notification
 ```
 
+The runner prints that execution is happening in Docker before starting the
+container. GitHub Actions builds the same image with a persistent BuildKit
+cache and reuses it for the test step, so unchanged test dependencies are not
+installed again on every run.
+
 It is independent of the [Docker Test Lab](docker-test-lab.md), which remains
 the packaged local Home Assistant environment for manual testing without
 physical hardware.
