@@ -95,8 +95,20 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="invalid_step")
         return self.async_show_menu(
             step_id="optional_setup",
-            menu_options=["initial_co2", "initial_outdoor_air", "initial_windows", "initial_notifications", "finish"],
+            menu_options=[
+                "initial_co2",
+                "initial_outdoor_air",
+                "initial_windows",
+                "initial_notifications",
+                "finish",
+                "back_to_initial_rooms",
+            ],
         )
+
+    async def async_step_back_to_initial_rooms(self, user_input: dict[str, Any] | None = None):
+        """Return to the initial room setup menu."""
+
+        return await self.async_step_initial_rooms(user_input)
 
     async def async_step_initial_rooms(self, user_input: dict[str, Any] | None = None):
         """Open the optional room setup menu."""
@@ -240,6 +252,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._rooms:
             menu_options.extend(["edit_room", "remove_room"])
         menu_options.append("finish")
+        menu_options.append("back_to_user")
         return self.async_show_menu(
             step_id="rooms",
             menu_options=menu_options,
@@ -247,6 +260,11 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "room_count": str(len(self._rooms)),
             },
         )
+
+    async def async_step_back_to_user(self, user_input: dict[str, Any] | None = None):
+        """Return to the essential settings form during initial setup."""
+
+        return await self.async_step_user(user_input)
 
     async def async_step_add_room(self, user_input: dict[str, Any] | None = None):
         """Add a normal room during initial setup."""

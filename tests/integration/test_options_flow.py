@@ -136,6 +136,7 @@ def test_room_edit_menu_exposes_four_purpose_based_sections() -> None:
         "edit_room_comfort",
         "edit_room_co2_windows",
         "edit_room_advanced",
+        "back_to_rooms",
     ]
 
 
@@ -216,7 +217,9 @@ def test_options_flow_supports_units_macro_rooms_and_staged_room_changes() -> No
     assert asyncio.run(flow.async_step_units({"temperature_unit": "C", "wind_speed_unit": "km/h"}))["type"] == "create_entry"
 
     rooms = asyncio.run(flow.async_step_rooms())
-    assert rooms["menu_options"] == ["add_room", "add_macro_room", "edit_room", "remove_room", "finish"]
+    assert rooms["menu_options"] == [
+        "add_room", "add_macro_room", "edit_room", "remove_room", "finish", "back_to_init"
+    ]
     assert asyncio.run(flow.async_step_add_macro_room())["step_id"] == "add_macro_room"
     assert asyncio.run(
         flow.async_step_add_macro_room(
@@ -234,3 +237,13 @@ def test_options_flow_supports_units_macro_rooms_and_staged_room_changes() -> No
     saved = asyncio.run(flow.async_step_finish())
     assert saved["type"] == "create_entry"
     assert saved["data"][CONF_ROOMS][0][CONF_ROOM_NAME] == "Upstairs"
+
+
+def test_nested_options_menus_return_to_their_parent() -> None:
+    flow = _make_flow({CONF_ROOMS: [{CONF_ROOM_NAME: "Living room", CONF_ROOM_KIND: "room"}]})
+
+    assert asyncio.run(flow.async_step_back_to_init())["step_id"] == "init"
+    assert asyncio.run(flow.async_step_advanced())["menu_options"][-1] == "back_to_init"
+    assert asyncio.run(flow.async_step_back_to_advanced())["step_id"] == "advanced"
+    assert asyncio.run(flow.async_step_air_quality())["menu_options"][-1] == "back_to_advanced"
+    assert asyncio.run(flow.async_step_back_to_rooms())["step_id"] == "rooms"

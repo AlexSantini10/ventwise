@@ -48,7 +48,8 @@
           "initial_outdoor_air": "Outdoor air and pollen",
           "initial_windows": "Windows and protection",
           "initial_notifications": "Notifications",
-          "finish": "Finish setup"
+          "finish": "Finish setup",
+          "back_to_initial_rooms": "Back to rooms"
         },
         "menu_option_descriptions": {
           "initial_rooms": "Add the rooms VentWise should observe.",
@@ -56,7 +57,8 @@
           "initial_outdoor_air": "Configure pollution and pollen information.",
           "initial_windows": "Choose weather and outdoor data used to protect windows.",
           "initial_notifications": "Choose where VentWise should notify you.",
-          "finish": "Save the setup and configure optional features later."
+          "finish": "Save the setup and configure optional features later.",
+          "back_to_initial_rooms": "Return to the room setup menu."
         }
       },
       "initial_co2": {
@@ -176,14 +178,16 @@
           "add_macro_room": "Add macro-room",
           "edit_room": "Edit room",
           "remove_room": "Remove room",
-          "finish": "Done"
+          "finish": "Done",
+          "back_to_user": "Back to essential settings"
         },
         "menu_option_descriptions": {
           "add_room": "Create one room for a single space or area.",
           "add_macro_room": "Create one grouped area for spaces that share the same windows.",
           "edit_room": "Update an existing room or grouped area.",
           "remove_room": "Delete an existing room or grouped area.",
-          "finish": "Skip rooms for now and save the setup."
+          "finish": "Skip rooms for now and save the setup.",
+          "back_to_user": "Back to essential settings"
         }
       },
       "add_room": {
@@ -477,14 +481,16 @@
           "add_macro_room": "Add macro-room",
           "edit_room": "Edit room",
           "remove_room": "Remove room",
-          "finish": "Done"
+          "finish": "Done",
+          "back_to_init": "Back to main settings"
         },
         "menu_option_descriptions": {
           "add_room": "Create one room for a single space or area.",
           "add_macro_room": "Create one grouped area for spaces that share the same windows.",
           "edit_room": "Update an existing room or grouped area.",
           "remove_room": "Delete an existing room or grouped area.",
-          "finish": "Save room changes and close."
+          "finish": "Save room changes and close.",
+          "back_to_init": "Back to main settings"
         }
       },
       "add_room": {
@@ -640,13 +646,15 @@
           "recommendations": "Recommendations",
           "manual_sources": "Manual sources",
           "air_quality": "Air quality",
-          "diagnostics": "Diagnostics"
+          "diagnostics": "Diagnostics",
+          "back_to_init": "Back to main settings"
         },
         "menu_option_descriptions": {
           "recommendations": "Tune recommendation behaviour.",
           "manual_sources": "Configure manual outdoor sources.",
           "air_quality": "Configure air-quality inputs and policies.",
-          "diagnostics": "Configure diagnostics and debug notifications."
+          "diagnostics": "Configure diagnostics and debug notifications.",
+          "back_to_init": "Back to main settings"
         }
       },
       "recommendations": {
@@ -692,11 +700,13 @@
         "description": "Choose a global air-quality setting group.",
         "menu_options": {
           "air_quality_global": "Global air quality",
-          "air_quality_source_select": "Air-quality source"
+          "air_quality_source_select": "Air-quality source",
+          "back_to_advanced": "Back to advanced settings"
         },
         "menu_option_descriptions": {
           "air_quality_global": "Configure global pollution and pollen policies.",
-          "air_quality_source_select": "Choose an individual air-quality source."
+          "air_quality_source_select": "Choose an individual air-quality source.",
+          "back_to_advanced": "Back to advanced settings"
         }
       },
       "air_quality_global": {
@@ -913,14 +923,16 @@
           "edit_room_advanced": "Advanced room settings",
           "edit_room_basics": "Basics and sensors",
           "edit_room_comfort": "Comfort overrides",
-          "edit_room_co2_windows": "CO2 and windows"
+          "edit_room_co2_windows": "CO2 and windows",
+          "back_to_rooms": "Back to rooms"
         },
         "menu_option_descriptions": {
           "edit_room_base": "Update the room name and measurements.",
           "edit_room_advanced": "Update room overrides and automations.",
           "edit_room_basics": "Update the room name and sensor references.",
           "edit_room_comfort": "Update room-specific comfort overrides.",
-          "edit_room_co2_windows": "Update the room CO2 sensor and window contacts."
+          "edit_room_co2_windows": "Update the room CO2 sensor and window contacts.",
+          "back_to_rooms": "Back to rooms"
         }
       },
       "edit_room_base": {

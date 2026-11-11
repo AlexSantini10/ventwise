@@ -85,6 +85,8 @@ later from the same menu.
 Room editing is split into **Basics and sensors**, **Comfort overrides**,
 **CO2 and windows**, and **Advanced room behavior**. Each subsection preserves
 values staged in the other subsections.
+Nested menus include a translated **Back** action to return to the parent menu;
+use `X` only to close the configuration flow.
 If your room has door or window contacts, select them in the room form as well.
 VentWise treats the room as open when any selected contact is open, and only
 asks you to open or close windows when that action has not already happened.
