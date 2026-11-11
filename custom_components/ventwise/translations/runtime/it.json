@@ -1,0 +1,78 @@
+{
+  "notification": {
+    "open": "apri le finestre.",
+    "close": "chiudi le finestre.",
+    "none": "nessuna azione necessaria.",
+    "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+    "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+    "forecast_reason": "Previsione a breve termine: fuori sarà presto meno confortevole.",
+    "failed_title": "Consegna notifica VentWise fallita",
+    "failed_targets": "Target falliti"
+  },
+  "on_demand_title": "VentWise · Consiglio richiesto ora",
+  "diagnostic": {
+    "unavailable_data": {
+      "title": "Dati VentWise non disponibili",
+      "message": "I dati meteo o dei sensori della stanza richiesti non sono disponibili."
+    },
+    "no_enabled_rooms": {
+      "title": "VentWise richiede una stanza attiva",
+      "message": "Non sono configurate stanze attive."
+    }
+  },
+  "status": {
+    "quiet_hours": "Le raccomandazioni sono sospese durante la fascia silenziosa.",
+    "cooldown": "La stessa raccomandazione è stata inviata di recente.",
+    "stability": "In attesa che la raccomandazione resti stabile.",
+    "unavailable": "In attesa dei dati richiesti dai sensori.",
+    "disabled": "VentWise è disabilitato."
+  },
+  "confirmation": {
+    "open": "Conferma apertura",
+    "close": "Conferma chiusura"
+  },
+  "ventilate_title": "Arieggia brevemente",
+  "ventilation_reason": "Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
+  "entity_name": {
+    "weather_condition": "Condizione meteo",
+    "average_perceived_indoor_temperature": "Temperatura interna percepita media",
+    "perceived_outdoor_temperature": "Temperatura esterna percepita",
+    "effective_comfort_temperature": "Temperatura di comfort effettiva",
+    "suggested_comfort_temperature": "Target di comfort adattivo al clima",
+    "outdoor_temperature": "Temperatura esterna",
+    "outdoor_humidity": "Umidità esterna",
+    "wind_speed": "Velocità vento esterna",
+    "recommendation": "Raccomandazione",
+    "recommendation_score": "Punteggio raccomandazione",
+    "recommendation_reason": "Motivo raccomandazione",
+    "window_state": "Stato finestre",
+    "perceived_indoor_temperature": "Temperatura interna percepita",
+    "temperature": "Temperatura interna",
+    "indoor_humidity": "Umidità interna",
+    "integration_enabled": "Integrazione abilitata",
+    "notifications_enabled": "Notifiche abilitate",
+    "automatic_comfort_temperature": "Temperatura di comfort automatica",
+    "quiet_hours_enabled": "Fascia silenziosa abilitata",
+    "quiet_hours_active": "Fascia silenziosa attiva",
+    "quiet_hours_start_time": "Ora di inizio della fascia silenziosa",
+    "quiet_hours_end_time": "Ora di fine della fascia silenziosa",
+    "notifications_currently_allowed": "Notifiche attualmente consentite",
+    "notification_cooldown_active": "Pausa notifiche attiva",
+    "recommendation_active": "Raccomandazione attiva",
+    "comfort_temperature": "Temperatura di comfort",
+    "comfort_humidity": "Umidità di comfort",
+    "recommendation_stability_window": "Finestra di stabilità della raccomandazione",
+    "enabled": "Abilitato",
+    "temperature_override_enabled": "Temperatura personalizzata abilitata",
+    "humidity_override_enabled": "Umidità personalizzata abilitata",
+    "temperature_override": "Temperatura personalizzata",
+    "humidity_override": "Umidità personalizzata",
+    "request_recommendation": "Ricevi consiglio ora",
+    "debug_open_notification": "Ricevi notifica di apertura",
+    "debug_close_notification": "Ricevi notifica di chiusura"
+  },
+  "room_kind": {
+    "room": "Stanza",
+    "macro_room": "Macro-stanza"
+  }
+}

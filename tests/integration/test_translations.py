@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from string import Formatter
 from typing import Any
 
 import pytest
@@ -61,6 +62,41 @@ REQUIRED_MENU_OPTIONS = {
     ("options", "air_quality"): {"air_quality_global", "air_quality_source_select"},
     ("options", "edit_room_details"): {"edit_room_base", "edit_room_advanced"},
 }
+
+
+@pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
+def test_runtime_catalog_keys_and_placeholders_match_english(language: str) -> None:
+    """Runtime messages retain every translation and formatting field."""
+
+    def leaves(value: dict[str, Any], prefix: str = "") -> dict[str, str]:
+        result: dict[str, str] = {}
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else key
+            if isinstance(child, dict):
+                result.update(leaves(child, path))
+            else:
+                result[path] = child
+        return result
+
+    def read(language_key: str) -> dict[str, str]:
+        path = TRANSLATIONS_DIR / "runtime" / f"{language_key.lower()}.json"
+        return leaves(json.loads(path.read_text(encoding="utf-8")))
+
+    english = read("en")
+    translated = read(language)
+    assert translated.keys() == english.keys()
+    for key, text in english.items():
+        assert translated[key].strip()
+        assert "\ufffd" not in translated[key]
+        assert {
+            (field, spec, conversion)
+            for _, field, spec, conversion in Formatter().parse(translated[key])
+            if field is not None
+        } == {
+            (field, spec, conversion)
+            for _, field, spec, conversion in Formatter().parse(text)
+            if field is not None
+        }, key
 
 
 @pytest.mark.parametrize("language", REVIEWED_LANGUAGES)

@@ -107,15 +107,10 @@ from ..application.notification import (
     notification_entity_ids_for_device_ids,
 )
 
+from ..translation import translate
+
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
 SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
-ROOM_KIND_LABELS: dict[str, dict[str, str]] = {
-    "en": {"room": "Room", "macro_room": "Macro Room"},
-    "es": {"room": "Habitación", "macro_room": "Macrohabitación"},
-    "it": {"room": "Stanza", "macro_room": "Macro-stanza"},
-    "ru": {"room": "Комната", "macro_room": "Макрокомната"},
-    "zh-hans": {"room": "房间", "macro_room": "宏房间"},
-}
 OUTDOOR_OVERRIDE_FIELDS: tuple[tuple[str, str, str], ...] = (
     (
         CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
@@ -1250,12 +1245,9 @@ def _localized_room_default(room_kind: str, room_number: int, language: str | No
 
 
 def _localized_room_kind_label(room_kind: str, language: str | None) -> str:
-    normalized_language = (language or "en").replace("_", "-").lower()
-    labels = ROOM_KIND_LABELS.get(normalized_language) or ROOM_KIND_LABELS.get(
-        normalized_language.split("-", 1)[0],
-        ROOM_KIND_LABELS["en"],
-    )
-    return labels.get(room_kind, room_kind.replace("_", " ").title())
+    if room_kind not in {"room", "macro_room"}:
+        return room_kind.replace("_", " ").title()
+    return translate(language, "room_kind", room_kind)
 
 
 def _normalize_time_string(value: object, field: str) -> str:

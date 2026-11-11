@@ -18,9 +18,35 @@ from custom_components.ventwise.application.notification import (
     home_assistant_notification_id_for_room,
     build_recommendation_explanation,
     build_recommendation_status,
+    confirmation_action_title,
     home_assistant_delivery_failure_id_for_target,
     notification_entity_ids_for_device_ids,
 )
+
+
+@pytest.mark.parametrize(
+    ("language", "opening", "closing"),
+    [
+        ("es-MX", "Confirmar apertura", "Confirmar cierre"),
+        ("fr-FR", "Confirmer l'ouverture", "Confirmer la fermeture"),
+        ("de-DE", "Öffnen bestätigen", "Schließen bestätigen"),
+        ("ru-RU", "Подтвердить открытие", "Подтвердить закрытие"),
+        ("zh-Hans-CN", "确认打开", "确认关闭"),
+    ],
+)
+def test_confirmation_action_titles_use_supported_languages(language, opening, closing) -> None:
+    assert confirmation_action_title("open", language) == opening
+    assert confirmation_action_title("close", language) == closing
+
+
+@pytest.mark.parametrize("language", ["fr-FR", "de-DE"])
+def test_french_and_german_notification_content_is_localized(language: str) -> None:
+    english_diagnostic = build_diagnostic_notification_payload("no_enabled_rooms", language="en")
+    assert build_diagnostic_notification_payload("no_enabled_rooms", language=language) != english_diagnostic
+    for reason in ("quiet_hours", "cooldown", "stability", "unavailable", "disabled"):
+        assert build_recommendation_status(blocked_by=reason, language=language) != (
+            build_recommendation_status(blocked_by=reason, language="en")
+        )
 
 
 class _FakeEntry:

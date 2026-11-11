@@ -9,6 +9,7 @@ from collections.abc import Iterable, Sequence
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
+from ..translation import runtime_catalog, translate
 from ..ventwise_core import RecommendationSummary
 from ..ventwise_core.models import RoomRecommendation
 
@@ -17,67 +18,6 @@ _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
 _PERSISTENT_ON_DEMAND_RECOMMENDATION_ID = "ventwise_on_demand_recommendation"
 _PERSISTENT_DELIVERY_FAILURE_ID = "ventwise_notification_delivery_failure"
 _PERSISTENT_DIAGNOSTIC_ID = "ventwise_diagnostic"
-_LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "ru", "zh-hans")
-_NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
-    "en": {
-        "open": "open windows.",
-        "close": "close windows.",
-        "none": "no action needed.",
-        "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
-        "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
-        "forecast_reason": "Short-term forecast: outside conditions are expected to become less comfortable soon.",
-        "failed_title": "VentWise notification delivery failed",
-        "failed_targets": "Failed targets",
-    },
-    "it": {
-        "open": "apri le finestre.",
-        "close": "chiudi le finestre.",
-        "none": "nessuna azione necessaria.",
-        "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
-        "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
-        "forecast_reason": "Previsione a breve termine: fuori sarà presto meno confortevole.",
-        "failed_title": "Consegna notifica VentWise fallita",
-        "failed_targets": "Target falliti",
-    },
-    "es": {
-        "open": "abre las ventanas.",
-        "close": "cierra las ventanas.",
-        "none": "no se necesita ninguna accion.",
-        "open_reason": "Afuera es más confortable ahora: {delta:.1f}°C más cerca del confort.",
-        "close_reason": "Adentro es más confortable ahora: {delta:.1f}°C más cerca del confort.",
-        "forecast_reason": "Pronóstico a corto plazo: se espera que las condiciones exteriores sean menos confortables pronto.",
-        "delivered_title": "Notificacion de VentWise entregada",
-        "failed_title": "Fallo la entrega de la notificacion de VentWise",
-        "delivered_to": "Entregada a",
-        "failed_targets": "Destinos fallidos",
-    },
-    "ru": {
-        "open": "откройте окна.",
-        "close": "закройте окна.",
-        "none": "действие не требуется.",
-        "open_reason": "Снаружи сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
-        "close_reason": "Внутри сейчас комфортнее: на {delta:.1f}°C ближе к комфорту.",
-        "forecast_reason": "Краткосрочный прогноз: вскоре наружные условия станут менее комфортными.",
-        "delivered_title": "Уведомление VentWise доставлено",
-        "failed_title": "Сбой доставки уведомления VentWise",
-        "delivered_to": "Доставлено на",
-        "failed_targets": "Не удалось доставить",
-    },
-    "zh-hans": {
-        "open": "打开窗户。",
-        "close": "关闭窗户。",
-        "none": "无需操作。",
-        "open_reason": "现在室外更舒适：更接近舒适温度 {delta:.1f}°C。",
-        "close_reason": "现在室内更舒适：更接近舒适温度 {delta:.1f}°C。",
-        "forecast_reason": "短期预报：室外条件预计很快会变得不那么舒适。",
-        "delivered_title": "VentWise 通知已送达",
-        "failed_title": "VentWise 通知发送失败",
-        "delivered_to": "已发送到",
-        "failed_targets": "失败目标",
-    },
-}
-
-
 def notification_entity_ids_for_device_ids(
     hass,
     device_ids: Sequence[str],
@@ -193,17 +133,7 @@ def build_on_demand_notification_payload(
 ) -> tuple[str, str]:
     """Build a clearly informational recommendation requested by a user."""
 
-    language_key = _normalize_language_key(language)
-    titles = {
-        "en": "VentWise · Recommendation requested now",
-        "it": "VentWise · Consiglio richiesto ora",
-        "es": "VentWise · Recomendación solicitada ahora",
-        "fr": "VentWise · Recommandation demandée maintenant",
-        "de": "VentWise · Empfehlung jetzt angefordert",
-        "ru": "VentWise · Рекомендация запрошена",
-        "zh-hans": "VentWise · 已请求当前建议",
-    }
-    title = titles.get(language_key, titles["en"])
+    title = translate(language, "on_demand_title")
     if summary.action.value == "none":
         return title, build_recommendation_status(
             blocked_by=getattr(summary, "blocked_by", None),
@@ -266,24 +196,10 @@ def build_diagnostic_notification_payload(
 ) -> tuple[str, str]:
     """Build localised persistent-notification content for a diagnostic issue."""
 
-    diagnostics = {
-        "unavailable_data": {
-            "en": ("VentWise data unavailable", "Required weather or room sensor data is unavailable."),
-            "it": ("Dati VentWise non disponibili", "I dati meteo o dei sensori della stanza richiesti non sono disponibili."),
-            "es": ("Datos de VentWise no disponibles", "Los datos meteorol\u00f3gicos o de sensores de habitaci\u00f3n necesarios no est\u00e1n disponibles."),
-            "ru": ("\u0414\u0430\u043d\u043d\u044b\u0435 VentWise \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b", "\u041d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u043e\u0433\u043e\u0434\u044b \u0438\u043b\u0438 \u0434\u0430\u0442\u0447\u0438\u043a\u043e\u0432 \u043a\u043e\u043c\u043d\u0430\u0442\u044b."),
-            "zh-hans": ("VentWise \u6570\u636e\u4e0d\u53ef\u7528", "\u65e0\u6cd5\u83b7\u53d6\u5fc5\u9700\u7684\u5929\u6c14\u6216\u623f\u95f4\u4f20\u611f\u5668\u6570\u636e\u3002"),
-        },
-        "no_enabled_rooms": {
-            "en": ("VentWise needs an enabled room", "No enabled rooms are configured."),
-            "it": ("VentWise richiede una stanza attiva", "Non sono configurate stanze attive."),
-            "es": ("VentWise necesita una habitaci\u00f3n activa", "No hay habitaciones activas configuradas."),
-            "ru": ("VentWise \u043d\u0443\u0436\u043d\u0430 \u0430\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u043a\u043e\u043c\u043d\u0430\u0442\u0430", "\u041d\u0435\u0442 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0445 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043a\u043e\u043c\u043d\u0430\u0442."),
-            "zh-hans": ("VentWise \u9700\u8981\u542f\u7528\u7684\u623f\u95f4", "\u672a\u914d\u7f6e\u542f\u7528\u7684\u623f\u95f4\u3002"),
-        },
-    }
-    return diagnostics.get(issue, diagnostics["unavailable_data"]).get(
-        _normalize_language_key(language), diagnostics["unavailable_data"]["en"]
+    issue = issue if issue in {"unavailable_data", "no_enabled_rooms"} else "unavailable_data"
+    return (
+        translate(language, "diagnostic", issue, "title"),
+        translate(language, "diagnostic", issue, "message"),
     )
 
 
@@ -303,12 +219,12 @@ def build_recommendation_explanation(
         return f"{prefix}{_ventilation_reason(language, minutes)}"
     if action == "open":
         if getattr(recommendation, "reason_code", None) == "forecast":
-            return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
+            return f"{prefix}{texts['forecast_reason']}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     if action == "close":
         if getattr(recommendation, "reason_code", None) == "forecast":
-            return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
+            return f"{prefix}{texts['forecast_reason']}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     return f"{prefix}{texts['none']}"
@@ -321,48 +237,9 @@ def build_recommendation_status(
 ) -> str:
     """Explain why no actionable recommendation is currently available."""
 
-    texts = _notification_texts(language)
-    status_texts = {
-        "quiet_hours": {
-            "en": "Recommendations are paused during quiet hours.",
-            "it": "Le raccomandazioni sono sospese durante la fascia silenziosa.",
-            "es": "Las recomendaciones están pausadas durante las horas de silencio.",
-            "ru": "Рекомендации приостановлены в режиме тишины.",
-            "zh-hans": "建议会在静默时段暂停。",
-        },
-        "cooldown": {
-            "en": "The same recommendation was sent recently.",
-            "it": "La stessa raccomandazione è stata inviata di recente.",
-            "es": "La misma recomendación se envió recientemente.",
-            "ru": "Та же рекомендация была отправлена недавно.",
-            "zh-hans": "相同的建议最近已发送。",
-        },
-        "stability": {
-            "en": "Waiting for the recommendation to remain stable.",
-            "it": "In attesa che la raccomandazione resti stabile.",
-            "es": "Esperando a que la recomendación se mantenga estable.",
-            "ru": "Ожидание стабилизации рекомендации.",
-            "zh-hans": "正在等待建议保持稳定。",
-        },
-        "unavailable": {
-            "en": "Waiting for the required sensor data.",
-            "it": "In attesa dei dati richiesti dai sensori.",
-            "es": "Esperando los datos necesarios de los sensores.",
-            "ru": "Ожидание необходимых данных датчиков.",
-            "zh-hans": "正在等待所需的传感器数据。",
-        },
-        "disabled": {
-            "en": "VentWise is disabled.",
-            "it": "VentWise è disabilitato.",
-            "es": "VentWise está deshabilitado.",
-            "ru": "VentWise отключён.",
-            "zh-hans": "VentWise 已禁用。",
-        },
-    }
-    language_key = _normalize_language_key(language)
-    if blocked_by in status_texts:
-        return status_texts[blocked_by].get(language_key, status_texts[blocked_by]["en"])
-    return texts["none"]
+    if blocked_by in {"quiet_hours", "cooldown", "stability", "unavailable", "disabled"}:
+        return translate(language, "status", blocked_by)
+    return translate(language, "notification", "none")
 
 
 async def async_send_notification(
@@ -506,33 +383,23 @@ async def async_dismiss_persistent_notification(hass, notification_id: str) -> b
 def _notification_texts(language: str | None) -> dict[str, str]:
     """Return localized notification text snippets."""
 
-    language_key = _normalize_language_key(language)
-    return _NOTIFICATION_TEXTS.get(language_key, _NOTIFICATION_TEXTS["en"])
+    return runtime_catalog(language)["notification"]
 
 
 def _notification_action_title(action: str, language: str | None) -> str:
     """Return the action text formatted as a notification title."""
 
     if action == "ventilate":
-        return {
-            "en": "Ventilate briefly",
-            "it": "Arieggia brevemente",
-            "es": "Ventila brevemente",
-            "ru": "Кратко проветрите",
-            "zh-hans": "短时通风",
-        }.get(_normalize_language_key(language), "Ventilate briefly")
+        return translate(language, "ventilate_title")
     texts = _notification_texts(language)
-    return texts.get(action, texts["none"]).rstrip(".。 ").capitalize()
+    text = texts.get(action, texts["none"]).rstrip(".。 ")
+    return text[:1].upper() + text[1:]
 
 
-def _normalize_language_key(language: str | None) -> str:
-    """Normalize a Home Assistant language code to a supported prefix."""
+def confirmation_action_title(action: str, language: str | None) -> str:
+    """Return the localized label for a Companion App confirmation button."""
 
-    normalized = (language or "en").strip().lower().replace("_", "-")
-    for prefix in _LANGUAGE_PREFIXES:
-        if normalized.startswith(prefix):
-            return prefix
-    return "en"
+    return translate(language, "confirmation", "open" if action == "open" else "close")
 
 
 def _safe_identifier(value: str, fallback: str) -> str:
@@ -544,14 +411,7 @@ def _safe_identifier(value: str, fallback: str) -> str:
 def _ventilation_reason(language: str | None, minutes: int) -> str:
     """Return the localized bounded-duration ventilation guidance."""
 
-    templates = {
-        "en": "Ventilate for about {minutes} minutes, then close and check again.",
-        "it": "Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
-        "es": "Ventila durante unos {minutes} minutos, luego cierra y vuelve a comprobarlo.",
-        "ru": "Проветривайте около {minutes} минут, затем закройте и проверьте снова.",
-        "zh-hans": "通风约 {minutes} 分钟，然后关闭并再次检查。",
-    }
-    return templates.get(_normalize_language_key(language), templates["en"]).format(minutes=minutes)
+    return translate(language, "ventilation_reason").format(minutes=minutes)
 
 
 def _localized_temperature_reason(

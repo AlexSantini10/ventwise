@@ -20,9 +20,9 @@
           "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
           "diagnostic_notification_level": "诊断通知",
           "debug_mode_enabled": "Debug mode",
-          "co2_enabled": "Consider CO2 in recommendations",
-          "co2_entity_id": "Room CO2 sensor",
-          "co2_threshold_ppm": "CO2 threshold (ppm)"
+          "co2_enabled": "在建议中考虑 CO2",
+          "co2_entity_id": "房间 CO2 传感器",
+          "co2_threshold_ppm": "CO2 阈值 (ppm)"
         },
         "data_description": {
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
@@ -40,10 +40,10 @@
         }
       },
       "units": {
-        "title": "Units of measurement",
+        "title": "测量单位",
         "data": {
-          "temperature_unit": "Temperature unit",
-          "wind_speed_unit": "Wind speed unit"
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位"
         }
       },
       "outdoor": {
@@ -108,7 +108,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
@@ -139,7 +139,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
@@ -170,7 +170,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
@@ -201,7 +201,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
@@ -217,23 +217,23 @@
         }
       },
       "edit_room": {
-        "title": "Edit room",
-        "description": "Choose the room you want to update.",
+        "title": "编辑房间",
+        "description": "选择要更新的房间。",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "房间"
         },
         "data_description": {
-          "room_selection": "Select one of the rooms already saved in VentWise."
+          "room_selection": "选择已保存在 VentWise 中的房间。"
         }
       },
       "remove_room": {
-        "title": "Remove room",
-        "description": "Choose the room you want to delete.",
+        "title": "删除房间",
+        "description": "选择要删除的房间。",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "房间"
         },
         "data_description": {
-          "room_selection": "Select one of the rooms already saved in VentWise."
+          "room_selection": "选择已保存在 VentWise 中的房间。"
         }
       }
     },
@@ -248,23 +248,23 @@
         "title": "调整 VentWise",
         "description": "选择你想编辑的内容。",
         "menu_options": {
-          "daily": "Daily settings",
+          "daily": "日常设置",
           "rooms": "房间",
-          "advanced": "Advanced settings",
+          "advanced": "高级设置",
           "units": "Units of measurement"
         },
         "menu_option_descriptions": {
-          "daily": "Configure everyday comfort and notification settings.",
+          "daily": "配置日常舒适度和通知设置。",
           "rooms": "添加房间和宏房间。",
-          "advanced": "Configure technical settings.",
-          "units": "Change display units."
+          "advanced": "配置技术设置。",
+          "units": "更改显示单位。"
         }
       },
       "units": {
-        "title": "Units of measurement",
+        "title": "测量单位",
         "data": {
-          "temperature_unit": "Temperature unit",
-          "wind_speed_unit": "Wind speed unit"
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位"
         }
       },
       "rooms": {
@@ -301,7 +301,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如卧室、书房或办公室。",
@@ -332,7 +332,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如卧室、书房或办公室。",
@@ -363,7 +363,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
@@ -394,7 +394,7 @@
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
-          "co2_entity_id": "Room CO2 sensor"
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
@@ -410,347 +410,347 @@
         }
       },
       "daily": {
-        "title": "Daily settings",
-        "description": "Configure the everyday comfort and notification settings.",
+        "title": "日常设置",
+        "description": "配置日常舒适度和通知设置。",
         "data": {
-          "outdoor_weather_entity_id": "Weather source",
-          "target_temperature_c": "Comfort temperature",
-          "target_humidity_percent": "Comfort humidity",
-          "auto_comfort_temperature": "Adapt comfort temperature automatically",
-          "stability_minutes": "Wait before recommending (minutes)",
-          "notification_device_id": "Notification devices",
-          "home_assistant_notification_enabled": "Show notifications in Home Assistant"
+          "outdoor_weather_entity_id": "天气来源",
+          "target_temperature_c": "舒适温度",
+          "target_humidity_percent": "舒适湿度",
+          "auto_comfort_temperature": "自动调整舒适温度",
+          "stability_minutes": "建议前的等待时间（分钟）",
+          "notification_device_id": "通知设备",
+          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知"
         },
         "data_description": {
-          "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity used by VentWise.",
-          "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
-          "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
-          "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
-          "stability_minutes": "How long a recommendation must remain unchanged before VentWise notifies you.",
-          "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
-          "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel."
+          "outdoor_weather_entity_id": "选择 VentWise 使用的标准 Home Assistant 天气实体。",
+          "target_temperature_c": "设置您在家时感觉舒适的室内温度。",
+          "target_humidity_percent": "设置您在家时感觉舒适的室内湿度。",
+          "auto_comfort_temperature": "以舒适温度为基准，根据室外体感温度逐步调整。调整幅度限于 ±2°C，室内安全范围为 18–26°C。房间传感器决定建议，但不会改变目标温度。此功能不会控制恒温器或暖通空调系统。",
+          "stability_minutes": "VentWise 发出通知前，建议必须保持不变的时间。",
+          "notification_device_id": "可选。选择接收 VentWise 通知的设备。",
+          "home_assistant_notification_enabled": "在 Home Assistant 通知面板中显示每条 VentWise 建议。"
         }
       },
       "advanced": {
         "title": "舒适设置",
         "description": "微调 VentWise 使用的舒适值。",
         "menu_options": {
-          "recommendations": "Recommendations",
-          "manual_sources": "Manual sources",
-          "air_quality": "Air quality",
-          "diagnostics": "Diagnostics"
+          "recommendations": "建议",
+          "manual_sources": "手动来源",
+          "air_quality": "空气质量",
+          "diagnostics": "诊断"
         },
         "menu_option_descriptions": {
-          "recommendations": "Tune recommendation behaviour.",
-          "manual_sources": "Configure manual outdoor sources.",
-          "air_quality": "Configure air-quality inputs and policies.",
-          "diagnostics": "Configure diagnostics and debug notifications."
+          "recommendations": "调整建议行为。",
+          "manual_sources": "配置手动室外数据来源。",
+          "air_quality": "配置空气质量输入和策略。",
+          "diagnostics": "配置诊断和调试通知。"
         }
       },
       "recommendations": {
-        "title": "Recommendation settings",
-        "description": "Tune the comfort and advisory ventilation behaviour.",
+        "title": "建议设置",
+        "description": "调整舒适度和通风建议行为。",
         "data": {
-          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
-          "cooldown_minutes": "Notification cooldown (minutes)",
-          "co2_enabled": "Co2 enabled",
-          "co2_entity_id": "Co2 entity id",
-          "co2_threshold_ppm": "Co2 threshold ppm"
+          "soft_outdoor_threshold_c": "室外舒适度阈值",
+          "cooldown_minutes": "通知冷却时间（分钟）",
+          "co2_enabled": "启用 CO2",
+          "co2_entity_id": "CO2 实体 ID",
+          "co2_threshold_ppm": "CO2 阈值 (ppm)"
         },
         "data_description": {
-          "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
-          "cooldown_minutes": "How long VentWise waits before sending an updated notification. Identical recommendations stay suppressed.",
-          "co2_enabled": "Configure co2 enabled.",
-          "co2_entity_id": "Configure co2 entity id.",
-          "co2_threshold_ppm": "Configure co2 threshold ppm."
+          "soft_outdoor_threshold_c": "室外温度高于此值时，开窗的效果会降低。",
+          "cooldown_minutes": "VentWise 发送更新通知前等待的时间。相同建议不会重复发送。",
+          "co2_enabled": "配置是否启用 CO2。",
+          "co2_entity_id": "配置 CO2 实体 ID。",
+          "co2_threshold_ppm": "配置 CO2 阈值（ppm）。"
         }
       },
       "manual_sources": {
-        "title": "Manual outdoor sources",
-        "description": "Choose which outdoor measurements come from Home Assistant entities.",
+        "title": "手动室外数据来源",
+        "description": "选择哪些室外测量值来自 Home Assistant 实体。",
         "data": {
-          "outdoor_temperature_override": "Outdoor temperature override",
-          "outdoor_humidity_override": "Outdoor humidity override",
-          "wind_speed_override": "Wind speed override",
-          "outdoor_temperature_entity_id": "Outdoor temperature entity id",
-          "outdoor_humidity_entity_id": "Outdoor humidity entity id",
-          "wind_speed_entity_id": "Wind speed entity id"
+          "outdoor_temperature_override": "室外温度覆盖",
+          "outdoor_humidity_override": "室外湿度覆盖",
+          "wind_speed_override": "风速覆盖",
+          "outdoor_temperature_entity_id": "室外温度实体 ID",
+          "outdoor_humidity_entity_id": "室外湿度实体 ID",
+          "wind_speed_entity_id": "风速实体 ID"
         },
         "data_description": {
-          "outdoor_temperature_override": "Configure outdoor temperature override.",
-          "outdoor_humidity_override": "Configure outdoor humidity override.",
-          "wind_speed_override": "Configure wind speed override.",
-          "outdoor_temperature_entity_id": "Configure outdoor temperature entity id.",
-          "outdoor_humidity_entity_id": "Configure outdoor humidity entity id.",
-          "wind_speed_entity_id": "Configure wind speed entity id."
+          "outdoor_temperature_override": "配置室外温度覆盖。",
+          "outdoor_humidity_override": "配置室外湿度覆盖。",
+          "wind_speed_override": "配置风速覆盖。",
+          "outdoor_temperature_entity_id": "配置室外温度实体 ID。",
+          "outdoor_humidity_entity_id": "配置室外湿度实体 ID。",
+          "wind_speed_entity_id": "配置风速实体 ID。"
         }
       },
       "air_quality": {
-        "title": "Air quality",
-        "description": "Choose a global air-quality setting group.",
+        "title": "空气质量",
+        "description": "选择一组全局空气质量设置。",
         "menu_options": {
-          "air_quality_global": "Global air quality",
-          "air_quality_source_select": "Air-quality source"
+          "air_quality_global": "全局空气质量",
+          "air_quality_source_select": "空气质量来源"
         },
         "menu_option_descriptions": {
-          "air_quality_global": "Configure global pollution and pollen policies.",
-          "air_quality_source_select": "Choose an individual air-quality source."
+          "air_quality_global": "配置全局污染和花粉策略。",
+          "air_quality_source_select": "选择单个空气质量来源。"
         }
       },
       "air_quality_global": {
-        "title": "Global air quality",
-        "description": "Configure global pollution and pollen policies.",
+        "title": "全局空气质量",
+        "description": "配置全局污染和花粉策略。",
         "data": {
-          "smoke_alert_entity_id": "Smoke alert entity id",
-          "pollution_policy": "Pollution policy",
-          "pollen_policy": "Pollen policy",
-          "open_meteo_air_quality_enabled": "Open meteo air quality enabled"
+          "smoke_alert_entity_id": "烟雾警报实体 ID",
+          "pollution_policy": "污染策略",
+          "pollen_policy": "花粉策略",
+          "open_meteo_air_quality_enabled": "已启用 Open-Meteo 空气质量数据"
         },
         "data_description": {
-          "smoke_alert_entity_id": "Configure smoke alert entity id.",
-          "pollution_policy": "Configure pollution policy.",
-          "pollen_policy": "Configure pollen policy.",
-          "open_meteo_air_quality_enabled": "Configure open meteo air quality enabled."
+          "smoke_alert_entity_id": "配置烟雾警报实体 ID。",
+          "pollution_policy": "配置污染策略。",
+          "pollen_policy": "配置花粉策略。",
+          "open_meteo_air_quality_enabled": "配置是否启用 Open-Meteo 空气质量数据。"
         }
       },
       "air_quality_source_select": {
-        "title": "Air-quality source",
-        "description": "Choose an individual air-quality or pollen source.",
+        "title": "空气质量来源",
+        "description": "选择单个空气质量或花粉来源。",
         "data": {
-          "air_quality_source": "Air quality source"
+          "air_quality_source": "空气质量来源"
         },
         "data_description": {
-          "air_quality_source": "Configure air quality source."
+          "air_quality_source": "配置空气质量来源。"
         }
       },
       "air_quality_source": {
-        "title": "Air-quality source settings",
-        "description": "Configure the selected air-quality source.",
+        "title": "空气质量来源设置",
+        "description": "配置所选的空气质量来源。",
         "data": {
-          "air_quality_entity_id": "Air quality entity id",
-          "air_quality_policy": "Air quality policy",
-          "air_quality_threshold": "Air quality threshold",
-          "air_quality_unit": "Air quality unit",
-          "air_quality_averaging_period": "Air quality averaging period",
-          "air_quality_pm2_5_entity_id": "Air quality pm2 5 entity id",
-          "air_quality_pm2_5_policy": "Air quality pm2 5 policy",
-          "air_quality_pm2_5_threshold": "Air quality pm2 5 threshold",
-          "air_quality_pm2_5_unit": "Air quality pm2 5 unit",
-          "air_quality_pm2_5_averaging_period": "Air quality pm2 5 averaging period",
-          "air_quality_pm10_entity_id": "Air quality pm10 entity id",
-          "air_quality_pm10_policy": "Air quality pm10 policy",
-          "air_quality_pm10_threshold": "Air quality pm10 threshold",
-          "air_quality_pm10_unit": "Air quality pm10 unit",
-          "air_quality_pm10_averaging_period": "Air quality pm10 averaging period",
-          "air_quality_nitrogen_dioxide_entity_id": "Air quality nitrogen dioxide entity id",
-          "air_quality_nitrogen_dioxide_policy": "Air quality nitrogen dioxide policy",
-          "air_quality_nitrogen_dioxide_threshold": "Air quality nitrogen dioxide threshold",
-          "air_quality_nitrogen_dioxide_unit": "Air quality nitrogen dioxide unit",
-          "air_quality_nitrogen_dioxide_averaging_period": "Air quality nitrogen dioxide averaging period",
-          "air_quality_ozone_entity_id": "Air quality ozone entity id",
-          "air_quality_ozone_policy": "Air quality ozone policy",
-          "air_quality_ozone_threshold": "Air quality ozone threshold",
-          "air_quality_ozone_unit": "Air quality ozone unit",
-          "air_quality_ozone_averaging_period": "Air quality ozone averaging period",
-          "air_quality_carbon_monoxide_entity_id": "Air quality carbon monoxide entity id",
-          "air_quality_carbon_monoxide_policy": "Air quality carbon monoxide policy",
-          "air_quality_carbon_monoxide_threshold": "Air quality carbon monoxide threshold",
-          "air_quality_carbon_monoxide_unit": "Air quality carbon monoxide unit",
-          "air_quality_carbon_monoxide_averaging_period": "Air quality carbon monoxide averaging period",
-          "air_quality_sulphur_dioxide_entity_id": "Air quality sulphur dioxide entity id",
-          "air_quality_sulphur_dioxide_policy": "Air quality sulphur dioxide policy",
-          "air_quality_sulphur_dioxide_threshold": "Air quality sulphur dioxide threshold",
-          "air_quality_sulphur_dioxide_unit": "Air quality sulphur dioxide unit",
-          "air_quality_sulphur_dioxide_averaging_period": "Air quality sulphur dioxide averaging period",
-          "air_quality_european_aqi_entity_id": "Air quality european aqi entity id",
-          "air_quality_european_aqi_policy": "Air quality european aqi policy",
-          "air_quality_european_aqi_threshold": "Air quality european aqi threshold",
-          "air_quality_european_aqi_unit": "Air quality european aqi unit",
-          "air_quality_european_aqi_averaging_period": "Air quality european aqi averaging period",
-          "air_quality_alder_pollen_entity_id": "Air quality alder pollen entity id",
-          "air_quality_alder_pollen_policy": "Air quality alder pollen policy",
-          "air_quality_alder_pollen_threshold": "Air quality alder pollen threshold",
-          "air_quality_alder_pollen_unit": "Air quality alder pollen unit",
-          "air_quality_alder_pollen_averaging_period": "Air quality alder pollen averaging period",
-          "air_quality_birch_pollen_entity_id": "Air quality birch pollen entity id",
-          "air_quality_birch_pollen_policy": "Air quality birch pollen policy",
-          "air_quality_birch_pollen_threshold": "Air quality birch pollen threshold",
-          "air_quality_birch_pollen_unit": "Air quality birch pollen unit",
-          "air_quality_birch_pollen_averaging_period": "Air quality birch pollen averaging period",
-          "air_quality_grass_pollen_entity_id": "Air quality grass pollen entity id",
-          "air_quality_grass_pollen_policy": "Air quality grass pollen policy",
-          "air_quality_grass_pollen_threshold": "Air quality grass pollen threshold",
-          "air_quality_grass_pollen_unit": "Air quality grass pollen unit",
-          "air_quality_grass_pollen_averaging_period": "Air quality grass pollen averaging period",
-          "air_quality_mugwort_pollen_entity_id": "Air quality mugwort pollen entity id",
-          "air_quality_mugwort_pollen_policy": "Air quality mugwort pollen policy",
-          "air_quality_mugwort_pollen_threshold": "Air quality mugwort pollen threshold",
-          "air_quality_mugwort_pollen_unit": "Air quality mugwort pollen unit",
-          "air_quality_mugwort_pollen_averaging_period": "Air quality mugwort pollen averaging period",
-          "air_quality_olive_pollen_entity_id": "Air quality olive pollen entity id",
-          "air_quality_olive_pollen_policy": "Air quality olive pollen policy",
-          "air_quality_olive_pollen_threshold": "Air quality olive pollen threshold",
-          "air_quality_olive_pollen_unit": "Air quality olive pollen unit",
-          "air_quality_olive_pollen_averaging_period": "Air quality olive pollen averaging period",
-          "air_quality_ragweed_pollen_entity_id": "Air quality ragweed pollen entity id",
-          "air_quality_ragweed_pollen_policy": "Air quality ragweed pollen policy",
-          "air_quality_ragweed_pollen_threshold": "Air quality ragweed pollen threshold",
-          "air_quality_ragweed_pollen_unit": "Air quality ragweed pollen unit",
-          "air_quality_ragweed_pollen_averaging_period": "Air quality ragweed pollen averaging period"
+          "air_quality_entity_id": "空气质量实体 ID",
+          "air_quality_policy": "空气质量策略",
+          "air_quality_threshold": "空气质量阈值",
+          "air_quality_unit": "空气质量单位",
+          "air_quality_averaging_period": "空气质量平均周期",
+          "air_quality_pm2_5_entity_id": "PM2.5实体 ID",
+          "air_quality_pm2_5_policy": "PM2.5策略",
+          "air_quality_pm2_5_threshold": "PM2.5阈值",
+          "air_quality_pm2_5_unit": "PM2.5单位",
+          "air_quality_pm2_5_averaging_period": "PM2.5平均周期",
+          "air_quality_pm10_entity_id": "PM10实体 ID",
+          "air_quality_pm10_policy": "PM10策略",
+          "air_quality_pm10_threshold": "PM10阈值",
+          "air_quality_pm10_unit": "PM10单位",
+          "air_quality_pm10_averaging_period": "PM10平均周期",
+          "air_quality_nitrogen_dioxide_entity_id": "二氧化氮实体 ID",
+          "air_quality_nitrogen_dioxide_policy": "二氧化氮策略",
+          "air_quality_nitrogen_dioxide_threshold": "二氧化氮阈值",
+          "air_quality_nitrogen_dioxide_unit": "二氧化氮单位",
+          "air_quality_nitrogen_dioxide_averaging_period": "二氧化氮平均周期",
+          "air_quality_ozone_entity_id": "臭氧实体 ID",
+          "air_quality_ozone_policy": "臭氧策略",
+          "air_quality_ozone_threshold": "臭氧阈值",
+          "air_quality_ozone_unit": "臭氧单位",
+          "air_quality_ozone_averaging_period": "臭氧平均周期",
+          "air_quality_carbon_monoxide_entity_id": "一氧化碳实体 ID",
+          "air_quality_carbon_monoxide_policy": "一氧化碳策略",
+          "air_quality_carbon_monoxide_threshold": "一氧化碳阈值",
+          "air_quality_carbon_monoxide_unit": "一氧化碳单位",
+          "air_quality_carbon_monoxide_averaging_period": "一氧化碳平均周期",
+          "air_quality_sulphur_dioxide_entity_id": "二氧化硫实体 ID",
+          "air_quality_sulphur_dioxide_policy": "二氧化硫策略",
+          "air_quality_sulphur_dioxide_threshold": "二氧化硫阈值",
+          "air_quality_sulphur_dioxide_unit": "二氧化硫单位",
+          "air_quality_sulphur_dioxide_averaging_period": "二氧化硫平均周期",
+          "air_quality_european_aqi_entity_id": "欧洲空气质量指数实体 ID",
+          "air_quality_european_aqi_policy": "欧洲空气质量指数策略",
+          "air_quality_european_aqi_threshold": "欧洲空气质量指数阈值",
+          "air_quality_european_aqi_unit": "欧洲空气质量指数单位",
+          "air_quality_european_aqi_averaging_period": "欧洲空气质量指数平均周期",
+          "air_quality_alder_pollen_entity_id": "桤木花粉实体 ID",
+          "air_quality_alder_pollen_policy": "桤木花粉策略",
+          "air_quality_alder_pollen_threshold": "桤木花粉阈值",
+          "air_quality_alder_pollen_unit": "桤木花粉单位",
+          "air_quality_alder_pollen_averaging_period": "桤木花粉平均周期",
+          "air_quality_birch_pollen_entity_id": "桦树花粉实体 ID",
+          "air_quality_birch_pollen_policy": "桦树花粉策略",
+          "air_quality_birch_pollen_threshold": "桦树花粉阈值",
+          "air_quality_birch_pollen_unit": "桦树花粉单位",
+          "air_quality_birch_pollen_averaging_period": "桦树花粉平均周期",
+          "air_quality_grass_pollen_entity_id": "禾草花粉实体 ID",
+          "air_quality_grass_pollen_policy": "禾草花粉策略",
+          "air_quality_grass_pollen_threshold": "禾草花粉阈值",
+          "air_quality_grass_pollen_unit": "禾草花粉单位",
+          "air_quality_grass_pollen_averaging_period": "禾草花粉平均周期",
+          "air_quality_mugwort_pollen_entity_id": "蒿属花粉实体 ID",
+          "air_quality_mugwort_pollen_policy": "蒿属花粉策略",
+          "air_quality_mugwort_pollen_threshold": "蒿属花粉阈值",
+          "air_quality_mugwort_pollen_unit": "蒿属花粉单位",
+          "air_quality_mugwort_pollen_averaging_period": "蒿属花粉平均周期",
+          "air_quality_olive_pollen_entity_id": "橄榄树花粉实体 ID",
+          "air_quality_olive_pollen_policy": "橄榄树花粉策略",
+          "air_quality_olive_pollen_threshold": "橄榄树花粉阈值",
+          "air_quality_olive_pollen_unit": "橄榄树花粉单位",
+          "air_quality_olive_pollen_averaging_period": "橄榄树花粉平均周期",
+          "air_quality_ragweed_pollen_entity_id": "豚草花粉实体 ID",
+          "air_quality_ragweed_pollen_policy": "豚草花粉策略",
+          "air_quality_ragweed_pollen_threshold": "豚草花粉阈值",
+          "air_quality_ragweed_pollen_unit": "豚草花粉单位",
+          "air_quality_ragweed_pollen_averaging_period": "豚草花粉平均周期"
         },
         "data_description": {
-          "air_quality_entity_id": "Configure air quality entity id.",
-          "air_quality_policy": "Configure air quality policy.",
-          "air_quality_threshold": "Configure air quality threshold.",
-          "air_quality_unit": "Configure air quality unit.",
-          "air_quality_averaging_period": "Configure air quality averaging period.",
-          "air_quality_pm2_5_entity_id": "Configure air quality pm2 5 entity id.",
-          "air_quality_pm2_5_policy": "Configure air quality pm2 5 policy.",
-          "air_quality_pm2_5_threshold": "Configure air quality pm2 5 threshold.",
-          "air_quality_pm2_5_unit": "Configure air quality pm2 5 unit.",
-          "air_quality_pm2_5_averaging_period": "Configure air quality pm2 5 averaging period.",
-          "air_quality_pm10_entity_id": "Configure air quality pm10 entity id.",
-          "air_quality_pm10_policy": "Configure air quality pm10 policy.",
-          "air_quality_pm10_threshold": "Configure air quality pm10 threshold.",
-          "air_quality_pm10_unit": "Configure air quality pm10 unit.",
-          "air_quality_pm10_averaging_period": "Configure air quality pm10 averaging period.",
-          "air_quality_nitrogen_dioxide_entity_id": "Configure air quality nitrogen dioxide entity id.",
-          "air_quality_nitrogen_dioxide_policy": "Configure air quality nitrogen dioxide policy.",
-          "air_quality_nitrogen_dioxide_threshold": "Configure air quality nitrogen dioxide threshold.",
-          "air_quality_nitrogen_dioxide_unit": "Configure air quality nitrogen dioxide unit.",
-          "air_quality_nitrogen_dioxide_averaging_period": "Configure air quality nitrogen dioxide averaging period.",
-          "air_quality_ozone_entity_id": "Configure air quality ozone entity id.",
-          "air_quality_ozone_policy": "Configure air quality ozone policy.",
-          "air_quality_ozone_threshold": "Configure air quality ozone threshold.",
-          "air_quality_ozone_unit": "Configure air quality ozone unit.",
-          "air_quality_ozone_averaging_period": "Configure air quality ozone averaging period.",
-          "air_quality_carbon_monoxide_entity_id": "Configure air quality carbon monoxide entity id.",
-          "air_quality_carbon_monoxide_policy": "Configure air quality carbon monoxide policy.",
-          "air_quality_carbon_monoxide_threshold": "Configure air quality carbon monoxide threshold.",
-          "air_quality_carbon_monoxide_unit": "Configure air quality carbon monoxide unit.",
-          "air_quality_carbon_monoxide_averaging_period": "Configure air quality carbon monoxide averaging period.",
-          "air_quality_sulphur_dioxide_entity_id": "Configure air quality sulphur dioxide entity id.",
-          "air_quality_sulphur_dioxide_policy": "Configure air quality sulphur dioxide policy.",
-          "air_quality_sulphur_dioxide_threshold": "Configure air quality sulphur dioxide threshold.",
-          "air_quality_sulphur_dioxide_unit": "Configure air quality sulphur dioxide unit.",
-          "air_quality_sulphur_dioxide_averaging_period": "Configure air quality sulphur dioxide averaging period.",
-          "air_quality_european_aqi_entity_id": "Configure air quality european aqi entity id.",
-          "air_quality_european_aqi_policy": "Configure air quality european aqi policy.",
-          "air_quality_european_aqi_threshold": "Configure air quality european aqi threshold.",
-          "air_quality_european_aqi_unit": "Configure air quality european aqi unit.",
-          "air_quality_european_aqi_averaging_period": "Configure air quality european aqi averaging period.",
-          "air_quality_alder_pollen_entity_id": "Configure air quality alder pollen entity id.",
-          "air_quality_alder_pollen_policy": "Configure air quality alder pollen policy.",
-          "air_quality_alder_pollen_threshold": "Configure air quality alder pollen threshold.",
-          "air_quality_alder_pollen_unit": "Configure air quality alder pollen unit.",
-          "air_quality_alder_pollen_averaging_period": "Configure air quality alder pollen averaging period.",
-          "air_quality_birch_pollen_entity_id": "Configure air quality birch pollen entity id.",
-          "air_quality_birch_pollen_policy": "Configure air quality birch pollen policy.",
-          "air_quality_birch_pollen_threshold": "Configure air quality birch pollen threshold.",
-          "air_quality_birch_pollen_unit": "Configure air quality birch pollen unit.",
-          "air_quality_birch_pollen_averaging_period": "Configure air quality birch pollen averaging period.",
-          "air_quality_grass_pollen_entity_id": "Configure air quality grass pollen entity id.",
-          "air_quality_grass_pollen_policy": "Configure air quality grass pollen policy.",
-          "air_quality_grass_pollen_threshold": "Configure air quality grass pollen threshold.",
-          "air_quality_grass_pollen_unit": "Configure air quality grass pollen unit.",
-          "air_quality_grass_pollen_averaging_period": "Configure air quality grass pollen averaging period.",
-          "air_quality_mugwort_pollen_entity_id": "Configure air quality mugwort pollen entity id.",
-          "air_quality_mugwort_pollen_policy": "Configure air quality mugwort pollen policy.",
-          "air_quality_mugwort_pollen_threshold": "Configure air quality mugwort pollen threshold.",
-          "air_quality_mugwort_pollen_unit": "Configure air quality mugwort pollen unit.",
-          "air_quality_mugwort_pollen_averaging_period": "Configure air quality mugwort pollen averaging period.",
-          "air_quality_olive_pollen_entity_id": "Configure air quality olive pollen entity id.",
-          "air_quality_olive_pollen_policy": "Configure air quality olive pollen policy.",
-          "air_quality_olive_pollen_threshold": "Configure air quality olive pollen threshold.",
-          "air_quality_olive_pollen_unit": "Configure air quality olive pollen unit.",
-          "air_quality_olive_pollen_averaging_period": "Configure air quality olive pollen averaging period.",
-          "air_quality_ragweed_pollen_entity_id": "Configure air quality ragweed pollen entity id.",
-          "air_quality_ragweed_pollen_policy": "Configure air quality ragweed pollen policy.",
-          "air_quality_ragweed_pollen_threshold": "Configure air quality ragweed pollen threshold.",
-          "air_quality_ragweed_pollen_unit": "Configure air quality ragweed pollen unit.",
-          "air_quality_ragweed_pollen_averaging_period": "Configure air quality ragweed pollen averaging period."
+          "air_quality_entity_id": "配置空气质量实体 ID。",
+          "air_quality_policy": "配置空气质量策略。",
+          "air_quality_threshold": "配置空气质量阈值。",
+          "air_quality_unit": "配置空气质量单位。",
+          "air_quality_averaging_period": "配置空气质量平均周期。",
+          "air_quality_pm2_5_entity_id": "配置PM2.5实体 ID。",
+          "air_quality_pm2_5_policy": "配置PM2.5策略。",
+          "air_quality_pm2_5_threshold": "配置PM2.5阈值。",
+          "air_quality_pm2_5_unit": "配置PM2.5单位。",
+          "air_quality_pm2_5_averaging_period": "配置PM2.5平均周期。",
+          "air_quality_pm10_entity_id": "配置PM10实体 ID。",
+          "air_quality_pm10_policy": "配置PM10策略。",
+          "air_quality_pm10_threshold": "配置PM10阈值。",
+          "air_quality_pm10_unit": "配置PM10单位。",
+          "air_quality_pm10_averaging_period": "配置PM10平均周期。",
+          "air_quality_nitrogen_dioxide_entity_id": "配置二氧化氮实体 ID。",
+          "air_quality_nitrogen_dioxide_policy": "配置二氧化氮策略。",
+          "air_quality_nitrogen_dioxide_threshold": "配置二氧化氮阈值。",
+          "air_quality_nitrogen_dioxide_unit": "配置二氧化氮单位。",
+          "air_quality_nitrogen_dioxide_averaging_period": "配置二氧化氮平均周期。",
+          "air_quality_ozone_entity_id": "配置臭氧实体 ID。",
+          "air_quality_ozone_policy": "配置臭氧策略。",
+          "air_quality_ozone_threshold": "配置臭氧阈值。",
+          "air_quality_ozone_unit": "配置臭氧单位。",
+          "air_quality_ozone_averaging_period": "配置臭氧平均周期。",
+          "air_quality_carbon_monoxide_entity_id": "配置一氧化碳实体 ID。",
+          "air_quality_carbon_monoxide_policy": "配置一氧化碳策略。",
+          "air_quality_carbon_monoxide_threshold": "配置一氧化碳阈值。",
+          "air_quality_carbon_monoxide_unit": "配置一氧化碳单位。",
+          "air_quality_carbon_monoxide_averaging_period": "配置一氧化碳平均周期。",
+          "air_quality_sulphur_dioxide_entity_id": "配置二氧化硫实体 ID。",
+          "air_quality_sulphur_dioxide_policy": "配置二氧化硫策略。",
+          "air_quality_sulphur_dioxide_threshold": "配置二氧化硫阈值。",
+          "air_quality_sulphur_dioxide_unit": "配置二氧化硫单位。",
+          "air_quality_sulphur_dioxide_averaging_period": "配置二氧化硫平均周期。",
+          "air_quality_european_aqi_entity_id": "配置欧洲空气质量指数实体 ID。",
+          "air_quality_european_aqi_policy": "配置欧洲空气质量指数策略。",
+          "air_quality_european_aqi_threshold": "配置欧洲空气质量指数阈值。",
+          "air_quality_european_aqi_unit": "配置欧洲空气质量指数单位。",
+          "air_quality_european_aqi_averaging_period": "配置欧洲空气质量指数平均周期。",
+          "air_quality_alder_pollen_entity_id": "配置桤木花粉实体 ID。",
+          "air_quality_alder_pollen_policy": "配置桤木花粉策略。",
+          "air_quality_alder_pollen_threshold": "配置桤木花粉阈值。",
+          "air_quality_alder_pollen_unit": "配置桤木花粉单位。",
+          "air_quality_alder_pollen_averaging_period": "配置桤木花粉平均周期。",
+          "air_quality_birch_pollen_entity_id": "配置桦树花粉实体 ID。",
+          "air_quality_birch_pollen_policy": "配置桦树花粉策略。",
+          "air_quality_birch_pollen_threshold": "配置桦树花粉阈值。",
+          "air_quality_birch_pollen_unit": "配置桦树花粉单位。",
+          "air_quality_birch_pollen_averaging_period": "配置桦树花粉平均周期。",
+          "air_quality_grass_pollen_entity_id": "配置禾草花粉实体 ID。",
+          "air_quality_grass_pollen_policy": "配置禾草花粉策略。",
+          "air_quality_grass_pollen_threshold": "配置禾草花粉阈值。",
+          "air_quality_grass_pollen_unit": "配置禾草花粉单位。",
+          "air_quality_grass_pollen_averaging_period": "配置禾草花粉平均周期。",
+          "air_quality_mugwort_pollen_entity_id": "配置蒿属花粉实体 ID。",
+          "air_quality_mugwort_pollen_policy": "配置蒿属花粉策略。",
+          "air_quality_mugwort_pollen_threshold": "配置蒿属花粉阈值。",
+          "air_quality_mugwort_pollen_unit": "配置蒿属花粉单位。",
+          "air_quality_mugwort_pollen_averaging_period": "配置蒿属花粉平均周期。",
+          "air_quality_olive_pollen_entity_id": "配置橄榄树花粉实体 ID。",
+          "air_quality_olive_pollen_policy": "配置橄榄树花粉策略。",
+          "air_quality_olive_pollen_threshold": "配置橄榄树花粉阈值。",
+          "air_quality_olive_pollen_unit": "配置橄榄树花粉单位。",
+          "air_quality_olive_pollen_averaging_period": "配置橄榄树花粉平均周期。",
+          "air_quality_ragweed_pollen_entity_id": "配置豚草花粉实体 ID。",
+          "air_quality_ragweed_pollen_policy": "配置豚草花粉策略。",
+          "air_quality_ragweed_pollen_threshold": "配置豚草花粉阈值。",
+          "air_quality_ragweed_pollen_unit": "配置豚草花粉单位。",
+          "air_quality_ragweed_pollen_averaging_period": "配置豚草花粉平均周期。"
         }
       },
       "diagnostics": {
-        "title": "Diagnostics",
-        "description": "Configure diagnostic notifications and debug mode.",
+        "title": "诊断",
+        "description": "配置诊断通知和调试模式。",
         "data": {
-          "diagnostic_notification_level": "Diagnostic notification level",
-          "debug_mode_enabled": "Debug mode enabled"
+          "diagnostic_notification_level": "诊断通知级别",
+          "debug_mode_enabled": "已启用调试模式"
         },
         "data_description": {
-          "diagnostic_notification_level": "Configure diagnostic notification level.",
-          "debug_mode_enabled": "Configure debug mode enabled."
+          "diagnostic_notification_level": "配置诊断通知级别。",
+          "debug_mode_enabled": "配置是否启用调试模式。"
         }
       },
       "edit_room": {
-        "title": "Edit room",
-        "description": "Choose the room you want to update.",
+        "title": "编辑房间",
+        "description": "选择要更新的房间。",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "房间"
         },
         "data_description": {
-          "room_selection": "Select one of the rooms already saved in VentWise."
+          "room_selection": "选择已保存在 VentWise 中的房间。"
         }
       },
       "remove_room": {
-        "title": "Remove room",
-        "description": "Choose the room you want to delete.",
+        "title": "删除房间",
+        "description": "选择要删除的房间。",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "房间"
         },
         "data_description": {
-          "room_selection": "Select one of the rooms already saved in VentWise."
+          "room_selection": "选择已保存在 VentWise 中的房间。"
         }
       },
       "edit_room_details": {
-        "title": "Edit room",
-        "description": "Choose which part of the selected room to update.",
+        "title": "编辑房间",
+        "description": "选择要更新所选房间的哪部分设置。",
         "menu_options": {
-          "edit_room_base": "Basic room settings",
-          "edit_room_advanced": "Advanced room settings"
+          "edit_room_base": "房间基本设置",
+          "edit_room_advanced": "房间高级设置"
         },
         "menu_option_descriptions": {
-          "edit_room_base": "Update the room name and measurements.",
-          "edit_room_advanced": "Update room overrides and automations."
+          "edit_room_base": "更新房间名称和测量值。",
+          "edit_room_advanced": "更新房间覆盖设置和自动化。"
         }
       },
       "edit_room_base": {
-        "title": "Edit room",
-        "description": "Update the selected room's basic settings.",
+        "title": "编辑房间",
+        "description": "更新所选房间的基本设置。",
         "data": {
-          "name": "Room name",
-          "temperature_entity_id": "Indoor temperature sensor",
-          "humidity_entity_id": "Indoor humidity sensor",
-          "window_sensor_entity_ids": "Window contacts"
+          "name": "房间名称",
+          "temperature_entity_id": "室内温度传感器",
+          "humidity_entity_id": "室内湿度传感器",
+          "window_sensor_entity_ids": "窗户接触传感器"
         },
         "data_description": {
-          "name": "A friendly name for this room, like Bedroom, Study, or Office.",
-          "temperature_entity_id": "Pick the room temperature sensor.",
-          "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "window_sensor_entity_ids": "Configure window sensor entity ids."
+          "name": "为房间取一个易识别的名称，例如卧室、书房或办公室。",
+          "temperature_entity_id": "选择房间温度传感器。",
+          "humidity_entity_id": "可选。选择房间湿度传感器。",
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
         }
       },
       "edit_room_advanced": {
-        "title": "Edit room",
-        "description": "Update the selected room's advanced settings.",
+        "title": "编辑房间",
+        "description": "更新所选房间的高级设置。",
         "data": {
-          "target_temperature_c_override": "Room comfort temperature override",
-          "target_humidity_percent_override": "Room comfort humidity override (%)",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
-          "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)",
-          "co2_entity_id": "Room CO2 sensor"
+          "target_temperature_c_override": "房间舒适温度覆盖值",
+          "target_humidity_percent_override": "房间舒适湿度覆盖值 (%)",
+          "start_entity_id": "开窗自动化",
+          "stop_entity_id": "关窗自动化",
+          "action_change_hold_minutes": "反转建议前的等待时间（分钟）",
+          "action_lockout_minutes": "保留房间建议的时间（分钟）",
+          "co2_entity_id": "房间 CO2 传感器"
         },
         "data_description": {
-          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
-          "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
-          "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
-          "co2_entity_id": "Optional. Used only for advisory ventilation recommendations; VentWise does not control devices."
+          "target_temperature_c_override": "可选。使用此房间专属的舒适温度，替代全局设置。",
+          "target_humidity_percent_override": "可选。使用此房间专属的舒适湿度百分比，替代全局设置。",
+          "start_entity_id": "可选。选择 VentWise 建议打开此房间窗户时运行的自动化。",
+          "stop_entity_id": "可选。选择 VentWise 建议关闭此房间窗户时运行的自动化。",
+          "action_change_hold_minutes": "将开窗建议改为关窗建议或反之之前，等待此时间。",
+          "action_lockout_minutes": "建议开窗或关窗后，在此时间内不发出相反建议。紧急安全关窗不会延迟。",
+          "co2_entity_id": "可选。仅用于提供通风建议；VentWise 不控制设备。"
         }
       }
     },
@@ -768,211 +768,211 @@
     },
     "pollution_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "pollen_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_pm2_5_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_pm2_5_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_pm10_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_pm10_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_nitrogen_dioxide_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_nitrogen_dioxide_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_ozone_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_ozone_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_carbon_monoxide_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_carbon_monoxide_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_sulphur_dioxide_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_sulphur_dioxide_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_european_aqi_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_european_aqi_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_alder_pollen_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_alder_pollen_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_birch_pollen_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_birch_pollen_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_grass_pollen_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_grass_pollen_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_mugwort_pollen_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_mugwort_pollen_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_olive_pollen_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_olive_pollen_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     },
     "air_quality_ragweed_pollen_policy": {
       "options": {
-        "ignore": "Ignore",
-        "reduce": "Reduce ventilation",
-        "avoid": "Avoid ventilation"
+        "ignore": "忽略",
+        "reduce": "减少通风",
+        "avoid": "避免通风"
       }
     },
     "air_quality_ragweed_pollen_averaging_period": {
       "options": {
-        "instant": "Instant",
-        "1h": "1 hour",
-        "8h": "8 hours",
-        "24h": "24 hours"
+        "instant": "即时",
+        "1h": "1 小时",
+        "8h": "8 小时",
+        "24h": "24 小时"
       }
     }
   },
@@ -1037,34 +1037,34 @@
         "name": "建议",
         "state_attributes": {
           "core_action": {
-            "name": "Core action"
+            "name": "核心操作"
           },
           "delivered_action": {
-            "name": "Delivered action"
+            "name": "已发送的操作"
           },
           "duration_minutes": {
-            "name": "Suggested duration (minutes)"
+            "name": "建议持续时间（分钟）"
           },
           "confidence": {
-            "name": "Confidence"
+            "name": "置信度"
           },
           "candidates": {
-            "name": "Candidate scores"
+            "name": "候选方案评分"
           },
           "trace": {
-            "name": "Decision trace"
+            "name": "决策过程"
           },
           "blocked_conditions": {
-            "name": "Blocked conditions"
+            "name": "阻止条件"
           },
           "applied_penalties": {
-            "name": "Applied penalties"
+            "name": "已应用的扣分"
           },
           "data_quality": {
-            "name": "Data quality"
+            "name": "数据质量"
           },
           "delivery_suppressed_by": {
-            "name": "Delivery suppressed by"
+            "name": "发送被阻止的原因"
           }
         }
       },

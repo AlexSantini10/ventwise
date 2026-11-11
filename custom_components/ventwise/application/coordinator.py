@@ -53,6 +53,7 @@ from .notification import (
     build_diagnostic_notification_payload,
     build_notification_payload,
     build_room_notification_payload,
+    confirmation_action_title,
     home_assistant_diagnostic_notification_id,
     home_assistant_notification_id_for_room,
     home_assistant_on_demand_notification_id,
@@ -1237,20 +1238,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return None
         token = f"ventwise_confirm_{secrets.token_urlsafe(24)}"
         language = getattr(getattr(self.hass, "config", None), "language", None)
-        italian = str(language or "").lower().startswith("it")
         return {
             "action": token,
-            "title": (
-                "Conferma apertura"
-                if recommendation.action == RecommendationAction.OPEN
-                else "Conferma chiusura"
-            )
-            if italian
-            else (
-                "Confirm opening"
-                if recommendation.action == RecommendationAction.OPEN
-                else "Confirm closing"
-            ),
+            "title": confirmation_action_title(recommendation.action.value, language),
         }
 
     @callback

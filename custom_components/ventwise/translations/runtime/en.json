@@ -1,0 +1,78 @@
+{
+  "notification": {
+    "open": "open windows.",
+    "close": "close windows.",
+    "none": "no action needed.",
+    "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+    "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+    "forecast_reason": "Short-term forecast: outside conditions are expected to become less comfortable soon.",
+    "failed_title": "VentWise notification delivery failed",
+    "failed_targets": "Failed targets"
+  },
+  "on_demand_title": "VentWise · Recommendation requested now",
+  "diagnostic": {
+    "unavailable_data": {
+      "title": "VentWise data unavailable",
+      "message": "Required weather or room sensor data is unavailable."
+    },
+    "no_enabled_rooms": {
+      "title": "VentWise needs an enabled room",
+      "message": "No enabled rooms are configured."
+    }
+  },
+  "status": {
+    "quiet_hours": "Recommendations are paused during quiet hours.",
+    "cooldown": "The same recommendation was sent recently.",
+    "stability": "Waiting for the recommendation to remain stable.",
+    "unavailable": "Waiting for the required sensor data.",
+    "disabled": "VentWise is disabled."
+  },
+  "confirmation": {
+    "open": "Confirm opening",
+    "close": "Confirm closing"
+  },
+  "ventilate_title": "Ventilate briefly",
+  "ventilation_reason": "Ventilate for about {minutes} minutes, then close and check again.",
+  "entity_name": {
+    "weather_condition": "Weather condition",
+    "average_perceived_indoor_temperature": "Average perceived indoor temperature",
+    "perceived_outdoor_temperature": "Perceived outdoor temperature",
+    "effective_comfort_temperature": "Effective comfort temperature",
+    "suggested_comfort_temperature": "Climate-adaptive comfort target",
+    "outdoor_temperature": "Outdoor temperature",
+    "outdoor_humidity": "Outdoor humidity",
+    "wind_speed": "Outdoor wind speed",
+    "recommendation": "Recommendation",
+    "recommendation_score": "Recommendation score",
+    "recommendation_reason": "Recommendation reason",
+    "window_state": "Window state",
+    "perceived_indoor_temperature": "Perceived indoor temperature",
+    "temperature": "Indoor temperature",
+    "indoor_humidity": "Indoor humidity",
+    "integration_enabled": "Integration enabled",
+    "notifications_enabled": "Notifications enabled",
+    "automatic_comfort_temperature": "Automatic comfort temperature",
+    "quiet_hours_enabled": "Quiet hours enabled",
+    "quiet_hours_active": "Quiet hours active",
+    "quiet_hours_start_time": "Quiet hours start time",
+    "quiet_hours_end_time": "Quiet hours end time",
+    "notifications_currently_allowed": "Notifications currently allowed",
+    "notification_cooldown_active": "Notification cooldown active",
+    "recommendation_active": "Recommendation active",
+    "comfort_temperature": "Comfort temperature",
+    "comfort_humidity": "Comfort humidity",
+    "recommendation_stability_window": "Recommendation stability window",
+    "enabled": "Enabled",
+    "temperature_override_enabled": "Temperature override enabled",
+    "humidity_override_enabled": "Humidity override enabled",
+    "temperature_override": "Temperature override",
+    "humidity_override": "Humidity override",
+    "request_recommendation": "Request recommendation now",
+    "debug_open_notification": "Receive open notification",
+    "debug_close_notification": "Receive close notification"
+  },
+  "room_kind": {
+    "room": "Room",
+    "macro_room": "Macro Room"
+  }
+}
