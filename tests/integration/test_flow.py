@@ -72,6 +72,7 @@ from custom_components.ventwise.configuration.flow import (
     normalize_room_config,
     validate_room_automation_confirmation,
     split_config_data,
+    _localized_room_kind_label,
 )
 
 
@@ -358,6 +359,15 @@ def test_room_selection_label_localizes_room_kind() -> None:
         0,
         "it",
     ) == "1. Camera (Stanza)"
+
+
+def test_room_labels_fall_back_to_english_and_readable_ids() -> None:
+    """Unsupported languages and unknown keys must still produce useful labels."""
+
+    room_schema = build_room_schema({}, 0, "room", "pt-BR")
+
+    assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == "Room 1"
+    assert _localized_room_kind_label("unknown_kind", "en") == "Unknown Kind"
 
 
 def test_normalize_basic_config_strips_optional_entities() -> None:

@@ -25,7 +25,6 @@ from ..const import (
 from .flow import (
     ConfigValidationError,
     build_room_schema,
-    build_settings_schema,
     build_daily_options_schema,
     build_recommendation_options_schema,
     build_manual_sources_schema,
@@ -35,7 +34,6 @@ from .flow import (
     build_diagnostics_options_schema,
     build_unit_schema,
     _localized_room_kind_label,
-    normalize_settings_config,
     normalize_basic_config,
     normalize_advanced_config,
     normalize_outdoor_source_config,
@@ -95,32 +93,6 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         return self.async_show_form(
             step_id="units",
             data_schema=build_unit_schema(self._current_config),
-        )
-
-    async def async_step_settings(self, user_input: dict[str, Any] | None = None):
-        """Edit everyday, outdoor, and comfort settings on one screen."""
-
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            try:
-                candidate_config = {
-                    **self._current_config,
-                    **normalize_settings_config(user_input, self._current_config),
-                }
-                validate_room_automation_confirmation(
-                    self._rooms, candidate_config, self.hass
-                )
-                self._current_config = candidate_config
-                return self.async_create_entry(title=NAME, data=self._result_data())
-            except ConfigValidationError as err:
-                errors[err.field] = err.message
-            except (ValueError, TypeError, KeyError):
-                errors["base"] = "invalid_input"
-
-        return self.async_show_form(
-            step_id="settings",
-            data_schema=build_settings_schema(self._current_config, self.hass),
-            errors=errors,
         )
 
     async def async_step_daily(self, user_input: dict[str, Any] | None = None):
