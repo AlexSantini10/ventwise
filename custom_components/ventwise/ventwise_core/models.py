@@ -197,14 +197,6 @@ class DecisionConfig:
     forecast_freshness: timedelta = timedelta(minutes=90)
 
 
-class SeasonMode(str, Enum):
-    """High-level season hint for optional scoring bias."""
-
-    AUTO = "auto"
-    SUMMER = "summer"
-    WINTER = "winter"
-
-
 @dataclass(frozen=True, slots=True)
 class RoomObservation:
     """Measured conditions for a room."""
@@ -252,55 +244,6 @@ class ComfortObservation:
     weather_condition: str | None = None
     forecast_temperature_c: float | None = None
     forecast: ForecastObservation | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class ScoringConfig:
-    """Tunable scoring parameters."""
-
-    target_temperature_c: float = 22.0
-    target_humidity_percent: float = 50.0
-    minimum_score: float = 0.35
-    minimum_stability_seconds: int = 0
-    decision_threshold_c: float = 1.0
-    score_scale_c: float = 1.8
-    humidity_weight: float = 0.04
-    wind_open_preference_threshold_m_s: float = 4.0
-    wind_open_preference_per_m_s: float = 0.02
-    wind_open_penalty_per_m_s: float = 0.07
-    wind_open_block_m_s: float = 12.0
-    wind_gust_open_block_m_s: float = 15.0
-    weather_open_block_conditions: Tuple[str, ...] = (
-        "thunder",
-        "lightning",
-        "storm",
-        "hail",
-        "tornado",
-        "hurricane",
-        "blizzard",
-        "squall",
-        "freezing",
-        "icy",
-        "ice",
-    )
-    weather_open_reduce_conditions: Tuple[str, ...] = (
-        "rain",
-        "drizzle",
-        "shower",
-        "snow",
-        "sleet",
-        "fog",
-        "mist",
-        "haze",
-        "smoke",
-        "windy",
-        "gust",
-    )
-    season_mode: SeasonMode = SeasonMode.AUTO
-    open_bias: float = 0.0
-    close_bias: float = 0.0
-    co2_enabled: bool = False
-    co2_threshold_ppm: float = 1000.0
 
 
 @dataclass(frozen=True, slots=True)

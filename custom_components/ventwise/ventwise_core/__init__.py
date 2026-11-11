@@ -19,19 +19,22 @@ from .models import (
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
-    SeasonMode,
-    ScoringConfig,
     TraceEntry,
     Validity,
 )
-from .decision import DecisionEngine, absolute_humidity_g_m3, apparent_temperature_c, dew_point_c
-from .scoring import ComfortRecommender, perceived_temperature, suggested_comfort_temperature
+from .decision import (
+    DecisionEngine,
+    absolute_humidity_g_m3,
+    apparent_temperature_c,
+    dew_point_c,
+    suggested_comfort_temperature,
+)
 
 __all__ = [
-    "ComfortObservation",
     "AggregateDecisionResult",
     "Availability",
     "CandidateScores",
+    "ComfortObservation",
     "DataQualitySummary",
     "DecisionConfig",
     "DecisionEngine",
@@ -41,20 +44,16 @@ __all__ = [
     "DecisionSnapshot",
     "ExposureReading",
     "ForecastObservation",
-    "ComfortRecommender",
     "RecommendationAction",
     "RecommendationContext",
     "RecommendationSummary",
     "Observation",
     "RoomObservation",
     "RoomProfile",
-    "SeasonMode",
-    "ScoringConfig",
     "TraceEntry",
     "Validity",
     "absolute_humidity_g_m3",
     "apparent_temperature_c",
     "dew_point_c",
-    "perceived_temperature",
     "suggested_comfort_temperature",
 ]

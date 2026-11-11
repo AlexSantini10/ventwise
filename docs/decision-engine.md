@@ -64,7 +64,8 @@ the window is already closed but cannot erase the recommendation.
 
 ## Implemented deterministic interface
 
-The reusable core exposes `DecisionEngine` for new adapters. Its immutable
+The reusable core exposes `DecisionEngine` as the sole recommendation engine
+for all adapters. Its immutable
 `DecisionSnapshot` contains source-neutral `Observation` values; every value
 has canonical unit, source, observation/receipt time, validity, freshness and
 availability. `awaiting_source` is retained rather than guessed.

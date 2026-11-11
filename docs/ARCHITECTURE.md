@@ -8,7 +8,7 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 ## Final Delivery Model
 
-- Reusable comfort-scoring core in Python.
+- Reusable deterministic decision core in Python.
 - Home Assistant custom integration on top of the core.
 - HACS as the distribution channel.
 - UI-first configuration with no manual YAML required for normal use.
@@ -97,7 +97,7 @@ The user should be able to:
 
 ## Current Repo Mapping
 
-- `custom_components/ventwise/ventwise_core/`: reusable scoring logic.
+- `custom_components/ventwise/ventwise_core/`: the single reusable decision engine.
 - `custom_components/ventwise/`: Home Assistant integration code.
 - `tests/`: scoring and behavior tests.
 - `examples/`: sample configurations and scenarios.
