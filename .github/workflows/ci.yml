@@ -1,4 +1,5 @@
 name: CI
+# Test-branch trigger for the experimental release workflow.
 # CI is the release gate for experimental builds.
 run-name: CI on ${{ github.ref_name }} @ ${{ github.sha }}
 
@@ -64,8 +65,12 @@ concurrency:
 
 jobs:
   automated-tests:
-    name: automated-tests
+    name: automated-tests (${{ matrix.layer }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        layer: [unit, integration, system]
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -75,13 +80,13 @@ jobs:
         with:
           python-version: "3.11"
       - name: Run the canonical local/CI test workflow
-        run: python scripts/run_tests.py
+        run: python scripts/run_tests.py --layer ${{ matrix.layer }} -- --durations=20
 
       - name: Upload test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: automated-test-artifacts
+          name: automated-test-artifacts-${{ matrix.layer }}
           path: .test-artifacts
           if-no-files-found: ignore
 
