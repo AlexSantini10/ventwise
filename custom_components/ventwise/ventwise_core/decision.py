@@ -121,10 +121,14 @@ class DecisionEngine:
             trace.append(TraceEntry("discard.forecast_invalid"))
             forecast_observation = None
 
-        critical_missing = any(value is None for value in (outdoor_t, weather, wind))
-        if critical_missing:
+        thermal_weather_missing = outdoor_t is None
+        opening_weather_missing = weather is None or wind is None
+        if thermal_weather_missing:
             blocks.append("critical_weather_unavailable")
             trace.append(TraceEntry("block.critical_weather_unavailable"))
+        elif opening_weather_missing:
+            blocks.append("opening_weather_unavailable")
+            trace.append(TraceEntry("block.opening_weather_unavailable"))
 
         known_open = self._usable(room.window_open, "window.state", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         condition = str(weather).lower() if weather is not None else ""
@@ -240,7 +244,7 @@ class DecisionEngine:
         if indoor_t is None:
             trace.append(TraceEntry("selection.insufficient_indoor_evidence"))
             return self._finish(room, RecommendationAction.NONE, CandidateScores(), 0.0, "insufficient_indoor_evidence", trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open)
-        if critical_missing:
+        if thermal_weather_missing:
             return self._finish(room, RecommendationAction.NONE, CandidateScores(), 0.4, "critical_weather_unavailable", trace, blocks, penalties, used, discarded, awaiting, snapshot, known_open)
 
         assert outdoor_t is not None
@@ -297,6 +301,12 @@ class DecisionEngine:
             else 0.0
         )
         ventilate_score = max(transient, moisture_signal, self.config.meaningful_benefit if co2_signal else 0.0)
+        if opening_weather_missing:
+            # Missing weather condition or wind is fail-closed for exposing the
+            # room, but does not erase a conservative thermal close.
+            open_score = 0.0
+            ventilate_score = 0.0
+            trace.append(TraceEntry("selection.opening_weather_unavailable"))
         if indoor_h is not None and float(indoor_h) <= self.config.humidity_low_percent:
             if not co2_signal:
                 ventilate_score = 0.0

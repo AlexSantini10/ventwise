@@ -77,6 +77,52 @@ def test_severe_weather_recommends_close_without_window_contact() -> None:
     assert opened.delivered_action == RecommendationAction.CLOSE
 
 
+def test_hot_room_recommends_close_when_window_state_is_unknown() -> None:
+    result = DecisionEngine().evaluate(
+        snapshot(
+            room_temp=26.0,
+            outdoor_temp=40.0,
+            weather="sunny",
+            room={"target_temperature_c": 23.0, "window_open": None},
+        )
+    ).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.delivered_action is RecommendationAction.CLOSE
+    assert result.candidate_scores.close > 0.0
+    assert result.reason_code == "outdoor_materially_worse"
+
+
+@pytest.mark.parametrize("missing_field", ["weather_condition", "wind_speed_m_s"])
+def test_missing_opening_weather_keeps_thermal_close_but_blocks_opening(missing_field) -> None:
+    data = snapshot(room_temp=26.0, outdoor_temp=40.0, weather="sunny")
+    if missing_field == "weather_condition":
+        data = replace(data, outdoor=replace(data.outdoor, weather_condition=None))
+    else:
+        data = replace(data, outdoor=replace(data.outdoor, wind_speed_m_s=None))
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.delivered_action is RecommendationAction.CLOSE
+    assert result.candidate_scores.open == 0.0
+    assert result.candidate_scores.ventilate == 0.0
+    assert result.reason_code == "outdoor_materially_worse"
+    assert "opening_weather_unavailable" in result.blocked_conditions
+
+
+def test_missing_opening_weather_blocks_open_and_ventilate() -> None:
+    data = snapshot(room_temp=28.0, outdoor_temp=20.0, weather="sunny", wind=None)
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.NONE
+    assert result.delivered_action is RecommendationAction.NONE
+    assert result.reason_code == "insufficient_or_tied_benefit"
+    assert result.candidate_scores.open == 0.0
+    assert result.candidate_scores.ventilate == 0.0
+
+
 def test_co2_is_targeted_ventilation_not_open_override() -> None:
     result = DecisionEngine().evaluate(snapshot(room_temp=22.0, outdoor_temp=22.0, room={"co2_ppm": obs(1400.0, "ppm")})).room_results[0]
 

@@ -426,6 +426,34 @@ def test_window_states_gate_only_advice_already_satisfied_by_a_contact() -> None
     ]
 
 
+def test_not_configured_window_state_does_not_suppress_close() -> None:
+    recommendation = RoomRecommendation(
+        room_name="Living room",
+        room_id="living_room",
+        action=RecommendationAction.CLOSE,
+        score=0.8,
+        reason="Close the windows.",
+        reason_code="outdoor_materially_worse",
+        target_perceived_c=23.0,
+        indoor_perceived_c=26.0,
+        outdoor_perceived_c=40.0,
+        suggested_comfort_temperature_c=23.0,
+    )
+    summary = RecommendationSummary(
+        action=RecommendationAction.CLOSE,
+        score=0.8,
+        reason="outdoor_materially_worse",
+        best_room="Living room",
+        room_recommendations=(recommendation,),
+    )
+
+    gated = gate_room_recommendations(summary, {"living_room": "not_configured"})
+
+    assert gated.action is RecommendationAction.CLOSE
+    assert gated.score == 0.8
+    assert gated.room_recommendations[0].reason_code == "outdoor_materially_worse"
+
+
 def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_missing() -> None:
     config = build_integration_config(
         {

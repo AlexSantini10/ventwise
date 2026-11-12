@@ -49,10 +49,12 @@ The ordered rules are:
    pollen/pollution policy of `avoid` is a hard block. The core action is
    `close`, regardless of indoor comfort or CO2.
 3. If indoor temperature is unavailable, the core action is `none` with
-   `insufficient_indoor_evidence`. If critical outdoor temperature, weather
-   condition, or wind is unavailable, the core action is `none` with
-   `critical_weather_unavailable`. This fails closed for opening; it does not
-   invent a close when no active hazard exists.
+   `insufficient_indoor_evidence`. If outdoor temperature is unavailable, the
+   core action is `none` with `critical_weather_unavailable`. If only the
+   current weather condition or wind is unavailable, opening and ventilation
+   candidates are blocked with `opening_weather_unavailable`, while a
+   sufficiently strong thermal close may still be selected from usable indoor
+   and outdoor temperatures. The engine never invents missing weather data.
 4. With safety and critical-data gates passed, derive comfort and moisture
    signals, then calculate candidate scores.
 5. `open`, `ventilate`, and `close` must exceed `meaningful_benefit` and beat
@@ -100,11 +102,12 @@ mismatch is discarded, not silently converted or clipped.
 | 2 | Current precipitation | Hard close | `current_precipitation` |
 | 3 | Current or forecast wind/gust at or above limit | Hard close | `unsafe_wind` or `forecast_unsafe_wind` |
 | 4 | Pollen or pollution policy is `avoid` | Hard close | `outdoor_exposure_avoid` |
-| 5 | Critical outdoor temperature/weather/wind missing or unusable | No opening/ventilation | `critical_weather_unavailable` |
-| 6 | Indoor temperature missing or unusable | No room decision | `insufficient_indoor_evidence` |
-| 7 | `reduce` exposure policy or imminent forecast rain | Penalize candidates | `outdoor_exposure_reduce` or `imminent_rain` |
-| 8 | Thermal, moisture, and CO2 signals | Score candidates | `score.thermal`, `score.moisture` |
-| 9 | Contact, quiet hours, cooldown, stability | Delivery only | `delivery.suppressed` |
+| 5 | Critical outdoor temperature missing or unusable | No decision | `critical_weather_unavailable` |
+| 6 | Current weather condition or wind missing or unusable | No opening/ventilation; thermal close remains eligible | `opening_weather_unavailable` |
+| 7 | Indoor temperature missing or unusable | No room decision | `insufficient_indoor_evidence` |
+| 8 | `reduce` exposure policy or imminent forecast rain | Penalize candidates | `outdoor_exposure_reduce` or `imminent_rain` |
+| 9 | Thermal, moisture, and CO2 signals | Score candidates | `score.thermal`, `score.moisture` |
+| 10 | Contact, quiet hours, cooldown, stability | Delivery only | `delivery.suppressed` |
 
 Outdoor humidity is optional. If it is missing or invalid, dry-bulb thermal
 advice can still be evaluated, while apparent-temperature refinement and
@@ -246,7 +249,8 @@ Each room result includes:
 Important reason codes include `thermal_sustained_benefit`,
 `targeted_ventilation_benefit`, `co2_high`, `humidity_high`,
 `outdoor_materially_worse`, `insufficient_or_tied_benefit`,
-`insufficient_indoor_evidence`, and `critical_weather_unavailable`.
+`insufficient_indoor_evidence`, `critical_weather_unavailable`, and
+`opening_weather_unavailable`.
 
 Trace codes identify configuration, data quality, blocks, penalties, derived
 scores, selection, physical context, and delivery suppression. Explanations
@@ -275,7 +279,9 @@ selects the best deliverable room first, then uses stable action priority
 | Forecast severe/rain/wind hazard | Usable complete forecast | `close` | Forecast block in trace |
 | Pollen/pollution policy `avoid` | Valid explicit policy | `close` | `outdoor_exposure_avoid` |
 | Pollen/pollution policy `reduce` | Valid explicit policy | Candidate penalty | `outdoor_exposure_reduce` |
-| Missing/stale/invalid critical weather | Data-quality failure | `none` | `critical_weather_unavailable`; never opening advice |
+| Missing/stale/invalid outdoor temperature | Data-quality failure | `none` | `critical_weather_unavailable` |
+| Missing/stale/invalid current weather or wind | Data-quality failure | Thermal `close` may remain eligible; no opening advice | `opening_weather_unavailable` |
+| Hot room with materially hotter outdoor air and unknown window state | Usable indoor/outdoor temperature; no configured contact required | `close` | `outdoor_materially_worse`; `not_configured` remains neutral |
 | Missing indoor temperature | Data-quality failure | `none` | `insufficient_indoor_evidence` |
 | Missing outdoor humidity only | Usable dry-bulb critical data | Thermal result remains possible | Moisture scoring is absent, not guessed |
 | Neutral or tied candidates | Usable inputs | `none` | `insufficient_or_tied_benefit` |

@@ -246,6 +246,25 @@ def test_config_flow_manual_source_and_validation_branches() -> None:
     asyncio.run(run_flow())
 
 
+def test_unknown_window_state_preserves_hot_room_close_recommendation() -> None:
+    options = _setup_options()
+    states = {
+        "weather.ventwise_test_weather": SimpleNamespace(
+            state="sunny",
+            attributes={"temperature": 40.0, "humidity": 45.0, "wind_speed": 2.0},
+        ),
+        "input_number.ventwise_test_bedroom_temperature": SimpleNamespace(state="26"),
+        "input_number.ventwise_test_bedroom_humidity": SimpleNamespace(state="50"),
+    }
+
+    summary, room = _evaluate(options, states)
+
+    assert summary.action is RecommendationAction.CLOSE
+    assert summary.score > 0.0
+    assert room.reason_code == "outdoor_materially_worse"
+    assert room.action is RecommendationAction.CLOSE
+
+
 def test_setup_to_user_facing_open_and_close_recommendations() -> None:
     """Cover setup, sensor input, scoring, and the user-visible explanation."""
 
