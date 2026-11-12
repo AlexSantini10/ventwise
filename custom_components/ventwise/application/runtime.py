@@ -97,7 +97,7 @@ from ..const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from ..units import state_unit, temperature_to_celsius, temperature_unit, wind_speed_to_m_s, wind_speed_unit
+from ..units import humidity_percent, state_unit, temperature_to_celsius, temperature_unit, wind_speed_to_m_s, wind_speed_unit
 
 
 @dataclass(frozen=True, slots=True)
@@ -350,8 +350,9 @@ def build_decision_snapshot(
             temperature_c=observation(
                 room.indoor.temperature_c, "°C", room.room_id or room.name
             ),
-            humidity_percent=observation(
-                room.indoor.humidity_percent, "%", room.room_id or room.name
+            humidity_percent=(
+                observation(room.indoor.humidity_percent, "%", room.room_id or room.name)
+                if room.indoor.humidity_percent is not None else None
             ),
             target_temperature_c=(
                 room.target_temperature_c_override
@@ -374,7 +375,10 @@ def build_decision_snapshot(
         rooms=decision_rooms,
         outdoor=DecisionOutdoor(
             temperature_c=observation(outdoor.temperature_c, "°C", "outdoor"),
-            humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor"),
+            humidity_percent=(
+                observation(outdoor.humidity_percent, "%", "outdoor")
+                if outdoor.humidity_percent is not None else None
+            ),
             wind_speed_m_s=(
                 observation(outdoor.wind_speed_m_s, "m/s", "outdoor")
                 if outdoor.wind_speed_m_s is not None else None
@@ -564,19 +568,17 @@ def build_room_profiles(
         "temperature",
         measurement="temperature",
     )
-    outdoor_humidity = _outdoor_value(
+    outdoor_humidity = humidity_percent(_outdoor_value(
         config.outdoor_humidity_source,
         config.outdoor_weather_entity_id,
         config.outdoor_humidity_entity_id,
         state_getter,
         "humidity",
         allow_state_fallback=False,
-    )
+    ))
     if outdoor_temp is None:
         outdoor = None
     else:
-        if outdoor_humidity is None:
-            outdoor_humidity = 50.0
         weather_condition = _weather_condition(
             config.outdoor_weather_entity_id,
             state_getter,
@@ -607,12 +609,10 @@ def build_room_profiles(
     rooms: list[RoomProfile] = []
     for room in config.rooms:
         temperature = state_to_temperature_c(state_getter(room.temperature_entity_id))
-        humidity = state_to_float(state_getter(room.humidity_entity_id)) if room.humidity_entity_id else None
+        humidity = humidity_percent(state_to_float(state_getter(room.humidity_entity_id))) if room.humidity_entity_id else None
         co2 = state_to_float(state_getter(room.co2_entity_id or config.co2_entity_id)) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None
         if temperature is None:
             continue
-        if humidity is None:
-            humidity = 50.0
         rooms.append(
             RoomProfile(
                 room_id=room.room_id,

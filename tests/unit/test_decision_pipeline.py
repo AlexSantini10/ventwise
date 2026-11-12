@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from ventwise_core import (
     DecisionConfig,
     DecisionContext,
@@ -110,3 +112,5 @@ def test_engine_has_no_wall_clock_dependency():
 
     assert result.trace[0].code == "config.version"
     assert all("2026-" not in item.detail for item in result.trace)
+
+

@@ -65,6 +65,14 @@ def state_unit(state, fallback: str, measurement: str | None = None) -> str:
     return attributes.get("unit_of_measurement") or fallback
 
 
+def humidity_percent(value: float | None) -> float | None:
+    """Validate a canonical relative-humidity reading."""
+
+    if value is None or not 0.0 <= value <= 100.0:
+        return None
+    return value
+
+
 def display_value(value: float | None) -> float | None:
     """Round a user-facing measurement without affecting canonical values."""
     return round(value, DISPLAY_PRECISION) if value is not None else None

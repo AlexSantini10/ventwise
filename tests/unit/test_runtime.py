@@ -280,7 +280,7 @@ def test_window_states_gate_only_advice_already_satisfied_by_a_contact() -> None
     ]
 
 
-def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_missing() -> None:
+def test_build_room_profiles_preserves_missing_outdoor_humidity() -> None:
     config = build_integration_config(
         {
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
@@ -305,7 +305,7 @@ def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_miss
 
     assert outdoor is not None
     assert outdoor.temperature_c == 20.0
-    assert outdoor.humidity_percent == 50.0
+    assert outdoor.humidity_percent is None
     assert outdoor.wind_speed_m_s is None
     assert len(rooms) == 1
 
@@ -338,7 +338,7 @@ def test_build_room_profiles_reads_wind_gust_from_weather_attributes() -> None:
     assert len(rooms) == 1
 
 
-def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> None:
+def test_build_room_profiles_preserves_missing_weather_humidity_without_attribute() -> None:
     config = build_integration_config(
         {
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
@@ -360,7 +360,7 @@ def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> 
 
     assert outdoor is not None
     assert outdoor.temperature_c == 21.5
-    assert outdoor.humidity_percent == 50.0
+    assert outdoor.humidity_percent is None
     assert outdoor.wind_speed_m_s is None
     assert rooms[0].name == "Camera"
 

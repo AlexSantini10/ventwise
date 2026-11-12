@@ -23,12 +23,14 @@ from .models import (
 
 def perceived_temperature(
     temperature_c: float,
-    humidity_percent: float,
+    humidity_percent: float | None,
     target_humidity_percent: float = 50.0,
     humidity_weight: float = 0.04,
 ) -> float:
     """Return the stable perceived-temperature approximation used by VentWise."""
 
+    if humidity_percent is None:
+        return temperature_c
     return temperature_c + ((humidity_percent - target_humidity_percent) * humidity_weight)
 
 
@@ -76,28 +78,28 @@ class DecisionEngine:
         used: list[str] = []
         discarded: list[str] = []
         awaiting: list[str] = []
+        diagnostics: list[str] = []
         trace: list[TraceEntry] = [TraceEntry("config.version", self.config.version)]
 
-        indoor_t = self._usable(room.temperature_c, "indoor.temperature", snapshot, self.config.indoor_freshness, used, discarded, awaiting)
-        indoor_h = self._usable(room.humidity_percent, "indoor.humidity", snapshot, self.config.indoor_freshness, used, discarded, awaiting)
-        outdoor_t = self._usable(snapshot.outdoor.temperature_c, "outdoor.temperature", snapshot, self.config.outdoor_freshness, used, discarded, awaiting)
-        outdoor_h = self._usable(snapshot.outdoor.humidity_percent, "outdoor.humidity", snapshot, self.config.outdoor_freshness, used, discarded, awaiting)
-        wind = self._usable(snapshot.outdoor.wind_speed_m_s, "outdoor.wind", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, optional=True)
-        gust = self._usable(snapshot.outdoor.wind_gust_m_s, "outdoor.gust", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, optional=True)
-        weather = self._usable(snapshot.outdoor.weather_condition, "outdoor.weather", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, optional=True)
-        window_open = self._usable(room.window_open, "window.state", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
+        indoor_t = self._usable(room.temperature_c, "indoor.temperature", snapshot, self.config.indoor_freshness, used, discarded, awaiting, diagnostics, kind="temperature")
+        indoor_h = self._usable(room.humidity_percent, "indoor.humidity", snapshot, self.config.indoor_freshness, used, discarded, awaiting, diagnostics, optional=True, kind="humidity")
+        outdoor_t = self._usable(snapshot.outdoor.temperature_c, "outdoor.temperature", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, diagnostics, kind="temperature")
+        outdoor_h = self._usable(snapshot.outdoor.humidity_percent, "outdoor.humidity", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, diagnostics, optional=True, kind="humidity")
+        wind = self._usable(snapshot.outdoor.wind_speed_m_s, "outdoor.wind", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, diagnostics, optional=True, kind="wind")
+        gust = self._usable(snapshot.outdoor.wind_gust_m_s, "outdoor.gust", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, diagnostics, optional=True, kind="wind")
+        weather = self._usable(snapshot.outdoor.weather_condition, "outdoor.weather", snapshot, self.config.outdoor_freshness, used, discarded, awaiting, diagnostics, optional=True)
+        window_open = self._usable(room.window_open, "window.state", snapshot, self.config.indoor_freshness, used, discarded, awaiting, diagnostics, optional=True)
 
-        quality = lambda: DataQualitySummary(tuple(used), tuple(discarded), tuple(awaiting))
-        if indoor_t is None or outdoor_t is None or outdoor_h is None:
+        quality = lambda: DataQualitySummary(tuple(used), tuple(discarded), tuple(awaiting), tuple(diagnostics))
+        if indoor_t is None or outdoor_t is None:
             trace.append(TraceEntry("selection.insufficient_evidence"))
             return self._result(
                 room, RecommendationAction.NONE, RecommendationAction.NONE,
                 CandidateScores(), 0.0, "insufficient_evidence", trace, quality(),
             )
 
-        indoor_h_value = float(indoor_h) if indoor_h is not None else 50.0
-        indoor = perceived_temperature(float(indoor_t), indoor_h_value)
-        outdoor = perceived_temperature(float(outdoor_t), float(outdoor_h))
+        indoor = perceived_temperature(float(indoor_t), float(indoor_h) if indoor_h is not None else None)
+        outdoor = perceived_temperature(float(outdoor_t), float(outdoor_h) if outdoor_h is not None else None)
         target = room.target_temperature_c if room.target_temperature_c is not None else self.config.target_temperature_c
         target_humidity = room.target_humidity_percent if room.target_humidity_percent is not None else 50.0
         target_perceived = perceived_temperature(target, target_humidity, target_humidity)
@@ -175,22 +177,39 @@ class DecisionEngine:
         return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(score, 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed)
 
     @staticmethod
-    def _usable(observation, name, snapshot, freshness, used, discarded, awaiting, optional=False):
+    def _usable(observation, name, snapshot, freshness, used, discarded, awaiting, diagnostics, optional=False, kind=None):
         if observation is None:
             (awaiting if optional else discarded).append(name)
+            diagnostics.append(f"{name}.missing")
             return None
         if observation.availability is Availability.AWAITING_SOURCE:
             awaiting.append(name)
+            diagnostics.append(f"{name}.awaiting_source")
             return None
         if observation.availability is not Availability.AVAILABLE or observation.validity is not Validity.VALID or observation.value is None:
             discarded.append(name)
+            diagnostics.append(f"{name}.invalid")
             return None
         effective_freshness = min(freshness, observation.freshness) if observation.freshness else freshness
         if observation.observed_at is None or observation.observed_at > snapshot.evaluated_at or snapshot.evaluated_at - observation.observed_at > effective_freshness:
             discarded.append(name)
+            diagnostics.append(f"{name}.stale")
             return None
         if isinstance(observation.value, float) and not isfinite(observation.value):
             discarded.append(name)
+            diagnostics.append(f"{name}.non_finite")
+            return None
+        if kind == "temperature" and not (-80.0 <= float(observation.value) <= 80.0):
+            discarded.append(name)
+            diagnostics.append(f"{name}.out_of_range")
+            return None
+        if kind == "humidity" and not (0.0 <= float(observation.value) <= 100.0):
+            discarded.append(name)
+            diagnostics.append(f"{name}.out_of_range")
+            return None
+        if kind == "wind" and not (0.0 <= float(observation.value) <= 100.0):
+            discarded.append(name)
+            diagnostics.append(f"{name}.out_of_range")
             return None
         used.append(name)
         return observation.value

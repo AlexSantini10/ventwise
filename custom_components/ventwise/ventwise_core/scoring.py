@@ -75,7 +75,10 @@ def _snapshot(rooms, outdoor, context) -> DecisionSnapshot:
                 room_id=room.room_id or room.name,
                 name=room.name,
                 temperature_c=obs(room.indoor.temperature_c, "°C"),
-                humidity_percent=obs(room.indoor.humidity_percent, "%"),
+                humidity_percent=(
+                    obs(room.indoor.humidity_percent, "%")
+                    if room.indoor.humidity_percent is not None else None
+                ),
                 target_temperature_c=room.target_temperature_c_override if room.target_temperature_c_override_enabled else None,
                 target_humidity_percent=room.target_humidity_percent_override if room.target_humidity_percent_override_enabled else None,
             )
@@ -84,7 +87,10 @@ def _snapshot(rooms, outdoor, context) -> DecisionSnapshot:
         ),
         outdoor=DecisionOutdoor(
             temperature_c=obs(outdoor.temperature_c, "°C"),
-            humidity_percent=obs(outdoor.humidity_percent, "%"),
+            humidity_percent=(
+                obs(outdoor.humidity_percent, "%")
+                if outdoor.humidity_percent is not None else None
+            ),
             wind_speed_m_s=obs(outdoor.wind_speed_m_s, "m/s") if outdoor.wind_speed_m_s is not None else None,
             wind_gust_m_s=obs(outdoor.wind_gust_m_s, "m/s") if outdoor.wind_gust_m_s is not None else None,
             weather_condition=obs(outdoor.weather_condition, "") if outdoor.weather_condition is not None else None,

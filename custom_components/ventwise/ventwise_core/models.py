@@ -121,6 +121,7 @@ class DataQualitySummary:
     used: Tuple[str, ...] = ()
     discarded: Tuple[str, ...] = ()
     awaiting_source: Tuple[str, ...] = ()
+    diagnostics: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,6 +166,12 @@ class DecisionConfig:
     winner_margin: float = 0.05
     indoor_freshness: timedelta = timedelta(minutes=15)
     outdoor_freshness: timedelta = timedelta(minutes=15)
+    temperature_min_c: float = -80.0
+    temperature_max_c: float = 80.0
+    humidity_min_percent: float = 0.0
+    humidity_max_percent: float = 100.0
+    wind_min_m_s: float = 0.0
+    wind_max_m_s: float = 100.0
     wind_preference_m_s: float = 4.0
     wind_block_m_s: float = 12.0
     gust_block_m_s: float = 15.0
@@ -187,7 +194,7 @@ class RoomObservation:
     """Measured conditions for a room."""
 
     temperature_c: float
-    humidity_percent: float
+    humidity_percent: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,7 +230,7 @@ class ComfortObservation:
     """Outdoor or target comfort context."""
 
     temperature_c: float
-    humidity_percent: float
+    humidity_percent: float | None
     wind_speed_m_s: float | None = None
     wind_gust_m_s: float | None = None
     weather_condition: str | None = None
