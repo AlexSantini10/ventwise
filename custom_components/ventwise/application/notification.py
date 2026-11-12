@@ -226,7 +226,12 @@ def build_recommendation_explanation(
             return f"{prefix}{texts[reason_code].format(**_reason_values(recommendation))}"
         return f"{prefix}{_ventilation_reason(language, minutes)}"
     if action == "open":
-        if getattr(recommendation, "reason_code", None) == "forecast":
+        if getattr(recommendation, "reason_code", None) in {
+            "forecast",
+            "forecast_rain",
+            "forecast_severe_weather",
+            "forecast_unsafe_wind",
+        }:
             return f"{prefix}{texts['forecast_reason']}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
@@ -234,7 +239,12 @@ def build_recommendation_explanation(
         urgent_reason = _urgent_close_reason(recommendation, texts)
         if urgent_reason is not None:
             return f"{prefix}{urgent_reason}"
-        if getattr(recommendation, "reason_code", None) == "forecast":
+        if getattr(recommendation, "reason_code", None) in {
+            "forecast",
+            "forecast_rain",
+            "forecast_severe_weather",
+            "forecast_unsafe_wind",
+        }:
             return f"{prefix}{texts['forecast_reason']}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"

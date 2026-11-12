@@ -70,6 +70,25 @@ def test_open_meteo_adapter_fails_closed_on_http_error(monkeypatch) -> None:
         asyncio.run(air_quality.async_fetch_open_meteo_exposure(hass, datetime.now(timezone.utc)))
 
 
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"current": []},
+        {"current": {}, "current_units": {}},
+        {"current": {"pm2_5": "not-a-number"}, "current_units": {"pm2_5": "Âµg/mÂ³"}},
+    ],
+)
+def test_open_meteo_adapter_classifies_unusable_payloads_as_unavailable(
+    monkeypatch, payload
+) -> None:
+    session = _Session(_Response(payload))
+    monkeypatch.setattr(air_quality, "async_get_clientsession", lambda _hass: session)
+    hass = SimpleNamespace(config=SimpleNamespace(latitude=45.46, longitude=9.19))
+
+    with pytest.raises(air_quality.ProviderUnavailableError):
+        asyncio.run(air_quality.async_fetch_open_meteo_exposure(hass, datetime.now(timezone.utc)))
+
+
 def test_open_meteo_adapter_does_not_request_without_home_assistant_location(monkeypatch) -> None:
     called = False
 

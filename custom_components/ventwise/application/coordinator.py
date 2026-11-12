@@ -353,8 +353,16 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 "air_quality.provider",
                 reference,
             )
-            self._provider_exposure_fetched_at = now
-            return self._provider_exposure
+            # Do not cache a failed optional-provider refresh: the next
+            # coordinator refresh must be able to retry it.  The error
+            # snapshot is deliberately fail-closed and cannot trigger an
+            # automatic notification.
+            return self._error_snapshot(
+                category=ErrorCategory.SOURCE_UNAVAILABLE.value,
+                message="Outdoor air-quality data is temporarily unavailable.",
+                operation="air_quality.provider",
+                reference=reference,
+            )
         except Exception as err:
             reference = log_unexpected(
                 _LOGGER,
@@ -467,10 +475,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 enabled=True,
                 stable_for_seconds=0,
                 last_updated=dt_util.utcnow(),
-                error_category=ErrorCategory.CONFIGURATION.value,
-                error_message="No enabled rooms configured.",
-                error_operation="coordinator.room_configuration",
-                error_reference=error_reference("coordinator.room_configuration"),
+                error_category=ErrorCategory.SOURCE_UNAVAILABLE.value,
+                error_message="Outdoor or room sensor data is not available yet.",
+                error_operation="coordinator.required_sources",
+                error_reference=error_reference("coordinator.required_sources"),
                 error_occurred_at=dt_util.utcnow(),
             )
             self._refresh_time_listener(snapshot.last_updated, snapshot)

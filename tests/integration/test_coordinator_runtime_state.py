@@ -19,6 +19,8 @@ from custom_components.ventwise.const import (
     CONF_NOTIFICATION_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+    CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
@@ -42,6 +44,7 @@ from custom_components.ventwise.const import (
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_TARGET_TEMPERATURE_C,
     CONF_STABILITY_MINUTES,
+    DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from custom_components.ventwise.application.coordinator import (
@@ -151,6 +154,58 @@ def test_coordinator_watches_window_contacts_and_co2_sources() -> None:
         "sensor.studio_temperature",
         "weather.home",
     ]
+
+
+def test_provider_unavailable_returns_safe_runtime_snapshot_without_automatic_delivery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An optional provider outage must fail closed and remain observable."""
+
+    fixed_now = datetime(2026, 7, 23, 12, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(coordinator_module.dt_util, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: fixed_now)
+
+    async def _raise_provider_unavailable(_hass, _now):
+        raise coordinator_module.ProviderUnavailableError
+
+    monkeypatch.setattr(
+        coordinator_module,
+        "async_fetch_open_meteo_exposure",
+        _raise_provider_unavailable,
+    )
+    coordinator, hass, _ = _make_coordinator(
+        {
+            CONF_ENABLED: True,
+            CONF_OPEN_METEO_AIR_QUALITY_ENABLED: True,
+            CONF_DIAGNOSTIC_NOTIFICATION_LEVEL: DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.camera_temperature",
+                }
+            ],
+        }
+    )
+    coordinator.hass.states = SimpleNamespace(
+        get={
+            "weather.home": SimpleNamespace(
+                state="sunny",
+                attributes={"temperature": 20.0, "humidity": 50.0, "wind_speed": 1.0},
+            ),
+            "sensor.camera_temperature": SimpleNamespace(state="28.0"),
+        }.get
+    )
+
+    snapshot = asyncio.run(coordinator._async_update_data())
+
+    assert snapshot.summary.action is RecommendationAction.NONE
+    assert snapshot.summary.blocked_by == "error"
+    assert snapshot.notification_allowed is False
+    assert snapshot.error_category == "source_unavailable"
+    assert snapshot.error_operation == "air_quality.provider"
+    assert coordinator._diagnostic_issue == "provider_unavailable"
+    assert not any(call[0] == "notify" for call in hass.services.calls)
 
 
 def test_on_demand_recommendation_sends_the_current_room_recommendation(
@@ -1355,7 +1410,7 @@ def test_coordinator_logs_unavailable_required_data_once_and_recovery(
     coordinator.hass.states = SimpleNamespace(get=states.get)
 
     with caplog.at_level("INFO"):
-        asyncio.run(coordinator._async_update_data())
+        unavailable = asyncio.run(coordinator._async_update_data())
         asyncio.run(coordinator._async_update_data())
         states.update(
             {
@@ -1368,6 +1423,11 @@ def test_coordinator_logs_unavailable_required_data_once_and_recovery(
         )
         asyncio.run(coordinator._async_update_data())
 
+    assert unavailable.summary.action is RecommendationAction.NONE
+    assert unavailable.summary.blocked_by == "unavailable"
+    assert unavailable.notification_allowed is False
+    assert unavailable.error_category == "source_unavailable"
+    assert unavailable.error_operation == "coordinator.required_sources"
     assert caplog.text.count("required weather or room sensor data is unavailable") == 1
     assert "VentWise has the required data again and resumed recommendations." in caplog.text
     assert "weather.home" not in caplog.text

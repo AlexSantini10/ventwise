@@ -63,8 +63,11 @@ async def async_fetch_open_meteo_exposure(hass, now: datetime) -> Mapping[str, P
     if not isinstance(payload, dict):
         _LOGGER.warning("VentWise optional air-quality provider returned invalid data")
         raise ProviderUnavailableError
-    current = payload.get("current") or {}
-    units = payload.get("current_units") or {}
+    current = payload.get("current")
+    units = payload.get("current_units")
+    if not isinstance(current, Mapping) or not isinstance(units, Mapping):
+        _LOGGER.warning("VentWise optional air-quality provider returned invalid current data")
+        raise ProviderUnavailableError
     observed_at = _parse_time(current.get("time")) or now
     result: dict[str, ProviderExposure] = {}
     for key in AIR_QUALITY_VARIABLES:
@@ -78,6 +81,9 @@ async def async_fetch_open_meteo_exposure(hass, now: datetime) -> Mapping[str, P
         result[key] = ProviderExposure(
             Observation(numeric, str(units.get(key, "")), observed_at, now, "open_meteo_cams")
         )
+    if not result:
+        _LOGGER.warning("VentWise optional air-quality provider returned no usable current values")
+        raise ProviderUnavailableError
     return result
 
 

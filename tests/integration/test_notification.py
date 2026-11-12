@@ -248,6 +248,28 @@ def test_recommendation_explanation_prefers_current_comfort_over_a_duplicate_for
     assert "forecast" not in explanation
 
 
+@pytest.mark.parametrize("reason_code", [
+    "forecast",
+    "forecast_rain",
+    "forecast_severe_weather",
+    "forecast_unsafe_wind",
+])
+def test_forecast_safety_reasons_use_forecast_explanation(reason_code: str) -> None:
+    recommendation = SimpleNamespace(
+        room_name="Camera",
+        action=SimpleNamespace(value="close"),
+        reason_code=reason_code,
+        indoor_perceived_c=22.0,
+        outdoor_perceived_c=26.0,
+        target_perceived_c=22.0,
+    )
+
+    explanation = build_recommendation_explanation(recommendation, language="en")
+
+    assert "Short-term forecast" in explanation
+    assert "Inside is more comfortable" not in explanation
+
+
 def test_home_assistant_notification_id_is_stable_per_room() -> None:
     camera = SimpleNamespace(room_name="Camera", room_id="camera-1")
     living_room = SimpleNamespace(room_name="Salotto", room_id="living-1")
