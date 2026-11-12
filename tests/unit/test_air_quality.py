@@ -6,6 +6,8 @@ import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
+import pytest
+
 from custom_components.ventwise.application import air_quality
 
 
@@ -64,7 +66,8 @@ def test_open_meteo_adapter_fails_closed_on_http_error(monkeypatch) -> None:
     monkeypatch.setattr(air_quality, "async_get_clientsession", lambda _hass: session)
     hass = SimpleNamespace(config=SimpleNamespace(latitude=45.46, longitude=9.19))
 
-    assert asyncio.run(air_quality.async_fetch_open_meteo_exposure(hass, datetime.now(timezone.utc))) == {}
+    with pytest.raises(air_quality.ProviderUnavailableError):
+        asyncio.run(air_quality.async_fetch_open_meteo_exposure(hass, datetime.now(timezone.utc)))
 
 
 def test_open_meteo_adapter_does_not_request_without_home_assistant_location(monkeypatch) -> None:
