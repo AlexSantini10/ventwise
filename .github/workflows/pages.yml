@@ -26,44 +26,29 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
-      - name: Validate required files and HTML links
+      - name: Validate canonical decision-model Markdown
         shell: python
         run: |
-          from html.parser import HTMLParser
           from pathlib import Path
-          import re
-
-          root = Path("docs/decision-model")
-          root_entrypoint = Path("docs/index.html")
-          required = [
-              root_entrypoint,
-              root / "index.html",
-              root / "overview.html",
-              root / "inputs.html",
-              root / "scenarios.html",
-              root / "operations.html",
-              root / "decision-model-report.html",
-              root / "site.css",
-              Path("docs/.nojekyll"),
-          ]
-          missing = [
-              str(path)
-              for path in required
-              if not path.is_file() or (path.name != ".nojekyll" and path.stat().st_size == 0)
-          ]
+          source = Path("docs/decision-model/decision-engine.md")
+          if not source.is_file() or not source.read_text(encoding="utf-8").strip():
+              raise SystemExit(f"Missing or empty canonical source: {source}")
+          text = source.read_text(encoding="utf-8")
+          required = (
+              "# VentWise decision-engine contract",
+              "```mermaid",
+              "## Pipeline and precedence",
+              "## Formulas and derived signals",
+              "## Scenario matrix",
+              "## Missing, stale, invalid, and awaiting data",
+              "## Forecast safety",
+              "## Result, trace, reason, confidence, and data quality",
+              "## Limits and maintenance rule",
+          )
+          missing = [marker for marker in required if marker not in text]
           if missing:
-              raise SystemExit(f"Missing or empty documentation files: {missing}")
-
-          for page in root.glob("*.html"):
-              parser = HTMLParser()
-              parser.feed(page.read_text(encoding="utf-8"))
-              for href in re.findall(r'href="([^"]+)"', page.read_text(encoding="utf-8")):
-                  if href.startswith(("http:", "https:", "#")):
-                      continue
-                  target = (page.parent / href).resolve()
-                  if not target.is_file():
-                      raise SystemExit(f"Broken link in {page}: {href}")
-          print(f"Validated {len(list(root.glob('*.html')))} HTML pages")
+              raise SystemExit(f"Canonical source is missing sections: {missing}")
+          print(f"Validated canonical Markdown source: {source}")
 
   deploy:
     name: Build and publish documentation

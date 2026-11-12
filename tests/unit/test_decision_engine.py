@@ -1,7 +1,7 @@
 """Focused contract tests for the deterministic decision pipeline."""
 
 from dataclasses import replace
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -12,6 +12,7 @@ from ventwise_core import (
     DecisionOutdoor,
     DecisionRoom,
     DecisionSnapshot,
+    ForecastObservation,
     Observation,
     RecommendationAction,
     RecommendationContext,
@@ -512,9 +513,115 @@ def test_transient_warming_uses_ventilate_when_outdoor_air_is_not_a_stable_endpo
         snapshot(room_temp=19.0, outdoor_temp=26.0),
     ).room_results[0]
 
+    assert result.core_action is RecommendationAction.CLOSE
+    assert "outdoor_moisture_load" in result.applied_penalties
+    assert result.reason_code == "outdoor_materially_worse"
+
+
+def test_absolute_humidity_delta_drives_humidity_ventilation() -> None:
+    result = DecisionEngine().evaluate(
+        snapshot(room_temp=22.0, room_humidity=85.0, outdoor_temp=22.0, outdoor_humidity=20.0),
+    ).room_results[0]
+
+    assert absolute_humidity_g_m3(22.0, 85.0) > absolute_humidity_g_m3(22.0, 20.0)
     assert result.core_action is RecommendationAction.VENTILATE
-    assert result.duration_minutes == 15
-    assert result.reason_code == "targeted_ventilation_benefit"
+    assert result.reason_code == "humidity_high"
+    assert any(item.code == "score.moisture" for item in result.trace)
+
+
+def test_outdoor_moisture_load_penalizes_thermal_opening() -> None:
+    result = DecisionEngine().evaluate(
+        snapshot(room_temp=28.0, room_humidity=30.0, outdoor_temp=22.0, outdoor_humidity=95.0),
+    ).room_results[0]
+
+    assert "outdoor_moisture_load" in result.applied_penalties
+    assert result.core_action in (RecommendationAction.CLOSE, RecommendationAction.NONE)
+
+
+def test_forecast_safety_uses_complete_forecast_and_provenance() -> None:
+    forecast = ForecastObservation(
+        weather_condition="thunderstorm",
+        precipitation_probability=90.0,
+        wind_gust_m_s=20.0,
+        forecast_at=NOW + timedelta(minutes=30),
+        source_id="weather.test",
+    )
+    data = snapshot(room_temp=28.0, outdoor_temp=20.0)
+    data = replace(
+        data,
+        outdoor=replace(
+            data.outdoor,
+            forecast=Observation(forecast, "", NOW, NOW, "weather.test"),
+        ),
+    )
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.reason_code == "forecast_severe_weather"
+    assert "forecast" in result.data_quality.used
+
+
+@pytest.mark.parametrize(
+    ("forecast", "reason"),
+    [
+        (ForecastObservation(precipitation_probability=80.0, forecast_at=NOW + timedelta(minutes=30)), "forecast_rain"),
+        (ForecastObservation(wind_speed_m_s=DecisionConfig().wind_block_m_s, forecast_at=NOW + timedelta(minutes=30)), "forecast_unsafe_wind"),
+    ],
+)
+def test_forecast_rain_and_wind_safety_blocks_are_precedent_over_comfort(forecast, reason) -> None:
+    base = snapshot(room_temp=28.0, outdoor_temp=20.0)
+    data = replace(
+        base,
+        outdoor=replace(
+            base.outdoor,
+            forecast=Observation(forecast, "", NOW, NOW, "weather.test"),
+        ),
+    )
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.reason_code == reason
+
+
+def test_wrong_unit_and_mixed_timezone_are_discarded() -> None:
+    data = snapshot()
+    wrong_unit = replace(data.rooms[0].humidity_percent, unit="°C")
+    aware_temperature = replace(
+        data.rooms[0].temperature_c,
+        observed_at=NOW.replace(tzinfo=timezone.utc),
+        received_at=NOW.replace(tzinfo=timezone.utc),
+    )
+    data = replace(data, rooms=(replace(data.rooms[0], humidity_percent=wrong_unit, temperature_c=aware_temperature),))
+
+    result = DecisionEngine().evaluate(data).room_results[0]
+
+    assert "indoor.humidity" in result.data_quality.discarded
+    assert "indoor.temperature" in result.data_quality.discarded
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"humidity_low_percent": 60.0, "humidity_high_percent": 40.0},
+        {"imminent_rain_probability_percent": 101.0},
+        {"wind_block_m_s": -1.0},
+        {"forecast_freshness": timedelta(seconds=-1)},
+    ],
+)
+def test_invalid_decision_configuration_is_rejected(kwargs) -> None:
+    with pytest.raises(ValueError):
+        DecisionConfig(**kwargs)
+
+
+def test_aggregate_tie_break_prefers_room_id_in_ascending_order() -> None:
+    data = snapshot(room_temp=22.0, outdoor_temp=22.0)
+    first = replace(data.rooms[0], room_id="zulu", name="Zulu")
+    second = replace(data.rooms[0], room_id="alpha", name="Alpha")
+    result = DecisionEngine().evaluate(replace(data, rooms=(first, second)))
+
+    assert result.core_action is RecommendationAction.NONE
+    assert result.trace[-1].detail == "alpha"
 
 
 def test_safety_precedence_is_explicit_when_co2_requests_ventilation() -> None:

@@ -71,7 +71,7 @@ physical hardware.
 - `custom_components/ventwise/` root for Home Assistant discovery entry points and platforms
 - `tests/unit/`, `tests/integration/`, and `tests/system/` for focused test layers
 - `docs/architecture/` for architecture and integration notes
-- `docs/decision-model/` for the decision engine, explainability, scoring, forecast, and guardrail model
+- `docs/decision-model/decision-engine.md` for the single canonical decision-engine contract
 - `docs/guides/` for user and developer workflows
 - `docs/operations/` for release, safety, project, and notification operations
 
@@ -81,13 +81,12 @@ that owns the behavior.
 
 ## CI / Release
 
-The decision-model explainability site is maintained directly in
-`docs/decision-model/`. Start at `index.html`, then use the overview, inputs,
-scenarios, and operations pages. Keep the exhaustive parameter tables, scenario
-registry, proposal template, and focused regression tests aligned when the
-decision model changes. The full report and Markdown reference remain available
-for detailed review. GitHub Pages publishes the `docs/` tree from `main`; the
-site is static and is not generated or overwritten by a build step.
+The decision model is maintained in the canonical Markdown source at
+`docs/decision-model/decision-engine.md`. Keep its pipeline, thresholds,
+scenario matrix, data-quality behavior, and focused regression tests aligned
+when the model changes. CI and GitHub Pages validate this source only; GitHub
+Pages publishes the `docs/` tree from `main` without generating or overwriting
+the Markdown.
 
 - pushes to `main` run unit tests, HACS validation, Hassfest, and package build
 - pushes to `test` branches run the same checks and can publish prerelease artifacts

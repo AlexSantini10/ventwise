@@ -1470,6 +1470,8 @@ def _near_term_forecast(
                 ),
                 weather_condition=_optional_string(forecast.get("condition")),
                 precipitation_probability=_optional_float(forecast.get("precipitation_probability")),
+                forecast_at=forecast_at,
+                source_id="weather.forecast",
             )))
     return max(candidates, default=(None, None), key=lambda item: _forecast_risk(item[1]))[1]
 

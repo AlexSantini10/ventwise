@@ -547,11 +547,19 @@ def build_decision_snapshot(
         converter=lambda raw, _: _normalized_weather_condition(raw),
     )
     rain = weather_attribute("precipitation_probability", "%", lambda raw, _: float(raw))
-    current_precipitation = weather_attribute("precipitation", "mm", lambda raw, _: float(raw))
+    current_precipitation = weather_attribute("precipitation", "mm/h", lambda raw, _: float(raw))
     forecast_temp = Observation(
         forecast.temperature_c if forecast and forecast.temperature_c is not None else None,
         "°C", now if forecast and forecast.temperature_c is not None else None, now,
         "weather.forecast", availability=Availability.AVAILABLE if forecast and forecast.temperature_c is not None else Availability.AWAITING_SOURCE,
+    )
+    forecast_input = Observation(
+        forecast,
+        "",
+        now if forecast is not None else None,
+        now,
+        forecast.source_id if forecast is not None else "weather.forecast",
+        availability=Availability.AVAILABLE if forecast is not None else Availability.AWAITING_SOURCE,
     )
 
     rooms: list[DecisionRoom] = []
@@ -624,6 +632,7 @@ def build_decision_snapshot(
         DecisionOutdoor(
             temperature, humidity, wind, gust, condition, rain, forecast_temp,
             pollen_policy, pollution_policy, tuple(exposure), current_precipitation,
+            forecast_input,
         ),
         now,
     )

@@ -93,6 +93,9 @@ class DecisionOutdoor:
     # from a forecast probability. The former is an immediate safety input;
     # the latter only penalises an otherwise safe recommendation.
     current_precipitation_mm_h: Observation[float] | None = None
+    # Keep the complete forecast as one provenance-bearing input. The scalar
+    # fields above remain as compatibility views for existing adapters.
+    forecast: Observation["ForecastObservation"] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +194,41 @@ class DecisionConfig:
     weather_freshness: timedelta = timedelta(minutes=15)
     forecast_freshness: timedelta = timedelta(minutes=90)
 
+    def __post_init__(self) -> None:
+        """Reject unsafe or ambiguous decision parameters at construction."""
+
+        import math
+
+        numeric = (
+            self.target_temperature_c,
+            self.comfort_band_c,
+            self.humidity_low_percent,
+            self.humidity_high_percent,
+            self.meaningful_benefit,
+            self.winner_margin,
+            self.co2_threshold_ppm,
+            self.co2_positive_trend_ppm_per_hour,
+            self.wind_block_m_s,
+            self.gust_block_m_s,
+            self.imminent_rain_probability_percent,
+        )
+        if any(not math.isfinite(float(value)) for value in numeric):
+            raise ValueError("decision configuration values must be finite")
+        if not 0.0 <= self.humidity_low_percent < self.humidity_high_percent <= 100.0:
+            raise ValueError("humidity thresholds must satisfy 0 <= low < high <= 100")
+        if (
+            self.comfort_band_c < 0.0
+            or self.meaningful_benefit < 0.0
+            or self.winner_margin < 0.0
+            or self.wind_block_m_s < 0.0
+            or self.gust_block_m_s < 0.0
+            or not 0.0 <= self.imminent_rain_probability_percent <= 100.0
+            or any(limit.total_seconds() < 0 for limit in (
+                self.indoor_freshness, self.weather_freshness, self.forecast_freshness
+            ))
+        ):
+            raise ValueError("decision thresholds cannot be negative")
+
 
 @dataclass(frozen=True, slots=True)
 class RoomObservation:
@@ -226,6 +264,8 @@ class ForecastObservation:
     wind_gust_m_s: float | None = None
     weather_condition: str | None = None
     precipitation_probability: float | None = None
+    forecast_at: datetime | None = None
+    source_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

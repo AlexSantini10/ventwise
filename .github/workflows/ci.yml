@@ -113,19 +113,11 @@ jobs:
 
       - name: Verify decision-model documentation
         run: |
-          test -s docs/decision-model/decision-model-report.html
-          test -s docs/index.html
-          test -s docs/decision-model/decision-model-explainability.md
-          test -s docs/decision-model/index.html
-          test -s docs/decision-model/overview.html
-          test -s docs/decision-model/inputs.html
-          test -s docs/decision-model/scenarios.html
-          test -s docs/decision-model/operations.html
-          test -s docs/decision-model/site.css
-          grep -q "Exhaustive data inventory" docs/decision-model/decision-model-report.html
-          grep -q "Scenario registry" docs/decision-model/decision-model-report.html
-          grep -q "Propose an unlisted scenario" docs/decision-model/decision-model-report.html
-          grep -q "New scenario proposal template" docs/decision-model/decision-model-explainability.md
+          test -s docs/decision-model/decision-engine.md
+          grep -q '^```mermaid$' docs/decision-model/decision-engine.md
+          grep -q '^## Scenario matrix$' docs/decision-model/decision-engine.md
+          grep -q '^## Missing, stale, invalid, and awaiting data$' docs/decision-model/decision-engine.md
+          grep -q '^## Forecast safety$' docs/decision-model/decision-engine.md
 
   hassfest:
     name: hassfest

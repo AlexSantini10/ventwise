@@ -205,6 +205,6 @@ Before opening or merging a PR:
 
 - `docs/architecture/ARCHITECTURE.md`
 - `docs/architecture/home-assistant-integration.md`
-- `docs/decision-model/scoring-model.md`
+- `docs/decision-model/decision-engine.md`
 - `docs/guides/development.md`
 - GitHub issues `#16`, `#22`, `#23`, `#49`, `#50`, `#51`, `#52`, `#53`, `#54`, `#61`, `#62`, `#63`

@@ -70,6 +70,7 @@ Stable releases are published from `main`. Experimental prereleases from the
 - [User guide: installation, setup, updates, and removal](docs/guides/user-guide.md)
 - [Docker Test Lab: local manual testing without hardware](docs/guides/docker-test-lab.md)
 - [How the Home Assistant integration works](docs/architecture/home-assistant-integration.md)
+- [Decision-engine contract](docs/decision-model/decision-engine.md)
 - [Safety, beta status, and reporting guidance](docs/operations/NOTICE.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Documentation index](docs/INDEX.md)

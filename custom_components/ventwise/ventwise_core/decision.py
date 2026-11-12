@@ -79,8 +79,11 @@ class DecisionEngine:
 
         results = tuple(self.evaluate_room(room, snapshot) for room in snapshot.rooms)
         actionable = [r for r in results if r.delivered_action != RecommendationAction.NONE]
-        best = max(actionable or list(results), key=lambda r: max(
-            r.candidate_scores.open, r.candidate_scores.ventilate, r.candidate_scores.close
+        candidates = actionable or list(results)
+        best = min(candidates, key=lambda r: (
+            -max(r.candidate_scores.open, r.candidate_scores.ventilate, r.candidate_scores.close),
+            -self._action_priority(r.core_action),
+            r.room_id,
         ), default=None)
         if best is None:
             return AggregateDecisionResult(RecommendationAction.NONE, RecommendationAction.NONE, ())
@@ -110,6 +113,13 @@ class DecisionEngine:
         weather = self._usable(snapshot.outdoor.weather_condition, "outdoor.weather", snapshot, self.config.weather_freshness, used, discarded, awaiting)
         wind = self._usable(snapshot.outdoor.wind_speed_m_s, "outdoor.wind", snapshot, self.config.weather_freshness, used, discarded, awaiting)
         gust = self._usable(snapshot.outdoor.wind_gust_m_s, "outdoor.gust", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
+        forecast_observation = self._usable(snapshot.outdoor.forecast, "forecast", snapshot, self.config.forecast_freshness, used, discarded, awaiting, optional=True)
+        if forecast_observation is not None and not self._valid_forecast(forecast_observation, snapshot):
+            if "forecast" in used:
+                used.remove("forecast")
+            discarded.append("forecast")
+            trace.append(TraceEntry("discard.forecast_invalid"))
+            forecast_observation = None
 
         critical_missing = any(value is None for value in (outdoor_t, weather, wind))
         if critical_missing:
@@ -136,6 +146,17 @@ class DecisionEngine:
             current_precipitation is not None and current_precipitation > 0.0
         )
         hazardous_wind = (wind is not None and wind >= self.config.wind_block_m_s) or (gust is not None and gust >= self.config.gust_block_m_s)
+        forecast_condition = str(forecast_observation.weather_condition or "").lower() if forecast_observation else ""
+        forecast_rain = forecast_observation.precipitation_probability if forecast_observation else None
+        forecast_wind = forecast_observation.wind_speed_m_s if forecast_observation else None
+        forecast_gust = forecast_observation.wind_gust_m_s if forecast_observation else None
+        forecast_severe = any(token in forecast_condition for token in _SEVERE_WEATHER)
+        forecast_precipitation = any(token in forecast_condition for token in _PRECIPITATION_WEATHER) or (
+            forecast_rain is not None and forecast_rain >= self.config.imminent_rain_probability_percent
+        )
+        forecast_hazardous_wind = (
+            forecast_wind is not None and forecast_wind >= self.config.wind_block_m_s
+        ) or (forecast_gust is not None and forecast_gust >= self.config.gust_block_m_s)
         pollen = self._usable(snapshot.outdoor.pollen_policy, "outdoor.pollen", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
         pollution = self._usable(snapshot.outdoor.pollution_policy, "outdoor.pollution", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
         # Exposure readings are always recorded, but are intentionally not a
@@ -156,7 +177,11 @@ class DecisionEngine:
                         reading.coverage,
                     ))),
                 ))
-        hard_block = severe or actively_precipitating or hazardous_wind or pollen == "avoid" or pollution == "avoid"
+        hard_block = (
+            severe or actively_precipitating or hazardous_wind or forecast_severe
+            or forecast_precipitation or forecast_hazardous_wind
+            or pollen == "avoid" or pollution == "avoid"
+        )
         if severe:
             blocks.append("severe_weather")
             trace.append(TraceEntry("block.severe_weather", condition))
@@ -166,6 +191,15 @@ class DecisionEngine:
         if hazardous_wind:
             blocks.append("unsafe_wind")
             trace.append(TraceEntry("block.unsafe_wind"))
+        if forecast_severe:
+            blocks.append("forecast_severe_weather")
+            trace.append(TraceEntry("block.forecast_severe_weather", forecast_condition))
+        elif forecast_precipitation:
+            blocks.append("forecast_rain")
+            trace.append(TraceEntry("block.forecast_rain"))
+        elif forecast_hazardous_wind:
+            blocks.append("forecast_unsafe_wind")
+            trace.append(TraceEntry("block.forecast_unsafe_wind"))
         if pollen == "avoid" or pollution == "avoid":
             blocks.append("outdoor_exposure_avoid")
             trace.append(TraceEntry("block.outdoor_exposure_avoid"))
@@ -180,6 +214,9 @@ class DecisionEngine:
                     "severe_weather",
                     "current_precipitation",
                     "unsafe_wind",
+                    "forecast_severe_weather",
+                    "forecast_rain",
+                    "forecast_unsafe_wind",
                     "outdoor_exposure_avoid",
                 )
                 if code in blocks
@@ -218,7 +255,9 @@ class DecisionEngine:
         thermal_benefit = max(0.0, indoor_distance - outdoor_distance)
         indoor_ah = absolute_humidity_g_m3(float(indoor_t), float(indoor_h)) if indoor_h is not None else None
         outdoor_ah = absolute_humidity_g_m3(float(outdoor_t), float(outdoor_h)) if outdoor_h is not None else None
-        moisture_benefit = max(0.0, indoor_ah - outdoor_ah) if indoor_ah is not None and outdoor_ah is not None else 0.0
+        moisture_delta = indoor_ah - outdoor_ah if indoor_ah is not None and outdoor_ah is not None else None
+        moisture_benefit = max(0.0, moisture_delta or 0.0)
+        moisture_penalty = max(0.0, -(moisture_delta or 0.0))
         co2 = self._usable(room.co2_ppm, "indoor.co2", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         co2_trend = self._usable(room.co2_trend_ppm_per_hour, "indoor.co2_trend", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         co2_signal = (co2 is not None and co2 >= self.config.co2_threshold_ppm) or (co2_trend is not None and co2_trend >= self.config.co2_positive_trend_ppm_per_hour)
@@ -249,15 +288,24 @@ class DecisionEngine:
         humidity_target = (
             room.target_humidity_percent
             if room.target_humidity_percent is not None
-            else self.config.humidity_high_percent - 10.0
+            else (self.config.humidity_low_percent + self.config.humidity_high_percent) / 2.0
         )
-        humidity_high = min(100.0, humidity_target + 10.0)
+        humidity_high = self.config.humidity_high_percent
         moisture_signal = (
             moisture_benefit
             if indoor_h is not None and float(indoor_h) > humidity_high
             else 0.0
         )
         ventilate_score = max(transient, moisture_signal, self.config.meaningful_benefit if co2_signal else 0.0)
+        if indoor_h is not None and float(indoor_h) <= self.config.humidity_low_percent:
+            if not co2_signal:
+                ventilate_score = 0.0
+            trace.append(TraceEntry("humidity.low_guardrail"))
+        if moisture_penalty >= self.config.meaningful_benefit:
+            open_score = max(0.0, open_score - moisture_penalty)
+            ventilate_score = max(0.0, ventilate_score - moisture_penalty)
+            penalties.append("outdoor_moisture_load")
+            trace.append(TraceEntry("penalty.outdoor_moisture_load", f"{moisture_penalty:.3f}"))
         close_score = max(0.0, outdoor_distance - indoor_distance)
         if pollen == "reduce" or pollution == "reduce":
             open_score = max(0.0, open_score - self.config.meaningful_benefit)
@@ -323,19 +371,62 @@ class DecisionEngine:
             discarded.append(name)
             return None
         effective_limit = min(limit, observation.freshness) if observation.freshness is not None else limit
+        if observation.observed_at is None or not self._timestamp_style_matches(observation.observed_at, snapshot.evaluated_at):
+            discarded.append(name)
+            return None
         if (
-            observation.observed_at is None
-            or observation.observed_at > snapshot.evaluated_at
+            observation.observed_at > snapshot.evaluated_at
             or snapshot.evaluated_at - observation.observed_at > effective_limit
         ):
             discarded.append(name)
             return None
         value = observation.value
-        if isinstance(value, float) and (not isfinite(value) or not self._plausible(name, value)):
+        if isinstance(value, (int, float)) and (not isfinite(float(value)) or not self._plausible(name, float(value))):
+            discarded.append(name)
+            return None
+        expected_unit = self._expected_unit(name)
+        if expected_unit and observation.unit and observation.unit != expected_unit:
             discarded.append(name)
             return None
         used.append(name)
         return value
+
+    @staticmethod
+    def _timestamp_style_matches(observed_at, evaluated_at) -> bool:
+        return (observed_at.tzinfo is None) == (evaluated_at.tzinfo is None)
+
+    @classmethod
+    def _valid_forecast(cls, forecast, snapshot: DecisionSnapshot) -> bool:
+        """Validate the complete forecast payload at the decision boundary."""
+
+        if forecast.forecast_at is None or not cls._timestamp_style_matches(forecast.forecast_at, snapshot.evaluated_at):
+            return False
+        if forecast.forecast_at < snapshot.evaluated_at:
+            return False
+        bounds = (
+            (forecast.temperature_c, -90.0, 70.0),
+            (forecast.humidity_percent, 0.0, 100.0),
+            (forecast.wind_speed_m_s, 0.0, 150.0),
+            (forecast.wind_gust_m_s, 0.0, 150.0),
+            (forecast.precipitation_probability, 0.0, 100.0),
+        )
+        return all(value is None or (isfinite(float(value)) and low <= float(value) <= high) for value, low, high in bounds)
+
+    @staticmethod
+    def _expected_unit(name: str) -> str | None:
+        if "temperature" in name:
+            return "°C"
+        if "humidity" in name:
+            return "%"
+        if name.endswith("wind") or name.endswith("gust"):
+            return "m/s"
+        if "co2" in name:
+            return "ppm" if "trend" not in name else "ppm/h"
+        if "rain" in name:
+            return "%"
+        if "precipitation" in name:
+            return "mm/h"
+        return None
 
     @staticmethod
     def _plausible(name: str, value: float) -> bool:
@@ -357,6 +448,17 @@ class DecisionEngine:
         if top < self.config.meaningful_benefit or top - ranked[1][0] < self.config.winner_margin:
             return RecommendationAction.NONE, "insufficient_or_tied_benefit"
         return action, {RecommendationAction.OPEN: "thermal_sustained_benefit", RecommendationAction.VENTILATE: "targeted_ventilation_benefit", RecommendationAction.CLOSE: "outdoor_materially_worse"}[action]
+
+    @staticmethod
+    def _action_priority(action: RecommendationAction) -> int:
+        """Stable aggregate tie-break: safety close, targeted air, then open."""
+
+        return {
+            RecommendationAction.CLOSE: 3,
+            RecommendationAction.VENTILATE: 2,
+            RecommendationAction.OPEN: 1,
+            RecommendationAction.NONE: 0,
+        }[action]
 
     @staticmethod
     def _duration(action: RecommendationAction, forecast, rain) -> int | None:

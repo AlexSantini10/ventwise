@@ -1,306 +1,296 @@
-# Canonical decision-engine contract
+# VentWise decision-engine contract
 
-## Purpose and limits
+This is the single canonical Markdown contract for the deterministic VentWise
+decision engine. It describes the behavior implemented by
+`custom_components/ventwise/ventwise_core/decision.py` and its data models. The
+contract is normative for documentation, adapters, explanations, and focused
+regression coverage.
 
-This is VentWise's canonical decision-engine contract. It defines data,
-precedence, formulas, initial thresholds, outputs, and tests.
+## Purpose and non-claims
 
-The engine is local, deterministic, explainable, and advisory. Equal normalised
-input, configuration, and evaluation time produce the same result and trace.
-Historical estimates are explicit models, not machine learning. VentWise advises
-but does not control windows or devices; it is not a medical, safety,
-weather-protection, security, or physical-control system. Health thresholds are
-context, not diagnoses, domestic regulatory limits, or safety guarantees.
+The engine evaluates each room from an immutable, source-neutral snapshot and
+returns `open`, `ventilate`, `close`, or `none`. It is local, deterministic,
+explainable, and advisory. Equal usable inputs, configuration, and evaluation
+time produce the same result and ordered trace.
 
-> [!IMPORTANT]
-> **Advice only.** The engine can recommend an action; it must never operate a
-> physical device, replace a safety system, or present an air-quality signal as
-> a medical conclusion.
+VentWise does not open or close windows, operate devices, provide a safety or
+security system, protect property from weather, diagnose health conditions, or
+claim regulatory compliance. CO2, humidity, temperature, pollution, and pollen
+values are decision signals, not medical conclusions. A recommendation must
+always be checked against actual conditions.
 
-Future data is **active** (needed now), **optional** (improves a decision), or
-**reserved** (catalogued, unsupported). Missing reserved data never enables
-risky advice.
+## Pipeline and precedence
 
-## Flow and actions
+```mermaid
+flowchart TD
+    A[Acquire observations] --> B[Validate availability, time, unit, range]
+    B --> C[Record used, discarded, awaiting data]
+    C --> D{Safety block?}
+    D -- yes --> E[core_action = close]
+    D -- no --> F{Critical weather usable?}
+    F -- no --> G[core_action = none\nreason = critical_weather_unavailable]
+    F -- yes --> H[Derive apparent temperature and absolute humidity]
+    H --> I[Score open, ventilate, close]
+    I --> J[Select only a meaningful winner]
+    J --> K[Set duration, confidence, reason, trace]
+    E --> L[Apply contact and delivery guardrails]
+    G --> L
+    K --> L
+    L --> M[Return core_action and delivered_action]
+```
 
-> **1. Acquire** → **2. Validate** → **3. Block unsafe cases** →
-> **4. Apply preferences** → **5. Derive** → **6. Score** →
-> **7. Select action** → **8. Apply delivery guardrails** → **9. Explain**
+The ordered rules are:
 
-Acquisition retains value, unit, source, timestamp, and quality. Validation
-converts units and rejects invalid data. Blocks apply precedence. Preferences
-cannot override blocks. Derived signals are limited to the current observation.
-Scoring selects a meaningful action; delivery guardrails
-then regulate its presentation. Explanation exposes all material facts.
+1. Validate every observation independently. Missing, invalid, future-dated,
+   stale, non-finite, mixed-timezone, implausible, or wrong-unit observations
+   are not used.
+2. An active severe-weather condition, current precipitation, hazardous wind or
+   gust, forecast severe weather/precipitation/hazardous wind, or an explicit
+   pollen/pollution policy of `avoid` is a hard block. The core action is
+   `close`, regardless of indoor comfort or CO2.
+3. If indoor temperature is unavailable, the core action is `none` with
+   `insufficient_indoor_evidence`. If critical outdoor temperature, weather
+   condition, or wind is unavailable, the core action is `none` with
+   `critical_weather_unavailable`. This fails closed for opening; it does not
+   invent a close when no active hazard exists.
+4. With safety and critical-data gates passed, derive comfort and moisture
+   signals, then calculate candidate scores.
+5. `open`, `ventilate`, and `close` must exceed `meaningful_benefit` and beat
+   the next candidate by `winner_margin`; otherwise the core action is `none`.
+6. Delivery guardrails run after the core decision. A contact, quiet hours,
+   cooldown, or stability gate may change only `delivered_action`; it never
+   erases or changes `core_action`.
 
-| Action | Meaning |
-|---|---|
-| **open** | Stable net benefit without a required short duration. |
-| **ventilate** | Air out for a proposed duration, then reassess. |
-| **close** | Opening is harmful or protection is required. |
-| **none** | No meaningful benefit or already consistent state. |
+```mermaid
+flowchart LR
+    S[Safety / critical data] -->|wins first| C[Core recommendation]
+    T[Thermal signal] --> C
+    H[Moisture signal] --> C
+    Q[CO2 signal] --> C
+    P[Exposure reduce / forecast rain] --> C
+    F[Forecast context] -->|duration and confidence context| C
+    C --> G[Contact, quiet hours, cooldown, stability]
+    G --> D[Delivered recommendation]
+```
 
-`ventilate` duration is deliberately bounded generic guidance: 15 minutes
-without a usable forecast, 10 with one, and 5 where an imminent-rain forecast
-applies. Room volume, opening area, resistance and mass are not treated as an
-airflow calibration; complete parameters can reduce confidence, while
-condensation risk can cap the generic duration at five minutes. Below the
-warm-domain heat-index boundary the thermal comparison is dry-bulb only; it
-does not claim a cold/wind-chill model.
+### Action meanings
 
-Current precipitation is an immediate safety block, distinct from forecast
-precipitation probability. Outdoor humidity is optional: absent or invalid
-humidity removes apparent/moisture scoring but does not suppress safe
-temperature-only advice. Temperature, weather condition and wind remain
-safety-critical. Future-dated, stale, non-finite and source-implausible
-readings are discarded with their provenance retained in data quality.
+| Action | Contract meaning |
+| --- | --- |
+| `open` | Outdoor conditions provide a meaningful sustained comfort benefit. |
+| `ventilate` | A targeted or transient benefit justifies bounded airing, followed by reassessment. |
+| `close` | Outdoor conditions are materially worse or a hard block is active. |
+| `none` | No meaningful, sufficiently separated winner exists, or evidence is insufficient. |
 
-Observed safety blocks have precedence over indoor scoring. Current rain,
-severe weather, unsafe wind or gusts, and `avoid` pollen or
-pollution policies always produce `core_action=close`; an open, unknown, or
-unconfigured window contact receives `delivered_action=close`. A contact that
-already reports the window closed suppresses only the duplicate delivery with
-`delivery_suppressed_by=window_already_closed`. Urgent safety closes bypass
-stability, cooldown, and quiet-hours delivery gates. Urgent close delivery during
-quiet hours is configurable and defaults to suppressed; enabling the explicit
-urgent-close option bypasses quiet hours only. This rule applies only to
-observed hazards: `critical_weather_unavailable` remains fail-closed for
-opening and does not invent a close when the window state is unknown.
+`core_action` is the physical recommendation. `delivered_action` is what may be
+shown after delivery suppression. A known contact can suppress duplicate advice
+(`window_already_open` or `window_already_closed`) but cannot change the core
+truth. Urgent safety closes bypass cooldown and stability; quiet-hours delivery
+is still suppressed unless `urgent_close_during_quiet_hours` is enabled.
 
-> [!TIP]
-> Read **At-a-glance ordered decision table** first. It is the shortest route
-> to the engine's actual decision priority and user-facing wording.
+## Inputs, quality, and precedence table
 
-An urgent **close** remains in the core result; a window contact can say that
-the window is already closed but cannot erase the recommendation.
+Canonical snapshot units are °C, %, ppm, ppm/h, m/s, mm/h, and seconds. The
+core expects canonical units; adapters are responsible for conversion. A unit
+mismatch is discarded, not silently converted or clipped.
 
-## Implemented deterministic interface
+| Priority | Condition | Effect | Evidence recorded |
+| ---: | --- | --- | --- |
+| 1 | Severe current or forecast weather | Hard close | `severe_weather` or `forecast_severe_weather` |
+| 2 | Current precipitation | Hard close | `current_precipitation` |
+| 3 | Current or forecast wind/gust at or above limit | Hard close | `unsafe_wind` or `forecast_unsafe_wind` |
+| 4 | Pollen or pollution policy is `avoid` | Hard close | `outdoor_exposure_avoid` |
+| 5 | Critical outdoor temperature/weather/wind missing or unusable | No opening/ventilation | `critical_weather_unavailable` |
+| 6 | Indoor temperature missing or unusable | No room decision | `insufficient_indoor_evidence` |
+| 7 | `reduce` exposure policy or imminent forecast rain | Penalize candidates | `outdoor_exposure_reduce` or `imminent_rain` |
+| 8 | Thermal, moisture, and CO2 signals | Score candidates | `score.thermal`, `score.moisture` |
+| 9 | Contact, quiet hours, cooldown, stability | Delivery only | `delivery.suppressed` |
 
-The reusable core exposes `DecisionEngine` as the sole recommendation engine
-for all adapters. Its immutable
-`DecisionSnapshot` contains source-neutral `Observation` values; every value
-has canonical unit, source, observation/receipt time, validity, freshness and
-availability. `awaiting_source` is retained rather than guessed.
+Outdoor humidity is optional. If it is missing or invalid, dry-bulb thermal
+advice can still be evaluated, while apparent-temperature refinement and
+absolute-humidity scoring are unavailable. Indoor humidity is also optional;
+the engine does not invent it.
 
-`DecisionResult` always retains both `core_action` (the physical advice) and
-`delivered_action` (what may be shown after contacts, quiet hours, cooldown,
-or stability). Its ordered trace, candidate scores, blocks, penalties and data
-quality summary are stable test/UI/log interfaces. Legacy Home Assistant
-configuration continues to use the existing compatibility scorer while entity
-adapters migrate to snapshots; no configured entity or threshold is dropped.
-
-## At-a-glance ordered decision table
-
-This is the authoritative reading order. A higher row always wins. The final
-column is the required user-facing explanation pattern.
-
-| Priority | Data / condition | Class | How it is used | Core result | Explanation |
-|---:|---|---|---|---|---|
-| 1 | Missing, invalid, or stale critical weather | 🛑 **Blocking** | Fail closed before scoring | Never open/ventilate | “Cannot safely recommend opening: weather data is unavailable or stale.” |
-| 2 | Thunderstorm, lightning, hail, tornado, hurricane, dangerous ice/snow, severe alert | 🛑 **Blocking** | Safety gate | Block open/ventilate; close when applicable | “Close or keep closed because severe weather is current or imminent.” |
-| 3 | Wind or gust above technical threshold | 🛑 **Blocking** | Opening-safety gate | Block open/ventilate; close if known open | “Gusts exceed the configured safe-opening threshold.” |
-| 4 | Outdoor pollution or pollen beyond profile | 🛑 / 🟠 **Block / penalty** | Exposure policy; comfort cannot override | Block or reduce | “Fresh-air benefit is overridden by outdoor air quality or pollen.” |
-| 5 | Degraded indoor CO₂ or IAQ | 🟢 / 🟠 **Benefit / penalty** | Ventilation need after 1–4 pass | Favour ventilate | “Indoor air needs renewal, subject to outdoor conditions.” |
-| 6 | Temperature, absolute humidity, condensation | 🟢 / 🟠 **Benefit / penalty** | Physical net benefit and duration | Open, ventilate, close, or none | “Outdoor air is expected to improve/worsen temperature or moisture.” |
-| 7 | Forecast, local trend, room model | 🔵 **Informational** | Duration, future opportunity, confidence | Cannot override 1–4 | “Forecast changes expected duration or confidence.” |
-| 8 | Quiet hours, cooldown, stability, contacts | 🟣 **Delivery guardrail** | Post-core delivery only | May suppress delivery | “Core advice is X; delivery is suppressed because Y.” |
-
-## Complete data catalogue
-
-Legend: 🛑 **B** blocking, 🟠 **P** strong penalty, 🟢 **V** benefit signal,
-🔵 **I** informational only, 🟣 **G** delivery guardrail. I/E means indoor/outdoor.
-“Future” means reserved.
-
-| Family | Data, unit, I/E | Intended source | Status and transformation | Priority / action effect | Fallback and explanation |
-|---|---|---|---|---|---|
-| Thermal comfort | temperature °C, I/E | room sensor; weather/sensor | active; validate, short average, apparent T | B/V; thermal comparison, stale E blocks opening | no thermal score; “indoor temperature unavailable” / never open if E is stale |
-| Thermal comfort | apparent temperature °C, I/E; target °C, season | derived; preference/calendar | active/optional; T+RH, valid outdoor wind, target band | V/I; benefit and context, never block | use T at lower confidence; show default target |
-| Humidity and condensation | RH %, AH g/m³, dew point °C, ΔAH g/m³ | sensor/weather, Magnus | active; RH valid 0–100% | V; dry E favours ventilate | no moisture benefit without RH |
-| Humidity and condensation | condensation/mould risk | derived + surface temperature | optional | P; changes duration/benefit | “risk not estimated” without surface data |
-| Air exchange | CO₂ ppm I/E, trend ppm/h, volume m³ | sensor/provider; configuration | active I, optional E/volume; delta/trend | V; high indoor CO₂ favours ventilate | conservative duration; no inferred occupancy |
-| Air exchange | occupancy, ACH h⁻¹, window state | presence/model/contact | future/future/optional | I/V/G; model or delivery | trend/state unknown is explicit; contact never changes core |
-| Pollution | AQI index; PM2.5/PM10 µg/m³ I/E | provider/sensor | optional; retain standard and averaging window | P; high outdoor values block/reduce | never compare different indices; lower confidence without average |
-| Pollution | NO₂, O₃, CO, SO₂; VOC/TVOC; formaldehyde | provider/sensor | future; retain unit, average, sensor type | P; high E blocks/reduces; high I favours safe ventilation | no conversion without T/P; no generic health equivalence |
-| Allergens | pollen by species grains/m³, species, personal threshold | Open-Meteo/CAMS; preference | optional; species/horizon filter | B/P; reduce or avoid | no pollen block if absent; lower confidence |
-| Allergens | profile ignore/reduce/avoid | preference | active policy | I/P/B; ignore informational, reduce penalty, avoid block | explicit default: reduce |
-| Weather and risk | condition, rain mm/probability %, wind/gust m/s, direction | weather | active; normalise current/imminent, max gust | B/P/I; rain/wind block, direction refines | stale/missing critical weather: never open |
-| Weather and risk | alerts, storm/lightning/hail, snow/ice/tornado/hurricane | official source/weather | active/optional; severity and validity | B; blocks and may close | never downplay alert or infer it |
-| Prediction | forecast, local trend, age, completeness | weather/series/metadata | optional/active; 15–120 min | I/P/V/B; duration/confidence; critical stale blocks | trace every discarded input |
-| Prediction | thermal/humidity/CO₂ model | local calibration | future; RC/mass balance | I/V; duration/opportunity | documented conservative default |
-| Room/building | insulation, mass, opening size/orientation, exposure, cross ventilation | configuration | future; C/R/airflow factor | I/V; simulation and wind exposure | no false precision |
-| Preferences/delivery | pollution sensitivity, thresholds, quiet hours, cooldown, stability, known open/closed | preference/contact | active/optional; policy/guardrail | P/V/G; personalize; delivery only | show preset or suppression cause |
-
-## Validation, formulas, and simulation
-
-Canonical internal units are °C, %, g/m³, ppm, µg/m³, m/s, mm, W/m², m³,
-and seconds. Each reading retains precision, source, and timestamp. RH and
-probability must be 0–100%; volume >0; precipitation and
-concentration ≥0. T, wind, and concentration also have sensor-specific
-plausibility ranges. Invalid values are rejected, never silently clipped.
-
-Initial configurable freshness: indoor 15 min, critical weather 15 min,
-forecast 90 min from issue time. The trace always reports value age and limit.
+## Formulas and derived signals
 
 ### Apparent temperature
 
-For the warm domain, T in °C and RH in percent:
+The implementation uses the heat-index polynomial only when `T >= 26.7 °C` and
+`RH >= 40%`; otherwise it uses dry-bulb temperature `T`.
 
 ```text
-HI = -8.784695 + 1.61139411T + 2.338549RH - 0.14611605T·RH
-     - 0.012308094T² - 0.016424828RH² + 0.002211732T²·RH
-     + 0.00072546T·RH² - 0.000003582T²·RH²
+HI = -8.784695 + 1.61139411T + 2.338549RH - 0.14611605T*RH
+     - 0.012308094T^2 - 0.016424828RH^2 + 0.002211732T^2*RH
+     + 0.00072546T*RH^2 - 0.000003582T^2*RH^2
 ```
 
-Outside that domain the initial value is T with reduced confidence until a
-validated unified hot/cold index exists. Wind never penalises indoor
-temperature; it may later enter outdoor apparent temperature in its domain.
+This is not a cold-weather or wind-chill model. Wind is a safety input, not an
+indoor comfort penalty.
 
-### Magnus humidity formula
+### Magnus dew point and absolute humidity
 
-With a=17.62 and b=243.12 °C:
+For temperature `T` in °C and relative humidity `RH` in percent, with
+`a = 17.62` and `b = 243.12 °C`:
 
 ```text
-γ   = ln(RH/100) + aT/(b + T)
-Tdp = bγ/(a - γ)
-es  = 6.112 · exp(17.62T/(243.12 + T))
-e   = RH/100 · es
-AH  = 216.7 · e/(T + 273.15) g/m³
+gamma = ln(RH / 100) + a*T / (b + T)
+dew_point = b*gamma / (a - gamma)
+saturation_pressure_hPa = 6.112 * exp(17.62*T / (243.12 + T))
+absolute_humidity_g_m3 = 216.7 * (RH / 100) * saturation_pressure_hPa / (T + 273.15)
 ```
 
-ΔAH = AH_E − AH_I is more useful than RH alone: ΔAH<0 means outdoor air removes
-vapour. Condensation is estimated only when indoor dew point approaches an
-estimated surface temperature; absent surface data is not “no risk”.
-
-### Thermal RC model and mass balance
-
-For a step Δt:
+The moisture comparison is the effective humidity decision metric:
 
 ```text
-T(t+Δt) = T(t) + Δt/C · [ (T_E − T_t)/R + Q_internal + Q_solar
-                           + Q_internal + H_v(T_E − T_t) ]
+delta_AH = AH_indoor - AH_outdoor
+moisture_benefit = max(0, delta_AH)
+moisture_penalty = max(0, -delta_AH)
 ```
 
-R is resistance, C thermal mass, H_v ventilation conductance, and Q power.
-Without local calibration, the model limits duration and confidence, never
-promises a temperature.
+Positive `delta_AH` means outdoor air can remove water vapour. Moisture becomes
+a ventilation signal only when indoor RH is above the configured high limit.
+Indoor RH at or below the configured low limit suppresses humidity-only
+ventilation. Outdoor moisture at or above `meaningful_benefit` penalizes
+opening and ventilation. Equal absolute humidity produces no moisture benefit
+or penalty. Condensation is considered only when a usable indoor surface
+temperature exists and indoor dew point is at or above it.
 
-For room volume V, air exchange λ (s⁻¹), source G, and concentration c:
+### Candidate scoring
+
+The current implementation uses these candidate signals:
 
 ```text
-dc/dt = λ(c_E − c_I) + G/V
+indoor_distance = max(0, abs(indoor_apparent - target) - comfort_band)
+outdoor_distance = max(0, abs(outdoor_apparent - target) - comfort_band)
+thermal_benefit = max(0, indoor_distance - outdoor_distance)
+close_score = max(0, outdoor_distance - indoor_distance)
 ```
 
-The equation applies to CO₂ with coherent units and to vapour as mass/volume.
-Without λ, G, or V it cannot predict an exact time. Indoor CO₂ at 1000 ppm is
-an initial ventilation indicator, not an absolute health limit or complete IAQ
-metric: [ASHRAE explains](https://www.ashrae.org/file%20library/about/position%20documents/pd-on-indoor-carbon-dioxide-english.pdf)
-that CO₂ is not a global air-quality indicator and that sensor performance,
-location, and calibration matter.
+`open_score` uses thermal benefit when the outdoor endpoint is within the
+meaningful-benefit boundary. `ventilate_score` uses transient movement toward
+the target, moisture benefit, or the CO2 signal. A high CO2 reading or positive
+trend is a targeted ventilation signal, not an automatic `open` override.
 
-## Initial thresholds and air-quality sources
+## Initial thresholds and bounded behavior
 
-These values are conservative starting points, not medical values or mandatory
-rules. Every implementation trace records value, unit, source, averaging window,
-and version.
+These are conservative engineering defaults, not health thresholds.
 
-> [!WARNING]
-> A number without its **unit**, **source**, and **averaging window** is not a
-> health threshold and must not be presented as one.
+| Parameter | Default | Meaning |
+| --- | ---: | --- |
+| Target temperature | 22 °C | Personal comfort target |
+| Comfort band | 1 °C | Personal preference band |
+| Humidity low / high | 40% / 60% RH | Moisture guardrails |
+| Meaningful benefit | 1.0 score unit | Minimum candidate score |
+| Winner margin | 0.05 score units | Required separation from next candidate |
+| CO2 signal | 1000 ppm | Targeted ventilation indicator |
+| CO2 trend signal | +150 ppm/h | Targeted ventilation indicator |
+| Wind / gust block | 35 / 50 m/s | Opening-safety limits in current configuration |
+| Imminent rain | 60% probability | Forecast safety block threshold |
+| Indoor/weather freshness | 15 minutes | Default observation age limit |
+| Forecast freshness | 90 minutes | Default forecast age limit |
 
-| Type | Initial | Configurable range | Use |
-|---|---|---|---|
-| Personal comfort | target 22 °C, band ±1 °C, RH 40–60% | target 18–26 °C, band 0.5–3 °C, RH 30–70% | preference, never block |
-| Technical benefit | ≥1 comfort point or favourable ΔAH ≥1 g/m³ | 0.5–3; 0.5–3 g/m³ | avoids marginal advice |
-| Technical CO₂ | 1000 ppm; trend +150 ppm/h | 800–1500; 50–500 ppm/h | signal, not health threshold |
-| Wind/gust | 35/50 km/h | 15–60 / 25–80 km/h | opening block |
-| Rain | present; imminent probability 60% | 0–100% | block/penalty |
-| Pollen | personal threshold | by species/user | ignore=I, reduce=P, avoid=B |
-| Health/IAQ | no single threshold | source+unit+average required | policy, never diagnosis |
+The engine returns generic bounded duration only for `ventilate`: 15 minutes
+without usable forecast temperature, 10 minutes with usable forecast
+temperature, and 5 minutes when usable forecast rain probability is at least
+60%. A usable surface-temperature condensation risk caps duration at 5 minutes
+and multiplies confidence by 0.8. Physical room parameters never turn this
+duration into an airflow or thermal prediction; complete parameters lower
+confidence to 0.9 when a duration is present.
 
-WHO 2021 keeps pollutant and averaging time distinct:
+## Forecast safety
 
-| Pollutant | WHO AQG level | Averaging time |
-|---|---:|---|
-| PM2.5 | 5 µg/m³; 15 µg/m³ | annual; 24 h |
-| PM10 | 15 µg/m³; 45 µg/m³ | annual; 24 h |
-| O₃ | 60 µg/m³; 100 µg/m³ | peak season; daily maximum 8 h |
-| NO₂ | 10 µg/m³; 25 µg/m³ | annual; 24 h |
-| SO₂ | 40 µg/m³ | 24 h |
-| CO | 4 mg/m³ | 24 h |
+Forecast data is a near-term safety input, not an indoor-temperature predictor,
+and is evaluated only after validation of its own observation, freshness,
+provenance, and forecast timestamp. A complete forecast can
+produce a hard block for forecast severe weather, forecast precipitation, or
+forecast hazardous wind. Scalar forecast temperature and rain probability can
+change duration or penalize opening. Forecast context cannot override a higher
+priority safety block, create a missing value, or prove that opening is safe.
 
-These are exposure health guidelines, not automatic triggers. Details, including
-short-window percentiles, are in the [WHO 2021 global guidelines](https://www.who.int/publications/i/item/9789240034228).
-Every future health threshold includes source, unit, averaging time, and usage
-warning. AQI always includes its standard and averaging period.
+Forecasts are not weather guarantees. The trace must identify whether forecast
+data was used, discarded, or awaiting its source.
 
-The initial free seasonal-European pollen source is **Open-Meteo Air Quality
-API**, based on CAMS. It is a model forecast, not a window measurement. In
-Europe CAMS is about 11 km, hourly, updated every 24 hours, and offers four
-forecast days. Alder, birch, grass, mugwort, olive, and ragweed are available
-only in Europe during pollen season, for up to four days; current conditions
-use a 15-minute model [Open-Meteo](https://open-meteo.com/en/docs/air-quality-api).
-UI and explanations attribute Open-Meteo/CAMS and show coverage, season,
-resolution, and timestamp. No US provider is in scope.
+## Missing, stale, invalid, and awaiting data
 
-> [!NOTE]
-> Open-Meteo/CAMS is forecast-model data. Its spatial resolution and timestamp
-> must remain visible whenever it contributes to pollen or outdoor-air advice.
+Every observation retains value, unit, source, observation time, receipt or
+evaluation context, availability, validity, and optional freshness. The engine
+records each field in one of `used`, `discarded`, or `awaiting_source`.
 
-## Scoring, result, and explanation
+- `None`, `MISSING`, `INVALID`, or a non-available value is not used.
+- `AWAITING_SOURCE` remains explicit; it is never replaced by a guessed value.
+- A future timestamp, missing timestamp, mixed aware/naive timestamp style, or
+  age beyond the lower of configured and observation freshness is discarded.
+- Non-finite values and implausible values are discarded. Current plausibility
+  limits include RH/rain 0–100, temperature -90–70 °C, CO2 0–10,000 ppm,
+  wind/gust 0–150 m/s, and precipitation 0–500 mm/h.
+- Wrong canonical units are discarded.
+- Missing optional humidity removes only humidity-derived scoring.
+- Missing critical weather prevents opening/ventilation; it does not invent a
+  close without an active hazard.
 
-After blocks:
+## Result, trace, reason, confidence, and data quality
 
-```text
-S(action) = thermal benefit + vapour benefit + IAQ benefit
-            − pollution penalty − uncertainty penalty − operational penalty
-```
+Each room result includes:
 
-Operational penalty excludes quiet hours, cooldown, and contacts: they are
-post-decision. Open requires score above threshold and durable benefit;
-ventilate requires net but targeted/transient benefit; close requires
-significantly worse outdoor conditions or a block. A configurable margin over
-the next action is required; otherwise none.
+- `core_action` and `delivered_action`;
+- `duration_minutes` for `ventilate`, otherwise `null`;
+- candidate scores for `open`, `ventilate`, and `close`;
+- a deterministic `reason_code`;
+- ordered trace entries;
+- `blocked_conditions` and `applied_penalties`;
+- `data_quality.used`, `data_quality.discarded`, and
+  `data_quality.awaiting_source`;
+- confidence in the evidence and bounded model context; and
+- `delivery_suppressed_by` when delivery differs from the core result.
 
-The minimum result contains core/delivered action, proposed duration for
-ventilate only, score per action, confidence, timestamp, used/discarded inputs
-and ages, blocks, penalties, preferences, model, and guardrails. Trace IDs are
-stable and ordered. A suppression always says both truth (“core: ventilate”)
-and cause (“quiet hours”).
+Important reason codes include `thermal_sustained_benefit`,
+`targeted_ventilation_benefit`, `co2_high`, `humidity_high`,
+`outdoor_materially_worse`, `insufficient_or_tied_benefit`,
+`insufficient_indoor_evidence`, and `critical_weather_unavailable`.
 
-> [!TIP]
-> A useful explanation always answers three questions in order: **what is the
-> advice**, **which higher-priority fact decided it**, and **which helpful
-> signal was considered but could not win**.
+Trace codes identify configuration, data quality, blocks, penalties, derived
+scores, selection, physical context, and delivery suppression. Explanations
+must state both truths when delivery is suppressed: the core recommendation and
+the suppression cause. Confidence decreases with discarded data and optional
+physical/condensation adjustments; it is not a probability of safety or a
+health assessment.
 
-## Normative examples
+For multiple rooms, all room results remain in input order. The aggregate result
+selects the best deliverable room first, then uses stable action priority
+(`close`, `ventilate`, `open`, `none`) and room ID as deterministic tie-breakers.
 
-| Scenario | Input | Expected result |
-|---|---|---|
-| Hot room, cool outside | I 28 °C/50%, E 20 °C/45%, valid weather | open: thermal benefit |
-| Humid room | I 22 °C/70%, E 21 °C/45%, ΔAH<0 | ventilate: removes moisture |
-| High CO₂ | 1400 ppm, +250 ppm/h, safe E | ventilate: air-renewal signal |
-| Rain | current rain, known open window | close: weather block |
-| Thunderstorm | current/imminent storm or lightning | close if open; never open |
-| Wind | 55 km/h gust, threshold 50 | block; close if open |
-| High PM2.5 | E above policy with valid average | block/penalty; comfort cannot win |
-| Pollen ignore/reduce/avoid | high sensitive species | information / reduced duration / opening block |
-| Critical data absent | stale wind or weather | never open/ventilate |
-| Conflict | high CO₂ plus thunderstorm | weather wins; excluded benefit explained |
+## Scenario matrix
 
-## Future test matrix
+| Scenario | Required evidence | Expected core result | Expected delivery / explanation |
+| --- | --- | --- | --- |
+| Hot room, cooler outdoor air near target | Usable indoor/outdoor temperature, weather, wind | `open` | Thermal sustained benefit |
+| Cold room, warmer outdoor air near target | Same | `open` | Bidirectional thermal benefit |
+| Outdoor air moves toward target but is a poor endpoint | Same | `ventilate` | 15/10/5-minute bounded duration |
+| High indoor CO2 or rising CO2 trend | Usable indoor CO2 or trend plus safe weather | `ventilate` | `co2_high` when level reaches 1000 ppm |
+| Indoor RH above configured high limit and lower outdoor AH | Usable indoor/outdoor humidity | `ventilate` | `humidity_high`; AH delta in trace |
+| Indoor RH at/below configured low limit | Usable indoor humidity and no CO2 signal | No humidity-only ventilation | `humidity.low_guardrail` |
+| Equal indoor/outdoor AH | Usable indoor/outdoor humidity | Thermal/CO2 result only | No moisture benefit or penalty |
+| Outdoor AH materially higher | Usable humidity and thermal data | Penalized; may be `none` or another winner | `outdoor_moisture_load` |
+| Severe weather, current rain, unsafe wind/gust | Usable weather/hazard evidence | `close` | Urgent safety close; contacts only suppress duplicate closed advice |
+| Forecast severe/rain/wind hazard | Usable complete forecast | `close` | Forecast block in trace |
+| Pollen/pollution policy `avoid` | Valid explicit policy | `close` | `outdoor_exposure_avoid` |
+| Pollen/pollution policy `reduce` | Valid explicit policy | Candidate penalty | `outdoor_exposure_reduce` |
+| Missing/stale/invalid critical weather | Data-quality failure | `none` | `critical_weather_unavailable`; never opening advice |
+| Missing indoor temperature | Data-quality failure | `none` | `insufficient_indoor_evidence` |
+| Missing outdoor humidity only | Usable dry-bulb critical data | Thermal result remains possible | Moisture scoring is absent, not guessed |
+| Neutral or tied candidates | Usable inputs | `none` | `insufficient_or_tied_benefit` |
+| Quiet hours, cooldown, stability, or satisfied contact | Any actionable core result | Core preserved | Delivered action may be `none`; cause is traced |
+| Condensation risk with surface temperature | Usable dew point and surface temperature | Core preserved | Duration capped at 5 minutes; confidence reduced |
 
-Every test verifies core/delivered action, score/confidence, ordered trace, and
-absence of invented data.
+## Limits and maintenance rule
 
-| Area | Unit | Integration | Docker Lab |
-|---|---|---|---|
-| Blocks | each block alone and with CO₂/comfort; fail closed | entity/alert mapping | weather, rain, wind, contacts |
-| Pollutants/pollen | every I/E pollutant, unit/average, three profiles | provider and attribution | PM and seasonal species |
-| Physics | Magnus, HI, RC/mass limits and invalid data | conversion/timestamps | T/RH/CO₂ charts |
-| Forecast | 15/30/60/120 min; absent/default/local calibration | refresh/errors | short opportunity |
-| Precedence | conflicts, margin, stability | guardrails preserve core | cooldown, quiet hours, contacts |
-| Explanation | deterministic trace per result | serialization/translations | readable advice/suppression |
+The contract does not claim exact air-change time, occupancy inference, airflow
+calibration, pollutant health equivalence, cold/wind-chill comfort, or forecast
+certainty. Exposure readings are retained with source, unit, averaging period,
+attribution, resolution, and coverage, but they do not become decision inputs
+without an explicit configured policy.
 
-Every future threshold, source, or rule extends this matrix with the narrowest
-applicable regression test.
-
+When behavior or a public result field changes, update this file, the narrowest
+relevant regression coverage, and any user-facing integration documentation.
+Do not create a second decision-model source. CI and GitHub Pages validation
+must check this Markdown file as the canonical source.
