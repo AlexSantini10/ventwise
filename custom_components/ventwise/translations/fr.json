@@ -197,6 +197,7 @@
           "target_humidity_percent_override_enabled": "Activer le remplacement de l'humidité de la pièce",
           "humidity_entity_id": "Capteur d'humidité intérieure",
           "window_sensor_entity_ids": "Contacts de fenêtre",
+          "window_contacts": "Configuration des contacts de fenêtre",
           "start_entity_id": "Automatisation des fenêtres ouvertes",
           "stop_entity_id": "Fermer l'automatisation des fenêtres",
           "action_change_hold_minutes": "Attendez avant d'annuler l'avis (minutes)",
@@ -930,13 +931,19 @@
           "name": "Nom de la pièce",
           "temperature_entity_id": "Capteur de température intérieure",
           "humidity_entity_id": "Capteur d'humidité intérieure",
-          "window_sensor_entity_ids": "Contacts de fenêtre"
+          "window_sensor_entity_ids": "Contacts de fenêtre",
+          "window_contacts": "Configuration des contacts de fenêtre",
+          "window_contact_entity_id": "Entité du contact",
+          "window_contact_invert": "Inverser le signal du contact"
         },
         "data_description": {
           "name": "Un nom convivial pour cette pièce, comme Chambre, Bureau ou Bureau.",
           "temperature_entity_id": "Choisissez le capteur de température ambiante.",
           "humidity_entity_id": "Facultatif. Choisissez le capteur d’humidité ambiante.",
-          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre."
+          "window_sensor_entity_ids": "Configurez les entités des contacts de fenêtre.",
+          "window_contacts": "Configurez chaque contact et indiquez si son signal est inversé.",
+          "window_contact_entity_id": "Sélectionnez le capteur binaire du contact.",
+          "window_contact_invert": "Activez si on signifie fermé et off ouvert."
         }
       },
       "edit_room_advanced": {

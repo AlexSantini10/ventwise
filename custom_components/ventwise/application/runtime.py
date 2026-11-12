@@ -61,6 +61,9 @@ from ..const import (
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_CO2_UNIT,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+    CONF_ROOM_WINDOW_CONTACTS,
+    CONF_WINDOW_CONTACT_ENTITY_ID,
+    CONF_WINDOW_CONTACT_INVERT,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -156,6 +159,7 @@ class RoomConfig:
     humidity_unit: str = "%"
     co2_entity_id: str | None = None
     co2_unit: str = "ppm"
+    window_contacts: tuple["WindowContact", ...] = ()
     window_sensor_entity_ids: tuple[str, ...] = ()
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
@@ -168,6 +172,30 @@ class RoomConfig:
     thermal_resistance_m2k_w: float | None = None
     thermal_mass_kj_k: float | None = None
     surface_temperature_entity_id: str | None = None
+
+    def __post_init__(self) -> None:
+        """Load legacy constructor arguments as non-inverted contacts."""
+
+        if not self.window_contacts and self.window_sensor_entity_ids:
+            object.__setattr__(
+                self,
+                "window_contacts",
+                tuple(WindowContact(entity_id) for entity_id in self.window_sensor_entity_ids),
+            )
+
+    @property
+    def configured_window_entity_ids(self) -> tuple[str, ...]:
+        """Return contact entity IDs for compatibility with older adapters."""
+
+        return tuple(contact.entity_id for contact in self.window_contacts)
+
+
+@dataclass(frozen=True, slots=True)
+class WindowContact:
+    """One configured binary contact and its electrical polarity."""
+
+    entity_id: str
+    invert: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,6 +264,7 @@ class RuntimeSnapshot:
     stable_for_seconds: int
     last_updated: datetime
     window_states: Mapping[str, str] = field(default_factory=dict)
+    window_contact_states: Mapping[str, tuple[Mapping[str, object], ...]] = field(default_factory=dict)
     # The source-neutral decision artifact is deliberately retained alongside
     # the legacy presentation summary.  This keeps existing entity IDs stable
     # while making every input and decision inspectable.
@@ -320,9 +349,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             humidity_unit=source_unit(room.get(CONF_ROOM_HUMIDITY_UNIT, "%"), "humidity") or "%",
             co2_entity_id=_string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID)),
             co2_unit=source_unit(room.get(CONF_ROOM_CO2_UNIT, "ppm"), "co2") or "ppm",
-            window_sensor_entity_ids=_string_list(
-                room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
-            ),
+            window_contacts=_window_contacts(room),
             start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
             stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
             action_change_hold_minutes=int(
@@ -403,6 +430,30 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
     )
+
+
+def _window_contacts(room: Mapping[str, Any]) -> tuple[WindowContact, ...]:
+    """Load new contact rows, falling back to the legacy entity-id list."""
+
+    raw_contacts = room.get(CONF_ROOM_WINDOW_CONTACTS)
+    if raw_contacts is None:
+        return tuple(WindowContact(entity_id) for entity_id in _string_list(
+            room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
+        ))
+    if not isinstance(raw_contacts, (list, tuple)):
+        return ()
+    contacts: list[WindowContact] = []
+    for raw_contact in raw_contacts:
+        if not isinstance(raw_contact, Mapping):
+            continue
+        entity_id = _string_or_none(raw_contact.get(CONF_WINDOW_CONTACT_ENTITY_ID))
+        if entity_id is None:
+            continue
+        contacts.append(WindowContact(
+            entity_id,
+            bool(raw_contact.get(CONF_WINDOW_CONTACT_INVERT, False)),
+        ))
+    return tuple(contacts)
 
 
 def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
@@ -645,11 +696,11 @@ def build_decision_snapshot(
                 trend = Observation((co2.value - first_value) * 3600 / seconds, "ppm/h", co2.observed_at, now, co2_id)
             else:
                 trend = Observation(None, "ppm/h", co2.observed_at, now, co2_id, availability=Availability.AWAITING_SOURCE)
-        contacts = [state_to_bool(state_getter(entity)) for entity in room.window_sensor_entity_ids]
+        contacts = [normalize_window_contact_state(state_getter(contact.entity_id), contact.invert) for contact in room.window_contacts]
         window = None
         if contacts:
-            value = True if any(item is True for item in contacts) else (False if all(item is False for item in contacts) else None)
-            window = Observation(value, "", now, now, ",".join(room.window_sensor_entity_ids), availability=Availability.AVAILABLE if value is not None else Availability.MISSING)
+            value = aggregate_window_contact_states(contacts)
+            window = Observation(value, "", now, now, ",".join(room.configured_window_entity_ids), availability=Availability.AVAILABLE if value is not None else Availability.MISSING)
         surface = _optional_temperature_observation(room.surface_temperature_entity_id, state_getter, now)
         physical = tuple(
             (name, value)
@@ -893,7 +944,54 @@ def build_room_profiles(
 WINDOW_STATE_NOT_CONFIGURED = "not_configured"
 WINDOW_STATE_OPEN = "open"
 WINDOW_STATE_CLOSED = "closed"
-WINDOW_STATE_UNAVAILABLE = "unavailable"
+WINDOW_STATE_UNKNOWN = "unknown"
+WINDOW_STATE_UNAVAILABLE = WINDOW_STATE_UNKNOWN
+
+
+def normalize_window_contact_state(state: Any | None, invert: bool = False) -> bool | None:
+    """Normalize a binary contact using Home Assistant on/off semantics."""
+
+    raw_state = getattr(state, "state", None)
+    if raw_state == "on":
+        value = True
+    elif raw_state == "off":
+        value = False
+    else:
+        return None
+    return not value if invert else value
+
+
+def aggregate_window_contact_states(states: list[bool | None] | tuple[bool | None, ...]) -> bool | None:
+    """Aggregate contacts: open wins, closed requires every contact closed."""
+
+    if any(state is True for state in states):
+        return True
+    if states and all(state is False for state in states):
+        return False
+    return None
+
+
+def room_window_contact_diagnostics(
+    room: RoomConfig,
+    state_getter: Callable[[str], Any],
+) -> tuple[dict[str, object], ...]:
+    """Return normalized, non-sensitive diagnostics for each configured contact."""
+
+    diagnostics = []
+    for contact in room.window_contacts:
+        value = normalize_window_contact_state(
+            state_getter(contact.entity_id), contact.invert
+        )
+        diagnostics.append({
+            "entity_id": contact.entity_id,
+            "invert": contact.invert,
+            "state": (
+                WINDOW_STATE_OPEN
+                if value is True
+                else WINDOW_STATE_CLOSED if value is False else WINDOW_STATE_UNKNOWN
+            ),
+        })
+    return tuple(diagnostics)
 
 
 def room_window_states(
@@ -902,26 +1000,24 @@ def room_window_states(
 ) -> dict[str, str]:
     """Aggregate each room's optional contact sensors without scoring them."""
 
-    return {
-        room.room_id or room.name: room_window_state(room, state_getter)
-        for room in config.rooms
-    }
+    return {room.room_id or room.name: room_window_state(room, state_getter) for room in config.rooms}
 
 
 def room_window_state(room: RoomConfig, state_getter: Callable[[str], Any]) -> str:
     """Return open when any contact is open, closed only when all are closed."""
 
-    if not room.window_sensor_entity_ids:
+    if not room.window_contacts:
         return WINDOW_STATE_NOT_CONFIGURED
     states = [
-        state_to_bool(state_getter(entity_id))
-        for entity_id in room.window_sensor_entity_ids
+        normalize_window_contact_state(state_getter(contact.entity_id), contact.invert)
+        for contact in room.window_contacts
     ]
-    if any(state is True for state in states):
+    aggregate = aggregate_window_contact_states(states)
+    if aggregate is True:
         return WINDOW_STATE_OPEN
-    if all(state is False for state in states):
+    if aggregate is False:
         return WINDOW_STATE_CLOSED
-    return WINDOW_STATE_UNAVAILABLE
+    return WINDOW_STATE_UNKNOWN
 
 
 def gate_room_recommendations(

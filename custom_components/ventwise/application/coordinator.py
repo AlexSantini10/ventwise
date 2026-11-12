@@ -42,6 +42,7 @@ from .runtime import (
     load_runtime_state,
     is_quiet_hours_active,
     room_window_states,
+    room_window_contact_diagnostics,
 )
 from .notification import (
     async_dismiss_persistent_notification,
@@ -441,6 +442,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         outdoor_temperature = decision_snapshot.outdoor.temperature_c.value
         outdoor_humidity = decision_snapshot.outdoor.humidity_percent.value
         window_states = room_window_states(self._config, self.hass.states.get)
+        window_contact_states = {
+            room.room_id or room.name: room_window_contact_diagnostics(room, self.hass.states.get)
+            for room in self._config.rooms
+        }
         notification_entity_ids = (
             notification_entity_ids_for_device_ids(
                 self.hass,
@@ -759,6 +764,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             stable_for_seconds=stable_for_seconds,
             last_updated=now,
             window_states=window_states,
+            window_contact_states=window_contact_states,
             decision=decision,
             error_category=self._error_category,
             error_message=self._error_message,
@@ -1355,7 +1361,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 co2_entity_id = room.co2_entity_id or self._config.co2_entity_id
                 if co2_entity_id:
                     entity_ids.add(co2_entity_id)
-            entity_ids.update(room.window_sensor_entity_ids)
+            entity_ids.update(room.configured_window_entity_ids)
             if room.surface_temperature_entity_id:
                 entity_ids.add(room.surface_temperature_entity_id)
         return sorted(entity_ids)

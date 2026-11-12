@@ -39,7 +39,7 @@ def _entry(*, version: int, data: dict[str, object], options: dict[str, object])
 
 
 def test_config_flow_version_matches_migration_target() -> None:
-    assert VentWiseConfigFlow.VERSION == 5
+    assert VentWiseConfigFlow.VERSION == 6
 
 
 def test_migration_preserves_settings_and_notification_devices() -> None:
@@ -58,7 +58,7 @@ def test_migration_preserves_settings_and_notification_devices() -> None:
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 5
+    assert entry.version == 6
     assert entry.data == {
         "target_temperature_c": 21.0,
         CONF_NOTIFICATION_DEVICE_ID: ["device-alice", "device-bob"],
@@ -79,7 +79,7 @@ def test_migration_removes_retired_smoke_setting_and_preserves_other_data() -> N
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 5
+    assert entry.version == 6
     assert entry.data == {"unknown_data": "kept"}
     assert entry.options == {
         "unknown_option": True,
@@ -91,7 +91,7 @@ def test_migration_removes_retired_smoke_setting_and_preserves_other_data() -> N
 
 def test_migration_is_idempotent_for_current_entry() -> None:
     hass = SimpleNamespace(config_entries=_FakeConfigEntries())
-    entry = _entry(version=5, data={"kept": True}, options={"also_kept": True})
+    entry = _entry(version=6, data={"kept": True}, options={"also_kept": True})
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
     assert hass.config_entries.updates == []
@@ -99,7 +99,7 @@ def test_migration_is_idempotent_for_current_entry() -> None:
 
 def test_migration_rejects_a_future_entry_version(caplog: pytest.LogCaptureFixture) -> None:
     hass = SimpleNamespace(config_entries=_FakeConfigEntries())
-    entry = _entry(version=6, data={}, options={})
+    entry = _entry(version=7, data={}, options={})
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is False
     assert hass.config_entries.updates == []
@@ -117,7 +117,7 @@ def test_migration_keeps_current_runtime_state_and_unknown_option_data() -> None
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 5
+    assert entry.version == 6
     assert entry.data == {"legacy_data": "kept"}
     assert entry.options[CONF_RUNTIME_STATE] == {"future_marker": "kept"}
     assert entry.options["future_option"] is True
@@ -132,6 +132,33 @@ def test_migration_removes_retired_room_inputs_from_data_and_options() -> None:
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 5
+    assert entry.version == 6
     assert entry.data["rooms"] == [{"name": "Study", "kept": True}]
     assert entry.options["rooms"] == [{"name": "Bedroom", "unknown": "kept"}]
+
+
+def test_migration_converts_legacy_window_contacts_without_inversion() -> None:
+    hass = SimpleNamespace(config_entries=_FakeConfigEntries())
+    entry = _entry(
+        version=5,
+        data={
+            "rooms": [{
+                "name": "Study",
+                "window_sensor_entity_ids": [
+                    "binary_sensor.left",
+                    "binary_sensor.right",
+                ],
+                "temperature_entity_id": "sensor.study",
+            }]
+        },
+        options={},
+    )
+
+    assert asyncio.run(async_migrate_entry(hass, entry)) is True
+    room = entry.data["rooms"][0]
+    assert room["window_contacts"] == [
+        {"entity_id": "binary_sensor.left", "invert": False},
+        {"entity_id": "binary_sensor.right", "invert": False},
+    ]
+    assert "window_sensor_entity_ids" not in room
+    assert room["temperature_entity_id"] == "sensor.study"

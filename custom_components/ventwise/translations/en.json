@@ -197,6 +197,7 @@
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
           "window_sensor_entity_ids": "Window contacts",
+          "window_contacts": "Window contact configuration",
           "start_entity_id": "Open windows automation",
           "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
@@ -930,13 +931,19 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
-          "window_sensor_entity_ids": "Window contacts"
+          "window_sensor_entity_ids": "Window contacts",
+          "window_contacts": "Window contact configuration",
+          "window_contact_entity_id": "Contact entity",
+          "window_contact_invert": "Invert contact signal"
         },
         "data_description": {
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "window_sensor_entity_ids": "Configure window sensor entity ids."
+          "window_sensor_entity_ids": "Configure window sensor entity ids.",
+          "window_contacts": "Configure each contact entity and whether its signal is inverted.",
+          "window_contact_entity_id": "Select the binary sensor for this contact.",
+          "window_contact_invert": "Enable when on means closed and off means open."
         }
       },
       "edit_room_advanced": {

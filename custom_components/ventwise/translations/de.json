@@ -197,6 +197,7 @@
           "target_humidity_percent_override_enabled": "Aktivieren Sie die Übersteuerung der Raumfeuchtigkeit",
           "humidity_entity_id": "Innenfeuchtigkeitssensor",
           "window_sensor_entity_ids": "Fensterkontakte",
+          "window_contacts": "Konfiguration der Fensterkontakte",
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
@@ -930,13 +931,19 @@
           "name": "Raumname",
           "temperature_entity_id": "Innentemperatursensor",
           "humidity_entity_id": "Innenfeuchtigkeitssensor",
-          "window_sensor_entity_ids": "Fensterkontakte"
+          "window_sensor_entity_ids": "Fensterkontakte",
+          "window_contacts": "Konfiguration der Fensterkontakte",
+          "window_contact_entity_id": "Kontakt-Entität",
+          "window_contact_invert": "Kontaktsignal invertieren"
         },
         "data_description": {
           "name": "Ein freundlicher Name für diesen Raum, z. B. Schlafzimmer, Arbeitszimmer oder Büro.",
           "temperature_entity_id": "Wählen Sie den Raumtemperatursensor.",
           "humidity_entity_id": "Optional. Wählen Sie den Raumfeuchtigkeitssensor.",
-          "window_sensor_entity_ids": "Entitäten der Fensterkontakte konfigurieren."
+          "window_sensor_entity_ids": "Entitäten der Fensterkontakte konfigurieren.",
+          "window_contacts": "Konfigurieren Sie jeden Kontakt und ob sein Signal invertiert ist.",
+          "window_contact_entity_id": "Wählen Sie den Binärsensor für diesen Kontakt.",
+          "window_contact_invert": "Aktivieren, wenn on geschlossen und off geöffnet bedeutet."
         }
       },
       "edit_room_advanced": {

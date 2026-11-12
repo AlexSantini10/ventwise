@@ -25,6 +25,7 @@ from custom_components.ventwise.const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+    CONF_ROOM_WINDOW_CONTACTS,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_TEMPERATURE_C,
 )
@@ -38,6 +39,8 @@ from custom_components.ventwise.application.runtime import (
     load_runtime_state,
     room_target_temperature_c,
     room_window_states,
+    normalize_window_contact_state,
+    aggregate_window_contact_states,
     gate_room_recommendations,
     state_to_bool,
     state_to_float,
@@ -73,6 +76,28 @@ def test_state_helpers_parse_values() -> None:
     assert state_to_bool(SimpleNamespace(state="off")) is False
     assert state_to_bool(SimpleNamespace(state="1")) is True
     assert state_to_bool(SimpleNamespace(state="0")) is False
+
+
+def test_window_contact_semantics_are_strict_and_deterministic() -> None:
+    assert normalize_window_contact_state(SimpleNamespace(state="on")) is True
+    assert normalize_window_contact_state(SimpleNamespace(state="off"), invert=True) is True
+    assert normalize_window_contact_state(SimpleNamespace(state="open")) is None
+    assert aggregate_window_contact_states([False, None]) is None
+    assert aggregate_window_contact_states([False, False]) is False
+    assert aggregate_window_contact_states([None, True, False]) is True
+
+
+def test_configured_window_contacts_replace_legacy_rows_and_reject_duplicates() -> None:
+    config = build_integration_config({CONF_ROOMS: [{
+        CONF_ROOM_NAME: "Study",
+        CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.study",
+        CONF_ROOM_WINDOW_CONTACTS: [
+            {"entity_id": "binary_sensor.left", "invert": True},
+        ],
+        CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: ["binary_sensor.legacy"],
+    }]})
+    assert config.rooms[0].configured_window_entity_ids == ("binary_sensor.left",)
+    assert config.rooms[0].window_contacts[0].invert is True
 
 
 def test_decision_snapshot_preserves_sources_and_requires_co2_history() -> None:
@@ -400,7 +425,7 @@ def test_room_window_states_report_unavailable_when_no_contact_is_open() -> None
         "binary_sensor.living_right": SimpleNamespace(state="unavailable"),
     }
 
-    assert room_window_states(config, states.get) == {"Living room": "unavailable"}
+    assert room_window_states(config, states.get) == {"Living room": "unknown"}
 
 
 def test_window_states_gate_only_advice_already_satisfied_by_a_contact() -> None:

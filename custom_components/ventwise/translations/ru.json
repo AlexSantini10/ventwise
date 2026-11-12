@@ -197,6 +197,7 @@
           "target_humidity_percent_override_enabled": "Задать свою комфортную влажность для комнаты",
           "humidity_entity_id": "Датчик влажности в помещении",
           "window_sensor_entity_ids": "Датчики окон",
+          "window_contacts": "Настройка датчиков окон",
           "start_entity_id": "Автоматизация для открытия окон",
           "stop_entity_id": "Автоматизация для закрытия окон",
           "action_change_hold_minutes": "Задержка смены рекомендации (минуты)",
@@ -930,13 +931,19 @@
           "name": "Название комнаты",
           "temperature_entity_id": "Датчик температуры в помещении",
           "humidity_entity_id": "Датчик влажности в помещении",
-          "window_sensor_entity_ids": "Датчики открытия окон"
+          "window_sensor_entity_ids": "Датчики открытия окон",
+          "window_contacts": "Настройка датчиков окон",
+          "window_contact_entity_id": "Объект датчика",
+          "window_contact_invert": "Инвертировать сигнал датчика"
         },
         "data_description": {
           "name": "Понятное название комнаты, например «Спальня» или «Кабинет».",
           "temperature_entity_id": "Выберите датчик температуры комнаты.",
           "humidity_entity_id": "Необязательно. Выберите датчик влажности комнаты.",
-          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон."
+          "window_sensor_entity_ids": "Настройте идентификаторы объектов датчиков окон.",
+          "window_contacts": "Настройте каждый датчик и укажите, инвертирован ли его сигнал.",
+          "window_contact_entity_id": "Выберите бинарный датчик для этого контакта.",
+          "window_contact_invert": "Включите, если on означает закрыто, а off — открыто."
         }
       },
       "edit_room_advanced": {

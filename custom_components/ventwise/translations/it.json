@@ -197,6 +197,7 @@
           "target_humidity_percent_override_enabled": "Abilita override umidità stanza",
           "humidity_entity_id": "Sensore umidità interna",
           "window_sensor_entity_ids": "Contatti finestre",
+          "window_contacts": "Configurazione dei contatti delle finestre",
           "start_entity_id": "Automazione apertura finestre",
           "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
@@ -930,13 +931,19 @@
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
-          "window_sensor_entity_ids": "Contatti delle finestre"
+          "window_sensor_entity_ids": "Contatti delle finestre",
+          "window_contacts": "Configurazione dei contatti delle finestre",
+          "window_contact_entity_id": "Entità del contatto",
+          "window_contact_invert": "Inverti segnale del contatto"
         },
         "data_description": {
           "name": "Un nome descrittivo per la stanza, come Camera, Studio o Ufficio.",
           "temperature_entity_id": "Scegli il sensore di temperatura della stanza.",
           "humidity_entity_id": "Facoltativo. Scegli il sensore di umidità della stanza.",
-          "window_sensor_entity_ids": "Configura gli ID delle entità dei sensori delle finestre."
+          "window_sensor_entity_ids": "Configura gli ID delle entità dei sensori delle finestre.",
+          "window_contacts": "Configura ogni contatto e indica se il suo segnale è invertito.",
+          "window_contact_entity_id": "Seleziona il sensore binario del contatto.",
+          "window_contact_invert": "Attiva quando on significa chiuso e off significa aperto."
         }
       },
       "edit_room_advanced": {

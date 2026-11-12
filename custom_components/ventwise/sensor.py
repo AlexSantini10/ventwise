@@ -344,6 +344,17 @@ class RoomWindowStateSensor(VentWiseRoomEntity, SensorEntity):
             WINDOW_STATE_NOT_CONFIGURED,
         )
 
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        """Expose normalized contact readings and configured polarity."""
+
+        return {
+            "aggregate_state": self.native_value,
+            "contacts": list(self.coordinator.data.window_contact_states.get(
+                self.room.room_id or self.room.name, ()
+            )),
+        }
+
 
 class RoomWeatherConditionSensor(VentWiseRoomEntity, SensorEntity):
     """Current weather condition shown on a room device."""

@@ -197,6 +197,7 @@
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "humidity_entity_id": "室内湿度传感器",
           "window_sensor_entity_ids": "窗户传感器",
+          "window_contacts": "窗户接触传感器配置",
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
@@ -930,13 +931,19 @@
           "name": "房间名称",
           "temperature_entity_id": "室内温度传感器",
           "humidity_entity_id": "室内湿度传感器",
-          "window_sensor_entity_ids": "窗户接触传感器"
+          "window_sensor_entity_ids": "窗户接触传感器",
+          "window_contacts": "窗户接触传感器配置",
+          "window_contact_entity_id": "接触传感器实体",
+          "window_contact_invert": "反转接触信号"
         },
         "data_description": {
           "name": "为房间取一个易识别的名称，例如卧室、书房或办公室。",
           "temperature_entity_id": "选择房间温度传感器。",
           "humidity_entity_id": "可选。选择房间湿度传感器。",
-          "window_sensor_entity_ids": "配置窗户传感器实体 ID。"
+          "window_sensor_entity_ids": "配置窗户传感器实体 ID。",
+          "window_contacts": "配置每个传感器实体以及是否反转其信号。",
+          "window_contact_entity_id": "选择此接触的二进制传感器。",
+          "window_contact_invert": "当 on 表示关闭、off 表示打开时启用。"
         }
       },
       "edit_room_advanced": {

@@ -19,6 +19,22 @@ claim regulatory compliance. CO2, humidity, temperature, pollution, and pollen
 values are decision signals, not medical conclusions. A recommendation must
 always be checked against actual conditions.
 
+## Window contact semantics
+
+Rooms persist ordered `window_contacts` rows. Each row contains an `entity_id`
+and an `invert` flag. A Home Assistant `on` state is open and `off` is closed;
+when `invert` is true those meanings are swapped. `unknown`, `unavailable`,
+malformed, or missing states remain `unknown`.
+
+The aggregate is `open` when any normalized contact is open, `closed` only when
+all configured contacts are closed, `unknown` when no contact is open but at
+least one is unknown, and `not_configured` when no contacts are configured.
+Only the aggregate is passed to the pure engine: open maps to `window_open=True`,
+closed to `False`, and unknown or not configured to `None`. Contact state is a
+recommendation guardrail and diagnostic; it never changes the core thermal
+decision. Legacy `window_sensor_entity_ids` rows are migrated to non-inverted
+contacts for compatibility.
+
 ## Pipeline and precedence
 
 ```mermaid

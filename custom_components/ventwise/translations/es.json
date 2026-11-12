@@ -197,6 +197,7 @@
           "target_humidity_percent_override_enabled": "Habilitar anulación de humedad ambiental",
           "humidity_entity_id": "Sensor de humedad interior",
           "window_sensor_entity_ids": "Contactos de ventana",
+          "window_contacts": "Configuración de contactos de ventana",
           "start_entity_id": "Automatización de apertura de ventanas",
           "stop_entity_id": "Automatización de cierre de ventanas",
           "action_change_hold_minutes": "Espere antes de revertir el consejo (minutos)",
@@ -930,13 +931,19 @@
           "name": "Nombre de la habitación",
           "temperature_entity_id": "Sensor de temperatura interior",
           "humidity_entity_id": "Sensor de humedad interior",
-          "window_sensor_entity_ids": "Contactos de ventana"
+          "window_sensor_entity_ids": "Contactos de ventana",
+          "window_contacts": "Configuración de contactos de ventana",
+          "window_contact_entity_id": "Entidad del contacto",
+          "window_contact_invert": "Invertir señal del contacto"
         },
         "data_description": {
           "name": "Un nombre descriptivo para la habitación, como Dormitorio, Estudio u Oficina.",
           "temperature_entity_id": "Elige el sensor de temperatura de la habitación.",
           "humidity_entity_id": "Opcional. Elige el sensor de humedad de la habitación.",
-          "window_sensor_entity_ids": "Configura los ID de las entidades de los sensores de ventana."
+          "window_sensor_entity_ids": "Configura los ID de las entidades de los sensores de ventana.",
+          "window_contacts": "Configura cada contacto y si su señal está invertida.",
+          "window_contact_entity_id": "Selecciona el sensor binario de este contacto.",
+          "window_contact_invert": "Activa cuando on significa cerrado y off significa abierto."
         }
       },
       "edit_room_advanced": {

@@ -46,6 +46,9 @@ from ..const import (
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_CO2_UNIT,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+    CONF_ROOM_WINDOW_CONTACTS,
+    CONF_WINDOW_CONTACT_ENTITY_ID,
+    CONF_WINDOW_CONTACT_INVERT,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -700,12 +703,16 @@ def build_room_schema(
             ),
             vol.Required(CONF_ROOM_CO2_UNIT, default=defaults.get(CONF_ROOM_CO2_UNIT, CO2_UNITS[0])): SelectSelector(SelectSelectorConfig(options=list(CO2_UNITS))),
             vol.Optional(
-                CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
-                default=_default_entity_id_list(
-                    defaults.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
-                ),
-            ): EntitySelector(
-                EntitySelectorConfig(domain="binary_sensor", multiple=True)
+                CONF_ROOM_WINDOW_CONTACTS,
+                default=_default_window_contacts(defaults),
+            ): vol.All(
+                cv.ensure_list,
+                [vol.Schema({
+                    vol.Required(CONF_WINDOW_CONTACT_ENTITY_ID): EntitySelector(
+                        EntitySelectorConfig(domain="binary_sensor")
+                    ),
+                    vol.Required(CONF_WINDOW_CONTACT_INVERT, default=False): cv.boolean,
+                })],
             ),
             **_optional_selector_field(
                 CONF_ROOM_START_ENTITY_ID,
@@ -747,7 +754,7 @@ def build_room_schema(
         }
         if section == "base":
             allowed.update({
-                CONF_ROOM_CO2_ENTITY_ID, CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+                CONF_ROOM_CO2_ENTITY_ID, CONF_ROOM_WINDOW_CONTACTS,
                 CONF_ROOM_CO2_UNIT,
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
@@ -764,7 +771,7 @@ def build_room_schema(
         }
         fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
     elif section == "co2_windows":
-        allowed = {CONF_ROOM_CO2_ENTITY_ID, CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS}
+        allowed = {CONF_ROOM_CO2_ENTITY_ID, CONF_ROOM_WINDOW_CONTACTS}
         fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
     elif section == "advanced":
         allowed = {
@@ -1168,11 +1175,8 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         (CONF_ROOM_THERMAL_MASS, 1.0, 1_000_000.0),
     ):
         data[field] = _normalize_optional_float(data.get(field), field, minimum, maximum)
-    data[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] = _normalize_entity_id_list(
-        data.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS),
-        CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
-        domain="binary_sensor",
-    )
+    data[CONF_ROOM_WINDOW_CONTACTS] = _normalize_window_contacts(data)
+    data.pop(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS, None)
     _normalize_optional_entity_ids(
         data,
         CONF_ROOM_START_ENTITY_ID,
@@ -1300,6 +1304,69 @@ def _default_entity_id_list(value: object) -> list[str]:
         return []
     text = str(value).strip()
     return [text] if text else []
+
+
+def _default_window_contacts(defaults: Mapping[str, object]) -> list[dict[str, object]]:
+    """Return normalized form defaults, including legacy contact IDs."""
+
+    contacts = defaults.get(CONF_ROOM_WINDOW_CONTACTS)
+    if contacts is None:
+        return [
+            {CONF_WINDOW_CONTACT_ENTITY_ID: entity_id, CONF_WINDOW_CONTACT_INVERT: False}
+            for entity_id in _default_entity_id_list(
+                defaults.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
+            )
+        ]
+    if not isinstance(contacts, (list, tuple)):
+        return []
+    return [
+        {
+            CONF_WINDOW_CONTACT_ENTITY_ID: str(item.get(CONF_WINDOW_CONTACT_ENTITY_ID, "")).strip(),
+            CONF_WINDOW_CONTACT_INVERT: bool(item.get(CONF_WINDOW_CONTACT_INVERT, False)),
+        }
+        for item in contacts
+        if isinstance(item, Mapping) and str(item.get(CONF_WINDOW_CONTACT_ENTITY_ID, "")).strip()
+    ]
+
+
+def _normalize_window_contacts(data: Mapping[str, object]) -> list[dict[str, object]]:
+    """Validate contact rows and reject duplicate entity IDs."""
+
+    raw_contacts = data.get(CONF_ROOM_WINDOW_CONTACTS)
+    if raw_contacts is None:
+        legacy_ids = _normalize_entity_id_list(
+            data.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS),
+            CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+            domain="binary_sensor",
+        )
+        return [
+            {CONF_WINDOW_CONTACT_ENTITY_ID: entity_id, CONF_WINDOW_CONTACT_INVERT: False}
+            for entity_id in legacy_ids
+        ]
+    if not isinstance(raw_contacts, (list, tuple)):
+        raise ConfigValidationError(CONF_ROOM_WINDOW_CONTACTS)
+    normalized: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for row in raw_contacts:
+        if not isinstance(row, Mapping):
+            raise ConfigValidationError(CONF_ROOM_WINDOW_CONTACTS)
+        entity_id = _normalize_required_entity_id(
+            row.get(CONF_WINDOW_CONTACT_ENTITY_ID),
+            CONF_ROOM_WINDOW_CONTACTS,
+            domain="binary_sensor",
+        )
+        if entity_id in seen:
+            raise ConfigValidationError(CONF_ROOM_WINDOW_CONTACTS, "duplicate_entity")
+        seen.add(entity_id)
+        try:
+            invert = cv.boolean(row.get(CONF_WINDOW_CONTACT_INVERT, False))
+        except vol.Invalid as err:
+            raise ConfigValidationError(CONF_ROOM_WINDOW_CONTACTS) from err
+        normalized.append({
+            CONF_WINDOW_CONTACT_ENTITY_ID: entity_id,
+            CONF_WINDOW_CONTACT_INVERT: invert,
+        })
+    return normalized
 
 
 def _normalize_entity_id_list(

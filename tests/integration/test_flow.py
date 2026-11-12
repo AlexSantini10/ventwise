@@ -722,10 +722,11 @@ def test_normalize_room_config_accepts_multiple_window_contacts() -> None:
         "room",
     )
 
-    assert data[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] == [
-        "binary_sensor.bedroom_window_left",
-        "binary_sensor.bedroom_window_right",
+    assert data["window_contacts"] == [
+        {"entity_id": "binary_sensor.bedroom_window_left", "invert": False},
+        {"entity_id": "binary_sensor.bedroom_window_right", "invert": False},
     ]
+    assert CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS not in data
 
 
 def test_normalize_room_config_rejects_non_binary_window_contacts() -> None:

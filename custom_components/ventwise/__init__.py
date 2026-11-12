@@ -13,6 +13,10 @@ from .const import (
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_STATE,
+    CONF_ROOM_WINDOW_CONTACTS,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+    CONF_WINDOW_CONTACT_ENTITY_ID,
+    CONF_WINDOW_CONTACT_INVERT,
     CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
@@ -24,7 +28,7 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-_CONFIG_ENTRY_VERSION = 5
+_CONFIG_ENTRY_VERSION = 6
 _RETIRED_ROOM_INPUT_KEYS = frozenset({
     "hvac_entity_id",
     "ventilation_entity_id",
@@ -79,6 +83,8 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     migrated_options.pop("smoke_alert_entity_id", None)
     _remove_retired_room_inputs(migrated_data)
     _remove_retired_room_inputs(migrated_options)
+    _migrate_window_contacts(migrated_data)
+    _migrate_window_contacts(migrated_options)
     migrated_options.setdefault(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT)
     migrated_options.setdefault(CONF_WIND_SPEED_UNIT, DEFAULT_WIND_SPEED_UNIT)
     migrated_options.setdefault(
@@ -141,6 +147,39 @@ def _remove_retired_room_inputs(config: dict[str, Any]) -> None:
         cleaned_rooms.append(cleaned)
     if changed:
         config["rooms"] = type(rooms)(cleaned_rooms)
+
+
+def _migrate_window_contacts(config: dict[str, Any]) -> None:
+    """Convert legacy room contact IDs to ordered, non-inverted rows."""
+
+    rooms = config.get("rooms")
+    if not isinstance(rooms, (list, tuple)):
+        return
+    migrated_rooms = []
+    changed = False
+    for room in rooms:
+        if not isinstance(room, Mapping):
+            migrated_rooms.append(room)
+            continue
+        migrated = dict(room)
+        if CONF_ROOM_WINDOW_CONTACTS not in migrated and CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS in migrated:
+            legacy = migrated.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS, [])
+            if isinstance(legacy, (list, tuple)):
+                migrated[CONF_ROOM_WINDOW_CONTACTS] = [
+                    {
+                        CONF_WINDOW_CONTACT_ENTITY_ID: entity_id,
+                        CONF_WINDOW_CONTACT_INVERT: False,
+                    }
+                    for entity_id in legacy
+                    if isinstance(entity_id, str) and entity_id.strip()
+                ]
+                changed = True
+        if CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS in migrated:
+            migrated.pop(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS, None)
+            changed = True
+        migrated_rooms.append(migrated)
+    if changed:
+        config["rooms"] = type(rooms)(migrated_rooms)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
