@@ -300,7 +300,7 @@ def build_recommendation_explanation(
     prefix = f"VentWise · {recommendation.room_name}: " if include_room_name else ""
     if action == "ventilate":
         minutes = getattr(recommendation, "ventilation_duration_minutes", None) or 10
-        return f"{prefix}{_ventilation_reason(language, minutes)}"
+        return f"{prefix}{_ventilation_reason(language, minutes, getattr(recommendation, 'reason_code', None))}"
     if action == "open":
         if getattr(recommendation, "reason_code", None) == "forecast":
             return f"{prefix}{texts.get('forecast_reason', _NOTIFICATION_TEXTS['en']['forecast_reason'])}"
@@ -541,12 +541,22 @@ def _safe_identifier(value: str, fallback: str) -> str:
     return re.sub(r"[^a-z0-9_-]+", "_", value.lower()).strip("_") or fallback
 
 
-def _ventilation_reason(language: str | None, minutes: int) -> str:
+def _ventilation_reason(language: str | None, minutes: int, reason_code: str | None = None) -> str:
     """Return the localized bounded-duration ventilation guidance."""
 
+    suffix = {
+        "moisture_drying": {
+            "en": "Indoor air is moister than outside. Ventilate for about {minutes} minutes, then close and check again.",
+            "it": "L'aria interna è più umida di quella esterna. Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
+        },
+        "moisture_humidifying": {
+            "en": "Indoor air is drier than outside. Ventilate for about {minutes} minutes, then close and check again.",
+            "it": "L'aria interna è più secca di quella esterna. Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
+        },
+    }.get(reason_code or "", {})
     templates = {
-        "en": "Ventilate for about {minutes} minutes, then close and check again.",
-        "it": "Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
+        "en": suffix.get("en", "Ventilate for about {minutes} minutes, then close and check again."),
+        "it": suffix.get("it", "Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla."),
         "es": "Ventila durante unos {minutes} minutos, luego cierra y vuelve a comprobarlo.",
         "ru": "Проветривайте около {minutes} минут, затем закройте и проверьте снова.",
         "zh-hans": "通风约 {minutes} 分钟，然后关闭并再次检查。",

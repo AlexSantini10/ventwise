@@ -13,6 +13,7 @@ from ventwise_core import (
     DecisionSnapshot,
     Observation,
     RecommendationAction,
+    absolute_humidity_g_m3,
 )
 
 
@@ -114,3 +115,27 @@ def test_engine_has_no_wall_clock_dependency():
     assert all("2026-" not in item.detail for item in result.trace)
 
 
+def test_absolute_humidity_uses_magnus_equation() -> None:
+    assert absolute_humidity_g_m3(20.0, 50.0) == pytest.approx(8.65, abs=0.05)
+
+
+def test_moisture_only_drying_recommends_ten_minute_ventilation() -> None:
+    data = snapshot(indoor=22.0, outdoor=22.0)
+    room = DecisionRoom("room", "Room", obs(22.0, "°C"), obs(70.0, "%"))
+    outdoor = DecisionOutdoor(obs(22.0, "°C"), obs(40.0, "%"), weather_condition=obs("clear"))
+    result = DecisionEngine().evaluate(DecisionSnapshot((room,), outdoor, NOW)).room_results[0]
+
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.reason_code == "moisture_drying"
+    assert result.moisture_delta_g_m3 is not None and result.moisture_delta_g_m3 >= 1.0
+    assert any(item.code == "moisture.direction" and item.detail == "drying" for item in result.trace)
+
+
+def test_missing_humidity_preserves_temperature_recommendation() -> None:
+    data = snapshot()
+    room = DecisionRoom("room", "Room", obs(28.0, "°C"), None)
+    result = DecisionEngine().evaluate(DecisionSnapshot((room,), data.outdoor, NOW)).room_results[0]
+
+    assert result.core_action is RecommendationAction.OPEN
+    assert result.moisture_delta_g_m3 is None
+    assert "indoor.humidity.missing" in result.data_quality.diagnostics

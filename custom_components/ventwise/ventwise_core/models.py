@@ -140,6 +140,11 @@ class DecisionResult:
     indoor_perceived_c: float = 0.0
     outdoor_perceived_c: float = 0.0
     suggested_comfort_temperature_c: float = 0.0
+    indoor_absolute_humidity_g_m3: float | None = None
+    outdoor_absolute_humidity_g_m3: float | None = None
+    moisture_delta_g_m3: float | None = None
+    moisture_direction: str | None = None
+    moisture_reason_code: str | None = None
     trace: Tuple[TraceEntry, ...] = ()
     data_quality: DataQualitySummary = field(default_factory=DataQualitySummary)
     delivery_suppressed_by: str | None = None
@@ -175,6 +180,8 @@ class DecisionConfig:
     wind_preference_m_s: float = 4.0
     wind_block_m_s: float = 12.0
     gust_block_m_s: float = 15.0
+    minimum_moisture_delta_g_m3: float = 1.0
+    moisture_rh_boundary_percent: float = 10.0
     severe_weather_tokens: Tuple[str, ...] = (
         "thunder", "lightning", "storm", "hail", "tornado", "hurricane",
         "blizzard", "squall", "freezing", "icy", "ice",
@@ -319,6 +326,11 @@ class RoomRecommendation:
     ventilation_duration_minutes: int | None = None
     indoor_comfort_severity: float = 0.0
     outdoor_comfort_severity: float = 0.0
+    indoor_absolute_humidity_g_m3: float | None = None
+    outdoor_absolute_humidity_g_m3: float | None = None
+    moisture_delta_g_m3: float | None = None
+    moisture_direction: str | None = None
+    moisture_reason_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

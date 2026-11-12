@@ -17,11 +17,22 @@ engine receives `evaluated_at` in the snapshot and therefore never reads the
 wall clock. It has no Home Assistant or network dependency and does not mutate
 delivery state.
 
-The first pipeline increment preserves the existing thermal recommendation
-actions (`open`, `ventilate`, `close`, and `none`) and current configuration
-compatibility. Advanced CO2, absolute-humidity, particulate, pollen, forecast,
-and contact semantics are introduced by their sequenced DDP issues rather than
-being silently inferred here.
+Validated humidity readings are also used for moisture reasoning. Absolute
+humidity is calculated with the Magnus equation (`a=17.62`, `b=243.12`) and
+expressed in g/m³. The moisture delta is indoor minus outdoor absolute
+humidity: positive values indicate drying potential and negative values indicate
+humidifying potential. Moisture-only ventilation requires a meaningful delta of
+at least 1.0 g/m³ plus a 10 percentage-point indoor RH boundary from the target.
+It produces an advisory `VENTILATE` recommendation for 10 minutes.
+
+Precedence remains: invalid or unavailable critical data; severe weather or
+unsafe wind; thermal safety/comfort; moisture-only ventilation when thermal
+conditions are neutral; and no recommendation for insignificant moisture
+difference. Missing or invalid humidity omits moisture scoring without
+inventing a fallback value or removing a valid thermal recommendation.
+
+The pipeline preserves the existing thermal recommendation actions (`open`,
+`ventilate`, `close`, and `none`) and current configuration compatibility.
 
 Operational suppression is represented separately from core truth. Quiet
 hours, cooldown, and stability can suppress delivery while leaving the core

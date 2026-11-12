@@ -5,6 +5,17 @@ The active implementation is the deterministic pipeline documented in
 user-facing comfort assumptions that the pipeline preserves; it is not an
 independent runtime algorithm.
 
+## Moisture scoring
+
+The pipeline derives absolute humidity from validated readings:
+
+`AH = (RH / 100) * 6.112 * exp((17.62 * T) / (243.12 + T)) * 216.7 / (T + 273.15)`
+
+where `T` is °C and `RH` is percent. `indoor AH - outdoor AH` identifies
+drying or humidifying potential. The default meaningful threshold is 1.0 g/m³,
+with a 10-point indoor RH boundary around the configured comfort target. The
+result is an advisory 10-minute `VENTILATE`; it never actuates a window.
+
 ## Goal
 
 The score should represent how much opening or closing windows improves

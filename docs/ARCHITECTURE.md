@@ -22,6 +22,7 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 - Independent from Home Assistant APIs.
 - Receives one immutable, normalized decision snapshot.
 - Evaluates thermal comfort and safety deterministically.
+- Computes moisture-aware recommendations from canonical absolute humidity.
 - Returns per-room and aggregate recommendations with stable traces.
 - Does not read Home Assistant, access the network, read the clock, or own
   notification/delivery state.

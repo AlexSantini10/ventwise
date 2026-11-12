@@ -424,6 +424,14 @@ def decision_to_summary(
                 open_score=room_result.candidate_scores.open,
                 close_score=room_result.candidate_scores.close,
                 reason_code=room_result.reason_code,
+                ventilation_duration_minutes=(
+                    10 if room_result.core_action is RecommendationAction.VENTILATE else None
+                ),
+                indoor_absolute_humidity_g_m3=room_result.indoor_absolute_humidity_g_m3,
+                outdoor_absolute_humidity_g_m3=room_result.outdoor_absolute_humidity_g_m3,
+                moisture_delta_g_m3=room_result.moisture_delta_g_m3,
+                moisture_direction=room_result.moisture_direction,
+                moisture_reason_code=room_result.moisture_reason_code,
                 indoor_comfort_severity=abs(
                     room_result.indoor_perceived_c - room_result.target_perceived_c
                 ),

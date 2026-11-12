@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from math import isfinite
+from math import exp, isfinite
 
 from .models import (
     AggregateDecisionResult,
@@ -39,6 +39,13 @@ def suggested_comfort_temperature(target_temperature_c: float, outdoor_perceived
 
     adjustment = max(-2.0, min(2.0, (outdoor_perceived_c - 20.0) * 0.25))
     return round(max(18.0, min(26.0, target_temperature_c + adjustment)), 1)
+
+
+def absolute_humidity_g_m3(temperature_c: float, relative_humidity_percent: float) -> float:
+    """Return absolute humidity using the Magnus saturation-vapour formula."""
+
+    saturation_hpa = 6.112 * exp((17.62 * temperature_c) / (243.12 + temperature_c))
+    return (relative_humidity_percent / 100.0) * saturation_hpa * 216.7 / (temperature_c + 273.15)
 
 
 class DecisionEngine:
@@ -146,12 +153,40 @@ class DecisionEngine:
         else:
             scores = CandidateScores(open_score, ventilate_score, close_score)
             core, reason = self._select(scores)
+        moisture_reason: str | None = None
+        indoor_absolute: float | None = None
+        outdoor_absolute: float | None = None
+        moisture_delta: float | None = None
+        moisture_direction: str | None = None
+        if indoor_h is not None and outdoor_h is not None:
+            indoor_absolute = absolute_humidity_g_m3(float(indoor_t), float(indoor_h))
+            outdoor_absolute = absolute_humidity_g_m3(float(outdoor_t), float(outdoor_h))
+            moisture_delta = indoor_absolute - outdoor_absolute
+            rh_boundary = float(indoor_h) - target_humidity
+            if abs(moisture_delta) >= self.config.minimum_moisture_delta_g_m3:
+                if moisture_delta >= self.config.minimum_moisture_delta_g_m3 and rh_boundary >= self.config.moisture_rh_boundary_percent:
+                    moisture_reason = "moisture_drying"
+                    if core is RecommendationAction.NONE:
+                        ventilate_score = max(0.6, min(1.0, abs(moisture_delta) / 5.0))
+                        core, reason = RecommendationAction.VENTILATE, moisture_reason
+                elif moisture_delta <= -self.config.minimum_moisture_delta_g_m3 and rh_boundary <= -self.config.moisture_rh_boundary_percent:
+                    moisture_reason = "moisture_humidifying"
+                    if core is RecommendationAction.NONE:
+                        ventilate_score = max(0.6, min(1.0, abs(moisture_delta) / 5.0))
+                        core, reason = RecommendationAction.VENTILATE, moisture_reason
+            trace.extend((
+                TraceEntry("moisture.indoor_absolute_humidity", f"{indoor_absolute:.6f}"),
+                TraceEntry("moisture.outdoor_absolute_humidity", f"{outdoor_absolute:.6f}"),
+                TraceEntry("moisture.delta", f"{moisture_delta:.6f}"),
+                TraceEntry("moisture.direction", "drying" if moisture_delta > 0 else "humidifying" if moisture_delta < 0 else "equal"),
+                TraceEntry(f"moisture.reason.{moisture_reason}" if moisture_reason else "moisture.insignificant"),
+            ))
         scores = CandidateScores(round(open_score, 6), round(ventilate_score, 6), round(close_score, 6))
         trace.extend((TraceEntry("score.open", f"{scores.open:.6f}"), TraceEntry("score.close", f"{scores.close:.6f}"), TraceEntry(f"selection.{reason}")))
         delivered, suppressed = self._delivery(core, snapshot.context)
         if suppressed:
             trace.append(TraceEntry("delivery.suppressed", suppressed))
-        return self._result(room, core, delivered, scores, max(scores.open, scores.close, scores.ventilate), reason, trace, quality(), target_perceived, indoor, outdoor, suggested, suppressed=suppressed)
+        return self._result(room, core, delivered, scores, max(scores.open, scores.close, scores.ventilate), reason, trace, quality(), target_perceived, indoor, outdoor, suggested, suppressed=suppressed, indoor_absolute=indoor_absolute, outdoor_absolute=outdoor_absolute, moisture_delta=moisture_delta, moisture_direction=moisture_direction, moisture_reason=moisture_reason)
 
     def _select(self, scores: CandidateScores) -> tuple[RecommendationAction, str]:
         ranked = sorted(((scores.open, RecommendationAction.OPEN), (scores.ventilate, RecommendationAction.VENTILATE), (scores.close, RecommendationAction.CLOSE)), key=lambda item: (-item[0], item[1].value))
@@ -172,9 +207,9 @@ class DecisionEngine:
             return RecommendationAction.NONE, "stability"
         return action, None
 
-    def _result(self, room, core, delivered, scores, confidence, reason, trace, quality, target=0.0, indoor=0.0, outdoor=0.0, suggested=0.0, suppressed=None):
+    def _result(self, room, core, delivered, scores, confidence, reason, trace, quality, target=0.0, indoor=0.0, outdoor=0.0, suggested=0.0, suppressed=None, indoor_absolute=None, outdoor_absolute=None, moisture_delta=None, moisture_direction=None, moisture_reason=None):
         score = max(scores.open, scores.ventilate, scores.close)
-        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(score, 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed)
+        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(score, 6), reason, target, indoor, outdoor, suggested, indoor_absolute, outdoor_absolute, moisture_delta, moisture_direction, moisture_reason, tuple(trace), quality, suppressed)
 
     @staticmethod
     def _usable(observation, name, snapshot, freshness, used, discarded, awaiting, diagnostics, optional=False, kind=None):

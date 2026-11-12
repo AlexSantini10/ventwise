@@ -25,7 +25,7 @@ from .models import (
     Validity,
     Observation,
 )
-from .decision import DecisionEngine, perceived_temperature, suggested_comfort_temperature
+from .decision import DecisionEngine, absolute_humidity_g_m3, perceived_temperature, suggested_comfort_temperature
 from .scoring import ComfortRecommender
 
 __all__ = [
@@ -41,6 +41,7 @@ __all__ = [
     "SeasonMode",
     "ScoringConfig",
     "perceived_temperature",
+    "absolute_humidity_g_m3",
     "suggested_comfort_temperature",
     "AggregateDecisionResult",
     "Availability",
