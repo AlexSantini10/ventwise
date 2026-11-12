@@ -948,7 +948,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             marker.signature != self._notification_identity(recommendation)
             or marker.reason is None
             or marker.severity is None
-            or marker.reason != recommendation.reason_code
         ):
             return True
         return (
