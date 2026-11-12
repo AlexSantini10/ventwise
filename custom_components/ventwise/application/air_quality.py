@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import logging
 from typing import Any, Mapping
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -18,6 +19,11 @@ from ..ventwise_core import Observation
 
 _URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 _ATTRIBUTION = "Open-Meteo / CAMS"
+_LOGGER = logging.getLogger(__name__)
+
+
+class ProviderUnavailableError(RuntimeError):
+    """An optional provider could not produce a usable response."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,8 +55,14 @@ async def async_fetch_open_meteo_exposure(hass, now: datetime) -> Mapping[str, P
         async with session.get(_URL, params=params, timeout=10) as response:
             response.raise_for_status()
             payload = await response.json()
-    except Exception:  # Provider data is always optional and must fail silent.
-        return {}
+    except Exception as err:
+        # This is an expected optional-source failure: keep the decision engine
+        # fail-closed, but provide a visible classified state to the coordinator.
+        _LOGGER.warning("VentWise optional air-quality provider is unavailable: %s", type(err).__name__)
+        raise ProviderUnavailableError from None
+    if not isinstance(payload, dict):
+        _LOGGER.warning("VentWise optional air-quality provider returned invalid data")
+        raise ProviderUnavailableError
     current = payload.get("current") or {}
     units = payload.get("current_units") or {}
     observed_at = _parse_time(current.get("time")) or now

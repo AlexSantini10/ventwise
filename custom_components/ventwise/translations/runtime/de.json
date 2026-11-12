@@ -24,7 +24,9 @@
     "no_enabled_rooms": {
       "title": "VentWise benötigt einen aktivierten Raum",
       "message": "Es sind keine aktivierten Räume konfiguriert."
-    }
+    },
+    "provider_unavailable": {"title": "VentWise-Provider nicht verfügbar", "message": "Optionale Luftqualitätsdaten sind vorübergehend nicht verfügbar."},
+    "unexpected_error": {"title": "VentWise-Diagnosefehler", "message": "VentWise hat einen unerwarteten Fehler festgestellt. Prüfen Sie das Home-Assistant-Protokoll."}
   },
   "status": {
     "quiet_hours": "Während der Ruhezeiten sind Empfehlungen pausiert.",

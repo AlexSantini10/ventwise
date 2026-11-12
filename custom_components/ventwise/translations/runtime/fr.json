@@ -24,7 +24,9 @@
     "no_enabled_rooms": {
       "title": "VentWise nécessite une pièce activée",
       "message": "Aucune pièce activée n'est configurée."
-    }
+    },
+    "provider_unavailable": {"title": "Fournisseur VentWise indisponible", "message": "Les données facultatives de qualité de l'air extérieur sont temporairement indisponibles."},
+    "unexpected_error": {"title": "Erreur de diagnostic VentWise", "message": "VentWise a rencontré une erreur inattendue. Consultez le journal Home Assistant."}
   },
   "status": {
     "quiet_hours": "Les recommandations sont suspendues pendant les heures de silence.",

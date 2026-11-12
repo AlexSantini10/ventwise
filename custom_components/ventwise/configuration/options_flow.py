@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -39,6 +40,10 @@ from .flow import (
     build_unit_schema,
     _localized_room_kind_label,
     normalize_basic_config,
+    normalize_comfort_config,
+    normalize_co2_config,
+    normalize_notification_config,
+    normalize_diagnostics_config,
     normalize_advanced_config,
     normalize_outdoor_source_config,
     normalize_outdoor_override_config,
@@ -47,6 +52,9 @@ from .flow import (
     split_config_data,
     validate_room_automation_confirmation,
 )
+from ..errors import log_unexpected
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
@@ -125,6 +133,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
+            except Exception as err:
+                log_unexpected(_LOGGER, err, operation="options.daily", context="config_entry_options")
+                errors["base"] = "unexpected_error"
         return self.async_show_form(step_id="daily", data_schema=build_daily_options_schema(self._current_config, self.hass), errors=errors)
 
     async def async_step_comfort(self, user_input: dict[str, Any] | None = None):
@@ -175,6 +186,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
+            except Exception as err:
+                log_unexpected(_LOGGER, err, operation="options.windows", context="config_entry_options")
+                errors["base"] = "unexpected_error"
         return self.async_show_form(step_id="windows", data_schema=build_windows_options_schema(self._current_config), errors=errors)
 
     async def async_step_windows_manual(self, user_input: dict[str, Any] | None = None):
@@ -207,9 +221,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                data = {**self._current_config, **user_input}
-                data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
-                self._current_config = normalize_advanced_config(data)
+                data = dict(self._current_config)
+                data.update(normalize_diagnostics_config(user_input))
+                self._current_config = data
                 return self.async_create_entry(title=NAME, data=self._result_data())
             except ConfigValidationError as err:
                 errors[err.field] = err.message
@@ -312,6 +326,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
+            except Exception as err:
+                log_unexpected(_LOGGER, err, operation=f"options.{step_id}", context="config_entry_options")
+                errors["base"] = "unexpected_error"
         return self.async_show_form(step_id=step_id, data_schema=schema_builder(self._current_config), errors=errors)
 
     async def _save_category_form(self, step_id: str, schema_builder, user_input, *, validate_co2: bool = False):
@@ -320,10 +337,13 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                data = dict(self._current_config)
-                data.setdefault(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)
-                data.update(user_input)
-                candidate = normalize_basic_config(data) if step_id == "comfort" else normalize_advanced_config(data)
+                section_normalizer = {
+                    "comfort": normalize_comfort_config,
+                    "co2": normalize_co2_config,
+                    "notifications": normalize_notification_config,
+                }.get(step_id, normalize_advanced_config)
+                candidate = dict(self._current_config)
+                candidate.update(section_normalizer(user_input))
                 if validate_co2 and candidate.get("co2_enabled") and not candidate.get("co2_entity_id") and not any(room.get("co2_entity_id") for room in self._rooms):
                     raise ConfigValidationError("co2_entity_id")
                 validate_room_automation_confirmation(self._rooms, candidate, self.hass)
@@ -333,6 +353,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
+            except Exception as err:
+                log_unexpected(_LOGGER, err, operation=f"options.{step_id}", context="config_entry_options")
+                errors["base"] = "unexpected_error"
         hass = self.hass if step_id == "notifications" else None
         schema = schema_builder(self._current_config, hass) if step_id == "notifications" else schema_builder(self._current_config)
         return self.async_show_form(step_id=step_id, data_schema=schema, errors=errors)

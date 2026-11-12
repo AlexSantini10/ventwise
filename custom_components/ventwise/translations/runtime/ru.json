@@ -24,7 +24,9 @@
     "no_enabled_rooms": {
       "title": "VentWise нужна активная комната",
       "message": "Нет настроенных активных комнат."
-    }
+    },
+    "provider_unavailable": {"title": "Поставщик VentWise недоступен", "message": "Дополнительные данные о качестве наружного воздуха временно недоступны."},
+    "unexpected_error": {"title": "Ошибка диагностики VentWise", "message": "VentWise обнаружил неожиданную ошибку. Проверьте журнал Home Assistant."}
   },
   "status": {
     "quiet_hours": "Рекомендации приостановлены в режиме тишины.",

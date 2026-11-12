@@ -24,7 +24,9 @@
     "no_enabled_rooms": {
       "title": "VentWise necesita una habitación activa",
       "message": "No hay habitaciones activas configuradas."
-    }
+    },
+    "provider_unavailable": {"title": "Proveedor VentWise no disponible", "message": "Los datos opcionales de calidad del aire exterior no están disponibles temporalmente."},
+    "unexpected_error": {"title": "Error de diagnóstico de VentWise", "message": "VentWise encontró un error inesperado. Comprueba el registro de Home Assistant."}
   },
   "status": {
     "quiet_hours": "Las recomendaciones están pausadas durante las horas de silencio.",

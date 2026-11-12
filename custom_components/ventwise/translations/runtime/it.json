@@ -24,7 +24,9 @@
     "no_enabled_rooms": {
       "title": "VentWise richiede una stanza attiva",
       "message": "Non sono configurate stanze attive."
-    }
+    },
+    "provider_unavailable": {"title": "Provider VentWise non disponibile", "message": "I dati opzionali sulla qualità dell'aria esterna non sono temporaneamente disponibili."},
+    "unexpected_error": {"title": "Errore diagnostico VentWise", "message": "VentWise ha rilevato un errore inatteso. Controlla il log di Home Assistant."}
   },
   "status": {
     "quiet_hours": "Le raccomandazioni sono sospese durante la fascia silenziosa.",

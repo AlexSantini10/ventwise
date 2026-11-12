@@ -836,6 +836,65 @@ def normalize_unit_config(user_input: Mapping[str, object]) -> dict[str, object]
     }
 
 
+def normalize_comfort_config(user_input: Mapping[str, object]) -> dict[str, object]:
+    """Normalize only fields shown by the Comfort menu."""
+
+    data = dict(user_input)
+    if CONF_TARGET_TEMPERATURE_C in data:
+        unit = temperature_unit(data.get(CONF_TEMPERATURE_UNIT))
+        value = temperature_to_celsius(float(data[CONF_TARGET_TEMPERATURE_C]), unit)
+        data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(value, CONF_TARGET_TEMPERATURE_C, 10.0, 30.0)
+    if CONF_TARGET_HUMIDITY_PERCENT in data:
+        data[CONF_TARGET_HUMIDITY_PERCENT] = _normalize_float(data[CONF_TARGET_HUMIDITY_PERCENT], CONF_TARGET_HUMIDITY_PERCENT, 20.0, 80.0)
+    if CONF_STABILITY_MINUTES in data:
+        data[CONF_STABILITY_MINUTES] = _normalize_int(data[CONF_STABILITY_MINUTES], CONF_STABILITY_MINUTES, 0, 24 * 60)
+    if CONF_AUTO_COMFORT_TEMPERATURE in data:
+        data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(data[CONF_AUTO_COMFORT_TEMPERATURE], CONF_AUTO_COMFORT_TEMPERATURE)
+    return data
+
+
+def normalize_co2_config(user_input: Mapping[str, object]) -> dict[str, object]:
+    """Normalize only CO2 menu fields."""
+
+    data = dict(user_input)
+    if CONF_CO2_ENABLED in data:
+        data[CONF_CO2_ENABLED] = _normalize_bool(data[CONF_CO2_ENABLED], CONF_CO2_ENABLED)
+    if CONF_CO2_ENTITY_ID in data:
+        _normalize_optional_entities(data, CONF_CO2_ENTITY_ID)
+        _normalize_optional_entity_ids(data, CONF_CO2_ENTITY_ID, domains=NUMERIC_ENTITY_DOMAINS)
+    if CONF_CO2_THRESHOLD_PPM in data:
+        data[CONF_CO2_THRESHOLD_PPM] = _normalize_float(data[CONF_CO2_THRESHOLD_PPM], CONF_CO2_THRESHOLD_PPM, 400.0, 5000.0)
+    return data
+
+
+def normalize_notification_config(user_input: Mapping[str, object]) -> dict[str, object]:
+    """Normalize only notification menu fields."""
+
+    data = dict(user_input)
+    if CONF_NOTIFICATION_DEVICE_ID in data:
+        data[CONF_NOTIFICATION_DEVICE_ID] = _normalize_notification_device_ids(data[CONF_NOTIFICATION_DEVICE_ID])
+    if CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED in data:
+        data[CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED] = _normalize_bool(data[CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED], CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, default=False)
+    if CONF_COOLDOWN_MINUTES in data:
+        data[CONF_COOLDOWN_MINUTES] = _normalize_int(data[CONF_COOLDOWN_MINUTES], CONF_COOLDOWN_MINUTES, 0, 24 * 60)
+    if CONF_DIAGNOSTIC_NOTIFICATION_LEVEL in data:
+        level = data[CONF_DIAGNOSTIC_NOTIFICATION_LEVEL]
+        if level not in {DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL, DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC}:
+            raise ConfigValidationError(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
+    return data
+
+
+def normalize_diagnostics_config(user_input: Mapping[str, object]) -> dict[str, object]:
+    """Normalize only diagnostic/debug menu fields."""
+
+    data = dict(user_input)
+    if CONF_DIAGNOSTIC_NOTIFICATION_LEVEL in data:
+        data.update(normalize_notification_config(data))
+    if CONF_DEBUG_MODE_ENABLED in data:
+        data[CONF_DEBUG_MODE_ENABLED] = _normalize_bool(data[CONF_DEBUG_MODE_ENABLED], CONF_DEBUG_MODE_ENABLED)
+    return data
+
+
 def normalize_outdoor_source_config(user_input: Mapping[str, object]) -> dict[str, object]:
     """Normalize the outdoor override checkbox selection."""
 

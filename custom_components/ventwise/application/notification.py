@@ -196,7 +196,12 @@ def build_diagnostic_notification_payload(
 ) -> tuple[str, str]:
     """Build localised persistent-notification content for a diagnostic issue."""
 
-    issue = issue if issue in {"unavailable_data", "no_enabled_rooms"} else "unavailable_data"
+    issue = issue if issue in {
+        "unavailable_data",
+        "no_enabled_rooms",
+        "provider_unavailable",
+        "unexpected_error",
+    } else "unavailable_data"
     return (
         translate(language, "diagnostic", issue, "title"),
         translate(language, "diagnostic", issue, "message"),

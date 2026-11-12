@@ -56,6 +56,7 @@ async def async_setup_entry(
         OutdoorTemperatureSensor(coordinator),
         OutdoorHumiditySensor(coordinator),
         WindSpeedSensor(coordinator),
+        DiagnosticStatusSensor(coordinator),
     ]
     for room in coordinator.config.rooms:
         entities.extend(
@@ -77,6 +78,34 @@ async def async_setup_entry(
             ]
         )
     async_add_entities(entities)
+
+
+class DiagnosticStatusSensor(VentWiseEntity, SensorEntity):
+    """Stable, inspectable runtime error state for dashboards and support."""
+
+    _attr_icon = "mdi:alert-circle-outline"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "diagnostic_status", "diagnostic_status")
+
+    @property
+    def native_value(self) -> str:
+        snapshot = self.coordinator.data
+        return snapshot.error_category or "ok"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        snapshot = self.coordinator.data
+        return {
+            "category": snapshot.error_category,
+            "message": snapshot.error_message,
+            "operation": snapshot.error_operation,
+            "reference": snapshot.error_reference,
+            "occurred_at": snapshot.error_occurred_at.isoformat()
+            if snapshot.error_occurred_at
+            else None,
+            "diagnostic_issue": getattr(self.coordinator, "_diagnostic_issue", None),
+        }
 
 
 class WeatherConditionSensor(VentWiseEntity, SensorEntity):

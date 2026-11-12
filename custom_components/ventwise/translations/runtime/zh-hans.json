@@ -24,7 +24,9 @@
     "no_enabled_rooms": {
       "title": "VentWise 需要启用的房间",
       "message": "未配置启用的房间。"
-    }
+    },
+    "provider_unavailable": {"title": "VentWise 提供商不可用", "message": "可选的室外空气质量数据暂时不可用。"},
+    "unexpected_error": {"title": "VentWise 诊断错误", "message": "VentWise 遇到意外错误。请检查 Home Assistant 日志。"}
   },
   "status": {
     "quiet_hours": "建议会在静默时段暂停。",

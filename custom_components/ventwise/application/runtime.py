@@ -82,6 +82,11 @@ from ..const import (
     CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_RUNTIME_ROOM_ACTION_GUARDS,
     CONF_RUNTIME_DIAGNOSTIC_ISSUE,
+    CONF_RUNTIME_ERROR_CATEGORY,
+    CONF_RUNTIME_ERROR_MESSAGE,
+    CONF_RUNTIME_ERROR_OPERATION,
+    CONF_RUNTIME_ERROR_REFERENCE,
+    CONF_RUNTIME_ERROR_OCCURRED_AT,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
@@ -213,6 +218,11 @@ class RuntimeSnapshot:
     # the legacy presentation summary.  This keeps existing entity IDs stable
     # while making every input and decision inspectable.
     decision: Any | None = None
+    error_category: str | None = None
+    error_message: str | None = None
+    error_operation: str | None = None
+    error_reference: str | None = None
+    error_occurred_at: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -224,6 +234,11 @@ class RuntimeState:
     notification_markers: Mapping[str, "NotificationMarker"] = field(default_factory=dict)
     room_action_guards: Mapping[str, "RoomActionGuard"] = field(default_factory=dict)
     diagnostic_issue: str | None = None
+    error_category: str | None = None
+    error_message: str | None = None
+    error_operation: str | None = None
+    error_reference: str | None = None
+    error_occurred_at: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -385,6 +400,11 @@ def load_runtime_state(data: Mapping[str, Any]) -> RuntimeState:
         notification_markers=notification_markers,
         room_action_guards=room_action_guards,
         diagnostic_issue=_string_or_none(raw_state.get(CONF_RUNTIME_DIAGNOSTIC_ISSUE)),
+        error_category=_string_or_none(raw_state.get(CONF_RUNTIME_ERROR_CATEGORY)),
+        error_message=_string_or_none(raw_state.get(CONF_RUNTIME_ERROR_MESSAGE)),
+        error_operation=_string_or_none(raw_state.get(CONF_RUNTIME_ERROR_OPERATION)),
+        error_reference=_string_or_none(raw_state.get(CONF_RUNTIME_ERROR_REFERENCE)),
+        error_occurred_at=_load_datetime(raw_state.get(CONF_RUNTIME_ERROR_OCCURRED_AT)),
     )
 
 
@@ -418,6 +438,11 @@ def dump_runtime_state(state: RuntimeState) -> dict[str, Any]:
                 for room_key, guard in state.room_action_guards.items()
             },
             CONF_RUNTIME_DIAGNOSTIC_ISSUE: state.diagnostic_issue,
+            CONF_RUNTIME_ERROR_CATEGORY: state.error_category,
+            CONF_RUNTIME_ERROR_MESSAGE: state.error_message,
+            CONF_RUNTIME_ERROR_OPERATION: state.error_operation,
+            CONF_RUNTIME_ERROR_REFERENCE: state.error_reference,
+            CONF_RUNTIME_ERROR_OCCURRED_AT: _dump_datetime(state.error_occurred_at),
         }
     }
 

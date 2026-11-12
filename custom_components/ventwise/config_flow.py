@@ -49,7 +49,10 @@ from .configuration.flow import (
 class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for the integration."""
 
-    VERSION = 3
+    # Keep the ConfigFlow schema version aligned with the persisted entry
+    # migration target in __init__.py. A lower value makes existing version-5
+    # entries look like unsupported future entries to Home Assistant.
+    VERSION = 5
 
     def __init__(self) -> None:
         self._setup_data: dict[str, Any] = {}

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from custom_components.ventwise import async_migrate_entry
+from custom_components.ventwise.config_flow import VentWiseConfigFlow
 from custom_components.ventwise.const import (
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
@@ -35,6 +36,10 @@ def _entry(*, version: int, data: dict[str, object], options: dict[str, object])
         data=data,
         options=options,
     )
+
+
+def test_config_flow_version_matches_migration_target() -> None:
+    assert VentWiseConfigFlow.VERSION == 5
 
 
 def test_migration_preserves_settings_and_notification_devices() -> None:

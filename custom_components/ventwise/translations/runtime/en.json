@@ -24,7 +24,9 @@
     "no_enabled_rooms": {
       "title": "VentWise needs an enabled room",
       "message": "No enabled rooms are configured."
-    }
+    },
+    "provider_unavailable": {"title": "VentWise provider unavailable", "message": "Optional outdoor air-quality data is temporarily unavailable."},
+    "unexpected_error": {"title": "VentWise diagnostic error", "message": "VentWise encountered an unexpected error. Check the Home Assistant log."}
   },
   "status": {
     "quiet_hours": "Recommendations are paused during quiet hours.",

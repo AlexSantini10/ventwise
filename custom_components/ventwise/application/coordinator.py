@@ -57,7 +57,12 @@ from .notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
-from .air_quality import ProviderExposure, async_fetch_open_meteo_exposure
+from .air_quality import (
+    ProviderExposure,
+    ProviderUnavailableError,
+    async_fetch_open_meteo_exposure,
+)
+from ..errors import ErrorCategory, error_context, error_reference, log_unexpected
 from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
@@ -120,6 +125,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._provider_exposure_fetched_at: datetime | None = None
         self._forecast_fetched_at: datetime | None = None
         self._diagnostic_issue = self._runtime_state.diagnostic_issue
+        self._error_category = self._runtime_state.error_category
+        self._error_message = self._runtime_state.error_message
+        self._error_operation = self._runtime_state.error_operation
+        self._error_reference = self._runtime_state.error_reference
+        self._error_occurred_at = self._runtime_state.error_occurred_at
         self._last_diagnostic_log_issue: str | None = None
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
@@ -331,11 +341,48 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         return delivered
 
     async def _async_update_data(self) -> RuntimeSnapshot:
+        """Refresh data and expose unexpected failures as a safe UI state."""
+
+        try:
+            return await self._async_update_data_impl()
+        except ProviderUnavailableError:
+            reference = error_reference("air_quality.provider")
+            await self._set_runtime_error(
+                ErrorCategory.SOURCE_UNAVAILABLE,
+                "Outdoor air-quality data is temporarily unavailable.",
+                "air_quality.provider",
+                reference,
+            )
+            self._provider_exposure_fetched_at = now
+            return self._provider_exposure
+        except Exception as err:
+            reference = log_unexpected(
+                _LOGGER,
+                err,
+                operation="coordinator.refresh",
+                context=error_context(entry=self._config_entry.entry_id),
+            )
+            await self._set_runtime_error(
+                ErrorCategory.UNEXPECTED,
+                "VentWise could not refresh recommendations. Check the Home Assistant log.",
+                "coordinator.refresh",
+                reference,
+            )
+            return self._error_snapshot(
+                category=ErrorCategory.UNEXPECTED.value,
+                message="VentWise could not refresh recommendations. Check the Home Assistant log.",
+                operation="coordinator.refresh",
+                reference=reference,
+            )
+
+    async def _async_update_data_impl(self) -> RuntimeSnapshot:
         """Refresh recommendation state from Home Assistant entity states."""
 
         self._config = build_integration_config(
             {**self._config_entry.data, **self._config_entry.options}
         )
+        if self._error_category == ErrorCategory.UNEXPECTED.value:
+            self._clear_runtime_error()
         if not self._config.enabled:
             await self._set_diagnostic_issue(None)
             snapshot = RuntimeSnapshot(
@@ -362,6 +409,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 enabled=False,
                 stable_for_seconds=0,
                 last_updated=dt_util.utcnow(),
+                error_category=ErrorCategory.SOURCE_UNAVAILABLE.value,
+                error_message="Outdoor or room sensor data is not available yet.",
+                error_operation="coordinator.required_sources",
+                error_reference=error_reference("coordinator.required_sources"),
+                error_occurred_at=dt_util.utcnow(),
             )
             self._refresh_time_listener(snapshot.last_updated, snapshot)
             return snapshot
@@ -415,6 +467,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 enabled=True,
                 stable_for_seconds=0,
                 last_updated=dt_util.utcnow(),
+                error_category=ErrorCategory.CONFIGURATION.value,
+                error_message="No enabled rooms configured.",
+                error_operation="coordinator.room_configuration",
+                error_reference=error_reference("coordinator.room_configuration"),
+                error_occurred_at=dt_util.utcnow(),
             )
             self._refresh_time_listener(snapshot.last_updated, snapshot)
             return snapshot
@@ -695,6 +752,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             last_updated=now,
             window_states=window_states,
             decision=decision,
+            error_category=self._error_category,
+            error_message=self._error_message,
+            error_operation=self._error_operation,
+            error_reference=self._error_reference,
+            error_occurred_at=self._error_occurred_at,
         )
         self._persist_runtime_state()
         self._refresh_time_listener(now, snapshot)
@@ -710,6 +772,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Return short-lived opt-in model data without retaining coordinates."""
 
         if not self._config.open_meteo_air_quality_enabled:
+            if self._error_category == ErrorCategory.SOURCE_UNAVAILABLE.value:
+                self._clear_runtime_error()
             return {}
         if (
             self._provider_exposure_fetched_at is not None
@@ -718,7 +782,74 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return self._provider_exposure
         self._provider_exposure = dict(await async_fetch_open_meteo_exposure(self.hass, now))
         self._provider_exposure_fetched_at = now
+        if self._error_category == ErrorCategory.SOURCE_UNAVAILABLE.value:
+            self._clear_runtime_error()
+            await self._set_diagnostic_issue(None)
         return self._provider_exposure
+
+    def _clear_runtime_error(self) -> None:
+        """Clear a recovered runtime error while retaining the latest snapshot contract."""
+
+        self._error_category = None
+        self._error_message = None
+        self._error_operation = None
+        self._error_reference = None
+        self._error_occurred_at = None
+
+    async def _set_runtime_error(
+        self,
+        category: ErrorCategory,
+        message: str,
+        operation: str,
+        reference: str,
+    ) -> None:
+        """Persist the latest safe diagnostic and surface it when enabled."""
+
+        self._error_category = category.value
+        self._error_message = message
+        self._error_operation = operation
+        self._error_reference = reference
+        self._error_occurred_at = dt_util.utcnow()
+        self._persist_runtime_state()
+        await self._set_diagnostic_issue(
+            "provider_unavailable" if category is ErrorCategory.SOURCE_UNAVAILABLE else "unexpected_error"
+        )
+
+    def _error_snapshot(
+        self, *, category: str, message: str, operation: str, reference: str
+    ) -> RuntimeSnapshot:
+        """Return a fail-closed snapshot for an unexpected refresh failure."""
+
+        return RuntimeSnapshot(
+            summary=RecommendationSummary(
+                action=RecommendationAction.NONE,
+                score=0.0,
+                reason=message,
+                suggested_comfort_temperature_c=None,
+                blocked_by="error",
+            ),
+            weather_condition=None,
+            target_perceived_c=None,
+            suggested_comfort_temperature_c=None,
+            outdoor_perceived_c=None,
+            active_indoor_perceived_c=None,
+            outdoor_temperature_c=None,
+            forecast_temperature_c=None,
+            outdoor_humidity_percent=None,
+            wind_speed_m_s=None,
+            wind_gust_m_s=None,
+            notification_allowed=False,
+            quiet_hours_active=False,
+            cooldown_active=False,
+            enabled=self._config.enabled,
+            stable_for_seconds=0,
+            last_updated=dt_util.utcnow(),
+            error_category=category,
+            error_message=message,
+            error_operation=operation,
+            error_reference=reference,
+            error_occurred_at=self._error_occurred_at,
+        )
 
     async def _async_forecast(self, now: datetime) -> ForecastObservation | None:
         """Return the most relevant hourly forecast within the next two hours."""
@@ -798,12 +929,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 issue,
                 language=getattr(getattr(self.hass, "config", None), "language", None),
             )
-            await async_create_persistent_notification(
+            created = await async_create_persistent_notification(
                 self.hass,
                 title=title,
                 message=message,
                 notification_id=home_assistant_diagnostic_notification_id(issue),
             )
+            if not created:
+                # Do not consider a diagnostic delivered when the reporting
+                # channel failed; the next refresh must retry it.
+                self._diagnostic_issue = previous_issue
+                self._persist_runtime_state()
 
     async def async_set_notification_enabled(self, enabled: bool) -> None:
         """Persist the notification enable flag in config entry options."""
@@ -1340,6 +1476,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             notification_markers=dict(self._notification_markers),
             room_action_guards=dict(self._room_action_guards),
             diagnostic_issue=self._diagnostic_issue,
+            error_category=self._error_category,
+            error_message=self._error_message,
+            error_operation=self._error_operation,
+            error_reference=self._error_reference,
+            error_occurred_at=self._error_occurred_at,
         )
         if runtime_state == self._runtime_state:
             return
@@ -1430,6 +1571,13 @@ def _diagnostic_issue_log_message(issue: str) -> str:
         "no_enabled_rooms": (
             "VentWise cannot calculate a recommendation because no enabled rooms are "
             "configured."
+        ),
+        "unexpected_error": (
+            "VentWise encountered an unexpected error. Check the Home Assistant log "
+            "using the diagnostic reference shown by the integration."
+        ),
+        "provider_unavailable": (
+            "VentWise cannot currently read the optional outdoor air-quality provider."
         ),
     }
     return messages.get(issue, f"VentWise diagnostic issue: {issue}")
