@@ -9,6 +9,8 @@
     "close_severe_weather": "Cierra las ventanas ahora: se detecta tiempo severo.",
     "close_unsafe_wind": "Cierra las ventanas ahora: el viento no es seguro.",
     "close_outdoor_exposure": "Cierra las ventanas ahora: la política configurada de calidad del aire exterior indica evitar la exposición.",
+    "co2_high": "Ventila brevemente: el CO₂ interior es de {value:.0f} ppm, por encima del nivel configurado de {threshold:.0f} ppm.",
+    "humidity_high": "Ventila brevemente: la humedad interior es del {value:.1f}%, por encima del umbral {threshold:.1f}% (objetivo {target:.1f}%).",
     "forecast_reason": "Pronóstico a corto plazo: se espera que las condiciones exteriores sean menos confortables pronto.",
     "failed_title": "Falló la entrega de la notificación de VentWise",
     "failed_targets": "Destinos fallidos"

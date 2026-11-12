@@ -4,8 +4,7 @@
 
 VentWise is a Home Assistant custom integration that recommends whether opening
 or closing a window is likely to improve comfort. It is an advisory tool: it
-does not directly open windows, control shutters, or change a thermostat/HVAC
-setpoint.
+does not directly operate physical devices or change a thermostat setpoint.
 
 For installation, first setup, updates, and removal, use the
 [user guide](../guides/user-guide.md).

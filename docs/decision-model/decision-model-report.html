@@ -48,7 +48,7 @@
   <div class="grid">
     <article class="card"><h3>Core actions</h3><p><span class="action open">open</span> stable benefit · <span class="action ventilate">ventilate</span> bounded temporary benefit · <span class="action close">close</span> harmful or unsafe opening · <span class="action none">none</span> no meaningful winner.</p></article>
     <article class="card"><h3>Safety first</h3><p>Missing or stale critical weather fails closed for opening. Severe weather, current precipitation, unsafe wind/gusts, and explicit exposure <code>avoid</code> policies win before comfort scoring.</p></article>
-    <article class="card"><h3>Delivery is separate</h3><p>Contacts, stability, cooldown, and quiet hours may suppress delivery, but never rewrite <code>core_action</code>. The result always preserves both core and delivered truth.</p></article>
+    <article class="card"><h3>Delivery is separate</h3><p>Contacts, stability, cooldown, and quiet hours may suppress delivery, but never rewrite <code>core_action</code>. Urgent close delivery during quiet hours is an explicit opt-in, disabled by default. The result always preserves both core and delivered truth.</p></article>
   </div>
 
   <h2>2 Exhaustive data inventory</h2>
@@ -65,8 +65,6 @@
     <tr><td><code>target_temperature_c</code></td><td>float, °C</td><td>no</td><td>Per-room comfort target override.</td><td>Global target is used.</td></tr>
     <tr><td><code>target_humidity_percent</code></td><td>float, %</td><td>no</td><td>Per-room humidity preference metadata.</td><td>Global preference is used where applicable.</td></tr>
     <tr><td><code>surface_temperature_c</code></td><td>Observation[float], °C</td><td>no</td><td>Compares surface temperature with dew point.</td><td>Condensation risk is not estimated; it is not “no risk”.</td></tr>
-    <tr><td><code>hvac_active</code>, <code>ventilation_active</code>, <code>air_cleaner_active</code></td><td>Observation[bool]</td><td>no</td><td>Optional physical context and trace.</td><td>No operating state is inferred.</td></tr>
-    <tr><td><code>radiation_w_m2</code></td><td>Observation[float], W/m²</td><td>no</td><td>Optional physical context and trace.</td><td>Ignored for current score.</td></tr>
     <tr><td><code>physical_parameters</code></td><td>named values; SI units</td><td>no</td><td>Room volume, opening, resistance, thermal mass context.</td><td>Incomplete set is marked awaiting source; no airflow is invented.</td></tr>
   </table>
   <h3>2.2 Core outdoor fields</h3>
@@ -107,7 +105,7 @@
     <tr><td><code>window_sensor_entity_ids</code>, <code>start_entity_id</code>, <code>stop_entity_id</code></td><td>Window state and optional room action controls; delivery context only.</td></tr>
     <tr><td><code>action_change_hold_minutes</code>, <code>action_lockout_minutes</code></td><td>Room reversal and lockout guardrails.</td></tr>
     <tr><td><code>volume_m3</code>, <code>opening_area_m2</code>, <code>opening_fraction</code>, <code>exposure</code>, <code>thermal_resistance_m2k_w</code>, <code>thermal_mass_kj_k</code></td><td>Optional physical context. Incomplete data waits; complete data can lower confidence but does not become exact airflow calibration.</td></tr>
-    <tr><td><code>surface_temperature_entity_id</code>, <code>hvac_entity_id</code>, <code>ventilation_entity_id</code>, <code>air_cleaner_entity_id</code>, <code>radiation_entity_id</code></td><td>Optional physical/context entity references.</td></tr>
+    <tr><td><code>surface_temperature_entity_id</code></td><td>Optional surface-temperature reference.</td></tr>
   </table>
 
   <h2>3 Validation and retention rules</h2>
@@ -183,7 +181,7 @@ Safety or privacy implications:</pre></div>
   </table>
 
   <h2>7 Limits and non-claims</h2>
-  <ul><li>Advisory only: not a medical, safety, security, weather-protection, or regulatory system.</li><li>CO2 is a ventilation indicator, not a universal indoor-air-quality or health threshold.</li><li>Room physics are not an exact airflow calibration.</li><li>Forecast and Open-Meteo/CAMS exposure values remain model data with provenance.</li><li>Missing data stays missing; no occupancy, airflow, HVAC state, or hazard is invented.</li></ul>
+  <ul><li>Advisory only: not a medical, safety, security, weather-protection, or regulatory system.</li><li>CO2 is a ventilation indicator, not a universal indoor-air-quality or health threshold.</li><li>Room physics are not an exact airflow calibration.</li><li>Forecast and Open-Meteo/CAMS exposure values remain model data with provenance.</li><li>Missing data stays missing; no occupancy, airflow, or hazard is invented.</li></ul>
   <footer>Maintained directly in this HTML and its Markdown companion. When the decision model changes, update both documents, the scenario registry, and the narrowest regression test. CI verifies that both documentation files are present and contain the required explainability sections.</footer>
 </main>
 </body>

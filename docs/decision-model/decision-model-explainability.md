@@ -62,7 +62,7 @@ must remain synchronized with the tests.
 | Outdoor air materially worsens comfort | `close` | Same unless the window is already closed | Implemented and tested |
 | Neutral conditions | `none` | `none` | Implemented and tested |
 | High humidity or high/rising CO₂ | `ventilate` | Same unless delivery is gated | Implemented and tested |
-| Rain, storm, unsafe wind/gusts, or exposure `avoid` | `close` | `close`, including urgent bypass | Implemented and tested |
+| Rain, storm, unsafe wind/gusts, or exposure `avoid` | `close` | `close`; quiet-hours delivery is configurable and defaults to suppressed | Implemented and tested |
 | Exposure `reduce` with matching unit and averaging period | Penalized candidate | Core preserved | Implemented and tested |
 | Missing, invalid, future, stale, or implausible critical data | `none` or safety `close` | Core preserved | Implemented and tested |
 | Condensation risk | Core preserved | Duration capped at 5 minutes; confidence reduced | Implemented and tested |
@@ -94,4 +94,4 @@ Safety or privacy implications:
 - CO2 is a ventilation indicator, not a universal indoor-air-quality or health threshold.
 - Room physics are not an exact airflow calibration.
 - Forecast and Open-Meteo/CAMS exposure values remain model data with provenance.
-- Missing data stays missing; no occupancy, airflow, HVAC state, or hazard is invented.
+- Missing data stays missing; no occupancy, airflow, or hazard is invented.

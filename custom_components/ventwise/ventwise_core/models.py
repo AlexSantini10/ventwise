@@ -72,10 +72,6 @@ class DecisionRoom:
     target_temperature_c: float | None = None
     target_humidity_percent: float | None = None
     surface_temperature_c: Observation[float] | None = None
-    hvac_active: Observation[bool] | None = None
-    ventilation_active: Observation[bool] | None = None
-    air_cleaner_active: Observation[bool] | None = None
-    radiation_w_m2: Observation[float] | None = None
     physical_parameters: Tuple[tuple[str, float | str], ...] = ()
 
 
@@ -250,6 +246,7 @@ class RecommendationContext:
     """Gating information for notification control."""
 
     quiet_hours_active: bool = False
+    urgent_close_during_quiet_hours: bool = False
     cooldown_active: bool = False
     stable_for_seconds: int = 0
     stability_seconds_required: int = 0
@@ -272,6 +269,10 @@ class RoomRecommendation:
     close_score: float = 0.0
     reason_code: str = "comfort"
     co2_ppm: float | None = None
+    co2_threshold_ppm: float | None = None
+    humidity_percent: float | None = None
+    humidity_target_percent: float | None = None
+    humidity_threshold_percent: float | None = None
     co2_influence: float = 0.0
     ventilation_duration_minutes: int | None = None
     indoor_comfort_severity: float = 0.0

@@ -61,7 +61,9 @@ pollution policies always produce `core_action=close`; an open, unknown, or
 unconfigured window contact receives `delivered_action=close`. A contact that
 already reports the window closed suppresses only the duplicate delivery with
 `delivery_suppressed_by=window_already_closed`. Urgent safety closes bypass
-stability, cooldown, and quiet-hours delivery gates. This rule applies only to
+stability, cooldown, and quiet-hours delivery gates. Urgent close delivery during
+quiet hours is configurable and defaults to suppressed; enabling the explicit
+urgent-close option bypasses quiet hours only. This rule applies only to
 observed hazards: `critical_weather_unavailable` remains fail-closed for
 opening and does not invent a close when the window state is unknown.
 
@@ -113,7 +115,6 @@ Legend: 🛑 **B** blocking, 🟠 **P** strong penalty, 🟢 **V** benefit signa
 |---|---|---|---|---|---|
 | Thermal comfort | temperature °C, I/E | room sensor; weather/sensor | active; validate, short average, apparent T | B/V; thermal comparison, stale E blocks opening | no thermal score; “indoor temperature unavailable” / never open if E is stale |
 | Thermal comfort | apparent temperature °C, I/E; target °C, season | derived; preference/calendar | active/optional; T+RH, valid outdoor wind, target band | V/I; benefit and context, never block | use T at lower confidence; show default target |
-| Thermal comfort | radiation W/m², cloud %, HVAC state, internal gains W | weather; equipment/estimate | optional; future loads for RC model | P/I; anticipate heating/cooling | ignore or never infer HVAC state |
 | Humidity and condensation | RH %, AH g/m³, dew point °C, ΔAH g/m³ | sensor/weather, Magnus | active; RH valid 0–100% | V; dry E favours ventilate | no moisture benefit without RH |
 | Humidity and condensation | condensation/mould risk | derived + surface temperature | optional | P; changes duration/benefit | “risk not estimated” without surface data |
 | Air exchange | CO₂ ppm I/E, trend ppm/h, volume m³ | sensor/provider; configuration | active I, optional E/volume; delta/trend | V; high indoor CO₂ favours ventilate | conservative duration; no inferred occupancy |
@@ -133,7 +134,7 @@ Legend: 🛑 **B** blocking, 🟠 **P** strong penalty, 🟢 **V** benefit signa
 
 Canonical internal units are °C, %, g/m³, ppm, µg/m³, m/s, mm, W/m², m³,
 and seconds. Each reading retains precision, source, and timestamp. RH and
-probability must be 0–100%; volume >0; precipitation, radiation, and
+probability must be 0–100%; volume >0; precipitation and
 concentration ≥0. T, wind, and concentration also have sensor-specific
 plausibility ranges. Invalid values are rejected, never silently clipped.
 
@@ -175,7 +176,7 @@ estimated surface temperature; absent surface data is not “no risk”.
 For a step Δt:
 
 ```text
-T(t+Δt) = T(t) + Δt/C · [ (T_E − T_t)/R + Q_HVAC + Q_solar
+T(t+Δt) = T(t) + Δt/C · [ (T_E − T_t)/R + Q_internal + Q_solar
                            + Q_internal + H_v(T_E − T_t) ]
 ```
 

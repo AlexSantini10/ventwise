@@ -9,6 +9,8 @@
     "close_severe_weather": "请立即关闭窗户：当前检测到恶劣天气。",
     "close_unsafe_wind": "请立即关闭窗户：风况不安全。",
     "close_outdoor_exposure": "请立即关闭窗户：已配置的室外空气质量策略要求避免暴露。",
+    "co2_high": "短暂通风：室内二氧化碳为 {value:.0f} ppm，高于配置值 {threshold:.0f} ppm。",
+    "humidity_high": "短暂通风：室内湿度为 {value:.1f}%，高于阈值 {threshold:.1f}%（目标 {target:.1f}%）。",
     "forecast_reason": "短期预报：室外条件预计很快会变得不那么舒适。",
     "failed_title": "VentWise 通知发送失败",
     "failed_targets": "失败目标"

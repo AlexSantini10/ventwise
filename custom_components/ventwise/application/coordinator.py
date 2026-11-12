@@ -526,6 +526,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             decision_snapshot,
             operational=RecommendationContext(
                 quiet_hours_active=quiet_hours_active,
+                urgent_close_during_quiet_hours=self._config.urgent_close_during_quiet_hours,
                 cooldown_active=cooldown_active,
                 stable_for_seconds=stable_for_seconds,
                 stability_seconds_required=self._config.stability_minutes * 60,
@@ -566,7 +567,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 notification_channel_configured
                 and recommendation.action != RecommendationAction.NONE
                 and recommendation.score >= self._config.minimum_score
-                and (urgent_close or not quiet_hours_active)
+                and (
+                    not quiet_hours_active
+                    or (urgent_close and self._config.urgent_close_during_quiet_hours)
+                )
                 and (
                     urgent_close
                     or stable_for_seconds >= self._config.stability_minutes * 60
@@ -1209,17 +1213,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 if co2_entity_id:
                     entity_ids.add(co2_entity_id)
             entity_ids.update(room.window_sensor_entity_ids)
-            entity_ids.update(
-                entity_id
-                for entity_id in (
-                    room.surface_temperature_entity_id,
-                    room.hvac_entity_id,
-                    room.ventilation_entity_id,
-                    room.air_cleaner_entity_id,
-                    room.radiation_entity_id,
-                )
-                if entity_id
-            )
+            if room.surface_temperature_entity_id:
+                entity_ids.add(room.surface_temperature_entity_id)
         return sorted(entity_ids)
 
     def _freshness_refreshes(self, now: datetime) -> list[datetime]:

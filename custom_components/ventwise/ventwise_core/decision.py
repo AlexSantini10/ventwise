@@ -273,6 +273,11 @@ class DecisionEngine:
             trace.append(TraceEntry("penalty.imminent_rain"))
         scores = CandidateScores(round(open_score, 6), round(ventilate_score, 6), round(close_score, 6))
         core, reason = self._select(scores)
+        if core is RecommendationAction.VENTILATE:
+            if co2_signal and (co2 is not None and co2 >= self.config.co2_threshold_ppm):
+                reason = "co2_high"
+            elif moisture_signal > 0.0:
+                reason = "humidity_high"
         duration = self._duration(core, forecast, rain)
         duration, physics_confidence = self._physical_adjustment(
             room, snapshot, duration, indoor_t, indoor_h, used, discarded, awaiting, trace, penalties
@@ -305,9 +310,6 @@ class DecisionEngine:
                 if duration is not None:
                     duration = min(duration, 5)
                 confidence *= 0.8
-        for observation, name in ((room.hvac_active, "indoor.hvac"), (room.ventilation_active, "indoor.ventilation"), (room.air_cleaner_active, "indoor.air_cleaner"), (room.radiation_w_m2, "indoor.radiation")):
-            if self._usable(observation, name, snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True) is not None:
-                trace.append(TraceEntry("source.physical", name))
         return duration, confidence
 
     def _usable(self, observation: Observation | None, name: str, snapshot: DecisionSnapshot, limit, used, discarded, awaiting, optional: bool = False):
@@ -369,13 +371,16 @@ class DecisionEngine:
                 delivered, suppressed = RecommendationAction.NONE, "window_already_open"
             elif not known_open and core == RecommendationAction.CLOSE:
                 delivered, suppressed = RecommendationAction.NONE, "window_already_closed"
-        if not urgent and delivered != RecommendationAction.NONE:
+        if delivered != RecommendationAction.NONE:
             context = snapshot.operational
-            if context.quiet_hours_active:
+            quiet_hours_blocks = context.quiet_hours_active and (
+                not urgent or not context.urgent_close_during_quiet_hours
+            )
+            if quiet_hours_blocks:
                 delivered, suppressed = RecommendationAction.NONE, "quiet_hours"
-            elif context.cooldown_active:
+            elif not urgent and context.cooldown_active:
                 delivered, suppressed = RecommendationAction.NONE, "cooldown"
-            elif context.stable_for_seconds < context.stability_seconds_required:
+            elif not urgent and context.stable_for_seconds < context.stability_seconds_required:
                 delivered, suppressed = RecommendationAction.NONE, "stability"
         if suppressed:
             trace.append(TraceEntry("delivery.suppressed", suppressed))

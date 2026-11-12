@@ -58,13 +58,10 @@ from ..const import (
     CONF_ROOM_THERMAL_RESISTANCE,
     CONF_ROOM_THERMAL_MASS,
     CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
-    CONF_ROOM_HVAC_ENTITY_ID,
-    CONF_ROOM_VENTILATION_ENTITY_ID,
-    CONF_ROOM_AIR_CLEANER_ENTITY_ID,
-    CONF_ROOM_RADIATION_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOMS,
     CONF_STABILITY_MINUTES,
+    CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
     CONF_TEMPERATURE_UNIT,
@@ -86,6 +83,8 @@ from ..const import (
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
     DEFAULT_STABILITY_MINUTES,
+    DEFAULT_TARGET_HUMIDITY_PERCENT,
+    DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS,
     DEFAULT_TARGET_TEMPERATURE_C,
     DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
     DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
@@ -268,7 +267,7 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
             ): cv.boolean,
             vol.Required(
                 CONF_TARGET_HUMIDITY_PERCENT,
-                default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0),
+                default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, DEFAULT_TARGET_HUMIDITY_PERCENT),
             ): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
             vol.Required(
                 CONF_STABILITY_MINUTES,
@@ -281,6 +280,13 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
             vol.Required(
                 CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
                 default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
+            ): cv.boolean,
+            vol.Required(
+                CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
+                default=defaults.get(
+                    CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
+                    DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS,
+                ),
             ): cv.boolean,
             vol.Required(
                 CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
@@ -456,7 +462,7 @@ def build_daily_options_schema(defaults: Mapping[str, object], hass=None) -> vol
     return vol.Schema({
         vol.Required(CONF_OUTDOOR_WEATHER_ENTITY_ID, default=defaults.get(CONF_OUTDOOR_WEATHER_ENTITY_ID)): EntitySelector(EntitySelectorConfig(domain="weather")),
         vol.Required(CONF_TARGET_TEMPERATURE_C, default=temperature_from_celsius(float(defaults.get(CONF_TARGET_TEMPERATURE_C, DEFAULT_TARGET_TEMPERATURE_C)), unit)): vol.All(vol.Coerce(float), vol.Range(min=temperature_from_celsius(10.0, unit), max=temperature_from_celsius(30.0, unit))),
-        vol.Required(CONF_TARGET_HUMIDITY_PERCENT, default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
+        vol.Required(CONF_TARGET_HUMIDITY_PERCENT, default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, DEFAULT_TARGET_HUMIDITY_PERCENT)): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
         vol.Required(CONF_AUTO_COMFORT_TEMPERATURE, default=defaults.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)): cv.boolean,
         vol.Required(CONF_STABILITY_MINUTES, default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
         vol.Required(CONF_NOTIFICATION_DEVICE_ID, default=_notification_device_defaults(defaults, hass)): _notification_device_selector(hass),
@@ -532,6 +538,7 @@ def build_notification_options_schema(defaults: Mapping[str, object], hass=None)
         vol.Required(CONF_NOTIFICATION_DEVICE_ID, default=_notification_device_defaults(defaults, hass)): _notification_device_selector(hass),
         vol.Required(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)): cv.boolean,
         vol.Required(CONF_COOLDOWN_MINUTES, default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+        vol.Required(CONF_URGENT_CLOSE_DURING_QUIET_HOURS, default=defaults.get(CONF_URGENT_CLOSE_DURING_QUIET_HOURS, DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS)): cv.boolean,
         vol.Required(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, default=defaults.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL)): SelectSelector(SelectSelectorConfig(options=[DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL, DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC])),
     })
 
@@ -707,10 +714,6 @@ def build_room_schema(
             **_optional_numeric_field(CONF_ROOM_THERMAL_RESISTANCE, defaults.get(CONF_ROOM_THERMAL_RESISTANCE), minimum=0.01, maximum=100.0),
             **_optional_numeric_field(CONF_ROOM_THERMAL_MASS, defaults.get(CONF_ROOM_THERMAL_MASS), minimum=1.0, maximum=1000000.0),
             **_optional_selector_field(CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID)),
-            **_optional_selector_field(CONF_ROOM_HVAC_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["climate", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_HVAC_ENTITY_ID)),
-            **_optional_selector_field(CONF_ROOM_VENTILATION_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["fan", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_VENTILATION_ENTITY_ID)),
-            **_optional_selector_field(CONF_ROOM_AIR_CLEANER_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=["fan", "binary_sensor", "switch"])), defaults.get(CONF_ROOM_AIR_CLEANER_ENTITY_ID)),
-            **_optional_selector_field(CONF_ROOM_RADIATION_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_ROOM_RADIATION_ENTITY_ID)),
     }
     if section in {"basics", "base"}:
         allowed = {
@@ -743,9 +746,7 @@ def build_room_schema(
             CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES, CONF_ROOM_ACTION_LOCKOUT_MINUTES,
             CONF_ROOM_VOLUME_M3, CONF_ROOM_OPENING_AREA_M2, CONF_ROOM_OPENING_FRACTION,
             CONF_ROOM_EXPOSURE, CONF_ROOM_THERMAL_RESISTANCE, CONF_ROOM_THERMAL_MASS,
-            CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID, CONF_ROOM_HVAC_ENTITY_ID,
-            CONF_ROOM_VENTILATION_ENTITY_ID, CONF_ROOM_AIR_CLEANER_ENTITY_ID,
-            CONF_ROOM_RADIATION_ENTITY_ID,
+            CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
         }
         fields = {key: value for key, value in fields.items() if getattr(key, "schema", key) in allowed}
     return vol.Schema(fields)
@@ -791,6 +792,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED),
         CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
         default=False,
+    )
+    data[CONF_URGENT_CLOSE_DURING_QUIET_HOURS] = _normalize_bool(
+        data.get(CONF_URGENT_CLOSE_DURING_QUIET_HOURS),
+        CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
+        default=DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS,
     )
     level = data.get(
         CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
@@ -885,6 +891,11 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         0,
         24 * 60,
     )
+    data[CONF_URGENT_CLOSE_DURING_QUIET_HOURS] = _normalize_bool(
+        data.get(CONF_URGENT_CLOSE_DURING_QUIET_HOURS),
+        CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
+        default=DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS,
+    )
     sources: dict[str, str] = {}
     for kind in AIR_QUALITY_VARIABLES:
         field = _air_quality_entity_field(kind)
@@ -970,10 +981,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_START_ENTITY_ID,
         CONF_ROOM_STOP_ENTITY_ID,
         CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
-        CONF_ROOM_HVAC_ENTITY_ID,
-        CONF_ROOM_VENTILATION_ENTITY_ID,
-        CONF_ROOM_AIR_CLEANER_ENTITY_ID,
-        CONF_ROOM_RADIATION_ENTITY_ID,
     )
     data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
@@ -1032,9 +1039,14 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_CO2_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
-    _normalize_optional_entity_ids(data, CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID, CONF_ROOM_RADIATION_ENTITY_ID, domains=NUMERIC_ENTITY_DOMAINS)
-    _normalize_optional_entity_ids(data, CONF_ROOM_HVAC_ENTITY_ID, domains=["climate", "binary_sensor", "switch"])
-    _normalize_optional_entity_ids(data, CONF_ROOM_VENTILATION_ENTITY_ID, CONF_ROOM_AIR_CLEANER_ENTITY_ID, domains=["fan", "binary_sensor", "switch"])
+    _normalize_optional_entity_ids(data, CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID, domains=NUMERIC_ENTITY_DOMAINS)
+    for legacy_field in (
+        "hvac_entity_id",
+        "ventilation_entity_id",
+        "air_cleaner_entity_id",
+        "radiation_entity_id",
+    ):
+        data.pop(legacy_field, None)
     for field, minimum, maximum in (
         (CONF_ROOM_VOLUME_M3, 1.0, 10000.0),
         (CONF_ROOM_OPENING_AREA_M2, 0.01, 100.0),

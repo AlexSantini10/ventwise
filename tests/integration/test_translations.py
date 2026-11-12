@@ -329,7 +329,7 @@ def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -
     for description in english_help:
         assert "adjusts" in description
         assert "safety range" not in description
-        assert "thermostat or HVAC" in description
+        assert "physical devices" in description
     for description in (*italian_help, *russian_help):
         assert description
         assert "safety range" not in description.lower()

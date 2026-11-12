@@ -48,6 +48,7 @@ from ..const import (
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
+    CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
     CONF_QUIET_HOURS_START,
     CONF_ROOM_KIND,
     CONF_ROOM_ENABLED,
@@ -72,10 +73,6 @@ from ..const import (
     CONF_ROOM_THERMAL_RESISTANCE,
     CONF_ROOM_THERMAL_MASS,
     CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
-    CONF_ROOM_HVAC_ENTITY_ID,
-    CONF_ROOM_VENTILATION_ENTITY_ID,
-    CONF_ROOM_AIR_CLEANER_ENTITY_ID,
-    CONF_ROOM_RADIATION_ENTITY_ID,
     CONF_ROOMS,
     CONF_RUNTIME_STATE,
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
@@ -100,6 +97,8 @@ from ..const import (
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
     DEFAULT_CO2_THRESHOLD_PPM,
+    DEFAULT_TARGET_HUMIDITY_PERCENT,
+    DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS,
     DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL,
     DEFAULT_DEBUG_MODE_ENABLED,
     DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
@@ -146,10 +145,6 @@ class RoomConfig:
     thermal_resistance_m2k_w: float | None = None
     thermal_mass_kj_k: float | None = None
     surface_temperature_entity_id: str | None = None
-    hvac_entity_id: str | None = None
-    ventilation_entity_id: str | None = None
-    air_cleaner_entity_id: str | None = None
-    radiation_entity_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,13 +156,14 @@ class IntegrationConfig:
     temperature_unit: str = DEFAULT_TEMPERATURE_UNIT
     wind_speed_unit: str = DEFAULT_WIND_SPEED_UNIT
     auto_comfort_temperature_enabled: bool = DEFAULT_AUTO_COMFORT_TEMPERATURE
-    target_humidity_percent: float = 50.0
+    target_humidity_percent: float = DEFAULT_TARGET_HUMIDITY_PERCENT
     minimum_score: float = DEFAULT_MINIMUM_SCORE
     cooldown_minutes: int = DEFAULT_COOLDOWN_MINUTES
     stability_minutes: int = DEFAULT_STABILITY_MINUTES
     quiet_hours_enabled: bool = True
     quiet_hours_start: str = DEFAULT_QUIET_HOURS_START
     quiet_hours_end: str = DEFAULT_QUIET_HOURS_END
+    urgent_close_during_quiet_hours: bool = DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS
     enabled: bool = True
     outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_temperature_entity_id: str | None = None
@@ -308,10 +304,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             thermal_resistance_m2k_w=_float_or_none(room.get(CONF_ROOM_THERMAL_RESISTANCE)),
             thermal_mass_kj_k=_float_or_none(room.get(CONF_ROOM_THERMAL_MASS)),
             surface_temperature_entity_id=_string_or_none(room.get(CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID)),
-            hvac_entity_id=_string_or_none(room.get(CONF_ROOM_HVAC_ENTITY_ID)),
-            ventilation_entity_id=_string_or_none(room.get(CONF_ROOM_VENTILATION_ENTITY_ID)),
-            air_cleaner_entity_id=_string_or_none(room.get(CONF_ROOM_AIR_CLEANER_ENTITY_ID)),
-            radiation_entity_id=_string_or_none(room.get(CONF_ROOM_RADIATION_ENTITY_ID)),
         )
         for room in data.get(CONF_ROOMS, [])
     )
@@ -323,7 +315,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         auto_comfort_temperature_enabled=bool(
             data.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)
         ),
-        target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)),
+        target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, DEFAULT_TARGET_HUMIDITY_PERCENT)),
         minimum_score=float(data.get(CONF_MINIMUM_SCORE, DEFAULT_MINIMUM_SCORE)),
         cooldown_minutes=int(data.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES)),
         stability_minutes=int(data.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES)),
@@ -332,6 +324,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             data.get(CONF_QUIET_HOURS_START), DEFAULT_QUIET_HOURS_START
         ),
         quiet_hours_end=_time_or_default(data.get(CONF_QUIET_HOURS_END), DEFAULT_QUIET_HOURS_END),
+        urgent_close_during_quiet_hours=bool(data.get(CONF_URGENT_CLOSE_DURING_QUIET_HOURS, DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS)),
         enabled=bool(data.get(CONF_ENABLED, True)),
         outdoor_temperature_source=_outdoor_source(
             data,
@@ -591,10 +584,6 @@ def build_decision_snapshot(
             value = True if any(item is True for item in contacts) else (False if all(item is False for item in contacts) else None)
             window = Observation(value, "", now, now, ",".join(room.window_sensor_entity_ids), availability=Availability.AVAILABLE if value is not None else Availability.MISSING)
         surface = _optional_temperature_observation(room.surface_temperature_entity_id, state_getter, now)
-        hvac = _optional_bool_observation(room.hvac_entity_id, state_getter, now)
-        ventilation = _optional_bool_observation(room.ventilation_entity_id, state_getter, now)
-        air_cleaner = _optional_bool_observation(room.air_cleaner_entity_id, state_getter, now)
-        radiation = _optional_float_observation(room.radiation_entity_id, state_getter, now, "W/m²")
         physical = tuple(
             (name, value)
             for name, value in (
@@ -609,7 +598,7 @@ def build_decision_snapshot(
         rooms.append(DecisionRoom(room_key, room.name, room_temp, room_humidity, co2, trend, window,
             room.target_temperature_c_override if room.target_temperature_c_override_enabled else config.target_temperature_c,
             room.target_humidity_percent_override if room.target_humidity_percent_override_enabled else config.target_humidity_percent,
-            surface, hvac, ventilation, air_cleaner, radiation, physical))
+            surface, physical_parameters=physical))
     policy_source = "user_policy"
     exposure: list[ExposureReading] = []
     # Configured HA entities are authoritative. The provider is only allowed
@@ -709,6 +698,10 @@ def build_recommendation_summary(
             close_score=result.candidate_scores.close,
             reason_code=result.reason_code,
             co2_ppm=co2,
+            co2_threshold_ppm=config.co2_threshold_ppm,
+            humidity_percent=indoor_humidity,
+            humidity_target_percent=room.target_humidity_percent or config.target_humidity_percent,
+            humidity_threshold_percent=min(100.0, (room.target_humidity_percent or config.target_humidity_percent) + 10.0),
             co2_influence=(
                 0.8 if co2 is not None and co2 >= config.co2_threshold_ppm else 0.0
             ),
@@ -963,6 +956,7 @@ def build_debug_attributes(
         "notification_enabled": config.notification_enabled,
         "notification_allowed": snapshot.notification_allowed,
         "quiet_hours_active": snapshot.quiet_hours_active,
+        "urgent_close_during_quiet_hours": config.urgent_close_during_quiet_hours,
         "cooldown_active": snapshot.cooldown_active,
         "stable_for_seconds": snapshot.stable_for_seconds,
         "outdoor_temperature_c": snapshot.outdoor_temperature_c,
@@ -1000,6 +994,7 @@ def _decision_debug_attributes(decision: AggregateDecisionResult | None) -> dict
                 "core_action": item.core_action.value,
                 "delivered_action": item.delivered_action.value,
                 "duration_minutes": item.duration_minutes,
+                "reason_code": item.reason_code,
                 "candidates": {"open": item.candidate_scores.open, "ventilate": item.candidate_scores.ventilate, "close": item.candidate_scores.close},
                 "trace": [{"code": trace.code, "detail": trace.detail} for trace in item.trace],
                 "blocked_conditions": list(item.blocked_conditions),
@@ -1272,6 +1267,7 @@ def _room_debug_attributes(
         "action": recommendation.action.value,
         "score": recommendation.score,
         "reason": recommendation.reason,
+        "reason_code": recommendation.reason_code,
         "indoor_perceived_c": recommendation.indoor_perceived_c,
         "outdoor_perceived_c": recommendation.outdoor_perceived_c,
         "suggested_comfort_temperature_c": recommendation.suggested_comfort_temperature_c,
@@ -1281,6 +1277,10 @@ def _room_debug_attributes(
         "indoor_comfort_severity": recommendation.indoor_comfort_severity,
         "outdoor_comfort_severity": recommendation.outdoor_comfort_severity,
         "co2_ppm": recommendation.co2_ppm,
+        "co2_threshold_ppm": recommendation.co2_threshold_ppm,
+        "humidity_percent": recommendation.humidity_percent,
+        "humidity_target_percent": recommendation.humidity_target_percent,
+        "humidity_threshold_percent": recommendation.humidity_threshold_percent,
         "co2_influence": recommendation.co2_influence,
         "window_state": (window_states or {}).get(
             room.room_id or room.name, WINDOW_STATE_NOT_CONFIGURED

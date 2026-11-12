@@ -13,16 +13,24 @@ from .const import (
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_STATE,
+    CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
     DEFAULT_TEMPERATURE_UNIT,
     DEFAULT_WIND_SPEED_UNIT,
+    DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS,
     DOMAIN,
     NAME,
 )
 
 _LOGGER = logging.getLogger(__name__)
-_CONFIG_ENTRY_VERSION = 4
+_CONFIG_ENTRY_VERSION = 5
+_RETIRED_ROOM_INPUT_KEYS = frozenset({
+    "hvac_entity_id",
+    "ventilation_entity_id",
+    "air_cleaner_entity_id",
+    "radiation_entity_id",
+})
 _LEGACY_RUNTIME_KEYS = (
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
@@ -69,8 +77,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # setting from either persisted location while preserving unrelated data.
     migrated_data.pop("smoke_alert_entity_id", None)
     migrated_options.pop("smoke_alert_entity_id", None)
+    _remove_retired_room_inputs(migrated_data)
+    _remove_retired_room_inputs(migrated_options)
     migrated_options.setdefault(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT)
     migrated_options.setdefault(CONF_WIND_SPEED_UNIT, DEFAULT_WIND_SPEED_UNIT)
+    migrated_options.setdefault(
+        CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
+        migrated_data.get(
+            CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
+            DEFAULT_URGENT_CLOSE_DURING_QUIET_HOURS,
+        ),
+    )
     runtime_state = migrated_options.get(
         CONF_RUNTIME_STATE, migrated_data.get(CONF_RUNTIME_STATE)
     )
@@ -102,6 +119,28 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         version=_CONFIG_ENTRY_VERSION,
     )
     return True
+
+
+def _remove_retired_room_inputs(config: dict[str, Any]) -> None:
+    """Drop retired room sensor keys without altering unrelated room fields."""
+
+    rooms = config.get("rooms")
+    if not isinstance(rooms, (list, tuple)):
+        return
+    cleaned_rooms = []
+    changed = False
+    for room in rooms:
+        if not isinstance(room, Mapping):
+            cleaned_rooms.append(room)
+            continue
+        cleaned = dict(room)
+        before = len(cleaned)
+        for key in _RETIRED_ROOM_INPUT_KEYS:
+            cleaned.pop(key, None)
+        changed = changed or len(cleaned) != before
+        cleaned_rooms.append(cleaned)
+    if changed:
+        config["rooms"] = type(rooms)(cleaned_rooms)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

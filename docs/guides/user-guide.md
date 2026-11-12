@@ -77,7 +77,8 @@ and its threshold. Outdoor air and pollen contains pollution, pollen,
 Open-Meteo, source, and threshold settings. Windows and protection contains the
 weather source, manual outdoor measurements, and outdoor comfort guardrails.
 Notifications contains notification targets, Home Assistant notifications,
-cooldown, and diagnostic preferences; **Other settings** contains units and
+cooldown, diagnostic preferences, and the opt-in **urgent close during quiet
+hours** setting (disabled by default); **Other settings** contains units and
 debug mode.
 To add a room, open **Rooms**, give it a clear name, and select its indoor
 temperature and humidity sensors. You can add, edit, disable, or remove rooms
@@ -100,6 +101,12 @@ Assistant entities. Check the recommendation before opening or closing a
 window. A recommendation can be delayed by the configured stability period,
 quiet hours, cooldown, missing data, or a disabled room.
 
+The global CO₂ advisory default is 1000 ppm and the global humidity target is
+50%. Both are configurable; a room may override the humidity target. Humidity
+ventilation is suggested above target + 10 percentage points, capped at 100%.
+These are operational guidance values, not medical or safety limits. When
+available, notifications show the observed value and effective threshold.
+
 When the outdoor temperature can correct the room only temporarily, VentWise
 can recommend **brief ventilation** instead of leaving a window open. In that
 case, air the room for about 10 minutes, close the window, and check the sensor
@@ -111,7 +118,7 @@ range.
 
 Use the category that matches the task when changing VentWise settings. The
 climate-adaptive option changes only VentWise's recommendation target; it does
-not change a thermostat or HVAC setpoint.
+not change a thermostat setpoint or operate physical devices.
 
 ### Receive a recommendation now
 

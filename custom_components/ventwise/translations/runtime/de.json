@@ -9,6 +9,8 @@
     "close_severe_weather": "Fenster jetzt schließen: Unwetter wurde erkannt.",
     "close_unsafe_wind": "Fenster jetzt schließen: Die Windbedingungen sind unsicher.",
     "close_outdoor_exposure": "Fenster jetzt schließen: Die konfigurierte Außenluft-Policy fordert, die Belastung zu vermeiden.",
+    "co2_high": "Kurz lüften: Das Innenraum-CO₂ beträgt {value:.0f} ppm und liegt über dem konfigurierten Richtwert von {threshold:.0f} ppm.",
+    "humidity_high": "Kurz lüften: Die Luftfeuchtigkeit beträgt {value:.1f}% und liegt über {threshold:.1f}% (Ziel {target:.1f}%).",
     "forecast_reason": "Kurzfristige Vorhersage: Die Außenbedingungen werden voraussichtlich bald weniger angenehm.",
     "failed_title": "Zustellung der VentWise-Benachrichtigung fehlgeschlagen",
     "failed_targets": "Fehlgeschlagene Ziele"

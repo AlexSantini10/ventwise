@@ -9,6 +9,8 @@
     "close_severe_weather": "Close windows now: severe weather is currently detected.",
     "close_unsafe_wind": "Close windows now: wind conditions are unsafe.",
     "close_outdoor_exposure": "Close windows now: the configured outdoor air-quality policy says to avoid exposure.",
+    "co2_high": "Ventilate briefly: indoor CO₂ is {value:.0f} ppm, above the configured {threshold:.0f} ppm advisory level.",
+    "humidity_high": "Ventilate briefly: indoor humidity is {value:.1f}%, above the {threshold:.1f}% advisory threshold (target {target:.1f}%).",
     "forecast_reason": "Short-term forecast: outside conditions are expected to become less comfortable soon.",
     "failed_title": "VentWise notification delivery failed",
     "failed_targets": "Failed targets"

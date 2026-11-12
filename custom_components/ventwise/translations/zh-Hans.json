@@ -17,7 +17,8 @@
           "target_humidity_percent": "室内舒适湿度",
           "stability_minutes": "稳定窗口（分钟）",
           "notification_device_id": "通知设备",
-          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
+    "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
+    "urgent_close_during_quiet_hours": "在静默时段允许紧急关闭通知",
           "diagnostic_notification_level": "诊断通知",
           "debug_mode_enabled": "Debug mode",
           "co2_enabled": "在建议中考虑 CO2",
@@ -27,7 +28,7 @@
         "data_description": {
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
           "target_temperature_c": "设置你在家时感觉舒适的室内温度。",
-          "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
+          "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 的自适应目标范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。此功能不控制物理设备。",
           "target_humidity_percent": "设置你在家时感觉舒适的室内湿度。",
           "stability_minutes": "VentWise 在采取行动前，建议需要保持相同多久。如果不确定，就保留默认值。",
           "notification_device_id": "选择一个或多个接收 VentWise 通知的设备。",

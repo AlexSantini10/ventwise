@@ -309,6 +309,7 @@ DATA = {
     "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
     "stability_minutes": 0, "co2_enabled": True, "co2_threshold_ppm": 1000.0,
     "home_assistant_notification_enabled": True,
+    "urgent_close_during_quiet_hours": False,
     "air_quality_entity_ids": {"pm2_5": "input_number.ventwise_test_pm25", "grass_pollen": "input_number.ventwise_test_grass_pollen"},
     "exposure_policies": {
         "pm2_5": {"mode": "reduce", "threshold": 25.0, "unit": "µg/m³", "averaging_period": "instant"},

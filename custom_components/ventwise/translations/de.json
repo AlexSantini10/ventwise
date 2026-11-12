@@ -17,7 +17,8 @@
           "target_humidity_percent": "Komfortfeuchtigkeit",
           "stability_minutes": "Mit der Empfehlung warten (Minuten)",
           "notification_device_id": "Benachrichtigungsgeräte",
-          "home_assistant_notification_enabled": "Benachrichtigungen im Home Assistant anzeigen",
+    "home_assistant_notification_enabled": "Benachrichtigungen im Home Assistant anzeigen",
+    "urgent_close_during_quiet_hours": "Dringende Schließbenachrichtigungen während der Ruhezeiten erlauben",
           "diagnostic_notification_level": "Diagnosebenachrichtigungen",
           "debug_mode_enabled": "Debugmodus aktivieren",
           "co2_enabled": "CO2 bei Empfehlungen berücksichtigen",
@@ -27,7 +28,7 @@
         "data_description": {
           "outdoor_weather_entity_id": "Wählen Sie die standardmäßige Home Assistant-Wettereinheit, die VentWise noch heute verwenden kann. Wenn Sie die benötigte Quelle nicht sehen, öffnen Sie ein GitHub-Problem.",
           "target_temperature_c": "Stellen Sie die Innentemperatur ein, die Sie zu Hause als angenehm empfinden.",
-          "auto_comfort_temperature": "Verwendet Ihre Komforttemperatur als Basis und passt sie schrittweise an die wahrgenommene Außentemperatur an. Die Einstellung ist innerhalb eines Sicherheitsbereichs von 18–26 °C für Innenräume auf ±2 °C begrenzt. Raumsensoren ermitteln die Empfehlung, bewegen aber niemals das Ziel. Dadurch wird kein Thermostat oder HVAC-System gesteuert.",
+          "auto_comfort_temperature": "Verwendet Ihre Komforttemperatur als Basis und passt sie schrittweise an die wahrgenommene Außentemperatur an. Die Einstellung ist innerhalb eines adaptiven Zielbereichs von 18–26 °C auf ±2 °C begrenzt. Raumsensoren ermitteln die Empfehlung, bewegen aber niemals das Ziel. Dadurch werden keine physischen Geräte gesteuert.",
           "target_humidity_percent": "Stellen Sie die Raumluftfeuchtigkeit so ein, dass Sie sich zu Hause wohlfühlen.",
           "stability_minutes": "Wie lange die Empfehlung vor der Benachrichtigung unverändert bleiben muss. Im Zweifel den Standardwert beibehalten.",
           "notification_device_id": "Optional. Wählen Sie ein oder mehrere Geräte aus, die VentWise-Benachrichtigungen erhalten sollen.",
@@ -624,7 +625,7 @@
           "outdoor_weather_entity_id": "Wähle die Home-Assistant-Wetterentität für VentWise aus.",
           "target_temperature_c": "Stellen Sie die Innentemperatur ein, die Sie zu Hause als angenehm empfinden.",
           "target_humidity_percent": "Stellen Sie die Raumluftfeuchtigkeit so ein, dass Sie sich zu Hause wohlfühlen.",
-          "auto_comfort_temperature": "Verwendet Ihre Komforttemperatur als Basis und passt sie schrittweise an die wahrgenommene Außentemperatur an. Die Einstellung ist innerhalb eines Sicherheitsbereichs von 18–26 °C für Innenräume auf ±2 °C begrenzt. Raumsensoren ermitteln die Empfehlung, bewegen aber niemals das Ziel. Dadurch wird kein Thermostat oder HVAC-System gesteuert.",
+          "auto_comfort_temperature": "Verwendet Ihre Komforttemperatur als Basis und passt sie schrittweise an die wahrgenommene Außentemperatur an. Die Einstellung ist innerhalb eines adaptiven Zielbereichs von 18–26 °C auf ±2 °C begrenzt. Raumsensoren ermitteln die Empfehlung, bewegen aber niemals das Ziel. Dadurch werden keine physischen Geräte gesteuert.",
           "stability_minutes": "Wie lange eine Empfehlung vor der Benachrichtigung unverändert bleiben muss.",
           "notification_device_id": "Optional. Wähle Geräte für VentWise-Benachrichtigungen aus.",
           "home_assistant_notification_enabled": "Zeigen Sie jede VentWise-Empfehlung im Benachrichtigungsfeld von Home Assistant an."

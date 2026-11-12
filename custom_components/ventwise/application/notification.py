@@ -216,6 +216,9 @@ def build_recommendation_explanation(
     prefix = f"VentWise · {recommendation.room_name}: " if include_room_name else ""
     if action == "ventilate":
         minutes = getattr(recommendation, "ventilation_duration_minutes", None) or 10
+        reason_code = getattr(recommendation, "reason_code", None)
+        if reason_code in {"co2_high", "humidity_high"}:
+            return f"{prefix}{texts[reason_code].format(**_reason_values(recommendation))}"
         return f"{prefix}{_ventilation_reason(language, minutes)}"
     if action == "open":
         if getattr(recommendation, "reason_code", None) == "forecast":
@@ -426,6 +429,20 @@ def _ventilation_reason(language: str | None, minutes: int) -> str:
     """Return the localized bounded-duration ventilation guidance."""
 
     return translate(language, "ventilation_reason").format(minutes=minutes)
+
+
+def _reason_values(recommendation: RoomRecommendation) -> dict[str, float]:
+    """Return measured and configured advisory values for localized reasons."""
+
+    return {
+        "value": float(getattr(recommendation, "co2_ppm", None) or getattr(recommendation, "humidity_percent", 0.0)),
+        "threshold": float(
+            getattr(recommendation, "co2_threshold_ppm", None)
+            if getattr(recommendation, "reason_code", None) == "co2_high"
+            else getattr(recommendation, "humidity_threshold_percent", 100.0)
+        ),
+        "target": float(getattr(recommendation, "humidity_target_percent", 50.0) or 50.0),
+    }
 
 
 def _localized_temperature_reason(

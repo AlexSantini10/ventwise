@@ -17,7 +17,8 @@
           "target_humidity_percent": "Humedad de confort interior",
           "stability_minutes": "Ventana de estabilidad (minutos)",
           "notification_device_id": "Dispositivos de notificación",
-          "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant",
+    "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant",
+    "urgent_close_during_quiet_hours": "Permitir notificaciones de cierre urgente durante las horas silenciosas",
           "diagnostic_notification_level": "Notificaciones de diagnóstico",
           "debug_mode_enabled": "Activar modo de depuracion",
           "co2_enabled": "Considerar el CO2 en las recomendaciones",
@@ -27,7 +28,7 @@
         "data_description": {
           "outdoor_weather_entity_id": "Elige la entidad meteorológica estándar de Home Assistant que VentWise puede usar hoy. Si no ves la fuente que necesitas, abre una issue en GitHub.",
           "target_temperature_c": "Define la temperatura interior que te resulta cómoda cuando estás en casa.",
-          "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de seguridad interior de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla un termostato ni un sistema HVAC.",
+          "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de objetivo adaptativo de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla dispositivos físicos.",
           "target_humidity_percent": "Define la humedad interior que te resulta cómoda cuando estás en casa.",
           "stability_minutes": "Cuánto tiempo debe mantenerse igual la recomendación antes de que VentWise actúe. Si no estás seguro, deja el valor predeterminado.",
           "notification_device_id": "Elige uno o más dispositivos que recibirán las notificaciones de VentWise.",

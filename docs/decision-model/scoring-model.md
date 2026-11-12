@@ -38,7 +38,7 @@ from the current perceived outdoor temperature:
   where a hot or cold room shifts its own goal.
 
 The target is used only for VentWise scoring and recommendations. It never
-changes a thermostat or HVAC setpoint.
+changes a thermostat setpoint or operates physical devices.
 
 ## Early Rules
 
@@ -59,9 +59,7 @@ a 22 C target, a room at 25 C and outdoor air at 18 C receives a `ventilate`
 recommendation: air the room for about 10 minutes, then close the window and
 check again. The duration is intentionally a conservative prompt, not a
 thermal prediction. Window area, wind, air paths, insulation, building mass,
-HVAC, ventilation, air-cleaner state, radiation, and configured physical
-parameters are currently contextual or diagnostic inputs, not a predictive
-physical model.
+Configured physical parameters are not a predictive physical model.
 
 `ventilate` remains advisory only. VentWise does not measure window position,
 operate covers, or schedule a physical close action. Weather and wind safety

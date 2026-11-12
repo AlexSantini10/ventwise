@@ -9,6 +9,8 @@
     "close_severe_weather": "Fermez les fenêtres maintenant : des conditions météorologiques violentes sont détectées.",
     "close_unsafe_wind": "Fermez les fenêtres maintenant : le vent est dangereux.",
     "close_outdoor_exposure": "Fermez les fenêtres maintenant : la politique configurée de qualité de l'air extérieur demande d'éviter l'exposition.",
+    "co2_high": "Aérez brièvement : le CO₂ intérieur est de {value:.0f} ppm, au-dessus du niveau configuré de {threshold:.0f} ppm.",
+    "humidity_high": "Aérez brièvement : l'humidité intérieure est de {value:.1f} %, au-dessus du seuil {threshold:.1f} % (cible {target:.1f} %).",
     "forecast_reason": "Prévision à court terme : les conditions extérieures devraient bientôt devenir moins confortables.",
     "failed_title": "Échec de l'envoi de la notification VentWise",
     "failed_targets": "Destinataires en échec"

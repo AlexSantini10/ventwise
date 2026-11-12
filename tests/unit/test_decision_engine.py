@@ -164,7 +164,7 @@ def test_multi_room_snapshot_keeps_result_order_and_trace_deterministic() -> Non
     ("name", "data", "action", "reason", "duration", "trace"),
     [
         ("open", snapshot(), RecommendationAction.OPEN, "thermal_sustained_benefit", None, ("score.thermal", "score.moisture", "selection.thermal_sustained_benefit")),
-        ("ventilate", snapshot(room_temp=22.0, outdoor_temp=22.0, room={"co2_ppm": obs(1200.0, "ppm")}), RecommendationAction.VENTILATE, "targeted_ventilation_benefit", 15, ("score.thermal", "score.moisture", "selection.targeted_ventilation_benefit")),
+            ("ventilate", snapshot(room_temp=22.0, outdoor_temp=22.0, room={"co2_ppm": obs(1200.0, "ppm")}), RecommendationAction.VENTILATE, "co2_high", 15, ("score.thermal", "score.moisture", "selection.co2_high")),
         ("close", snapshot(room_temp=19.0, outdoor_temp=31.0, room={"window_open": obs(True)}), RecommendationAction.CLOSE, "outdoor_materially_worse", None, ("score.thermal", "score.moisture", "selection.outdoor_materially_worse")),
         ("none", snapshot(room_temp=22.0, outdoor_temp=22.0), RecommendationAction.NONE, "insufficient_or_tied_benefit", None, ("score.thermal", "score.moisture", "selection.insufficient_or_tied_benefit")),
     ],
@@ -343,6 +343,29 @@ def test_recommendation_matrix_covers_all_core_actions(label, data, expected_act
 
     assert result.core_action is expected_action, label
     assert result.reason_code
+
+
+def test_co2_and_humidity_reasons_are_specific() -> None:
+    co2 = DecisionEngine().evaluate(
+        snapshot(room_temp=22.0, outdoor_temp=22.0, room={"co2_ppm": obs(1200.0, "ppm")})
+    ).room_results[0]
+    humidity = DecisionEngine().evaluate(
+        snapshot(room_temp=22.0, room_humidity=75.0, outdoor_temp=22.0, outdoor_humidity=40.0)
+    ).room_results[0]
+
+    assert co2.core_action is RecommendationAction.VENTILATE
+    assert co2.reason_code == "co2_high"
+    assert humidity.core_action is RecommendationAction.VENTILATE
+    assert humidity.reason_code == "humidity_high"
+
+
+def test_stale_co2_does_not_create_a_ventilation_reason() -> None:
+    stale = replace(obs(1400.0, "ppm"), observed_at=NOW - timedelta(hours=1))
+    result = DecisionEngine().evaluate(
+        snapshot(room_temp=22.0, outdoor_temp=22.0, room={"co2_ppm": stale})
+    ).room_results[0]
+
+    assert result.reason_code != "co2_high"
     assert all(value >= 0.0 for value in (
         result.candidate_scores.open,
         result.candidate_scores.ventilate,
@@ -398,7 +421,7 @@ def test_stability_gate_preserves_core_recommendation() -> None:
     assert result.delivery_suppressed_by == "stability"
 
 
-def test_urgent_safety_close_bypasses_delivery_gates() -> None:
+def test_urgent_safety_close_respects_quiet_hours_by_default() -> None:
     data = replace(
         snapshot(weather="thunderstorm", room={"window_open": obs(True)}),
         operational=RecommendationContext(quiet_hours_active=True, cooldown_active=True),
@@ -407,8 +430,19 @@ def test_urgent_safety_close_bypasses_delivery_gates() -> None:
     result = DecisionEngine().evaluate(data).room_results[0]
 
     assert result.core_action is RecommendationAction.CLOSE
-    assert result.delivered_action is RecommendationAction.CLOSE
-    assert result.delivery_suppressed_by is None
+    assert result.delivered_action is RecommendationAction.NONE
+    assert result.delivery_suppressed_by == "quiet_hours"
+
+    allowed = replace(
+        data,
+        operational=RecommendationContext(
+            quiet_hours_active=True,
+            urgent_close_during_quiet_hours=True,
+            cooldown_active=True,
+        ),
+    )
+    allowed_result = DecisionEngine().evaluate(allowed).room_results[0]
+    assert allowed_result.delivered_action is RecommendationAction.CLOSE
 
 
 def test_forecast_rain_penalizes_opening_and_records_trace() -> None:

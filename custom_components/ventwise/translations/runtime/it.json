@@ -9,6 +9,8 @@
     "close_severe_weather": "Chiudi subito le finestre: è stato rilevato maltempo intenso.",
     "close_unsafe_wind": "Chiudi subito le finestre: il vento non è sicuro.",
     "close_outdoor_exposure": "Chiudi subito le finestre: la policy configurata sulla qualità dell'aria esterna richiede di evitare l'esposizione.",
+    "co2_high": "Ventila brevemente: la CO₂ interna è {value:.0f} ppm, oltre il livello configurato di {threshold:.0f} ppm.",
+    "humidity_high": "Ventila brevemente: l'umidità interna è {value:.1f}%, oltre la soglia {threshold:.1f}% (target {target:.1f}%).",
     "forecast_reason": "Previsione a breve termine: fuori sarà presto meno confortevole.",
     "failed_title": "Consegna notifica VentWise fallita",
     "failed_targets": "Target falliti"
