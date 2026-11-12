@@ -88,6 +88,13 @@ when the model changes. CI and GitHub Pages validate this source only; GitHub
 Pages publishes the `docs/` tree from `main` without generating or overwriting
 the Markdown.
 
+Numeric Home Assistant sources cross the integration boundary through an
+explicit native-unit contract. Configuration may select the source unit for
+room sensors and manual outdoor sensors; runtime validation rejects a native
+unit that conflicts with the selection and converts accepted values to the
+engine's canonical units. CO2 recommendations require an indoor global or
+room sensor and use ppm; CO2 is never inferred from another measurement.
+
 - pushes to `main` run unit tests, HACS validation, Hassfest, and package build
 - pushes to `test` branches run the same checks and can publish prerelease artifacts
 - tag pushes matching `v*` rerun validation, build the package, and create the GitHub Release

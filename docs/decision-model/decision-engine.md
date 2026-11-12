@@ -93,8 +93,18 @@ is still suppressed unless `urgent_close_during_quiet_hours` is enabled.
 ## Inputs, quality, and precedence table
 
 Canonical snapshot units are °C, %, ppm, ppm/h, m/s, mm/h, and seconds. The
-core expects canonical units; adapters are responsible for conversion. A unit
-mismatch is discarded, not silently converted or clipped.
+core expects canonical units; adapters are responsible for conversion. Each
+configured numeric source has an explicit native-unit selection. When a
+Home Assistant entity reports a native unit, it must match that selection;
+missing or incompatible units are discarded, not silently converted or
+clipped. Standard weather attributes may use their declared attribute unit;
+when that attribute is absent, the weather adapter uses the canonical unit
+defined by the Home Assistant weather contract.
+
+CO2 is an indoor-only signal. Enabling CO2 requires either one global indoor
+CO2 sensor or a room-level indoor CO2 sensor. The adapter converts valid
+readings to ppm and records unavailable, stale, invalid, or unit-incompatible
+readings as data quality rather than inferring CO2 from another signal.
 
 | Priority | Condition | Effect | Evidence recorded |
 | ---: | --- | --- | --- |

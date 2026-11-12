@@ -24,6 +24,8 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_UNIT,
+    CONF_ROOM_CO2_UNIT,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_ENABLED,
@@ -34,6 +36,7 @@ from custom_components.ventwise.const import (
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_TEMPERATURE_UNIT,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOMS,
     CONF_STABILITY_MINUTES,
@@ -53,6 +56,7 @@ from custom_components.ventwise.const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
+from custom_components.ventwise.const import UNIT_FAHRENHEIT
 from custom_components.ventwise.configuration.flow import (
     ConfigValidationError,
     build_advanced_options_schema,
@@ -489,6 +493,22 @@ def test_normalize_outdoor_override_config_accepts_numeric_entities() -> None:
     assert data[CONF_WIND_SPEED_OVERRIDE] is True
     assert data[CONF_WIND_SPEED_SOURCE] == OUTDOOR_SOURCE_OVERRIDE
     assert data[CONF_WIND_SPEED_ENTITY_ID] == "input_number.wind_speed"
+
+
+def test_normalize_room_config_preserves_selected_sensor_units() -> None:
+    room = normalize_room_config(
+        {
+            CONF_ROOM_NAME: "Office",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.office_temperature",
+            CONF_ROOM_TEMPERATURE_UNIT: UNIT_FAHRENHEIT,
+            CONF_ROOM_HUMIDITY_UNIT: "%",
+            CONF_ROOM_CO2_UNIT: "ppm",
+        },
+        "room",
+    )
+    assert room[CONF_ROOM_TEMPERATURE_UNIT] == UNIT_FAHRENHEIT
+    assert room[CONF_ROOM_HUMIDITY_UNIT] == "%"
+    assert room[CONF_ROOM_CO2_UNIT] == "ppm"
 
 
 def test_normalize_basic_config_rejects_missing_weather_source() -> None:

@@ -33,6 +33,7 @@ from ..const import (
     CONF_CO2_ENABLED,
     CONF_CO2_ENTITY_ID,
     CONF_CO2_THRESHOLD_PPM,
+    CONF_CO2_UNIT,
     CONF_COOLDOWN_MINUTES,
     CONF_ENABLED,
     CONF_MINIMUM_SCORE,
@@ -43,8 +44,10 @@ from ..const import (
     CONF_DEBUG_MODE_ENABLED,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+    CONF_OUTDOOR_HUMIDITY_UNIT,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_UNIT,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
@@ -54,7 +57,9 @@ from ..const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_UNIT,
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_UNIT,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -62,6 +67,7 @@ from ..const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_TEMPERATURE_UNIT,
     CONF_ROOM_START_ENTITY_ID,
     CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
@@ -93,6 +99,7 @@ from ..const import (
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_WIND_SPEED_SOURCE_UNIT,
     CONF_POLLUTION_POLICY,
     CONF_POLLEN_POLICY,
     CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
@@ -120,7 +127,15 @@ from ..const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from ..units import state_unit, temperature_to_celsius, temperature_unit, wind_speed_to_m_s, wind_speed_unit
+from ..units import (
+    source_unit,
+    source_value_to_canonical,
+    state_unit,
+    temperature_to_celsius,
+    temperature_unit,
+    wind_speed_to_m_s,
+    wind_speed_unit,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,6 +145,7 @@ class RoomConfig:
     room_id: str | None
     name: str
     temperature_entity_id: str
+    temperature_unit: str = DEFAULT_TEMPERATURE_UNIT
     kind: str = "room"
     enabled: bool = True
     target_temperature_c_override_enabled: bool = False
@@ -137,7 +153,9 @@ class RoomConfig:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
+    humidity_unit: str = "%"
     co2_entity_id: str | None = None
+    co2_unit: str = "ppm"
     window_sensor_entity_ids: tuple[str, ...] = ()
     start_entity_id: str | None = None
     stop_entity_id: str | None = None
@@ -172,10 +190,13 @@ class IntegrationConfig:
     enabled: bool = True
     outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_temperature_entity_id: str | None = None
+    outdoor_temperature_source_unit: str = DEFAULT_TEMPERATURE_UNIT
     outdoor_humidity_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_humidity_entity_id: str | None = None
+    outdoor_humidity_source_unit: str = "%"
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
+    wind_speed_source_unit: str = DEFAULT_WIND_SPEED_UNIT
     notification_enabled: bool = True
     home_assistant_notification_enabled: bool = False
     diagnostic_notification_level: str = DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
@@ -183,6 +204,7 @@ class IntegrationConfig:
     co2_enabled: bool = False
     co2_entity_id: str | None = None
     co2_threshold_ppm: float = DEFAULT_CO2_THRESHOLD_PPM
+    co2_unit: str = "ppm"
     pollution_policy: str | None = None
     pollen_policy: str | None = None
     open_meteo_air_quality_enabled: bool = False
@@ -272,6 +294,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             kind=str(room.get(CONF_ROOM_KIND, "room")),
             name=str(room[CONF_ROOM_NAME]),
             temperature_entity_id=str(room[CONF_ROOM_TEMPERATURE_ENTITY_ID]),
+            temperature_unit=source_unit(room.get(CONF_ROOM_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT), "temperature") or DEFAULT_TEMPERATURE_UNIT,
             enabled=bool(room.get(CONF_ROOM_ENABLED, True)),
             target_temperature_c_override_enabled=bool(
                 room.get(
@@ -294,7 +317,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
+            humidity_unit=source_unit(room.get(CONF_ROOM_HUMIDITY_UNIT, "%"), "humidity") or "%",
             co2_entity_id=_string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID)),
+            co2_unit=source_unit(room.get(CONF_ROOM_CO2_UNIT, "ppm"), "co2") or "ppm",
             window_sensor_entity_ids=_string_list(
                 room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
             ),
@@ -347,14 +372,17 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
         ),
         outdoor_temperature_entity_id=_string_or_none(data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID)),
+        outdoor_temperature_source_unit=source_unit(data.get(CONF_OUTDOOR_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT), "temperature") or DEFAULT_TEMPERATURE_UNIT,
         outdoor_humidity_source=_outdoor_source(
             data,
             CONF_OUTDOOR_HUMIDITY_SOURCE,
             CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
         ),
         outdoor_humidity_entity_id=_string_or_none(data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID)),
+        outdoor_humidity_source_unit=source_unit(data.get(CONF_OUTDOOR_HUMIDITY_UNIT, "%"), "humidity") or "%",
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
+        wind_speed_source_unit=source_unit(data.get(CONF_WIND_SPEED_SOURCE_UNIT, DEFAULT_WIND_SPEED_UNIT), "wind_speed") or DEFAULT_WIND_SPEED_UNIT,
         notification_enabled=bool(data.get(CONF_NOTIFICATION_ENABLED, True)),
         home_assistant_notification_enabled=bool(
             data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)
@@ -366,6 +394,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         co2_enabled=bool(data.get(CONF_CO2_ENABLED, False)),
         co2_entity_id=_string_or_none(data.get(CONF_CO2_ENTITY_ID)),
         co2_threshold_ppm=float(data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)),
+        co2_unit=source_unit(data.get(CONF_CO2_UNIT, "ppm"), "co2") or "ppm",
         pollution_policy=_exposure_policy(data.get(CONF_POLLUTION_POLICY)),
         pollen_policy=_exposure_policy(data.get(CONF_POLLEN_POLICY)),
         open_meteo_air_quality_enabled=bool(data.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)),
@@ -556,13 +585,17 @@ def build_decision_snapshot(
         if source == OUTDOOR_SOURCE_OVERRIDE and entity_id:
             state = state_getter(entity_id)
             return observation_from_state(state, source_id=entity_id, now=now, unit=unit,
-                converter=lambda raw, item: _canonical_measurement_value(float(raw), item, measurement))
-        return weather_attribute(attribute, unit, lambda raw, item: _canonical_measurement_value(float(raw), item, measurement))
+                converter=lambda raw, item: source_value_to_canonical(float(raw), item, {
+                    "temperature": config.outdoor_temperature_source_unit,
+                    "humidity": config.outdoor_humidity_source_unit,
+                    "wind_speed": config.wind_speed_source_unit,
+                }.get(measurement or ""), measurement))
+        return weather_attribute(attribute, unit, lambda raw, item: source_value_to_canonical(float(raw), item, None, measurement))
 
     temperature = selected_numeric(config.outdoor_temperature_source, config.outdoor_temperature_entity_id, "temperature", "°C", "temperature")
     humidity = selected_numeric(config.outdoor_humidity_source, config.outdoor_humidity_entity_id, "humidity", "%")
     wind = selected_numeric(config.wind_speed_source, config.wind_speed_entity_id, "wind_speed", "m/s", "wind_speed")
-    gust = weather_attribute("wind_gust_speed", "m/s", lambda raw, item: _canonical_measurement_value(float(raw), item, "wind_speed"))
+    gust = weather_attribute("wind_gust_speed", "m/s", lambda raw, item: source_value_to_canonical(float(raw), item, None, "wind_speed"))
     weather_state = state_getter(config.outdoor_weather_entity_id) if config.outdoor_weather_entity_id else None
     condition = observation_from_state(
         weather_state,
@@ -593,12 +626,13 @@ def build_decision_snapshot(
         room_key = room.room_id or room.name
         temp_state = state_getter(room.temperature_entity_id)
         room_temp = observation_from_state(temp_state, source_id=room.temperature_entity_id, now=now, unit="°C",
-            converter=lambda raw, item: _canonical_measurement_value(float(raw), item, "temperature"))
+            converter=lambda raw, item: source_value_to_canonical(float(raw), item, room.temperature_unit, "temperature"))
         humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
-        room_humidity = observation_from_state(humidity_state, source_id=room.humidity_entity_id, now=now, unit="%", converter=lambda raw, _: float(raw))
+        room_humidity = observation_from_state(humidity_state, source_id=room.humidity_entity_id, now=now, unit="%", converter=lambda raw, item: source_value_to_canonical(float(raw), item, room.humidity_unit, "humidity"))
         co2_id = room.co2_entity_id or config.co2_entity_id
         co2_state = state_getter(co2_id) if config.co2_enabled and co2_id else None
-        co2 = observation_from_state(co2_state, source_id=co2_id, now=now, unit="ppm", converter=lambda raw, _: float(raw)) if co2_id and config.co2_enabled else None
+        co2_unit = room.co2_unit if room.co2_entity_id else config.co2_unit
+        co2 = observation_from_state(co2_state, source_id=co2_id, now=now, unit="ppm", converter=lambda raw, item: source_value_to_canonical(float(raw), item, co2_unit, "co2")) if co2_id and config.co2_enabled else None
         trend: Observation[float] | None = None
         if co2 is not None and co2.value is not None and co2.observed_at is not None:
             samples = [(at, val) for at, val in history.get(room_key, []) if now - at <= timedelta(minutes=30)]
@@ -997,12 +1031,16 @@ def build_debug_attributes(
         "forecast_temperature_c": snapshot.forecast_temperature_c,
         "co2_enabled": config.co2_enabled,
         "co2_threshold_ppm": config.co2_threshold_ppm,
+        "co2_source_unit": config.co2_unit,
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "wind_gust_m_s": snapshot.wind_gust_m_s,
         "target_temperature_c": config.target_temperature_c,
         "temperature_unit": config.temperature_unit,
         "wind_speed_unit": config.wind_speed_unit,
+        "outdoor_temperature_source_unit": config.outdoor_temperature_source_unit,
+        "outdoor_humidity_source_unit": config.outdoor_humidity_source_unit,
+        "wind_speed_source_unit": config.wind_speed_source_unit,
         "auto_comfort_temperature_enabled": config.auto_comfort_temperature_enabled,
         "target_humidity_percent": config.target_humidity_percent,
         "minimum_score": config.minimum_score,

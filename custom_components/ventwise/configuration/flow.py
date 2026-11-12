@@ -25,6 +25,7 @@ from ..const import (
     CONF_CO2_ENABLED,
     CONF_CO2_ENTITY_ID,
     CONF_CO2_THRESHOLD_PPM,
+    CONF_CO2_UNIT,
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
     CONF_DEBUG_MODE_ENABLED,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
@@ -34,12 +35,16 @@ from ..const import (
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_UNIT,
+    CONF_OUTDOOR_HUMIDITY_UNIT,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_UNIT,
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_UNIT,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
@@ -59,6 +64,7 @@ from ..const import (
     CONF_ROOM_THERMAL_MASS,
     CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_TEMPERATURE_UNIT,
     CONF_ROOMS,
     CONF_STABILITY_MINUTES,
     CONF_URGENT_CLOSE_DURING_QUIET_HOURS,
@@ -67,6 +73,7 @@ from ..const import (
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_WIND_SPEED_SOURCE_UNIT,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     CONF_POLLUTION_POLICY,
@@ -91,7 +98,7 @@ from ..const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from ..units import TEMPERATURE_UNITS, WIND_SPEED_UNITS, temperature_from_celsius, temperature_to_celsius, temperature_unit, wind_speed_unit
+from ..units import CO2_UNITS, HUMIDITY_UNITS, TEMPERATURE_UNITS, WIND_SPEED_UNITS, temperature_from_celsius, temperature_to_celsius, temperature_unit, wind_speed_unit, source_unit
 from ..application.notification import (
     is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
@@ -372,6 +379,19 @@ def build_outdoor_override_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 defaults.get(entity_field),
             )
         )
+        unit_field = {
+            CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: CONF_OUTDOOR_TEMPERATURE_UNIT,
+            CONF_OUTDOOR_HUMIDITY_ENTITY_ID: CONF_OUTDOOR_HUMIDITY_UNIT,
+            CONF_WIND_SPEED_ENTITY_ID: CONF_WIND_SPEED_SOURCE_UNIT,
+        }[entity_field]
+        units = {
+            CONF_OUTDOOR_TEMPERATURE_UNIT: TEMPERATURE_UNITS,
+            CONF_OUTDOOR_HUMIDITY_UNIT: HUMIDITY_UNITS,
+            CONF_WIND_SPEED_SOURCE_UNIT: WIND_SPEED_UNITS,
+        }[unit_field]
+        fields[vol.Required(unit_field, default=defaults.get(unit_field, units[0]))] = SelectSelector(
+            SelectSelectorConfig(options=list(units))
+        )
     return vol.Schema(fields)
 
 
@@ -503,6 +523,7 @@ def build_co2_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
         vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
         **_optional_selector_field(CONF_CO2_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)), defaults.get(CONF_CO2_ENTITY_ID)),
         vol.Required(CONF_CO2_THRESHOLD_PPM, default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)): vol.All(vol.Coerce(float), vol.Range(min=400.0, max=5000.0)),
+        vol.Required(CONF_CO2_UNIT, default=defaults.get(CONF_CO2_UNIT, CO2_UNITS[0])): SelectSelector(SelectSelectorConfig(options=list(CO2_UNITS))),
     })
 
 
@@ -670,11 +691,14 @@ def build_room_schema(
                 minimum=20.0,
                 maximum=80.0,
             ),
+            vol.Required(CONF_ROOM_TEMPERATURE_UNIT, default=defaults.get(CONF_ROOM_TEMPERATURE_UNIT, TEMPERATURE_UNITS[0])): SelectSelector(SelectSelectorConfig(options=list(TEMPERATURE_UNITS))),
+            vol.Required(CONF_ROOM_HUMIDITY_UNIT, default=defaults.get(CONF_ROOM_HUMIDITY_UNIT, HUMIDITY_UNITS[0])): SelectSelector(SelectSelectorConfig(options=list(HUMIDITY_UNITS))),
             **_optional_selector_field(
                 CONF_ROOM_CO2_ENTITY_ID,
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_CO2_ENTITY_ID),
             ),
+            vol.Required(CONF_ROOM_CO2_UNIT, default=defaults.get(CONF_ROOM_CO2_UNIT, CO2_UNITS[0])): SelectSelector(SelectSelectorConfig(options=list(CO2_UNITS))),
             vol.Optional(
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
                 default=_default_entity_id_list(
@@ -719,10 +743,12 @@ def build_room_schema(
         allowed = {
             CONF_ROOM_ENABLED, CONF_ROOM_NAME, CONF_ROOM_TEMPERATURE_ENTITY_ID,
             CONF_ROOM_HUMIDITY_ENTITY_ID,
+            CONF_ROOM_TEMPERATURE_UNIT, CONF_ROOM_HUMIDITY_UNIT,
         }
         if section == "base":
             allowed.update({
                 CONF_ROOM_CO2_ENTITY_ID, CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
+                CONF_ROOM_CO2_UNIT,
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
                 CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -864,6 +890,9 @@ def normalize_co2_config(user_input: Mapping[str, object]) -> dict[str, object]:
         _normalize_optional_entity_ids(data, CONF_CO2_ENTITY_ID, domains=NUMERIC_ENTITY_DOMAINS)
     if CONF_CO2_THRESHOLD_PPM in data:
         data[CONF_CO2_THRESHOLD_PPM] = _normalize_float(data[CONF_CO2_THRESHOLD_PPM], CONF_CO2_THRESHOLD_PPM, 400.0, 5000.0)
+    data[CONF_CO2_UNIT] = source_unit(data.get(CONF_CO2_UNIT, CO2_UNITS[0]), "co2")
+    if data[CONF_CO2_UNIT] is None:
+        raise ConfigValidationError(CONF_CO2_UNIT)
     return data
 
 
@@ -930,6 +959,23 @@ def normalize_outdoor_override_config(
             entity_field,
             domains=NUMERIC_ENTITY_DOMAINS,
         )
+        unit_field = {
+            CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: CONF_OUTDOOR_TEMPERATURE_UNIT,
+            CONF_OUTDOOR_HUMIDITY_ENTITY_ID: CONF_OUTDOOR_HUMIDITY_UNIT,
+            CONF_WIND_SPEED_ENTITY_ID: CONF_WIND_SPEED_SOURCE_UNIT,
+        }[entity_field]
+        measurement = {
+            CONF_OUTDOOR_TEMPERATURE_UNIT: "temperature",
+            CONF_OUTDOOR_HUMIDITY_UNIT: "humidity",
+            CONF_WIND_SPEED_SOURCE_UNIT: "wind_speed",
+        }[unit_field]
+        data.setdefault(unit_field, {
+            "temperature": TEMPERATURE_UNITS[0],
+            "humidity": HUMIDITY_UNITS[0],
+            "wind_speed": WIND_SPEED_UNITS[0],
+        }[measurement])
+        if source_unit(data.get(unit_field), measurement) is None:
+            raise ConfigValidationError(unit_field)
         data[source_field] = OUTDOOR_SOURCE_OVERRIDE
     return data
 
@@ -1041,6 +1087,14 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_STOP_ENTITY_ID,
         CONF_ROOM_SURFACE_TEMPERATURE_ENTITY_ID,
     )
+    for field, measurement, default in (
+        (CONF_ROOM_TEMPERATURE_UNIT, "temperature", TEMPERATURE_UNITS[0]),
+        (CONF_ROOM_HUMIDITY_UNIT, "humidity", HUMIDITY_UNITS[0]),
+        (CONF_ROOM_CO2_UNIT, "co2", CO2_UNITS[0]),
+    ):
+        data[field] = source_unit(data.get(field, default), measurement)
+        if data[field] is None:
+            raise ConfigValidationError(field)
     data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
