@@ -1,4 +1,9 @@
-# Scoring Model
+# Decision Model
+
+The active implementation is the deterministic pipeline documented in
+[`decision-engine.md`](decision-engine.md). This document records the
+user-facing comfort assumptions that the pipeline preserves; it is not an
+independent runtime algorithm.
 
 ## Goal
 

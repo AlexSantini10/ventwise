@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Tuple
+from typing import Generic, Tuple, TypeVar
+
+
+T = TypeVar("T")
 
 
 class RecommendationAction(str, Enum):
@@ -14,6 +18,160 @@ class RecommendationAction(str, Enum):
     VENTILATE = "ventilate"
     CLOSE = "close"
     NONE = "none"
+
+
+class Availability(str, Enum):
+    """Availability state for a normalized input."""
+
+    AVAILABLE = "available"
+    MISSING = "missing"
+    INVALID = "invalid"
+    STALE = "stale"
+    DISABLED_BY_USER = "disabled_by_user"
+    AWAITING_SOURCE = "awaiting_source"
+
+
+class Validity(str, Enum):
+    """Validation state for a normalized input."""
+
+    VALID = "valid"
+    INVALID = "invalid"
+
+
+@dataclass(frozen=True, slots=True)
+class Observation(Generic[T]):
+    """Immutable source reading consumed by the decision engine."""
+
+    value: T | None
+    unit: str
+    observed_at: datetime | None
+    received_at: datetime | None
+    source_id: str | None
+    validity: Validity = Validity.VALID
+    freshness: timedelta | None = None
+    availability: Availability = Availability.AVAILABLE
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionRoom:
+    """Normalized room inputs for one deterministic evaluation."""
+
+    room_id: str
+    name: str
+    temperature_c: Observation[float]
+    humidity_percent: Observation[float]
+    window_open: Observation[bool] | None = None
+    target_temperature_c: float | None = None
+    target_humidity_percent: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionOutdoor:
+    """Normalized outdoor inputs for one deterministic evaluation."""
+
+    temperature_c: Observation[float]
+    humidity_percent: Observation[float]
+    wind_speed_m_s: Observation[float] | None = None
+    wind_gust_m_s: Observation[float] | None = None
+    weather_condition: Observation[str] | None = None
+    forecast_temperature_c: Observation[float] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionContext:
+    """Explicit operational state; no delivery state is held by the engine."""
+
+    quiet_hours_active: bool = False
+    cooldown_active: bool = False
+    stable_for_seconds: int = 0
+    stability_seconds_required: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionSnapshot:
+    """Complete immutable input to a deterministic decision."""
+
+    rooms: Tuple[DecisionRoom, ...]
+    outdoor: DecisionOutdoor
+    evaluated_at: datetime
+    context: DecisionContext = field(default_factory=DecisionContext)
+
+
+@dataclass(frozen=True, slots=True)
+class TraceEntry:
+    """Stable, sanitized explanation entry."""
+
+    code: str
+    detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateScores:
+    """Scores for the supported action candidates."""
+
+    open: float = 0.0
+    ventilate: float = 0.0
+    close: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class DataQualitySummary:
+    """Deterministic inventory of accepted and rejected inputs."""
+
+    used: Tuple[str, ...] = ()
+    discarded: Tuple[str, ...] = ()
+    awaiting_source: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionResult:
+    """Core decision truth and delivery eligibility for one room."""
+
+    room_id: str
+    core_action: RecommendationAction
+    delivered_action: RecommendationAction
+    candidate_scores: CandidateScores
+    confidence: float
+    reason_code: str
+    score: float = 0.0
+    reason: str = ""
+    target_perceived_c: float = 0.0
+    indoor_perceived_c: float = 0.0
+    outdoor_perceived_c: float = 0.0
+    suggested_comfort_temperature_c: float = 0.0
+    trace: Tuple[TraceEntry, ...] = ()
+    data_quality: DataQualitySummary = field(default_factory=DataQualitySummary)
+    delivery_suppressed_by: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AggregateDecisionResult:
+    """Stable aggregate result and all per-room decisions."""
+
+    core_action: RecommendationAction
+    delivered_action: RecommendationAction
+    room_results: Tuple[DecisionResult, ...] = ()
+    trace: Tuple[TraceEntry, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionConfig:
+    """Versioned parameters for the minimal deterministic decision model."""
+
+    version: str = "250-minimal-ddp-v1"
+    target_temperature_c: float = 22.0
+    comfort_band_c: float = 1.0
+    meaningful_benefit_c: float = 0.35
+    winner_margin: float = 0.05
+    indoor_freshness: timedelta = timedelta(minutes=15)
+    outdoor_freshness: timedelta = timedelta(minutes=15)
+    wind_preference_m_s: float = 4.0
+    wind_block_m_s: float = 12.0
+    gust_block_m_s: float = 15.0
+    severe_weather_tokens: Tuple[str, ...] = (
+        "thunder", "lightning", "storm", "hail", "tornado", "hurricane",
+        "blizzard", "squall", "freezing", "icy", "ice",
+    )
 
 
 class SeasonMode(str, Enum):

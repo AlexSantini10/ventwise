@@ -20,14 +20,19 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 - Pure Python logic.
 - Independent from Home Assistant APIs.
-- Handles:
-  - comfort scoring
-  - indoor vs outdoor comparison
-  - humidity and wind modifiers
-  - anti-spam and cooldown decisions
+- Receives one immutable, normalized decision snapshot.
+- Evaluates thermal comfort and safety deterministically.
+- Returns per-room and aggregate recommendations with stable traces.
+- Does not read Home Assistant, access the network, read the clock, or own
+  notification/delivery state.
 
 ### 2. Home Assistant Integration
 
+- Collects entity state and builds the normalized decision snapshot.
+- Converts pure decision results into the existing recommendation entity
+  contract.
+- Owns notification delivery, deduplication, quiet hours, cooldowns, and
+  room-action guardrails.
 - Exposes a `config flow` to create the integration.
 - Exposes an `options flow` to edit the configuration later.
 - The config flow collects weather and comfort temperature first, then lets
@@ -93,7 +98,8 @@ The user should be able to:
 
 ## Current Repo Mapping
 
-- `custom_components/ventwise/ventwise_core/`: reusable scoring logic.
+- `custom_components/ventwise/ventwise_core/`: immutable models and the pure
+  deterministic decision engine.
 - `custom_components/ventwise/`: Home Assistant integration code.
 - `tests/`: scoring and behavior tests.
 - `examples/`: sample configurations and scenarios.

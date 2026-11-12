@@ -9,11 +9,18 @@ from typing import Any
 
 from ..ventwise_core import (
     ComfortObservation,
+    DecisionContext,
+    DecisionEngine,
+    DecisionOutdoor,
+    DecisionRoom,
+    DecisionSnapshot,
+    Observation,
     ForecastObservation,
     RecommendationAction,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
+    RoomRecommendation,
     ScoringConfig,
 )
 
@@ -91,7 +98,6 @@ from ..const import (
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from ..units import state_unit, temperature_to_celsius, temperature_unit, wind_speed_to_m_s, wind_speed_unit
-from ..ventwise_core import ComfortRecommender
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,6 +328,125 @@ def build_scoring_config(config: IntegrationConfig) -> ScoringConfig:
         minimum_stability_seconds=config.stability_minutes * 60,
         co2_enabled=config.co2_enabled,
         co2_threshold_ppm=config.co2_threshold_ppm,
+    )
+
+
+def build_decision_snapshot(
+    rooms: list[RoomProfile],
+    outdoor: ComfortObservation,
+    evaluated_at: datetime,
+    *,
+    forecast: ForecastObservation | None = None,
+) -> DecisionSnapshot:
+    """Normalize runtime observations into one immutable decision snapshot."""
+
+    def observation(value: Any, unit: str, source_id: str) -> Observation:
+        return Observation(value, unit, evaluated_at, evaluated_at, source_id)
+
+    decision_rooms = tuple(
+        DecisionRoom(
+            room_id=room.room_id or room.name,
+            name=room.name,
+            temperature_c=observation(
+                room.indoor.temperature_c, "°C", room.room_id or room.name
+            ),
+            humidity_percent=observation(
+                room.indoor.humidity_percent, "%", room.room_id or room.name
+            ),
+            target_temperature_c=(
+                room.target_temperature_c_override
+                if room.target_temperature_c_override_enabled
+                else None
+            ),
+            target_humidity_percent=(
+                room.target_humidity_percent_override
+                if room.target_humidity_percent_override_enabled
+                else None
+            ),
+        )
+        for room in rooms
+        if room.enabled
+    )
+    decision_forecast = None
+    if forecast is not None and forecast.temperature_c is not None:
+        decision_forecast = observation(forecast.temperature_c, "°C", "forecast")
+    return DecisionSnapshot(
+        rooms=decision_rooms,
+        outdoor=DecisionOutdoor(
+            temperature_c=observation(outdoor.temperature_c, "°C", "outdoor"),
+            humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor"),
+            wind_speed_m_s=(
+                observation(outdoor.wind_speed_m_s, "m/s", "outdoor")
+                if outdoor.wind_speed_m_s is not None else None
+            ),
+            wind_gust_m_s=(
+                observation(outdoor.wind_gust_m_s, "m/s", "outdoor")
+                if outdoor.wind_gust_m_s is not None else None
+            ),
+            weather_condition=(
+                observation(outdoor.weather_condition, "", "outdoor")
+                if outdoor.weather_condition is not None else None
+            ),
+            forecast_temperature_c=decision_forecast,
+        ),
+        evaluated_at=evaluated_at,
+        context=DecisionContext(),
+    )
+
+
+def decision_to_summary(
+    engine: DecisionEngine,
+    snapshot: DecisionSnapshot,
+    rooms: list[RoomProfile],
+) -> RecommendationSummary:
+    """Render pure decision results into the existing entity-facing contract."""
+
+    result = engine.evaluate(snapshot)
+    profiles = {room.room_id or room.name: room for room in rooms}
+    recommendations = []
+    for room_result in result.room_results:
+        profile = profiles[room_result.room_id]
+        recommendations.append(
+            RoomRecommendation(
+                room_name=profile.name,
+                action=room_result.delivered_action,
+                score=room_result.score,
+                reason=room_result.reason,
+                target_perceived_c=room_result.target_perceived_c,
+                indoor_perceived_c=room_result.indoor_perceived_c,
+                outdoor_perceived_c=room_result.outdoor_perceived_c,
+                suggested_comfort_temperature_c=room_result.suggested_comfort_temperature_c,
+                room_id=profile.room_id,
+                open_score=room_result.candidate_scores.open,
+                close_score=room_result.candidate_scores.close,
+                reason_code=room_result.reason_code,
+                indoor_comfort_severity=abs(
+                    room_result.indoor_perceived_c - room_result.target_perceived_c
+                ),
+                outdoor_comfort_severity=abs(
+                    room_result.outdoor_perceived_c - room_result.target_perceived_c
+                ),
+            )
+        )
+    selected_room_id = next(
+        (
+            item.room_id
+            for item in result.room_results
+            if item.delivered_action is not RecommendationAction.NONE
+        ),
+        None,
+    )
+    best = next(
+        (item for item in recommendations if item.room_id == selected_room_id),
+        None,
+    )
+    return RecommendationSummary(
+        action=result.delivered_action,
+        score=best.score if best else 0.0,
+        reason=best.reason if best else "No actionable recommendation.",
+        suggested_comfort_temperature_c=best.suggested_comfort_temperature_c if best else None,
+        room_recommendations=tuple(recommendations),
+        best_room=best.room_name if best else None,
     )
 
 

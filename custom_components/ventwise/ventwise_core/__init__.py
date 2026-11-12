@@ -1,17 +1,32 @@
 """Reusable comfort recommendation core."""
 
 from .models import (
+    AggregateDecisionResult,
+    Availability,
+    CandidateScores,
     ComfortObservation,
+    DataQualitySummary,
+    DecisionConfig,
+    DecisionContext,
+    DecisionOutdoor,
+    DecisionResult,
+    DecisionRoom,
+    DecisionSnapshot,
     ForecastObservation,
     RecommendationAction,
     RecommendationContext,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
+    RoomRecommendation,
     SeasonMode,
     ScoringConfig,
+    TraceEntry,
+    Validity,
+    Observation,
 )
-from .scoring import ComfortRecommender, perceived_temperature, suggested_comfort_temperature
+from .decision import DecisionEngine, perceived_temperature, suggested_comfort_temperature
+from .scoring import ComfortRecommender
 
 __all__ = [
     "ComfortObservation",
@@ -22,8 +37,23 @@ __all__ = [
     "RecommendationSummary",
     "RoomObservation",
     "RoomProfile",
+    "RoomRecommendation",
     "SeasonMode",
     "ScoringConfig",
     "perceived_temperature",
     "suggested_comfort_temperature",
+    "AggregateDecisionResult",
+    "Availability",
+    "CandidateScores",
+    "DataQualitySummary",
+    "DecisionConfig",
+    "DecisionContext",
+    "DecisionEngine",
+    "DecisionOutdoor",
+    "DecisionResult",
+    "DecisionRoom",
+    "DecisionSnapshot",
+    "Observation",
+    "TraceEntry",
+    "Validity",
 ]

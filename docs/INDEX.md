@@ -15,7 +15,7 @@ Start with the document for your role.
 2. [Development workflow](development.md) for local setup and common commands.
 3. [Testing](testing.md) for the test layers and Home Assistant sandbox.
 4. [Docker Test Lab](docker-test-lab.md) for local manual testing without hardware.
-4. [Architecture](ARCHITECTURE.md), [domain model](domain-model.md), and [scoring model](scoring-model.md) for design details.
+4. [Architecture](ARCHITECTURE.md), [decision pipeline](decision-engine.md), [domain model](domain-model.md), and [scoring model](scoring-model.md) for design details.
 5. [HACS packaging](hacs-packaging.md) for releases, discovery, and packaging.
 6. [Brand assets](brand-assets.md) for Home Assistant and repository artwork.
 
