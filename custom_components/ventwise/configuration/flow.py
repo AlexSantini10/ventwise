@@ -72,7 +72,6 @@ from ..const import (
     CONF_WIND_SPEED_ENTITY_ID,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
-    CONF_SMOKE_ALERT_ENTITY_ID,
     CONF_POLLUTION_POLICY,
     CONF_POLLEN_POLICY,
     CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
@@ -402,11 +401,6 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 CONF_COOLDOWN_MINUTES,
                 default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
             ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
-            **_optional_selector_field(
-                CONF_SMOKE_ALERT_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain="binary_sensor")),
-                defaults.get(CONF_SMOKE_ALERT_ENTITY_ID),
-            ),
             vol.Optional(CONF_POLLUTION_POLICY, default=defaults.get(CONF_POLLUTION_POLICY, "ignore")): SelectSelector(
                 SelectSelectorConfig(options=["ignore", "reduce", "avoid"])
             ),
@@ -577,7 +571,6 @@ def build_air_quality_options_schema(defaults: Mapping[str, object]) -> vol.Sche
     """Create global air-quality and pollen controls."""
 
     return vol.Schema({
-        **_optional_selector_field(CONF_SMOKE_ALERT_ENTITY_ID, EntitySelector(EntitySelectorConfig(domain="binary_sensor")), defaults.get(CONF_SMOKE_ALERT_ENTITY_ID)),
         vol.Optional(CONF_POLLUTION_POLICY, default=defaults.get(CONF_POLLUTION_POLICY, "ignore")): SelectSelector(SelectSelectorConfig(options=["ignore", "reduce", "avoid"])),
         vol.Optional(CONF_POLLEN_POLICY, default=defaults.get(CONF_POLLEN_POLICY, "ignore")): SelectSelector(SelectSelectorConfig(options=["ignore", "reduce", "avoid"])),
         vol.Required(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, default=defaults.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)): cv.boolean,

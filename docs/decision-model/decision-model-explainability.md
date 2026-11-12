@@ -24,7 +24,7 @@ The implementation sources are:
 1. Missing or stale critical outdoor temperature, condition, or wind fails closed for opening and ventilation.
 2. Severe weather and active precipitation block opening and ventilation.
 3. Unsafe wind or gusts block opening and ventilation.
-4. Smoke alerts and explicit exposure `avoid` policies block opening and ventilation.
+4. Explicit exposure `avoid` policies block opening and ventilation.
 5. Exposure `reduce` policies and imminent rain penalize candidates.
 6. Thermal comfort, moisture, and CO2 evidence produce candidate scores.
 7. Forecast and physical context adjust duration, confidence, or explanation but cannot override safety blocks.
@@ -62,7 +62,7 @@ must remain synchronized with the tests.
 | Outdoor air materially worsens comfort | `close` | Same unless the window is already closed | Implemented and tested |
 | Neutral conditions | `none` | `none` | Implemented and tested |
 | High humidity or high/rising CO₂ | `ventilate` | Same unless delivery is gated | Implemented and tested |
-| Rain, storm, unsafe wind/gusts, smoke, or exposure `avoid` | `close` | `close`, including urgent bypass | Implemented and tested |
+| Rain, storm, unsafe wind/gusts, or exposure `avoid` | `close` | `close`, including urgent bypass | Implemented and tested |
 | Exposure `reduce` with matching unit and averaging period | Penalized candidate | Core preserved | Implemented and tested |
 | Missing, invalid, future, stale, or implausible critical data | `none` or safety `close` | Core preserved | Implemented and tested |
 | Condensation risk | Core preserved | Duration capped at 5 minutes; confidence reduced | Implemented and tested |

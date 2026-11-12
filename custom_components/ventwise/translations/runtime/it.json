@@ -5,6 +5,10 @@
     "none": "nessuna azione necessaria.",
     "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
     "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+    "close_current_precipitation": "Chiudi subito le finestre: sono state rilevate precipitazioni.",
+    "close_severe_weather": "Chiudi subito le finestre: è stato rilevato maltempo intenso.",
+    "close_unsafe_wind": "Chiudi subito le finestre: il vento non è sicuro.",
+    "close_outdoor_exposure": "Chiudi subito le finestre: la policy configurata sulla qualità dell'aria esterna richiede di evitare l'esposizione.",
     "forecast_reason": "Previsione a breve termine: fuori sarà presto meno confortevole.",
     "failed_title": "Consegna notifica VentWise fallita",
     "failed_targets": "Target falliti"

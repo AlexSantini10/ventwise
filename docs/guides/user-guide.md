@@ -73,7 +73,7 @@ are grouped by purpose: **Comfort**, **CO2**, **Outdoor air and pollen**,
 **Windows and protection**, **Rooms**, **Notifications**, and **Other settings**.
 Comfort contains the global temperature, humidity, adaptive comfort, and
 recommendation stability defaults. CO2 contains enablement, the global sensor,
-and its threshold. Outdoor air and pollen contains smoke, pollution, pollen,
+and its threshold. Outdoor air and pollen contains pollution, pollen,
 Open-Meteo, source, and threshold settings. Windows and protection contains the
 weather source, manual outdoor measurements, and outdoor comfort guardrails.
 Notifications contains notification targets, Home Assistant notifications,
@@ -155,6 +155,11 @@ Back up your Home Assistant configuration before a manual update. VentWise
 migrates its own stored configuration when needed; if a migration cannot be
 performed safely, it keeps the entry unchanged and reports the problem in the
 Home Assistant logs.
+
+Version 0.19.0 removes the legacy smoke/fire-alert entity setting. Existing
+stored values are ignored and removed during migration. Do not use a fire alarm
+as a VentWise input; keep fire detection and emergency response independent of
+this advisory integration.
 
 ## Remove VentWise
 

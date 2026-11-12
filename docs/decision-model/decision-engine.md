@@ -24,13 +24,13 @@ risky advice.
 ## Flow and actions
 
 > **1. Acquire** → **2. Validate** → **3. Block unsafe cases** →
-> **4. Apply preferences** → **5. Simulate** → **6. Score** →
+> **4. Apply preferences** → **5. Derive** → **6. Score** →
 > **7. Select action** → **8. Apply delivery guardrails** → **9. Explain**
 
 Acquisition retains value, unit, source, timestamp, and quality. Validation
 converts units and rejects invalid data. Blocks apply precedence. Preferences
-cannot override blocks. Simulation evaluates 15, 30, 60, and 120 minutes when
-sufficient data exists. Scoring selects a meaningful action; delivery guardrails
+cannot override blocks. Derived signals are limited to the current observation.
+Scoring selects a meaningful action; delivery guardrails
 then regulate its presentation. Explanation exposes all material facts.
 
 | Action | Meaning |
@@ -56,7 +56,7 @@ safety-critical. Future-dated, stale, non-finite and source-implausible
 readings are discarded with their provenance retained in data quality.
 
 Observed safety blocks have precedence over indoor scoring. Current rain,
-severe weather, unsafe wind or gusts, smoke alerts, and `avoid` pollen or
+severe weather, unsafe wind or gusts, and `avoid` pollen or
 pollution policies always produce `core_action=close`; an open, unknown, or
 unconfigured window contact receives `delivered_action=close`. A contact that
 already reports the window closed suppresses only the duplicate delivery with
@@ -97,7 +97,7 @@ column is the required user-facing explanation pattern.
 | 1 | Missing, invalid, or stale critical weather | 🛑 **Blocking** | Fail closed before scoring | Never open/ventilate | “Cannot safely recommend opening: weather data is unavailable or stale.” |
 | 2 | Thunderstorm, lightning, hail, tornado, hurricane, dangerous ice/snow, severe alert | 🛑 **Blocking** | Safety gate | Block open/ventilate; close when applicable | “Close or keep closed because severe weather is current or imminent.” |
 | 3 | Wind or gust above technical threshold | 🛑 **Blocking** | Opening-safety gate | Block open/ventilate; close if known open | “Gusts exceed the configured safe-opening threshold.” |
-| 4 | Outdoor pollution, smoke/wildfire, or pollen beyond profile | 🛑 / 🟠 **Block / penalty** | Exposure policy; comfort cannot override | Block or reduce | “Fresh-air benefit is overridden by outdoor air quality or pollen.” |
+| 4 | Outdoor pollution or pollen beyond profile | 🛑 / 🟠 **Block / penalty** | Exposure policy; comfort cannot override | Block or reduce | “Fresh-air benefit is overridden by outdoor air quality or pollen.” |
 | 5 | Degraded indoor CO₂ or IAQ | 🟢 / 🟠 **Benefit / penalty** | Ventilation need after 1–4 pass | Favour ventilate | “Indoor air needs renewal, subject to outdoor conditions.” |
 | 6 | Temperature, absolute humidity, condensation | 🟢 / 🟠 **Benefit / penalty** | Physical net benefit and duration | Open, ventilate, close, or none | “Outdoor air is expected to improve/worsen temperature or moisture.” |
 | 7 | Forecast, local trend, room model | 🔵 **Informational** | Duration, future opportunity, confidence | Cannot override 1–4 | “Forecast changes expected duration or confidence.” |
@@ -120,7 +120,6 @@ Legend: 🛑 **B** blocking, 🟠 **P** strong penalty, 🟢 **V** benefit signa
 | Air exchange | occupancy, ACH h⁻¹, window state | presence/model/contact | future/future/optional | I/V/G; model or delivery | trend/state unknown is explicit; contact never changes core |
 | Pollution | AQI index; PM2.5/PM10 µg/m³ I/E | provider/sensor | optional; retain standard and averaging window | P; high outdoor values block/reduce | never compare different indices; lower confidence without average |
 | Pollution | NO₂, O₃, CO, SO₂; VOC/TVOC; formaldehyde | provider/sensor | future; retain unit, average, sensor type | P; high E blocks/reduces; high I favours safe ventilation | no conversion without T/P; no generic health equivalence |
-| Pollution | smoke/wildfire; quality summary I/E | provider/derived | optional/future; event plus causal measure | B/P/I; block/reduce/explain | never claim an event without source |
 | Allergens | pollen by species grains/m³, species, personal threshold | Open-Meteo/CAMS; preference | optional; species/horizon filter | B/P; reduce or avoid | no pollen block if absent; lower confidence |
 | Allergens | profile ignore/reduce/avoid | preference | active policy | I/P/B; ignore informational, reduce penalty, avoid block | explicit default: reduce |
 | Weather and risk | condition, rain mm/probability %, wind/gust m/s, direction | weather | active; normalise current/imminent, max gust | B/P/I; rain/wind block, direction refines | stale/missing critical weather: never open |
@@ -295,7 +294,7 @@ absence of invented data.
 | Area | Unit | Integration | Docker Lab |
 |---|---|---|---|
 | Blocks | each block alone and with CO₂/comfort; fail closed | entity/alert mapping | weather, rain, wind, contacts |
-| Pollutants/pollen | every I/E pollutant, unit/average, three profiles | provider and attribution | PM, smoke, seasonal species |
+| Pollutants/pollen | every I/E pollutant, unit/average, three profiles | provider and attribution | PM and seasonal species |
 | Physics | Magnus, HI, RC/mass limits and invalid data | conversion/timestamps | T/RH/CO₂ charts |
 | Forecast | 15/30/60/120 min; absent/default/local calibration | refresh/errors | short opportunity |
 | Precedence | conflicts, margin, stability | guardrails preserve core | cooldown, quiet hours, contacts |

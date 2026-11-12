@@ -91,7 +91,6 @@ from ..const import (
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_ENTITY_ID,
-    CONF_SMOKE_ALERT_ENTITY_ID,
     CONF_POLLUTION_POLICY,
     CONF_POLLEN_POLICY,
     CONF_OPEN_METEO_AIR_QUALITY_ENABLED,
@@ -183,7 +182,6 @@ class IntegrationConfig:
     co2_enabled: bool = False
     co2_entity_id: str | None = None
     co2_threshold_ppm: float = DEFAULT_CO2_THRESHOLD_PPM
-    smoke_alert_entity_id: str | None = None
     pollution_policy: str | None = None
     pollen_policy: str | None = None
     open_meteo_air_quality_enabled: bool = False
@@ -360,7 +358,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         co2_enabled=bool(data.get(CONF_CO2_ENABLED, False)),
         co2_entity_id=_string_or_none(data.get(CONF_CO2_ENTITY_ID)),
         co2_threshold_ppm=float(data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)),
-        smoke_alert_entity_id=_string_or_none(data.get(CONF_SMOKE_ALERT_ENTITY_ID)),
         pollution_policy=_exposure_policy(data.get(CONF_POLLUTION_POLICY)),
         pollen_policy=_exposure_policy(data.get(CONF_POLLEN_POLICY)),
         open_meteo_air_quality_enabled=bool(data.get(CONF_OPEN_METEO_AIR_QUALITY_ENABLED, False)),
@@ -549,7 +546,13 @@ def build_decision_snapshot(
     wind = selected_numeric(config.wind_speed_source, config.wind_speed_entity_id, "wind_speed", "m/s", "wind_speed")
     gust = weather_attribute("wind_gust_speed", "m/s", lambda raw, item: _canonical_measurement_value(float(raw), item, "wind_speed"))
     weather_state = state_getter(config.outdoor_weather_entity_id) if config.outdoor_weather_entity_id else None
-    condition = observation_from_state(weather_state, source_id=config.outdoor_weather_entity_id, now=now, unit="", converter=lambda raw, _: str(raw).lower())
+    condition = observation_from_state(
+        weather_state,
+        source_id=config.outdoor_weather_entity_id,
+        now=now,
+        unit="",
+        converter=lambda raw, _: _normalized_weather_condition(raw),
+    )
     rain = weather_attribute("precipitation_probability", "%", lambda raw, _: float(raw))
     current_precipitation = weather_attribute("precipitation", "mm", lambda raw, _: float(raw))
     forecast_temp = Observation(
@@ -607,8 +610,6 @@ def build_decision_snapshot(
             room.target_temperature_c_override if room.target_temperature_c_override_enabled else config.target_temperature_c,
             room.target_humidity_percent_override if room.target_humidity_percent_override_enabled else config.target_humidity_percent,
             surface, hvac, ventilation, air_cleaner, radiation, physical))
-    smoke_state = state_getter(config.smoke_alert_entity_id) if config.smoke_alert_entity_id else None
-    smoke = observation_from_state(smoke_state, source_id=config.smoke_alert_entity_id, now=now, unit="", converter=lambda raw, _: state_to_bool(SimpleNamespace(state=raw))) if config.smoke_alert_entity_id else None
     policy_source = "user_policy"
     exposure: list[ExposureReading] = []
     # Configured HA entities are authoritative. The provider is only allowed
@@ -633,7 +634,7 @@ def build_decision_snapshot(
         tuple(rooms),
         DecisionOutdoor(
             temperature, humidity, wind, gust, condition, rain, forecast_temp,
-            smoke, pollen_policy, pollution_policy, tuple(exposure), current_precipitation,
+            pollen_policy, pollution_policy, tuple(exposure), current_precipitation,
         ),
         now,
     )
@@ -676,7 +677,11 @@ def build_recommendation_summary(
             if indoor_temperature is not None and indoor_humidity is not None
             else float(indoor_temperature) if indoor_temperature is not None else target
         )
-        room_target = suggested_target if suggested_target is not None else target
+        room_target = (
+            room.target_temperature_c
+            if room.target_temperature_c is not None
+            else suggested_target if suggested_target is not None else target
+        )
         display_action = result.delivered_action
         if display_core_during_delivery_suppression and result.delivery_suppressed_by in {
             "quiet_hours", "cooldown", "stability"
@@ -1297,6 +1302,22 @@ def _weather_condition(
         return None
     text = str(raw_state).strip()
     return text or None
+
+
+def _normalized_weather_condition(value: Any) -> str:
+    """Normalize Home Assistant weather codes without discarding custom tokens."""
+
+    condition = str(value).strip().lower()
+    return {
+        "rainy": "rain",
+        "pouring": "rain",
+        "snowy": "snow",
+        "snowy-rainy": "snow-rain",
+        "hail": "hail",
+        "lightning": "lightning",
+        "lightning-rainy": "lightning-rain",
+        "exceptional": "exceptional",
+    }.get(condition, condition)
 
 
 def _weather_gust_value(

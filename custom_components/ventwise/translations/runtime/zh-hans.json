@@ -5,6 +5,10 @@
     "none": "无需操作。",
     "open_reason": "现在室外更舒适：更接近舒适温度 {delta:.1f}°C。",
     "close_reason": "现在室内更舒适：更接近舒适温度 {delta:.1f}°C。",
+    "close_current_precipitation": "请立即关闭窗户：当前检测到降水。",
+    "close_severe_weather": "请立即关闭窗户：当前检测到恶劣天气。",
+    "close_unsafe_wind": "请立即关闭窗户：风况不安全。",
+    "close_outdoor_exposure": "请立即关闭窗户：已配置的室外空气质量策略要求避免暴露。",
     "forecast_reason": "短期预报：室外条件预计很快会变得不那么舒适。",
     "failed_title": "VentWise 通知发送失败",
     "failed_targets": "失败目标"

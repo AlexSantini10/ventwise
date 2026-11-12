@@ -69,11 +69,11 @@ aggregato `open`.
 
 ### Scenari dati e trace
 
-Il Lab include anche PM2.5, polline d'erba, allarme fumo esplicito e
-temperatura superficiale della Camera. Le policy di esempio riducono il
+Il Lab includes PM2.5, grass pollen, and the Bedroom surface temperature.
+Example policies reduce the
 beneficio di apertura quando PM2.5 raggiunge 25 µg/m³; nessun polline influisce
-finché non viene configurata una policy personale. L'allarme fumo usa soltanto
-il binary sensor dedicato e, con una finestra aperta, propone la chiusura.
+finché non viene configurata una policy personale. Fire and smoke alarms are
+not VentWise inputs and must remain independent safety systems.
 
 Apri gli attributi di `sensor.camera_test_recommendation` per ispezionare
 `core_action`, `delivered_action`, candidati, blocchi, penalità, qualità dati e
@@ -104,8 +104,8 @@ raccomandazione e ogni evidenza resta nel profilo isolato del Lab.
 | Nessun beneficio | Camera ed esterno 22 °C | `none`. |
 | Contatti multipli | Prima tutti chiusi; poi apri uno dei due contatti Camera | Il primo consiglio è consegnabile; il secondo è soppresso come finestra già aperta. |
 | Pioggia, temporale, vento o raffica | Seleziona `rainy` o `thunderstorm`; oppure porta vento/raffica oltre 14 m/s | Se la finestra è aperta: `close`; trace e blocco di sicurezza prevalgono su CO₂. |
-| Fumo, PM e polline | Attiva fumo; PM2.5 a 25; polline erba a 25 | Fumo e polline `avoid` bloccano; PM `reduce` applica una penalità. |
-| Conflitto CO₂ + pericolo esterno | CO₂ 1400 e uno fra pioggia, temporale, vento, fumo o polline avoid | Nessun `open`/`ventilate`; se aperta, `close`. |
+| PM e polline | PM2.5 a 25; polline erba a 25 | Il polline `avoid` blocca; PM `reduce` applica una penalità. |
+| Conflitto CO₂ + pericolo esterno | CO₂ 1400 e uno fra pioggia, temporale, vento o polline avoid | Nessun `open`/`ventilate`; se aperta, `close`. |
 | Fonte assente / obsoleta | Spegni **Weather Source Available**; per obsolescenza lascia invariati tutti gli input meteo per oltre 15 minuti | `critical_weather_unavailable`, qualità dati e trace espliciti. |
 | Quiet hours, cooldown e stabilità | Usa i controlli VentWise; ripeti la stessa richiesta | L'azione core resta visibile, mentre quella consegnata può essere soppressa con la causa indicata. |
 | Riavvio e modifica configurazione | `restart`; poi `reset`/`up` per verificare l'onboarding | Stato persistente e configurazione vengono ripristinati o ricreati in modo leggibile. |

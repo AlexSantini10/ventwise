@@ -230,7 +230,7 @@ def test_translation_values_are_not_empty_or_corrupted(language: str) -> None:
 
     values = list(leaves(_load_translation(language)))
     assert all(value.strip() for value in values)
-    assert not any("�" in value or "??" in value or "CO?" in value for value in values)
+    assert not any("ï¿½" in value or "??" in value or "CO?" in value for value in values)
 
 
 @pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
@@ -266,7 +266,6 @@ def test_ddp_forms_and_recommendation_attributes_are_localized(language: str) ->
     translation = _load_translation(language)
     steps = translation["options"]["step"]
     for step, field in (
-        ("air_quality_global", "smoke_alert_entity_id"),
         ("air_quality_global", "pollution_policy"),
         ("air_quality_global", "pollen_policy"),
         ("air_quality_global", "open_meteo_air_quality_enabled"),
@@ -328,9 +327,9 @@ def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -
     )
 
     for description in english_help:
-        assert "±2°C" in description
-        assert "18–26°C" in description
+        assert "adjusts" in description
+        assert "safety range" not in description
         assert "thermostat or HVAC" in description
     for description in (*italian_help, *russian_help):
         assert description
-        assert "18" in description and "26" in description
+        assert "safety range" not in description.lower()

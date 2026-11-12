@@ -5,6 +5,10 @@
     "none": "keine Aktion erforderlich.",
     "open_reason": "Draußen ist es derzeit angenehmer: {delta:.1f} °C näher am Komfortwert.",
     "close_reason": "Drinnen ist es derzeit angenehmer: {delta:.1f} °C näher am Komfortwert.",
+    "close_current_precipitation": "Fenster jetzt schließen: Niederschlag wurde erkannt.",
+    "close_severe_weather": "Fenster jetzt schließen: Unwetter wurde erkannt.",
+    "close_unsafe_wind": "Fenster jetzt schließen: Die Windbedingungen sind unsicher.",
+    "close_outdoor_exposure": "Fenster jetzt schließen: Die konfigurierte Außenluft-Policy fordert, die Belastung zu vermeiden.",
     "forecast_reason": "Kurzfristige Vorhersage: Die Außenbedingungen werden voraussichtlich bald weniger angenehm.",
     "failed_title": "Zustellung der VentWise-Benachrichtigung fehlgeschlagen",
     "failed_targets": "Fehlgeschlagene Ziele"

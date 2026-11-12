@@ -469,6 +469,23 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             if self._config.auto_comfort_temperature_enabled
             else self._config.target_temperature_c
         )
+        # Room temperature overrides are explicit user choices.  Other rooms
+        # intentionally leave their target to the engine-wide adaptive target.
+        decision_snapshot = replace(
+            decision_snapshot,
+            rooms=tuple(
+                replace(
+                    room,
+                    target_temperature_c=(
+                        configured.target_temperature_c_override
+                        if configured.target_temperature_c_override_enabled
+                        and configured.target_temperature_c_override is not None
+                        else None
+                    ),
+                )
+                for room, configured in zip(decision_snapshot.rooms, self._config.rooms)
+            ),
+        )
         decision_engine = DecisionEngine(DecisionConfig(
             target_temperature_c=effective_target_temperature_c,
             humidity_high_percent=self._config.target_humidity_percent + 10.0,
@@ -517,17 +534,15 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         decision = decision_engine.evaluate(decision_snapshot)
         summary = build_recommendation_summary(decision, decision_snapshot, self._config)
 
-        notification_channel_available = (
+        notification_channel_configured = (
             self._config.notification_enabled
             and (
                 bool(notification_entity_ids)
                 or self._config.home_assistant_notification_enabled
             )
-            and not quiet_hours_active
-            and stable_for_seconds >= self._config.stability_minutes * 60
         )
         if self._suppress_automatic_notifications:
-            notification_channel_available = False
+            notification_channel_configured = False
         notification_allowed = False
         for recommendation in summary.room_recommendations:
             room_signature = self._notification_identity(recommendation)
@@ -546,12 +561,18 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 < timedelta(minutes=self._config.cooldown_minutes)
                 and not bypasses_cooldown
             )
+            urgent_close = self._is_urgent_close(recommendation)
             room_notification_allowed = (
-                notification_channel_available
+                notification_channel_configured
                 and recommendation.action != RecommendationAction.NONE
                 and recommendation.score >= self._config.minimum_score
+                and (urgent_close or not quiet_hours_active)
+                and (
+                    urgent_close
+                    or stable_for_seconds >= self._config.stability_minutes * 60
+                )
                 and not matches_marker
-                and not room_cooldown_active
+                and (urgent_close or not room_cooldown_active)
             )
             if not room_notification_allowed:
                 if matches_marker:
@@ -923,11 +944,26 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             marker.signature != self._notification_identity(recommendation)
             or marker.reason is None
             or marker.severity is None
+            or marker.reason != recommendation.reason_code
         ):
             return True
         return (
             self._notification_severity(recommendation.score) == "urgent"
             and marker.severity != "urgent"
+        )
+
+    @staticmethod
+    def _is_urgent_close(recommendation) -> bool:
+        """Return whether a safety close may bypass delivery timing gates."""
+
+        return (
+            recommendation.action == RecommendationAction.CLOSE
+            and recommendation.reason_code in {
+                "severe_weather",
+                "current_precipitation",
+                "unsafe_wind",
+                "outdoor_exposure_avoid",
+            }
         )
 
     def _apply_room_action_guardrails(
@@ -1127,6 +1163,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             )
             if quiet_hours_target is not None:
                 candidates.append(quiet_hours_target)
+        candidates.extend(self._freshness_refreshes(now))
         if not candidates:
             return None
         return min(candidates)
@@ -1162,6 +1199,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             and self._config.wind_speed_entity_id
         ):
             entity_ids.add(self._config.wind_speed_entity_id)
+        entity_ids.update(self._config.air_quality_entity_ids.values())
         for room in self._config.rooms:
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:
@@ -1171,7 +1209,38 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 if co2_entity_id:
                     entity_ids.add(co2_entity_id)
             entity_ids.update(room.window_sensor_entity_ids)
+            entity_ids.update(
+                entity_id
+                for entity_id in (
+                    room.surface_temperature_entity_id,
+                    room.hvac_entity_id,
+                    room.ventilation_entity_id,
+                    room.air_cleaner_entity_id,
+                    room.radiation_entity_id,
+                )
+                if entity_id
+            )
         return sorted(entity_ids)
+
+    def _freshness_refreshes(self, now: datetime) -> list[datetime]:
+        """Schedule invalidation when a source or provider cache becomes stale."""
+
+        candidates: list[datetime] = []
+        for entity_id in self._watched_entity_ids():
+            state = self.hass.states.get(entity_id)
+            observed_at = getattr(state, "last_updated", None)
+            if observed_at is None:
+                continue
+            target = observed_at + timedelta(minutes=15)
+            if target > now:
+                candidates.append(target)
+        for fetched_at, ttl in (
+            (self._forecast_fetched_at, timedelta(minutes=15)),
+            (self._provider_exposure_fetched_at, timedelta(minutes=30)),
+        ):
+            if fetched_at is not None and fetched_at + ttl > now:
+                candidates.append(fetched_at + ttl)
+        return candidates
 
     def _async_remove_listeners(self) -> None:
         """Remove all event listeners registered by the coordinator."""

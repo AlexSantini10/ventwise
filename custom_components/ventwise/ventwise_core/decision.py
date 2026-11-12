@@ -27,8 +27,9 @@ from .models import (
 
 _SEVERE_WEATHER = (
     "thunder", "lightning", "storm", "hail", "tornado", "hurricane",
-    "blizzard", "squall", "freezing", "icy", "ice",
+    "blizzard", "squall", "freezing", "icy", "ice", "exceptional",
 )
+_PRECIPITATION_WEATHER = ("rain", "drizzle", "shower", "sleet", "snow", "pouring")
 
 
 def apparent_temperature_c(temperature_c: float, humidity_percent: float) -> float:
@@ -118,7 +119,9 @@ class DecisionEngine:
         known_open = self._usable(room.window_open, "window.state", snapshot, self.config.indoor_freshness, used, discarded, awaiting, optional=True)
         condition = str(weather).lower() if weather is not None else ""
         severe = any(token in condition for token in _SEVERE_WEATHER)
-        condition_reports_precipitation = any(token in condition for token in ("rain", "drizzle", "shower", "sleet"))
+        condition_reports_precipitation = any(
+            token in condition for token in _PRECIPITATION_WEATHER
+        )
         current_precipitation = self._usable(
             snapshot.outdoor.current_precipitation_mm_h,
             "outdoor.current_precipitation",
@@ -133,7 +136,6 @@ class DecisionEngine:
             current_precipitation is not None and current_precipitation > 0.0
         )
         hazardous_wind = (wind is not None and wind >= self.config.wind_block_m_s) or (gust is not None and gust >= self.config.gust_block_m_s)
-        smoke = self._usable(snapshot.outdoor.smoke_alert, "outdoor.smoke", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True) is True
         pollen = self._usable(snapshot.outdoor.pollen_policy, "outdoor.pollen", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
         pollution = self._usable(snapshot.outdoor.pollution_policy, "outdoor.pollution", snapshot, self.config.weather_freshness, used, discarded, awaiting, optional=True)
         # Exposure readings are always recorded, but are intentionally not a
@@ -154,7 +156,7 @@ class DecisionEngine:
                         reading.coverage,
                     ))),
                 ))
-        hard_block = severe or actively_precipitating or hazardous_wind or smoke or pollen == "avoid" or pollution == "avoid"
+        hard_block = severe or actively_precipitating or hazardous_wind or pollen == "avoid" or pollution == "avoid"
         if severe:
             blocks.append("severe_weather")
             trace.append(TraceEntry("block.severe_weather", condition))
@@ -164,9 +166,6 @@ class DecisionEngine:
         if hazardous_wind:
             blocks.append("unsafe_wind")
             trace.append(TraceEntry("block.unsafe_wind"))
-        if smoke:
-            blocks.append("smoke_alert")
-            trace.append(TraceEntry("block.smoke_alert"))
         if pollen == "avoid" or pollution == "avoid":
             blocks.append("outdoor_exposure_avoid")
             trace.append(TraceEntry("block.outdoor_exposure_avoid"))
@@ -181,7 +180,6 @@ class DecisionEngine:
                     "severe_weather",
                     "current_precipitation",
                     "unsafe_wind",
-                    "smoke_alert",
                     "outdoor_exposure_avoid",
                 )
                 if code in blocks
@@ -248,7 +246,17 @@ class DecisionEngine:
         # above its humidity preference.  A warmer room naturally has higher
         # absolute humidity at the same RH; treating that alone as a competing
         # ventilation signal would incorrectly defeat a sustained thermal open.
-        moisture_signal = moisture_benefit if indoor_h is not None and float(indoor_h) > self.config.humidity_high_percent else 0.0
+        humidity_target = (
+            room.target_humidity_percent
+            if room.target_humidity_percent is not None
+            else self.config.humidity_high_percent - 10.0
+        )
+        humidity_high = min(100.0, humidity_target + 10.0)
+        moisture_signal = (
+            moisture_benefit
+            if indoor_h is not None and float(indoor_h) > humidity_high
+            else 0.0
+        )
         ventilate_score = max(transient, moisture_signal, self.config.meaningful_benefit if co2_signal else 0.0)
         close_score = max(0.0, outdoor_distance - indoor_distance)
         if pollen == "reduce" or pollution == "reduce":

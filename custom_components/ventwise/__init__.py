@@ -22,7 +22,7 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-_CONFIG_ENTRY_VERSION = 3
+_CONFIG_ENTRY_VERSION = 4
 _LEGACY_RUNTIME_KEYS = (
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
@@ -65,6 +65,10 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     migrated_data = dict(entry.data)
     migrated_options = dict(entry.options)
+    # Smoke and fire alarms are never a VentWise input. Remove the retired
+    # setting from either persisted location while preserving unrelated data.
+    migrated_data.pop("smoke_alert_entity_id", None)
+    migrated_options.pop("smoke_alert_entity_id", None)
     migrated_options.setdefault(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT)
     migrated_options.setdefault(CONF_WIND_SPEED_UNIT, DEFAULT_WIND_SPEED_UNIT)
     runtime_state = migrated_options.get(

@@ -223,11 +223,25 @@ def build_recommendation_explanation(
         reason = _localized_temperature_reason(recommendation, texts, use_outside=True)
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     if action == "close":
+        urgent_reason = _urgent_close_reason(recommendation, texts)
+        if urgent_reason is not None:
+            return f"{prefix}{urgent_reason}"
         if getattr(recommendation, "reason_code", None) == "forecast":
             return f"{prefix}{texts['forecast_reason']}"
         reason = _localized_temperature_reason(recommendation, texts, use_outside=False)
         return f"{prefix}{reason}" if reason else f"{prefix}{texts['none']}"
     return f"{prefix}{texts['none']}"
+
+
+def _urgent_close_reason(recommendation: RoomRecommendation, texts: dict[str, str]) -> str | None:
+    """Return the concrete non-thermal reason for a safety close."""
+
+    return {
+        "current_precipitation": texts["close_current_precipitation"],
+        "severe_weather": texts["close_severe_weather"],
+        "unsafe_wind": texts["close_unsafe_wind"],
+        "outdoor_exposure_avoid": texts["close_outdoor_exposure"],
+    }.get(getattr(recommendation, "reason_code", None))
 
 
 def build_recommendation_status(

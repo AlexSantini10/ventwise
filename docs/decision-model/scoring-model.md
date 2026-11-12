@@ -30,8 +30,9 @@ from the current perceived outdoor temperature:
 
 - 20 C perceived outdoors leaves the baseline unchanged.
 - Each degree above or below that reference adjusts the target by 0.25 C.
-- The adaptation is capped at plus or minus 2 C and always remains in the
-  18–26 C indoor safety range.
+- The adaptation is capped at plus or minus 2 C and remains within 18–26 C.
+  These are bounds for the adaptive preference only, not health or safety
+  guardrails applied by the decision engine.
 - Indoor sensor readings do not alter the target. They describe the room
   condition that the recommendation should improve, avoiding a feedback loop
   where a hot or cold room shifts its own goal.
@@ -50,17 +51,17 @@ changes a thermostat or HVAC setpoint.
 
 VentWise evaluates the configured comfort temperature as a personal band of
 plus or minus 1 C, rather than treating the target as a single exact point.
-It then adds a stronger habitability penalty when perceived indoor temperature
-falls below 18 C or rises above 26 C. This means a personal target never makes
-an unsafe cold or hot room look comfortable.
+The engine does not impose a separate 18–26 C health or safety guardrail.
 
 When outdoor air sits on the opposite side of the personal band, it may still
 be useful even though it would be a poor permanent endpoint. For example, with
 a 22 C target, a room at 25 C and outdoor air at 18 C receives a `ventilate`
 recommendation: air the room for about 10 minutes, then close the window and
 check again. The duration is intentionally a conservative prompt, not a
-thermal prediction: window area, wind, air paths, insulation, and building
-mass determine the actual cooling or warming rate.
+thermal prediction. Window area, wind, air paths, insulation, building mass,
+HVAC, ventilation, air-cleaner state, radiation, and configured physical
+parameters are currently contextual or diagnostic inputs, not a predictive
+physical model.
 
 `ventilate` remains advisory only. VentWise does not measure window position,
 operate covers, or schedule a physical close action. Weather and wind safety

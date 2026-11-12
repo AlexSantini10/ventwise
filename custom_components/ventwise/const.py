@@ -51,9 +51,8 @@ CONF_WIND_SPEED_OVERRIDE = "wind_speed_override"
 CONF_OUTDOOR_TEMPERATURE_ENTITY_ID = "outdoor_temperature_entity_id"
 CONF_OUTDOOR_HUMIDITY_ENTITY_ID = "outdoor_humidity_entity_id"
 CONF_WIND_SPEED_ENTITY_ID = "wind_speed_entity_id"
-# Optional exposure inputs.  They remain advisory unless the corresponding
-# user policy is explicitly set; smoke is the only explicit hard-stop input.
-CONF_SMOKE_ALERT_ENTITY_ID = "smoke_alert_entity_id"
+# Optional exposure inputs remain advisory unless the corresponding user
+# policy is explicitly set.
 CONF_POLLUTION_POLICY = "pollution_policy"
 CONF_POLLEN_POLICY = "pollen_policy"
 CONF_OPEN_METEO_AIR_QUALITY_ENABLED = "open_meteo_air_quality_enabled"

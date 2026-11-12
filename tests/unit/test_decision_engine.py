@@ -141,13 +141,6 @@ def test_physical_parameters_only_refine_duration_and_confidence() -> None:
     assert any(entry.code == "physical.parameters" for entry in result.trace)
 
 
-def test_awaiting_source_is_explicit_but_never_approximated() -> None:
-    data = snapshot(smoke_alert=Observation(None, "", None, None, None, availability=Availability.AWAITING_SOURCE))
-    result = DecisionEngine().evaluate(data).room_results[0]
-
-    assert "outdoor.smoke" in result.data_quality.awaiting_source
-
-
 def test_multi_room_snapshot_keeps_result_order_and_trace_deterministic() -> None:
     """A single event snapshot must always yield the same per-room contract."""
 
@@ -200,7 +193,6 @@ def test_named_golden_decision_matrix(name, data, action, reason, duration, trac
         ("thunderstorm", {"weather": "thunderstorm"}, "severe_weather"),
         ("wind", {"wind": DecisionConfig().wind_block_m_s}, "unsafe_wind"),
         ("gust", {"wind_gust_m_s": obs(DecisionConfig().gust_block_m_s, "m/s")}, "unsafe_wind"),
-        ("smoke", {"smoke_alert": obs(True)}, "smoke_alert"),
         ("pollen", {"pollen_policy": obs("avoid")}, "outdoor_exposure_avoid"),
         ("pollution", {"pollution_policy": obs("avoid")}, "outdoor_exposure_avoid"),
     ],
@@ -225,7 +217,6 @@ def test_safety_blocks_override_co2_and_thermal_benefit(label, outdoor, expected
         ("thunderstorm", {"weather": "thunderstorm"}, "severe_weather"),
         ("wind", {"wind": DecisionConfig().wind_block_m_s}, "unsafe_wind"),
         ("gust", {"wind_gust_m_s": obs(DecisionConfig().gust_block_m_s, "m/s")}, "unsafe_wind"),
-        ("smoke", {"smoke_alert": obs(True)}, "smoke_alert"),
         ("pollen", {"pollen_policy": obs("avoid")}, "outdoor_exposure_avoid"),
         ("pollution", {"pollution_policy": obs("avoid")}, "outdoor_exposure_avoid"),
     ],

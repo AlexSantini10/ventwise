@@ -90,7 +90,6 @@ class DecisionOutdoor:
     weather_condition: Observation[str] | None = None
     precipitation_probability_percent: Observation[float] | None = None
     forecast_temperature_c: Observation[float] | None = None
-    smoke_alert: Observation[bool] | None = None
     pollen_policy: Observation[str] | None = None
     pollution_policy: Observation[str] | None = None
     exposure: Tuple["ExposureReading", ...] = ()

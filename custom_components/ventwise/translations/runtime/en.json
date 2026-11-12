@@ -5,6 +5,10 @@
     "none": "no action needed.",
     "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
     "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+    "close_current_precipitation": "Close windows now: precipitation is currently detected.",
+    "close_severe_weather": "Close windows now: severe weather is currently detected.",
+    "close_unsafe_wind": "Close windows now: wind conditions are unsafe.",
+    "close_outdoor_exposure": "Close windows now: the configured outdoor air-quality policy says to avoid exposure.",
     "forecast_reason": "Short-term forecast: outside conditions are expected to become less comfortable soon.",
     "failed_title": "VentWise notification delivery failed",
     "failed_targets": "Failed targets"

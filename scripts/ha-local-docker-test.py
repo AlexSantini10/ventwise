@@ -139,8 +139,6 @@ ventwise_test_living_room_start:
   name: VentWise Test Living Room Start Action
 ventwise_test_living_room_stop:
   name: VentWise Test Living Room Stop Action
-ventwise_test_smoke_alert:
-  name: VentWise Test Smoke Alert
 ventwise_test_weather_source_available:
   name: VentWise Test Weather Source Available
   initial: true
@@ -165,10 +163,6 @@ TEMPLATE_YAML = """- binary_sensor:
       unique_id: ventwise_test_living_room_window
       device_class: window
       state: "{{ is_state('input_boolean.ventwise_test_living_room_window', 'on') }}"
-    - name: VentWise Test Smoke Alert
-      unique_id: ventwise_test_smoke_alert
-      device_class: smoke
-      state: "{{ is_state('input_boolean.ventwise_test_smoke_alert', 'on') }}"
 - weather:
     - name: VentWise Test Weather
       unique_id: ventwise_test_weather
@@ -233,7 +227,6 @@ views:
           - input_select.ventwise_test_weather_condition
           - input_number.ventwise_test_pm25
           - input_number.ventwise_test_grass_pollen
-          - input_boolean.ventwise_test_smoke_alert
           - input_boolean.ventwise_test_weather_source_available
           - weather.ventwise_test_weather
       - type: entities
@@ -316,7 +309,6 @@ DATA = {
     "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
     "stability_minutes": 0, "co2_enabled": True, "co2_threshold_ppm": 1000.0,
     "home_assistant_notification_enabled": True,
-    "smoke_alert_entity_id": "binary_sensor.ventwise_test_smoke_alert",
     "air_quality_entity_ids": {"pm2_5": "input_number.ventwise_test_pm25", "grass_pollen": "input_number.ventwise_test_grass_pollen"},
     "exposure_policies": {
         "pm2_5": {"mode": "reduce", "threshold": 25.0, "unit": "µg/m³", "averaging_period": "instant"},

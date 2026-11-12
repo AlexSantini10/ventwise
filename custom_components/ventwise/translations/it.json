@@ -81,13 +81,11 @@
         "title": "Aria esterna e pollini",
         "description": "Configura l’impatto di inquinamento e polline sui consigli di ventilazione.",
         "data": {
-          "smoke_alert_entity_id": "Avviso fumo o incendio",
           "pollution_policy": "Risposta all’inquinamento",
           "pollen_policy": "Risposta ai pollini",
           "open_meteo_air_quality_enabled": "Usa i dati sulla qualità dell’aria esterna"
         },
         "data_description": {
-          "smoke_alert_entity_id": "Sensore binario opzionale che segnala fumo o rischio di incendio.",
           "pollution_policy": "Scegli se ignorare l’inquinamento, ridurre o bloccare i consigli di ventilazione.",
           "pollen_policy": "Scegli se ignorare il polline, ridurre o bloccare i consigli di ventilazione.",
           "open_meteo_air_quality_enabled": "Usa le previsioni supportate sulla qualità dell’aria esterna quando disponibili."
@@ -558,13 +556,11 @@
         "title": "Aria esterna e pollini",
         "description": "Configura l’impatto di inquinamento e polline sui consigli di ventilazione.",
         "data": {
-          "smoke_alert_entity_id": "Avviso fumo o incendio",
           "pollution_policy": "Risposta all’inquinamento",
           "pollen_policy": "Risposta ai pollini",
           "open_meteo_air_quality_enabled": "Usa i dati sulla qualità dell’aria esterna"
         },
         "data_description": {
-          "smoke_alert_entity_id": "Sensore binario opzionale che segnala fumo o rischio di incendio.",
           "pollution_policy": "Scegli se ignorare l’inquinamento, ridurre o bloccare i consigli di ventilazione.",
           "pollen_policy": "Scegli se ignorare il polline, ridurre o bloccare i consigli di ventilazione.",
           "open_meteo_air_quality_enabled": "Usa le previsioni supportate sulla qualità dell’aria esterna quando disponibili."
@@ -706,13 +702,11 @@
         "title": "Qualità dell'aria globale",
         "description": "Configura le regole globali per inquinamento e pollini.",
         "data": {
-          "smoke_alert_entity_id": "ID entità allerta fumo",
           "pollution_policy": "Regola per l'inquinamento",
           "pollen_policy": "Regola per i pollini",
           "open_meteo_air_quality_enabled": "Qualità dell'aria Open-Meteo abilitata"
         },
         "data_description": {
-          "smoke_alert_entity_id": "Configura l'ID dell'entità allerta fumo.",
           "pollution_policy": "Configura la regola per l'inquinamento.",
           "pollen_policy": "Configura la regola per i pollini.",
           "open_meteo_air_quality_enabled": "Configura l'uso della qualità dell'aria di Open-Meteo."
