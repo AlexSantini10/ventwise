@@ -19,6 +19,12 @@ Start with the document for your role.
 5. [HACS packaging](hacs-packaging.md) for releases, discovery, and packaging.
 6. [Brand assets](brand-assets.md) for Home Assistant and repository artwork.
 
+## Deterministic decision pipeline
+
+- [DDP architecture and decision pipeline](ddp-architecture.md)
+- [DDP data, physical models, and objective function](ddp-data-models.md)
+- [DDP software architecture and implementation plan](ddp-implementation-plan.md)
+
 ## Purpose
 
 The project is intended to provide:

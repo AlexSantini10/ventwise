@@ -29,6 +29,8 @@ on:
       - "README.md"
       - "LICENSE"
       - "NOTICE"
+      - "docs/**"
+      - ".gitignore"
   pull_request:
     paths:
       - ".github/workflows/ci.yml"
@@ -53,6 +55,8 @@ on:
       - "README.md"
       - "LICENSE"
       - "NOTICE"
+      - "docs/**"
+      - ".gitignore"
   workflow_dispatch:
 
 permissions:
