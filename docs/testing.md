@@ -83,7 +83,7 @@ commit or push.
 It uses the Python, Home Assistant and test dependency versions pinned in
 `requirements-test.txt`; no project Python packages are installed on the host.
 The checkout is mounted read-only, the container is removed after every run,
-and JUnit plus XML/HTML coverage reports are saved under
+and per-layer JUnit, XML/HTML coverage, and timing reports are saved under
 `.test-artifacts/`. Select a layer or pass pytest flags after `--`:
 
 ```powershell
@@ -91,11 +91,15 @@ python scripts/run_tests.py --layer unit
 python scripts/run_tests.py --layer integration -- -k config_flow
 ```
 
-CI invokes the same command for unit, integration and system tests. All
-selected tests must pass; coverage is published as a diagnostic report, not a
-percentage gate. Hassfest, HACS and package validation remain separate CI-only
-gates. Home Assistant tests create states in memory and require no physical
-sensors or an installed Home Assistant profile.
+CI invokes the same command for unit, integration and system tests. The
+complete run executes the layers sequentially in that order, writes one JUnit
+file per layer, and records per-layer plus total duration in `timing.json`. The
+first failing layer determines the non-zero test exit status, while later
+layers still run to preserve actionable diagnostics. Coverage is published as
+a diagnostic report, not a percentage gate. Hassfest, HACS and package
+validation remain separate CI-only gates. Home Assistant tests create states
+in memory and require no physical sensors or an installed Home Assistant
+profile.
 
 ## Local Home Assistant Sandbox
 

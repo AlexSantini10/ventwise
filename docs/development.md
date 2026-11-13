@@ -44,14 +44,29 @@ Compose network when they finish. A failed test blocks the commit or push.
 
 The command needs Docker Desktop (Windows) or Docker Engine with Compose
 (Linux/macOS). It builds the pinned Python 3.14.2 image, mounts the checkout
-read-only, and runs all three layers in a disposable Linux container. Reports
-are written under the ignored `.test-artifacts/` directory. Use a layer for
-fast feedback or forward pytest options after `--`:
+read-only, and runs each layer in a disposable Linux container. Reports are
+written under the ignored `.test-artifacts/` directory. Use a layer for fast
+feedback or forward pytest options after `--`:
 
 ```powershell
 python scripts/run_tests.py --layer unit
 python scripts/run_tests.py --layer integration -- -k notification
 ```
+
+The complete run writes `junit-unit.xml`, `junit-integration.xml`, and
+`junit-system.xml`, together with aggregated `coverage.xml`, `htmlcov/`, and
+`timing.json`. A failing layer does not prevent the remaining layers or
+diagnostics from being collected; the command still exits non-zero.
+
+GitHub Actions builds the same Docker image with a persistent BuildKit cache,
+then invokes `python scripts/run_tests.py` with that pre-built image. Local
+Docker's normal image cache provides the equivalent dependency reuse.
+
+On Windows, if Docker is unavailable or the daemon is stopped, start Docker
+Desktop and retry. If a layer fails, inspect its JUnit file and the pytest
+output in the terminal; run the affected layer directly with
+`--layer unit`, `--layer integration`, or `--layer system` before rerunning the
+complete suite.
 
 It is independent of the [Docker Test Lab](docker-test-lab.md), which remains
 the packaged local Home Assistant environment for manual testing without
