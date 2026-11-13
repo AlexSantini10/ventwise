@@ -33,3 +33,9 @@ def test_container_runner_maps_layers_to_the_expected_directories() -> None:
         "system": ["tests/system"],
         "all": ["tests/unit", "tests/integration", "tests/system"],
     }
+
+
+def test_container_runner_runs_all_layers_in_a_stable_order() -> None:
+    runner = _load_script("run_test_suite")
+
+    assert runner.ALL_LAYERS == ("unit", "integration", "system")
