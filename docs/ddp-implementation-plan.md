@@ -1,8 +1,9 @@
 # DDP Software Architecture and Implementation Plan
 
-The implementation should migrate incrementally from coupled scoring and
-decision logic to a small deterministic pipeline. The core remains pure Python;
-Home Assistant and external providers stay at the boundary.
+The implementation migrates incrementally from the former coupled scoring
+engine to the active deterministic pipeline. The v0.18 core is pure Python;
+Home Assistant and external providers stay at the boundary. The legacy scoring
+engine has been removed after the coordinator migration.
 
 ## Target architecture
 

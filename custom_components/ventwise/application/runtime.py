@@ -8,13 +8,21 @@ from datetime import datetime, time
 from typing import Any
 
 from ..ventwise_core import (
+    Availability,
     ComfortObservation,
+    DecisionConfig,
+    DecisionContext,
+    DecisionEngine,
+    DecisionOutdoor,
+    DecisionRoom,
+    DecisionSnapshot,
     ForecastObservation,
+    Observation,
     RecommendationAction,
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
-    ScoringConfig,
+    RoomRecommendation,
 )
 
 from ..const import (
@@ -91,7 +99,6 @@ from ..const import (
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from ..units import state_unit, temperature_to_celsius, temperature_unit, wind_speed_to_m_s, wind_speed_unit
-from ..ventwise_core import ComfortRecommender
 
 
 @dataclass(frozen=True, slots=True)
@@ -311,17 +318,120 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     )
 
 
-def build_scoring_config(config: IntegrationConfig) -> ScoringConfig:
-    """Translate integration config into core scoring config."""
+def build_decision_config(config: IntegrationConfig) -> DecisionConfig:
+    """Translate integration settings into the active DDP configuration."""
 
-    return ScoringConfig(
+    return DecisionConfig(
         target_temperature_c=config.target_temperature_c,
-        target_humidity_percent=config.target_humidity_percent,
-        soft_outdoor_threshold_c=config.soft_outdoor_threshold_c,
-        minimum_score=config.minimum_score,
-        minimum_stability_seconds=config.stability_minutes * 60,
-        co2_enabled=config.co2_enabled,
-        co2_threshold_ppm=config.co2_threshold_ppm,
+        meaningful_benefit=max(0.0, config.minimum_score),
+    )
+
+
+def build_decision_snapshot(
+    rooms: list[RoomProfile],
+    outdoor: ComfortObservation,
+    evaluated_at: datetime,
+    *,
+    window_states: Mapping[str, str] | None = None,
+) -> DecisionSnapshot:
+    """Build the immutable core input from already normalized HA values."""
+
+    def observation(value: Any, unit: str, source_id: str) -> Observation:
+        return Observation(
+            value,
+            unit,
+            evaluated_at,
+            source_id,
+            availability=(Availability.AVAILABLE if value is not None else Availability.MISSING),
+        )
+
+    window_states = window_states or {}
+    decision_rooms = tuple(
+        DecisionRoom(
+            room_id=room.room_id or room.name,
+            name=room.name,
+            temperature_c=observation(room.indoor.temperature_c, "°C", room.room_id or room.name),
+            humidity_percent=observation(room.indoor.humidity_percent, "%", room.room_id or room.name),
+            window_open=(
+                observation(window_states[room.room_id or room.name] == WINDOW_STATE_OPEN, "", room.room_id or room.name)
+                if (room.room_id or room.name) in window_states
+                and window_states[room.room_id or room.name] in {WINDOW_STATE_OPEN, WINDOW_STATE_CLOSED}
+                else None
+            ),
+            target_temperature_c=(
+                room.target_temperature_c_override
+                if room.target_temperature_c_override_enabled
+                else None
+            ),
+            target_humidity_percent=(
+                room.target_humidity_percent_override
+                if room.target_humidity_percent_override_enabled
+                else None
+            ),
+        )
+        for room in rooms
+        if room.enabled
+    )
+    return DecisionSnapshot(
+        rooms=decision_rooms,
+        outdoor=DecisionOutdoor(
+            temperature_c=observation(outdoor.temperature_c, "°C", "outdoor"),
+            humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor"),
+            wind_speed_m_s=(observation(outdoor.wind_speed_m_s, "m/s", "outdoor") if outdoor.wind_speed_m_s is not None else None),
+            wind_gust_m_s=(observation(outdoor.wind_gust_m_s, "m/s", "outdoor") if outdoor.wind_gust_m_s is not None else None),
+            weather_condition=(observation(outdoor.weather_condition, "", "outdoor") if outdoor.weather_condition is not None else None),
+        ),
+        evaluated_at=evaluated_at,
+        context=DecisionContext(stable_for_seconds=10**9),
+    )
+
+
+def decision_to_summary(
+    engine: DecisionEngine,
+    snapshot: DecisionSnapshot,
+) -> RecommendationSummary:
+    """Render a pure DDP result for existing HA presentation entities."""
+
+    result = engine.evaluate(snapshot)
+    recommendations = tuple(
+        RoomRecommendation(
+            room_id=room.room_id,
+            room_name=room.name,
+            action=room_result.delivered_action,
+            score=room_result.score,
+            reason=room_result.reason,
+            target_perceived_c=room_result.target_perceived_c,
+            indoor_perceived_c=room_result.indoor_perceived_c,
+            outdoor_perceived_c=room_result.outdoor_perceived_c,
+            suggested_comfort_temperature_c=room_result.suggested_comfort_temperature_c,
+            open_score=room_result.candidate_scores.open,
+            close_score=room_result.candidate_scores.close,
+            reason_code=room_result.reason_code,
+            ventilation_duration_minutes=(10 if room_result.core_action is RecommendationAction.VENTILATE else None),
+            indoor_comfort_severity=abs(room_result.indoor_perceived_c - room_result.target_perceived_c),
+            outdoor_comfort_severity=abs(room_result.outdoor_perceived_c - room_result.target_perceived_c),
+        )
+        for room_result in result.room_results
+        for room in snapshot.rooms
+        if room.room_id == room_result.room_id
+    )
+    selected_room_id = result.trace[0].detail if result.trace else None
+    selected = next(
+        (
+            item
+            for item in recommendations
+            if item.room_id == selected_room_id
+            and item.action is not RecommendationAction.NONE
+        ),
+        None,
+    )
+    return RecommendationSummary(
+        action=result.delivered_action,
+        score=selected.score if selected else 0.0,
+        reason=selected.reason if selected else "No actionable recommendation.",
+        suggested_comfort_temperature_c=(selected.suggested_comfort_temperature_c if selected else None),
+        room_recommendations=recommendations,
+        best_room=selected.room_name if selected else None,
     )
 
 
@@ -450,8 +560,6 @@ def build_room_profiles(
     if outdoor_temp is None:
         outdoor = None
     else:
-        if outdoor_humidity is None:
-            outdoor_humidity = 50.0
         weather_condition = _weather_condition(
             config.outdoor_weather_entity_id,
             state_getter,
@@ -486,8 +594,6 @@ def build_room_profiles(
         co2 = state_to_float(state_getter(room.co2_entity_id or config.co2_entity_id)) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None
         if temperature is None:
             continue
-        if humidity is None:
-            humidity = 50.0
         rooms.append(
             RoomProfile(
                 room_id=room.room_id,

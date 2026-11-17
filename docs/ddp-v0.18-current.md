@@ -1,0 +1,223 @@
+# VentWise v0.18 Decision Engine
+
+This document describes the behavior implemented in the current repository.
+It is intentionally more precise than the target DDP design documents: it
+separates shipped behavior from capabilities planned for later releases.
+
+## What the engine is
+
+VentWise v0.18 uses one pure Python `DecisionEngine` as the authoritative
+recommendation engine. It receives an immutable `DecisionSnapshot` and returns
+an immutable `AggregateDecisionResult` containing one `DecisionResult` per
+room, candidate scores, data-quality information, reason codes, and a trace.
+
+The engine has no Home Assistant imports, network access, persistence, wall
+clock reads, notification calls, or actuator calls. Home Assistant code builds
+the snapshot and renders the result through existing entities and
+notifications.
+
+Implementation:
+
+- `custom_components/ventwise/ventwise_core/decision.py`
+- `custom_components/ventwise/ventwise_core/models.py`
+- `custom_components/ventwise/application/runtime.py`
+- `custom_components/ventwise/application/coordinator.py`
+
+## Inputs used today
+
+| Input | Used by v0.18 | Behavior |
+| --- | --- | --- |
+| Indoor temperature | Yes | Required for a room decision. |
+| Outdoor temperature | Yes | Required for a room decision. |
+| Indoor relative humidity | Yes, optional | Contributes to perceived comfort when valid. |
+| Outdoor relative humidity | Yes, optional | Contributes to perceived outdoor comfort when valid. |
+| Global target temperature | Yes | Default comfort target. |
+| Per-room target temperature | Yes | Overrides the global target when enabled. |
+| Per-room target humidity | Yes | Changes the comfort reference used by the objective. |
+| Wind speed | Yes, optional | Supports opening at low speed and reduces opening benefit as speed rises. |
+| Wind gust | Yes, optional | Uses the strongest available wind value and can trigger the hard wind block. |
+| Weather condition | Yes, optional | Severe conditions force `CLOSE`. |
+| Window contacts | Yes, integration layer | Suppress advice already satisfied by known open/closed state. |
+| Quiet hours | Yes, integration layer | Suppress ordinary notification delivery. |
+| Notification cooldown | Yes, integration layer | Suppress repeated ordinary notifications. |
+| Evaluation timestamp | Yes | Makes freshness and deterministic replay explicit. |
+
+Missing optional humidity is not replaced with `50%`. The decision remains
+possible using temperature, but the result does not claim a humidity benefit.
+Missing required temperatures produce `NONE` with `insufficient_evidence`.
+
+## Canonical observation model
+
+The adapter represents each value as an immutable `Observation` containing:
+
+- value;
+- canonical unit;
+- observation timestamp;
+- source identifier;
+- availability state;
+- validity state;
+- optional freshness limit.
+
+The engine records each input as `used`, `discarded`, or `awaiting_source` in
+`DataQualitySummary`. It rejects values that are unavailable, invalid,
+non-finite, out of plausible range, newer than the evaluation time, or stale.
+
+Current canonical units are:
+
+- temperature: `°C`;
+- relative humidity: `%`;
+- wind and gust: `m/s`.
+
+The Home Assistant adapter already converts state values into these units. A
+remaining limitation is that the current adapter assigns the refresh time as
+the observation time; preserving the original Home Assistant sensor timestamp
+is a later normalization improvement.
+
+## Comfort calculation
+
+For valid relative humidity, the v0.18 heuristic calculates a perceived
+temperature approximation:
+
+```text
+perceived = temperature_c + (humidity_percent - target_humidity_percent) * 0.04
+```
+
+When relative humidity is missing, perceived temperature falls back to the
+measured temperature only for that evaluation; the missing humidity remains
+visible in the quality information.
+
+The engine computes:
+
+1. indoor distance from the target comfort point;
+2. outdoor distance from the target comfort point;
+3. the potential benefit of opening or closing;
+4. a short ventilation score when outdoor air crosses the comfort band.
+
+The comfort band defaults to `±1°C` around the target. Scores are normalized
+to `[0, 1]` and use smooth transitions rather than abrupt changes at ordinary
+comfort boundaries.
+
+This is a directional heuristic. It does not predict the future indoor
+temperature or claim a percentage of air replacement.
+
+## Candidate actions and selection
+
+The engine evaluates three actionable candidates:
+
+- `OPEN`: longer comfort-oriented opening;
+- `VENTILATE`: short ventilation when outdoor air crosses the comfort band;
+- `CLOSE`: outdoor conditions are less favorable or a hard safety condition is
+  active.
+
+`NONE` is returned when the benefit is too small, candidates are too close to
+  one another, or required evidence is unavailable.
+
+Selection is deterministic:
+
+1. hard safety blocks are evaluated before comfort selection;
+2. scores below the meaningful-benefit threshold are rejected;
+3. candidates within the configured winner margin are treated as tied;
+4. remaining candidates are ordered by score and stable action ordering;
+5. rooms are evaluated by `(room_id, name)`, never by input order.
+
+The aggregate result selects the strongest actionable room. If no room is
+actionable, all room results are retained for diagnostics and the aggregate
+action is `NONE`.
+
+## Safety behavior
+
+Severe weather tokens such as thunder, lightning, storm, hail, tornado,
+hurricane, and blizzard produce a hard safety result:
+
+```text
+core_action = CLOSE
+delivered_action = CLOSE
+reason_code = severe_weather
+```
+
+Wind is treated similarly when the effective wind value reaches the configured
+block threshold. The effective value is the maximum of wind speed and gust.
+Low wind can slightly support opening; intermediate wind reduces the opening
+score.
+
+Safety decisions are not represented as a large comfort penalty. They bypass
+ordinary candidate scoring and retain an explicit blocker reason.
+
+The current v0.18 implementation treats weather and wind as optional inputs:
+if they are not configured, it cannot apply those specific blocks. Completing
+fail-closed handling for all configured safety evidence is part of the next
+safety increment.
+
+## Home Assistant integration behavior
+
+The coordinator is the composition root:
+
+```text
+HA states and config
+    -> build_room_profiles()
+    -> build_decision_snapshot()
+    -> DecisionEngine.evaluate()
+    -> decision_to_summary()
+    -> window-state guards
+    -> action guards and notification policy
+    -> HA entities and notifications
+```
+
+The engine never sends notifications. The application layer applies:
+
+- known window contact state, suppressing `OPEN`/`VENTILATE` when windows are
+  already open and suppressing `CLOSE` when they are already closed;
+- quiet hours and notification cooldown;
+- persisted room action guards;
+- localized explanations and notification delivery.
+
+VentWise remains recommendation-only. No result invokes a window, fan, HVAC,
+ERV, or HRV service.
+
+## Psychrometric support
+
+The repository now contains pure, tested functions for:
+
+- saturation vapor pressure;
+- vapor pressure;
+- absolute humidity in `g/m³`;
+- humidity ratio in `g/kg` of dry air;
+- RH reconstruction from absolute humidity;
+- qualitative moisture exchange direction.
+
+These functions are available through the core package but are not yet part of
+the active v0.18 candidate objective. In particular, the current engine does
+not compare absolute humidity or humidity ratio when selecting an action. That
+integration is intentionally deferred so it can be introduced with its own
+objective and regression scenarios.
+
+## Not yet implemented in the active v0.18 path
+
+The following capabilities belong to later DDP increments and must not be
+described as current behavior:
+
+- native CO2 scoring inside the unified objective;
+- PM2.5, PM10, and pollen policies;
+- short-term forecast safety and candidate-duration filtering;
+- adaptive ventilation duration;
+- window orientation and cross-ventilation;
+- full immutable source timestamps from Home Assistant;
+- calibrated room-impact estimation;
+- advanced hysteresis and decision lockout in the core;
+- golden replay datasets and cross-climate tuning.
+
+## Testing contract
+
+The v0.18 behavior is covered by:
+
+- deterministic replay and room-order tests;
+- missing, stale, invalid, non-finite, and implausible input tests;
+- comfort, ventilation, severe-weather, and humidity-influence scenarios;
+- psychrometric reference and domain tests;
+- runtime adapter and coordinator regression tests;
+- full repository tests where the platform supports the Home Assistant test
+  framework.
+
+When a future signal is added, it must be introduced through a canonical
+observation, an explicit quality policy, a focused objective change, and
+success/boundary/failure regression scenarios before it can affect actions.

@@ -32,7 +32,7 @@ the core engine and the Home Assistant runtime layer.
 
 ## Test Types
 
-- `tests/unit/`: pure scoring, runtime parsing, sensor aggregation, package, and runner tests
+- `tests/unit/`: pure decision-engine, psychrometric, runtime parsing, sensor aggregation, package, and runner tests
 - `tests/integration/`: configuration, entities, coordinator, notifications, translations, and Home Assistant framework tests
 - `tests/system/`: end-to-end user journeys from submitted setup data to advice
 

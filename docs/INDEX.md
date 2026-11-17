@@ -22,6 +22,7 @@ Start with the document for your role.
 ## Deterministic decision pipeline
 
 - [DDP architecture and decision pipeline](ddp-architecture.md)
+- [Current v0.18 decision-engine behavior](ddp-v0.18-current.md)
 - [DDP data, physical models, and objective function](ddp-data-models.md)
 - [DDP software architecture and implementation plan](ddp-implementation-plan.md)
 
