@@ -62,3 +62,23 @@ def test_reason_and_trace_are_stable_and_sanitized():
     assert result.reason_code
     assert result.trace
     assert all("2026-" not in entry.detail for entry in result.trace)
+
+
+def test_cold_high_rh_outdoors_can_still_provide_a_drying_moisture_signal():
+    result = evaluate(24.0, 5.0, indoor_humidity=50.0, outdoor_humidity=90.0)
+    assert any(
+        entry.code == "objective.moisture_exchange" and entry.detail == "drying"
+        for entry in result.trace
+    )
+
+
+def test_missing_optional_humidity_keeps_thermal_decision_available():
+    snapshot = DecisionSnapshot(
+        rooms=(DecisionRoom("room", "Room", observation(26.0, "Â°C"), None),),
+        outdoor=DecisionOutdoor(observation(20.0, "Â°C"), None),
+        evaluated_at=NOW,
+    )
+    result = DecisionEngine().evaluate(snapshot).room_results[0]
+    assert result.core_action is RecommendationAction.OPEN
+    assert "indoor.humidity" in result.data_quality.awaiting_source
+    assert "outdoor.humidity" in result.data_quality.awaiting_source

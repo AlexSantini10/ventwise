@@ -40,6 +40,19 @@ def test_pressure_fallback_is_explicitly_estimated():
         pressure_hpa_or_default(float("nan"))
 
 
+def test_supersaturated_inverse_result_is_not_silently_clipped():
+    ratio_at_saturation = humidity_ratio_g_kg(20.0, 100.0)
+    reconstructed = relative_humidity_percent_from_humidity_ratio(15.0, ratio_at_saturation)
+    assert reconstructed > 100.0
+
+
+def test_inverse_rejects_non_physical_ratio_and_pressure():
+    with pytest.raises(ValueError):
+        relative_humidity_percent_from_humidity_ratio(20.0, -1.0)
+    with pytest.raises(ValueError):
+        relative_humidity_percent_from_humidity_ratio(20.0, 7.0, 0.0)
+
+
 def test_moisture_direction_uses_water_content_not_rh_alone():
     assert moisture_exchange_direction(12.0, 8.0) == "drying"
     assert moisture_exchange_direction(8.0, 12.0) == "humidifying"
