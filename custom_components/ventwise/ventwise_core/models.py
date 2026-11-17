@@ -47,6 +47,8 @@ class RoomObservation:
     humidity_percent: float | None
     temperature_source: SourceReading | None = None
     humidity_source: SourceReading | None = None
+    co2_ppm: float | None = None
+    co2_source: SourceReading | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +65,7 @@ class RoomProfile:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     co2_ppm: float | None = None
+    co2_source: SourceReading | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,6 +95,7 @@ class ComfortObservation:
     humidity_source: SourceReading | None = None
     wind_speed_source: SourceReading | None = None
     wind_gust_source: SourceReading | None = None
+    safety_evidence_configured: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +179,8 @@ class DecisionRoom:
     window_open: Observation[bool] | None = None
     target_temperature_c: float | None = None
     target_humidity_percent: float | None = None
+    co2_ppm: Observation[float] | None = None
+    window_contact_configured: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,6 +192,7 @@ class DecisionOutdoor:
     wind_speed_m_s: Observation[float] | None = None
     wind_gust_m_s: Observation[float] | None = None
     weather_condition: Observation[str] | None = None
+    safety_evidence_configured: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,6 +261,12 @@ class DecisionResult:
     trace: Tuple[TraceEntry, ...] = ()
     data_quality: DataQualitySummary = field(default_factory=DataQualitySummary)
     delivery_suppressed_by: str | None = None
+    evaluated_at: datetime | None = None
+    baseline: str = "keep_state"
+    component_contributions: Tuple[TraceEntry, ...] = ()
+    urgent: bool = False
+    co2_ppm: float | None = None
+    co2_influence: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -264,3 +277,4 @@ class AggregateDecisionResult:
     delivered_action: RecommendationAction
     room_results: Tuple[DecisionResult, ...] = ()
     trace: Tuple[TraceEntry, ...] = ()
+    evaluated_at: datetime | None = None

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from ventwise_core import (
     Availability,
     DecisionContext,
+    DecisionConfig,
     DecisionEngine,
     DecisionOutdoor,
     DecisionRoom,
@@ -99,3 +100,69 @@ def test_invalid_observation_is_reported():
     ).room_results[0]
     assert result.reason_code == "insufficient_evidence"
     assert "outdoor.temperature" in result.data_quality.discarded
+
+
+def test_configured_but_missing_safety_evidence_fails_closed():
+    data = snapshot()
+    result = DecisionEngine().evaluate(
+        DecisionSnapshot(
+            data.rooms,
+            DecisionOutdoor(
+                data.outdoor.temperature_c,
+                data.outdoor.humidity_percent,
+                safety_evidence_configured=True,
+            ),
+            NOW,
+        )
+    ).room_results[0]
+    assert result.core_action is RecommendationAction.NONE
+    assert result.reason_code == "safety_uncertain"
+
+
+def test_unknown_configured_contact_never_proves_open_window():
+    data = snapshot()
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        window_contact_configured=True,
+    )
+    result = DecisionEngine().evaluate(
+        DecisionSnapshot((room,), data.outdoor, NOW)
+    ).room_results[0]
+    assert result.core_action is RecommendationAction.NONE
+    assert result.reason_code == "contact_uncertain"
+
+
+def test_known_open_window_gets_urgent_close_without_delivery_gates():
+    data = snapshot(weather="storm", context=DecisionContext(quiet_hours_active=True, cooldown_active=True, stability_seconds_required=999))
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        window_open=obs(True),
+    )
+    result = DecisionEngine().evaluate(
+        DecisionSnapshot((room,), data.outdoor, NOW)
+    ).room_results[0]
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.delivered_action is RecommendationAction.CLOSE
+    assert result.urgent is True
+
+
+def test_co2_is_scored_as_ventilation_influence_without_overriding_safety():
+    data = snapshot(indoor=22.0, outdoor=22.0)
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        co2_ppm=obs(1800.0, "ppm"),
+    )
+    result = DecisionEngine(DecisionConfig(co2_enabled=True)).evaluate(
+        DecisionSnapshot((room,), data.outdoor, NOW)
+    ).room_results[0]
+    assert result.co2_influence > 0
+    assert any(entry.code == "objective.co2" for entry in result.trace)

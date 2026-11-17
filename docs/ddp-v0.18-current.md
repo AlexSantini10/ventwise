@@ -37,7 +37,8 @@ Implementation:
 | Wind speed | Yes, optional | Supports opening at low speed and reduces opening benefit as speed rises. |
 | Wind gust | Yes, optional | Uses the strongest available wind value and can trigger the hard wind block. |
 | Weather condition | Yes, optional | Severe conditions force `CLOSE`. |
-| Window contacts | Yes, integration layer | Suppress advice already satisfied by known open/closed state. |
+| Window contacts | Yes, core and integration layer | Known state participates in safety; unknown configured contacts block new opening. |
+| Indoor CO2 | Yes, optional/configurable | Adds a bounded ventilation benefit in the same objective; it never bypasses safety. |
 | Quiet hours | Yes, integration layer | Suppress ordinary notification delivery. |
 | Notification cooldown | Yes, integration layer | Suppress repeated ordinary notifications. |
 | Evaluation timestamp | Yes | Makes freshness and deterministic replay explicit. |
@@ -111,8 +112,14 @@ The engine computes:
 
 1. indoor distance from the target comfort point;
 2. outdoor distance from the target comfort point;
-3. the potential benefit of opening or closing;
-4. a short ventilation score when outdoor air crosses the comfort band.
+3. humidity ratio for the mass-based moisture-exchange contribution;
+4. the bounded CO2 contribution when enabled and valid;
+5. the potential benefit of opening or closing;
+6. a short ventilation score when outdoor air crosses the comfort band.
+
+Relative humidity is not compared directly across different temperatures.
+Missing humidity or CO2 remains unknown and is recorded in data quality; no
+value is fabricated.
 
 The comfort band defaults to `±1°C` around the target. Scores are normalized
 to `[0, 1]` and use smooth transitions rather than abrupt changes at ordinary
@@ -164,10 +171,12 @@ score.
 Safety decisions are not represented as a large comfort penalty. They bypass
 ordinary candidate scoring and retain an explicit blocker reason.
 
-The current v0.18 implementation treats weather and wind as optional inputs:
-if they are not configured, it cannot apply those specific blocks. Completing
-fail-closed handling for all configured safety evidence is part of the next
-safety increment.
+Weather and wind remain optional only when unconfigured. Once a safety source
+is configured, missing, stale, invalid, future, or non-finite safety evidence
+fails closed for new openings. A known-open contact under a hard safety block
+produces an urgent `CLOSE`; delivery bypasses quiet hours, cooldown, and
+stability. A configured but unknown contact never proves that a window is open
+and therefore prevents a new `OPEN` or `VENTILATE` recommendation.
 
 ## Home Assistant integration behavior
 
@@ -206,18 +215,16 @@ The repository now contains pure, tested functions for:
 - RH reconstruction from absolute humidity;
 - qualitative moisture exchange direction.
 
-These functions are available through the core package but are not yet part of
-the active v0.18 candidate objective. In particular, the current engine does
-not compare absolute humidity or humidity ratio when selecting an action. That
-integration is intentionally deferred so it can be introduced with its own
-objective and regression scenarios.
+These functions are available through the core package. Humidity ratio is part
+of the active v0.18 objective for moisture-exchange direction; absolute
+humidity remains available for display and diagnostics.
 
 ## Not yet implemented in the active v0.18 path
 
 The following capabilities belong to later DDP increments and must not be
 described as current behavior:
 
-- native CO2 scoring inside the unified objective;
+- pressure-aware CO2 conversion from mass concentration;
 - PM2.5, PM10, and pollen policies;
 - short-term forecast safety and candidate-duration filtering;
 - adaptive ventilation duration;

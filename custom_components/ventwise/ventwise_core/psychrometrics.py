@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from math import exp
+from math import exp, isfinite
 
 
 def saturation_vapor_pressure_hpa(temperature_c: float) -> float:
@@ -28,7 +28,7 @@ def absolute_humidity_g_m3(temperature_c: float, relative_humidity_percent: floa
 def humidity_ratio_g_kg(temperature_c: float, relative_humidity_percent: float, pressure_hpa: float = 1013.25) -> float:
     """Return humidity ratio in grams of water per kilogram of dry air."""
 
-    if pressure_hpa <= 0:
+    if not isfinite(pressure_hpa) or pressure_hpa <= 0:
         raise ValueError("pressure_hpa must be positive")
     vapor_pressure = vapor_pressure_hpa(temperature_c, relative_humidity_percent)
     if vapor_pressure >= pressure_hpa:
@@ -43,7 +43,7 @@ def relative_humidity_percent_from_absolute(
     """Reconstruct RH from absolute humidity at the specified temperature."""
 
     _check_temperature(temperature_c)
-    if not 0.0 <= absolute_humidity_g_m3:
+    if not isfinite(absolute_humidity_g_m3) or not 0.0 <= absolute_humidity_g_m3:
         raise ValueError("absolute_humidity_g_m3 must be non-negative")
     rh = absolute_humidity_g_m3 * (temperature_c + 273.15) / (
         216.7 * saturation_vapor_pressure_hpa(temperature_c)
@@ -63,10 +63,10 @@ def moisture_exchange_direction(indoor_absolute_humidity_g_m3: float, outdoor_ab
 
 
 def _check_temperature(temperature_c: float) -> None:
-    if not -80.0 <= temperature_c <= 70.0:
+    if not isfinite(temperature_c) or not -80.0 <= temperature_c <= 70.0:
         raise ValueError("temperature_c is outside the supported domain")
 
 
 def _check_humidity(relative_humidity_percent: float) -> None:
-    if not 0.0 <= relative_humidity_percent <= 100.0:
+    if not isfinite(relative_humidity_percent) or not 0.0 <= relative_humidity_percent <= 100.0:
         raise ValueError("relative_humidity_percent must be between 0 and 100")

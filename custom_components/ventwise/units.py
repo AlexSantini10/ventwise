@@ -25,6 +25,7 @@ _UNIT_ALIASES = {
                    "km/h": UNIT_KILOMETERS_PER_HOUR, "kph": UNIT_KILOMETERS_PER_HOUR,
                    "mph": UNIT_MILES_PER_HOUR, "kn": UNIT_KNOTS, "knot": UNIT_KNOTS, "knots": UNIT_KNOTS},
     "pressure": {unit.lower(): unit for unit in PRESSURE_UNITS},
+    "co2": {"ppm": "ppm", "parts per million": "ppm"},
 }
 
 
@@ -38,7 +39,7 @@ def canonical_unit(measurement: str, unit: object) -> str:
 
 
 def canonical_unit_name(measurement: str) -> str:
-    return {"temperature": UNIT_CELSIUS, "humidity": "%", "wind_speed": UNIT_METERS_PER_SECOND, "pressure": "hPa"}[measurement]
+    return {"temperature": UNIT_CELSIUS, "humidity": "%", "wind_speed": UNIT_METERS_PER_SECOND, "pressure": "hPa", "co2": "ppm"}[measurement]
 
 
 def normalize_measurement(value: object, unit: object, measurement: str) -> tuple[float | None, str, str | None]:
@@ -64,6 +65,8 @@ def normalize_measurement(value: object, unit: object, measurement: str) -> tupl
     elif measurement == "pressure":
         factors = {"hPa": 1.0, "Pa": 0.01, "kPa": 10.0, "bar": 1000.0, "atm": 1013.25, "psi": 68.9475729, "inHg": 33.8638867}
         result = numeric * factors[source_unit]
+    elif measurement == "co2":
+        result = numeric
     else:
         raise ValueError(f"unsupported measurement: {measurement}")
     return result, canonical_unit_name(measurement), None
