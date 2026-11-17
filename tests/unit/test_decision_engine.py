@@ -135,6 +135,22 @@ def test_unknown_configured_contact_never_proves_open_window():
     assert result.reason_code == "contact_uncertain"
 
 
+def test_contact_failure_does_not_hide_safety_close():
+    data = snapshot(weather="storm")
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        window_contact_configured=True,
+    )
+    result = DecisionEngine().evaluate(
+        DecisionSnapshot((room,), data.outdoor, NOW)
+    ).room_results[0]
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.reason_code == "severe_weather"
+
+
 def test_known_open_window_gets_urgent_close_without_delivery_gates():
     data = snapshot(weather="storm", context=DecisionContext(quiet_hours_active=True, cooldown_active=True, stability_seconds_required=999))
     room = DecisionRoom(
@@ -166,6 +182,46 @@ def test_co2_is_scored_as_ventilation_influence_without_overriding_safety():
     ).room_results[0]
     assert result.co2_influence > 0
     assert any(entry.code == "objective.co2" for entry in result.trace)
+
+
+def test_co2_can_require_ventilation_even_when_outdoor_comfort_is_worse():
+    data = snapshot(indoor=22.0, outdoor=35.0)
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        co2_ppm=obs(1200.0, "ppm"),
+    )
+    result = DecisionEngine(DecisionConfig(co2_enabled=True)).evaluate(
+        DecisionSnapshot((room,), data.outdoor, NOW)
+    ).room_results[0]
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.reason_code == "co2_ventilation"
+
+
+def test_custom_co2_threshold_controls_ventilation_trigger():
+    data = snapshot(indoor=22.0, outdoor=22.0)
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        co2_ppm=obs(1300.0, "ppm"),
+    )
+    engine = DecisionEngine(DecisionConfig(co2_enabled=True, co2_threshold_ppm=1400.0))
+    below = engine.evaluate(DecisionSnapshot((room,), data.outdoor, NOW)).room_results[0]
+    assert below.core_action is RecommendationAction.NONE
+
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        co2_ppm=obs(1500.0, "ppm"),
+    )
+    above = engine.evaluate(DecisionSnapshot((room,), data.outdoor, NOW)).room_results[0]
+    assert above.core_action is RecommendationAction.VENTILATE
 
 
 def test_default_pressure_is_estimated_and_baseline_is_explicit():

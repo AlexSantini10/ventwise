@@ -22,6 +22,29 @@ def vapor_pressure_hpa(temperature_c: float, relative_humidity_percent: float) -
     return saturation_vapor_pressure_hpa(temperature_c) * relative_humidity_percent / 100.0
 
 
+def perceived_temperature_c(
+    temperature_c: float,
+    relative_humidity_percent: float | None,
+    target_temperature_c: float,
+    target_humidity_percent: float,
+) -> float:
+    """Estimate comfort temperature using vapor-pressure deviation.
+
+    The result is a deliberately modest comfort heuristic, not a certified
+    heat-index or PMV calculation. Vapor pressure is used instead of a raw RH
+    difference so equal RH values at different temperatures are not treated
+    as equal moisture loads.
+    """
+
+    if relative_humidity_percent is None:
+        return temperature_c
+    humidity_effect_c = (
+        vapor_pressure_hpa(temperature_c, relative_humidity_percent)
+        - vapor_pressure_hpa(target_temperature_c, target_humidity_percent)
+    ) * 0.08
+    return temperature_c + max(-3.0, min(3.0, humidity_effect_c))
+
+
 def absolute_humidity_g_m3(temperature_c: float, relative_humidity_percent: float) -> float:
     """Return water vapor mass per cubic meter of air."""
 

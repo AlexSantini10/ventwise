@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 from ..ventwise_core import (
     DecisionEngine,
     ForecastObservation,
+    perceived_temperature_c,
     RecommendationAction,
     RecommendationSummary,
 )
@@ -426,10 +427,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 ),
                 target_perceived_c=self._config.target_temperature_c,
                 suggested_comfort_temperature_c=None,
-                outdoor_perceived_c=outdoor.temperature_c
-                + (
-                    ((outdoor.humidity_percent if outdoor.humidity_percent is not None else self._config.target_humidity_percent) - self._config.target_humidity_percent)
-                    * 0.04
+                outdoor_perceived_c=perceived_temperature_c(
+                    outdoor.temperature_c,
+                    outdoor.humidity_percent,
+                    self._config.target_temperature_c,
+                    self._config.target_humidity_percent,
                 ),
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=outdoor.temperature_c,
@@ -450,8 +452,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         await self._set_diagnostic_issue(None)
 
         now = dt_util.now()
-        outdoor_perceived_c = outdoor.temperature_c + (
-            ((outdoor.humidity_percent if outdoor.humidity_percent is not None else self._config.target_humidity_percent) - self._config.target_humidity_percent) * 0.04
+        outdoor_perceived_c = perceived_temperature_c(
+            outdoor.temperature_c,
+            outdoor.humidity_percent,
+            self._config.target_temperature_c,
+            self._config.target_humidity_percent,
         )
         suggested_target = round(
             max(18.0, min(26.0, self._config.target_temperature_c + max(-2.0, min(2.0, (outdoor_perceived_c - 20.0) * 0.25)))),
@@ -1136,10 +1141,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:
                 entity_ids.add(room.humidity_entity_id)
-            if self._config.co2_enabled:
-                co2_entity_id = room.co2_entity_id or self._config.co2_entity_id
-                if co2_entity_id:
-                    entity_ids.add(co2_entity_id)
+            if self._config.co2_enabled and room.co2_entity_id:
+                entity_ids.add(room.co2_entity_id)
             entity_ids.update(room.window_sensor_entity_ids)
         return sorted(entity_ids)
 

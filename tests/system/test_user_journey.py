@@ -276,7 +276,7 @@ def test_setup_to_user_facing_open_and_close_recommendations() -> None:
 
     assert open_summary.action is RecommendationAction.OPEN
     assert build_recommendation_explanation(open_room, language="it") == (
-        "Fuori è più confortevole adesso: 3.2°C più vicino al comfort."
+        "Fuori è più confortevole adesso: 3.3°C più vicino al comfort."
     )
 
     states["weather.ventwise_test_weather"] = SimpleNamespace(
@@ -289,5 +289,5 @@ def test_setup_to_user_facing_open_and_close_recommendations() -> None:
 
     assert close_summary.action is RecommendationAction.CLOSE
     assert build_recommendation_explanation(close_room, language="it") == (
-        "Dentro è più confortevole adesso: 2.8°C più vicino al comfort."
+            "Dentro è più confortevole adesso: 3.1°C più vicino al comfort."
     )

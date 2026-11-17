@@ -13,7 +13,7 @@ from ..ventwise_core import (
     DecisionConfig,
     DecisionContext,
     DecisionEngine,
-    DecisionOutdoor,
+    ExternalConditions,
     DecisionRoom,
     DecisionSnapshot,
     ForecastObservation,
@@ -416,7 +416,7 @@ def build_decision_snapshot(
     )
     return DecisionSnapshot(
         rooms=decision_rooms,
-        outdoor=DecisionOutdoor(
+        outdoor=ExternalConditions(
             temperature_c=observation(outdoor.temperature_c, "°C", "outdoor", "temperature", outdoor.temperature_source),
             humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor", "humidity", outdoor.humidity_source),
             wind_speed_m_s=(observation(outdoor.wind_speed_m_s, "m/s", "outdoor", "wind_speed", outdoor.wind_speed_source) if outdoor.wind_speed_m_s is not None else None),
@@ -657,7 +657,7 @@ def build_room_profiles(
         humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
         temperature = state_to_temperature_c(temperature_state)
         humidity = state_to_float(humidity_state) if humidity_state is not None else None
-        co2 = state_to_float(state_getter(room.co2_entity_id or config.co2_entity_id)) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None
+        co2 = state_to_float(state_getter(room.co2_entity_id)) if config.co2_enabled and room.co2_entity_id else None
         if temperature is None:
             continue
         rooms.append(
@@ -679,17 +679,17 @@ def build_room_profiles(
                 co2_ppm=co2,
                 co2_source=(
                     _source_reading(
-                        state_getter(room.co2_entity_id or config.co2_entity_id),
+                        state_getter(room.co2_entity_id),
                         "co2",
-                        room.co2_entity_id or config.co2_entity_id,
+                        room.co2_entity_id,
                     )
                     or SourceReading(
                         None,
                         "ppm",
                         None,
-                        room.co2_entity_id or config.co2_entity_id,
+                        room.co2_entity_id,
                     )
-                ) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None,
+                ) if config.co2_enabled and room.co2_entity_id else None,
             )
         )
 

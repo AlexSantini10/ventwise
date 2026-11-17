@@ -186,8 +186,8 @@ class DecisionRoom:
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionOutdoor:
-    """Canonical outdoor inputs for one evaluation."""
+class ExternalConditions:
+    """Canonical conditions measured outside the home."""
 
     temperature_c: Observation[float]
     humidity_percent: Observation[float] | None
@@ -216,6 +216,16 @@ class DecisionSnapshot:
     outdoor: DecisionOutdoor
     evaluated_at: datetime
     context: DecisionContext = field(default_factory=DecisionContext)
+
+    @property
+    def external_conditions(self) -> ExternalConditions:
+        """Preferred semantic name for the shared external readings."""
+
+        return self.outdoor
+
+
+# Backwards-compatible name for integrations and tests using the v0.18 API.
+DecisionOutdoor = ExternalConditions
 
 
 @dataclass(frozen=True, slots=True)

@@ -28,17 +28,17 @@ Implementation:
 | Input | Used by v0.18 | Behavior |
 | --- | --- | --- |
 | Indoor temperature | Yes | Required for a room decision. |
-| Outdoor temperature | Yes | Required for a room decision. |
+| External temperature | Yes | One shared external reading for all room decisions; required for a room decision. |
 | Indoor relative humidity | Yes, optional | Contributes to perceived comfort when valid. |
-| Outdoor relative humidity | Yes, optional | Contributes to perceived outdoor comfort when valid. |
+| External relative humidity | Yes, optional | Contributes to perceived external comfort and absolute-humidity exchange when valid. |
 | Global target temperature | Yes | Default comfort target. |
 | Per-room target temperature | Yes | Overrides the global target when enabled. |
 | Per-room target humidity | Yes | Changes the comfort reference used by the objective. |
-| Wind speed | Yes, optional | Supports opening at low speed and reduces opening benefit as speed rises. |
-| Wind gust | Yes, optional | Uses the strongest available wind value and can trigger the hard wind block. |
-| Weather condition | Yes, optional | Severe conditions force `CLOSE`. |
+| External wind speed | Yes, optional | Supports opening at low speed and reduces opening benefit as speed rises. |
+| External wind gust | Yes, optional | Uses the strongest available wind value and can trigger the hard wind block. |
+| External weather condition | Yes, optional | Severe conditions force `CLOSE`. |
 | Window contacts | Yes, core and integration layer | Known state participates in safety; unknown configured contacts block new opening. |
-| Indoor CO2 | Yes, optional/configurable | Adds a bounded ventilation benefit in the same objective; it never bypasses safety. |
+| Indoor CO2 | Yes, optional/configurable per room | Can independently request `VENTILATE` above the threshold; it never bypasses safety. |
 | Quiet hours | Yes, integration layer | Suppress ordinary notification delivery. |
 | Notification cooldown | Yes, integration layer | Suppress repeated ordinary notifications. |
 | Evaluation timestamp | Yes | Makes freshness and deterministic replay explicit. |
@@ -101,7 +101,10 @@ For valid relative humidity, the v0.18 heuristic calculates a perceived
 temperature approximation:
 
 ```text
-perceived = temperature_c + (humidity_percent - target_humidity_percent) * 0.04
+perceived = temperature_c + clamp(
+    (vapour_pressure - target_vapour_pressure) * 0.08,
+    -3, +3
+)
 ```
 
 When relative humidity is missing, perceived temperature falls back to the
@@ -112,12 +115,15 @@ The engine computes:
 
 1. indoor distance from the target comfort point;
 2. outdoor distance from the target comfort point;
-3. humidity ratio for the mass-based moisture-exchange contribution;
+3. absolute humidity for the volume-based moisture-exchange contribution;
 4. the bounded CO2 contribution when enabled and valid;
 5. the potential benefit of opening or closing;
 6. a short ventilation score when outdoor air crosses the comfort band.
 
-Relative humidity is not compared directly across different temperatures.
+Relative humidity is not compared directly across different temperatures:
+the perceived-temperature heuristic compares vapour pressure, while the
+moisture-exchange objective uses absolute humidity in `g/mÂ³`. This remains a
+bounded comfort heuristic, not a certified heat-index or PMV calculation.
 Missing humidity or CO2 remains unknown and is recorded in data quality; no
 value is fabricated.
 
@@ -139,6 +145,10 @@ The engine evaluates three actionable candidates:
 
 `NONE` is returned when the benefit is too small, candidates are too close to
   one another, or required evidence is unavailable.
+
+When CO2 is enabled and the room value is at or above the configured threshold
+(1000 ppm by default), CO2 can independently select `VENTILATE`, even when the
+external comfort score is worse. Hard safety blocks still take precedence.
 
 Selection is deterministic:
 
@@ -176,7 +186,8 @@ is configured, missing, stale, invalid, future, or non-finite safety evidence
 fails closed for new openings. A known-open contact under a hard safety block
 produces an urgent `CLOSE`; delivery bypasses quiet hours, cooldown, and
 stability. A configured but unknown contact never proves that a window is open
-and therefore prevents a new `OPEN` or `VENTILATE` recommendation.
+and therefore prevents a new `OPEN` or `VENTILATE` recommendation. It does not
+hide an independent hard safety `CLOSE` recommendation.
 
 ## Home Assistant integration behavior
 

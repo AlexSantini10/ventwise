@@ -147,7 +147,6 @@ def test_coordinator_watches_window_contacts_and_co2_sources() -> None:
         "binary_sensor.studio_window",
         "sensor.camera_co2",
         "sensor.camera_temperature",
-        "sensor.home_co2",
         "sensor.studio_temperature",
         "weather.home",
     ]
@@ -1415,4 +1414,4 @@ def test_coordinator_averages_global_perceived_indoor_across_rooms(
 
     snapshot = asyncio.run(coordinator._async_update_data())
 
-    assert snapshot.active_indoor_perceived_c == pytest.approx(26.0)
+    assert snapshot.active_indoor_perceived_c == pytest.approx(26.2945813951)
