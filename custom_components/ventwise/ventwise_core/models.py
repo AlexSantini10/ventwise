@@ -29,11 +29,24 @@ class SeasonMode(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class SourceReading:
+    """Un-normalized boundary reading retained until snapshot construction."""
+
+    value: object
+    unit: str | None
+    observed_at: datetime | None
+    source_id: str | None
+    device_class: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class RoomObservation:
     """Measured conditions for a room."""
 
     temperature_c: float
     humidity_percent: float | None
+    temperature_source: SourceReading | None = None
+    humidity_source: SourceReading | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +88,10 @@ class ComfortObservation:
     weather_condition: str | None = None
     forecast_temperature_c: float | None = None
     forecast: ForecastObservation | None = None
+    temperature_source: SourceReading | None = None
+    humidity_source: SourceReading | None = None
+    wind_speed_source: SourceReading | None = None
+    wind_gust_source: SourceReading | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +134,8 @@ class Availability(str, Enum):
     """Availability state for a normalized observation."""
 
     AVAILABLE = "available"
+    # Public quality vocabulary; AVAILABLE remains the backwards-compatible name.
+    VALID = "available"
     MISSING = "missing"
     INVALID = "invalid"
     STALE = "stale"
@@ -142,6 +161,7 @@ class Observation(Generic[T]):
     validity: Validity = Validity.VALID
     availability: Availability = Availability.AVAILABLE
     freshness: timedelta | None = None
+    quality_reason: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,6 +232,7 @@ class DataQualitySummary:
     used: Tuple[str, ...] = ()
     discarded: Tuple[str, ...] = ()
     awaiting_source: Tuple[str, ...] = ()
+    discarded_reasons: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

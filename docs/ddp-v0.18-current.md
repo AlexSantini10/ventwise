@@ -68,10 +68,31 @@ Current canonical units are:
 - relative humidity: `%`;
 - wind and gust: `m/s`.
 
-The Home Assistant adapter already converts state values into these units. A
-remaining limitation is that the current adapter assigns the refresh time as
-the observation time; preserving the original Home Assistant sensor timestamp
-is a later normalization improvement.
+The Home Assistant adapter converts state values into these units at the
+single snapshot boundary while retaining source metadata for quality checks.
+
+## Boundary normalization policy
+
+The Home Assistant boundary accepts Celsius, Fahrenheit, and Kelvin
+temperatures; percentage and ratio relative humidity; m/s, km/h, mph, and
+knots wind speed; and declared pressure units (`hPa`, `Pa`, `kPa`, `bar`,
+`atm`, `psi`, and `inHg`). Values are converted to Celsius, percent, m/s, and
+hPa before a `DecisionSnapshot` is built. Unknown units, contradictory device
+classes, non-numeric or non-finite values, and impossible ranges are invalid;
+they are never silently converted or passed to the engine.
+
+Home Assistant readings retain their source entity ID and `last_updated`
+timestamp. Readings newer than the evaluation timestamp are discarded. Naive
+timestamps are compared in the evaluation timestamp's timezone for legacy
+compatibility; new adapters should provide timezone-aware timestamps. Manual
+or synthetic values are explicitly marked with a `manual:` source and may use
+the evaluation timestamp. Configured source selection is explicit and stable:
+the selected override entity is used when configured, otherwise the selected
+weather/forecast source is used, without relying on map iteration order.
+
+`DataQualitySummary.discarded_reasons` records a stable `field:reason` entry
+for each discarded value. Optional missing humidity remains awaiting source
+and is never fabricated as `50%`; thermal-only decisions remain possible.
 
 ## Comfort calculation
 

@@ -74,21 +74,28 @@ class DecisionEngine:
     def evaluate_room(self, room: DecisionRoom, snapshot: DecisionSnapshot) -> DecisionResult:
         used: list[str] = []
         discarded: list[str] = []
+        discarded_reasons: list[str] = []
         awaiting: list[str] = []
         trace: list[TraceEntry] = [TraceEntry("config.version", self.config.version)]
 
-        indoor_t = self._usable(room.temperature_c, "indoor.temperature", snapshot, used, discarded, awaiting)
-        outdoor_t = self._usable(snapshot.outdoor.temperature_c, "outdoor.temperature", snapshot, used, discarded, awaiting)
-        outdoor_h = self._usable(snapshot.outdoor.humidity_percent, "outdoor.humidity", snapshot, used, discarded, awaiting, optional=True)
-        indoor_h = self._usable(room.humidity_percent, "indoor.humidity", snapshot, used, discarded, awaiting, optional=True)
-        wind = self._usable(snapshot.outdoor.wind_speed_m_s, "outdoor.wind", snapshot, used, discarded, awaiting, optional=True)
-        gust = self._usable(snapshot.outdoor.wind_gust_m_s, "outdoor.gust", snapshot, used, discarded, awaiting, optional=True)
-        weather = self._usable(snapshot.outdoor.weather_condition, "outdoor.weather", snapshot, used, discarded, awaiting, optional=True)
+        indoor_t = self._usable(room.temperature_c, "indoor.temperature", snapshot, used, discarded, awaiting, discarded_reasons)
+        outdoor_t = self._usable(snapshot.outdoor.temperature_c, "outdoor.temperature", snapshot, used, discarded, awaiting, discarded_reasons)
+        outdoor_h = self._usable(snapshot.outdoor.humidity_percent, "outdoor.humidity", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
+        indoor_h = self._usable(room.humidity_percent, "indoor.humidity", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
+        wind = self._usable(snapshot.outdoor.wind_speed_m_s, "outdoor.wind", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
+        gust = self._usable(snapshot.outdoor.wind_gust_m_s, "outdoor.gust", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
+        weather = self._usable(snapshot.outdoor.weather_condition, "outdoor.weather", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
 
-        quality = DataQualitySummary(tuple(used), tuple(discarded), tuple(awaiting))
+        quality = DataQualitySummary(tuple(used), tuple(discarded), tuple(awaiting), tuple(discarded_reasons))
         if indoor_t is None or outdoor_t is None:
             trace.append(TraceEntry("selection.insufficient_evidence"))
             return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "insufficient_evidence", trace, quality)
+        if any(
+            entry.startswith(("outdoor.wind:", "outdoor.gust:", "outdoor.weather:"))
+            for entry in discarded_reasons
+        ):
+            trace.append(TraceEntry("selection.safety_uncertain"))
+            return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "safety_uncertain", trace, quality)
 
         indoor_h_value = float(indoor_h) if indoor_h is not None else None
         outdoor_h_value = float(outdoor_h) if outdoor_h is not None else None
@@ -158,30 +165,46 @@ class DecisionEngine:
             return RecommendationAction.NONE, "stability"
         return action, None
 
-    def _usable(self, observation: Observation | None, name: str, snapshot: DecisionSnapshot, used: list[str], discarded: list[str], awaiting: list[str], optional: bool = False):
+    def _usable(self, observation: Observation | None, name: str, snapshot: DecisionSnapshot, used: list[str], discarded: list[str], awaiting: list[str], discarded_reasons: list[str], optional: bool = False):
         if observation is None:
             (awaiting if optional else discarded).append(name)
+            if not optional:
+                discarded_reasons.append(f"{name}:missing")
             return None
         if observation.availability is Availability.AWAITING_SOURCE:
             awaiting.append(name)
             return None
         if observation.availability is not Availability.AVAILABLE or observation.validity is not Validity.VALID or observation.value is None:
-            (awaiting if optional and observation.availability is Availability.MISSING else discarded).append(name)
+            if optional and observation.availability is Availability.MISSING:
+                awaiting.append(name)
+            else:
+                discarded.append(name)
+                discarded_reasons.append(f"{name}:{observation.quality_reason or observation.availability.value}")
             return None
-        if observation.observed_at is None or observation.observed_at > snapshot.evaluated_at:
+        if observation.observed_at is None:
             discarded.append(name)
+            discarded_reasons.append(f"{name}:missing_timestamp")
             return None
-        age = snapshot.evaluated_at - observation.observed_at
+        observed_at = _comparable_datetime(observation.observed_at, snapshot.evaluated_at)
+        evaluated_at = _comparable_datetime(snapshot.evaluated_at, observation.observed_at)
+        if observed_at > evaluated_at:
+            discarded.append(name)
+            discarded_reasons.append(f"{name}:future_timestamp")
+            return None
+        age = evaluated_at - observed_at
         freshness = observation.freshness
         too_old = age > freshness if freshness is not None else age.total_seconds() > self.config.freshness_seconds
         if too_old:
             discarded.append(name)
+            discarded_reasons.append(f"{name}:stale")
             return None
         if isinstance(observation.value, float) and not isfinite(observation.value):
             discarded.append(name)
+            discarded_reasons.append(f"{name}:non_finite")
             return None
         if not _plausible(observation.value, observation.unit):
             discarded.append(name)
+            discarded_reasons.append(f"{name}:out_of_range")
             return None
         used.append(name)
         return observation.value
@@ -224,3 +247,12 @@ def _plausible(value: object, unit: str) -> bool:
     if unit == "m/s":
         return 0.0 <= float(value) <= 150.0
     return True
+
+
+def _comparable_datetime(value, reference):
+    """Make naive legacy timestamps comparable without changing their meaning."""
+    if value.tzinfo is None and reference.tzinfo is not None:
+        return value.replace(tzinfo=reference.tzinfo)
+    if value.tzinfo is not None and reference.tzinfo is None:
+        return value.replace(tzinfo=None)
+    return value

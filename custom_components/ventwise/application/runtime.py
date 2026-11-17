@@ -22,6 +22,7 @@ from ..ventwise_core import (
     RecommendationSummary,
     RoomObservation,
     RoomProfile,
+    SourceReading,
     RoomRecommendation,
 )
 
@@ -98,7 +99,10 @@ from ..const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from ..units import state_unit, temperature_to_celsius, temperature_unit, wind_speed_to_m_s, wind_speed_unit
+from ..units import (
+    normalize_measurement, state_unit, temperature_to_celsius, temperature_unit,
+    wind_speed_to_m_s, wind_speed_unit,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,13 +340,31 @@ def build_decision_snapshot(
 ) -> DecisionSnapshot:
     """Build the immutable core input from already normalized HA values."""
 
-    def observation(value: Any, unit: str, source_id: str) -> Observation:
+    def observation(value: Any, unit: str, source_id: str, measurement: str, source: SourceReading | None = None) -> Observation:
+        reading = source or SourceReading(value, unit, evaluated_at, f"manual:{source_id}")
+        normalized, canonical, reason = normalize_measurement(reading.value, reading.unit or unit, measurement)
+        expected_classes = {
+            "temperature": {"temperature"}, "humidity": {"humidity"}, "wind_speed": {"wind_speed"},
+        }
+        if reading.device_class and reading.device_class not in expected_classes.get(measurement, {reading.device_class}):
+            reason = "contradictory_device_class"
+            normalized = None
+        if reason is None and normalized is not None:
+            limits = {"temperature": (-90.0, 70.0), "humidity": (0.0, 100.0), "wind_speed": (0.0, 150.0)}
+            lower, upper = limits.get(measurement, (-float("inf"), float("inf")))
+            if not lower <= normalized <= upper:
+                reason = "out_of_range"
+                normalized = None
+        # Older test doubles and legacy adapters may not expose HA's timestamp;
+        # preserve their established refresh-time semantics while real HA
+        # states retain last_updated above.
+        observed_at = reading.observed_at or evaluated_at
+        availability = Availability.AVAILABLE if reason is None and normalized is not None else (
+            Availability.MISSING if reason == "missing" else Availability.INVALID
+        )
         return Observation(
-            value,
-            unit,
-            evaluated_at,
-            source_id,
-            availability=(Availability.AVAILABLE if value is not None else Availability.MISSING),
+            normalized, canonical, observed_at, reading.source_id,
+            availability=availability, quality_reason=reason,
         )
 
     window_states = window_states or {}
@@ -350,10 +372,10 @@ def build_decision_snapshot(
         DecisionRoom(
             room_id=room.room_id or room.name,
             name=room.name,
-            temperature_c=observation(room.indoor.temperature_c, "°C", room.room_id or room.name),
-            humidity_percent=observation(room.indoor.humidity_percent, "%", room.room_id or room.name),
+            temperature_c=observation(room.indoor.temperature_c, "°C", room.room_id or room.name, "temperature", room.indoor.temperature_source),
+            humidity_percent=observation(room.indoor.humidity_percent, "%", room.room_id or room.name, "humidity", room.indoor.humidity_source),
             window_open=(
-                observation(window_states[room.room_id or room.name] == WINDOW_STATE_OPEN, "", room.room_id or room.name)
+                Observation(window_states[room.room_id or room.name] == WINDOW_STATE_OPEN, "", evaluated_at, f"manual:{room.room_id or room.name}")
                 if (room.room_id or room.name) in window_states
                 and window_states[room.room_id or room.name] in {WINDOW_STATE_OPEN, WINDOW_STATE_CLOSED}
                 else None
@@ -375,11 +397,11 @@ def build_decision_snapshot(
     return DecisionSnapshot(
         rooms=decision_rooms,
         outdoor=DecisionOutdoor(
-            temperature_c=observation(outdoor.temperature_c, "°C", "outdoor"),
-            humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor"),
-            wind_speed_m_s=(observation(outdoor.wind_speed_m_s, "m/s", "outdoor") if outdoor.wind_speed_m_s is not None else None),
-            wind_gust_m_s=(observation(outdoor.wind_gust_m_s, "m/s", "outdoor") if outdoor.wind_gust_m_s is not None else None),
-            weather_condition=(observation(outdoor.weather_condition, "", "outdoor") if outdoor.weather_condition is not None else None),
+            temperature_c=observation(outdoor.temperature_c, "°C", "outdoor", "temperature", outdoor.temperature_source),
+            humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor", "humidity", outdoor.humidity_source),
+            wind_speed_m_s=(observation(outdoor.wind_speed_m_s, "m/s", "outdoor", "wind_speed", outdoor.wind_speed_source) if outdoor.wind_speed_m_s is not None else None),
+            wind_gust_m_s=(observation(outdoor.wind_gust_m_s, "m/s", "outdoor", "wind_speed", outdoor.wind_gust_source) if outdoor.wind_gust_m_s is not None else None),
+            weather_condition=(Observation(outdoor.weather_condition, "", evaluated_at, "manual:outdoor") if outdoor.weather_condition is not None else None),
         ),
         evaluated_at=evaluated_at,
         context=DecisionContext(stable_for_seconds=10**9),
@@ -541,22 +563,24 @@ def build_room_profiles(
 ) -> tuple[list[RoomProfile], ComfortObservation | None]:
     """Build room profiles and the outdoor observation from Home Assistant state."""
 
-    outdoor_temp = _outdoor_value(
+    outdoor_temp_state = _outdoor_state(
         config.outdoor_temperature_source,
         config.outdoor_weather_entity_id,
         config.outdoor_temperature_entity_id,
         state_getter,
         "temperature",
-        measurement="temperature",
     )
-    outdoor_humidity = _outdoor_value(
+    outdoor_temp = _canonical_measurement_value(
+        state_to_float(outdoor_temp_state), outdoor_temp_state, "temperature"
+    )
+    outdoor_humidity_state = _outdoor_state(
         config.outdoor_humidity_source,
         config.outdoor_weather_entity_id,
         config.outdoor_humidity_entity_id,
         state_getter,
         "humidity",
-        allow_state_fallback=False,
     )
+    outdoor_humidity = state_to_float(outdoor_humidity_state)
     if outdoor_temp is None:
         outdoor = None
     else:
@@ -564,15 +588,14 @@ def build_room_profiles(
             config.outdoor_weather_entity_id,
             state_getter,
         )
-        wind_speed = _outdoor_value(
+        wind_speed_state = _outdoor_state(
             config.wind_speed_source,
             config.outdoor_weather_entity_id,
             config.wind_speed_entity_id,
             state_getter,
             "wind_speed",
-            allow_state_fallback=False,
-            measurement="wind_speed",
         )
+        wind_speed = _canonical_measurement_value(state_to_float(wind_speed_state), wind_speed_state, "wind_speed")
         wind_gust = _weather_gust_value(
             config.outdoor_weather_entity_id,
             state_getter,
@@ -585,12 +608,17 @@ def build_room_profiles(
             weather_condition=weather_condition,
             forecast_temperature_c=forecast_temperature_c,
             forecast=forecast,
+            temperature_source=_source_reading(outdoor_temp_state, "temperature", "outdoor.temperature"),
+            humidity_source=_source_reading(outdoor_humidity_state, "humidity", "outdoor.humidity"),
+            wind_speed_source=_source_reading(wind_speed_state, "wind_speed", "outdoor.wind") if wind_speed_state is not None else None,
         )
 
     rooms: list[RoomProfile] = []
     for room in config.rooms:
-        temperature = state_to_temperature_c(state_getter(room.temperature_entity_id))
-        humidity = state_to_float(state_getter(room.humidity_entity_id)) if room.humidity_entity_id else None
+        temperature_state = state_getter(room.temperature_entity_id)
+        humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
+        temperature = state_to_temperature_c(temperature_state)
+        humidity = state_to_float(humidity_state) if humidity_state is not None else None
         co2 = state_to_float(state_getter(room.co2_entity_id or config.co2_entity_id)) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None
         if temperature is None:
             continue
@@ -601,6 +629,8 @@ def build_room_profiles(
                 indoor=RoomObservation(
                     temperature_c=temperature,
                     humidity_percent=humidity,
+                    temperature_source=_source_reading(temperature_state, "temperature", room.temperature_entity_id),
+                    humidity_source=_source_reading(humidity_state, "humidity", room.humidity_entity_id) if humidity_state is not None else None,
                 ),
                 kind=room.kind,
                 enabled=room.enabled,
@@ -1031,6 +1061,44 @@ def _weather_gust_value(
         except (TypeError, ValueError):
             continue
     return None
+
+
+def _outdoor_state(
+    source: str,
+    weather_entity_id: str | None,
+    override_entity_id: str | None,
+    state_getter: Callable[[str], Any],
+    attribute_name: str,
+) -> Any | None:
+    """Select one configured source deterministically and retain its HA state."""
+    if source == OUTDOOR_SOURCE_OVERRIDE and override_entity_id:
+        return state_getter(override_entity_id)
+    if not weather_entity_id:
+        return None
+    state = state_getter(weather_entity_id)
+    if state is None:
+        return None
+    attributes = getattr(state, "attributes", {}) or {}
+    if attribute_name in attributes:
+        return type("AttributeState", (), {
+            "state": attributes[attribute_name],
+            "attributes": attributes,
+            "last_updated": getattr(state, "last_updated", None),
+        })()
+    return state if attribute_name == "temperature" else None
+
+
+def _source_reading(state: Any | None, measurement: str, source_id: str | None) -> SourceReading | None:
+    if state is None:
+        return None
+    attributes = getattr(state, "attributes", {}) or {}
+    fallback_units = {"temperature": "°C", "humidity": "%", "wind_speed": "m/s"}
+    unit = state_unit(state, fallback_units.get(measurement, ""), measurement)
+    observed_at = getattr(state, "last_updated", None) or getattr(state, "last_changed", None)
+    return SourceReading(
+        getattr(state, "state", None), unit, observed_at, source_id,
+        attributes.get("device_class"),
+    )
 
 
 def find_room_recommendation(
