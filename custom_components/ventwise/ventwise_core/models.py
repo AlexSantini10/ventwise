@@ -144,6 +144,7 @@ class Availability(str, Enum):
     INVALID = "invalid"
     STALE = "stale"
     UNCONFIGURED = "unconfigured"
+    ESTIMATED = "estimated"
     AWAITING_SOURCE = "awaiting_source"
 
 
@@ -166,6 +167,7 @@ class Observation(Generic[T]):
     availability: Availability = Availability.AVAILABLE
     freshness: timedelta | None = None
     quality_reason: str | None = None
+    provenance: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,6 +195,7 @@ class DecisionOutdoor:
     wind_gust_m_s: Observation[float] | None = None
     weather_condition: Observation[str] | None = None
     safety_evidence_configured: bool = False
+    pressure_hpa: Observation[float] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,6 +233,8 @@ class CandidateScores:
     open: float = 0.0
     ventilate: float = 0.0
     close: float = 0.0
+    none: float = 0.0
+    penalties: Tuple[TraceEntry, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,11 +267,12 @@ class DecisionResult:
     data_quality: DataQualitySummary = field(default_factory=DataQualitySummary)
     delivery_suppressed_by: str | None = None
     evaluated_at: datetime | None = None
-    baseline: str = "keep_state"
+    baseline: str = "UNKNOWN"
     component_contributions: Tuple[TraceEntry, ...] = ()
     urgent: bool = False
     co2_ppm: float | None = None
     co2_influence: float = 0.0
+    quality: Availability = Availability.AVAILABLE
 
 
 @dataclass(frozen=True, slots=True)

@@ -3,10 +3,13 @@
 import pytest
 
 from ventwise_core import (
+    DEFAULT_PRESSURE_HPA,
     absolute_humidity_g_m3,
     humidity_ratio_g_kg,
     moisture_exchange_direction,
     relative_humidity_percent_from_absolute,
+    relative_humidity_percent_from_humidity_ratio,
+    pressure_hpa_or_default,
     saturation_vapor_pressure_hpa,
 )
 
@@ -23,6 +26,18 @@ def test_absolute_humidity_round_trip():
 
 def test_humidity_ratio_is_dimensionally_distinct_from_absolute_humidity():
     assert humidity_ratio_g_kg(20.0, 50.0) == pytest.approx(7.3, abs=0.2)
+
+
+def test_humidity_ratio_round_trip_uses_explicit_pressure():
+    ratio = humidity_ratio_g_kg(20.0, 50.0, 1000.0)
+    assert relative_humidity_percent_from_humidity_ratio(20.0, ratio, 1000.0) == pytest.approx(50.0)
+
+
+def test_pressure_fallback_is_explicitly_estimated():
+    assert pressure_hpa_or_default(None) == (DEFAULT_PRESSURE_HPA, True)
+    assert pressure_hpa_or_default(1000.0) == (1000.0, False)
+    with pytest.raises(ValueError):
+        pressure_hpa_or_default(float("nan"))
 
 
 def test_moisture_direction_uses_water_content_not_rh_alone():

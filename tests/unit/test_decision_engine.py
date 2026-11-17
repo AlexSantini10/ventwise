@@ -166,3 +166,12 @@ def test_co2_is_scored_as_ventilation_influence_without_overriding_safety():
     ).room_results[0]
     assert result.co2_influence > 0
     assert any(entry.code == "objective.co2" for entry in result.trace)
+
+
+def test_default_pressure_is_estimated_and_baseline_is_explicit():
+    result = DecisionEngine().evaluate(snapshot()).room_results[0]
+    assert result.baseline == "KEEP_CLOSED"
+    assert result.quality is Availability.ESTIMATED
+    assert any(entry.code == "quality.pressure" for entry in result.trace)
+    assert any(entry.code == "component.temperature" for entry in result.component_contributions)
+    assert result.evaluated_at == NOW

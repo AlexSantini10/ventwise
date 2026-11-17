@@ -18,7 +18,7 @@ from .models import (
     TraceEntry,
     Validity,
 )
-from .psychrometrics import humidity_ratio_g_kg
+from .psychrometrics import humidity_ratio_g_kg, pressure_hpa_or_default
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,6 +86,7 @@ class DecisionEngine:
         indoor_t = self._usable(room.temperature_c, "indoor.temperature", snapshot, used, discarded, awaiting, discarded_reasons)
         outdoor_t = self._usable(snapshot.outdoor.temperature_c, "outdoor.temperature", snapshot, used, discarded, awaiting, discarded_reasons)
         outdoor_h = self._usable(snapshot.outdoor.humidity_percent, "outdoor.humidity", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
+        pressure = self._usable(snapshot.outdoor.pressure_hpa, "outdoor.pressure", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
         indoor_h = self._usable(room.humidity_percent, "indoor.humidity", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
         wind = self._usable(snapshot.outdoor.wind_speed_m_s, "outdoor.wind", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
         gust = self._usable(snapshot.outdoor.wind_gust_m_s, "outdoor.gust", snapshot, used, discarded, awaiting, discarded_reasons, optional=True)
@@ -111,6 +112,17 @@ class DecisionEngine:
             trace.append(TraceEntry("selection.contact_uncertain"))
             return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "contact_uncertain", trace, quality, evaluated_at=snapshot.evaluated_at)
 
+        baseline = _baseline(room)
+        trace.append(TraceEntry("baseline.selected", baseline))
+        for name, observation in sorted(
+            (("indoor.temperature", room.temperature_c), ("indoor.humidity", room.humidity_percent),
+             ("indoor.co2", room.co2_ppm), ("outdoor.temperature", snapshot.outdoor.temperature_c),
+             ("outdoor.humidity", snapshot.outdoor.humidity_percent), ("outdoor.pressure", snapshot.outdoor.pressure_hpa)),
+            key=lambda item: item[0],
+        ):
+            if observation is not None and observation.source_id:
+                trace.append(TraceEntry(f"provenance.{name}", observation.source_id))
+
         indoor_h_value = float(indoor_h) if indoor_h is not None else None
         outdoor_h_value = float(outdoor_h) if outdoor_h is not None else None
         co2_value = float(co2) if co2 is not None else None
@@ -122,6 +134,9 @@ class DecisionEngine:
         suggested = _suggested_temperature(target, outdoor)
         inside_distance = max(0.0, abs(indoor - target_perceived) - self.config.comfort_band_c)
         outside_distance = max(0.0, abs(outdoor - target_perceived) - self.config.comfort_band_c)
+        trace.append(TraceEntry("component.temperature", f"{max(inside_distance, outside_distance):.6f}"))
+        if indoor_h_value is not None and outdoor_h_value is not None:
+            trace.append(TraceEntry("component.humidity", f"{abs(outdoor_h_value - indoor_h_value):.6f}"))
         open_score = _clamp(_smoothstep(inside_distance, 0.0, 4.0) * _smoothstep(max(0.0, inside_distance - outside_distance), 0.4, 1.5))
         close_score = _clamp(_smoothstep(outside_distance, 0.0, 4.0) * _smoothstep(max(0.0, outside_distance - inside_distance), 0.4, 1.5))
         ventilate_score = 0.0
@@ -131,10 +146,13 @@ class DecisionEngine:
         ):
             ventilate_score = max(0.6, _smoothstep(inside_distance, 0.0, 4.0))
 
+        pressure_hpa, pressure_estimated = pressure_hpa_or_default(float(pressure) if pressure is not None else None)
+        if pressure_estimated:
+            trace.append(TraceEntry("quality.pressure", "estimated:1013.25"))
         moisture_delta = None
         if indoor_h_value is not None and outdoor_h_value is not None:
-            indoor_w = humidity_ratio_g_kg(float(indoor_t), indoor_h_value)
-            outdoor_w = humidity_ratio_g_kg(float(outdoor_t), outdoor_h_value)
+            indoor_w = humidity_ratio_g_kg(float(indoor_t), indoor_h_value, pressure_hpa)
+            outdoor_w = humidity_ratio_g_kg(float(outdoor_t), outdoor_h_value, pressure_hpa)
             moisture_delta = outdoor_w - indoor_w
             moisture_benefit = _clamp(abs(moisture_delta) / 4.0)
             if (inside_distance > 0.0 and moisture_delta < -0.1) or (inside_distance > 0.0 and moisture_delta > 0.1):
@@ -168,16 +186,18 @@ class DecisionEngine:
             open_score = _clamp(open_score * (1.0 - _smoothstep(effective_wind, self.config.wind_preference_m_s, self.config.wind_block_m_s)))
             trace.append(TraceEntry("modifier.wind_reduces_opening"))
 
-        scores = CandidateScores(round(open_score, 6), round(ventilate_score, 6), round(close_score, 6))
-        if max(inside_distance, outside_distance) < self.config.meaningful_benefit:
+        penalties = (TraceEntry("penalty.wind", f"{max(0.0, 1.0 - open_score):.6f}"),) if effective_wind is not None else ()
+        scores = CandidateScores(round(open_score, 6), round(ventilate_score, 6), round(close_score, 6), penalties=penalties)
+        if max(inside_distance, outside_distance, co2_influence) < self.config.meaningful_benefit:
             action, reason = RecommendationAction.NONE, "insufficient_benefit"
         else:
             action, reason = self._select(scores)
-        trace.extend((TraceEntry("score.open", f"{scores.open:.6f}"), TraceEntry("score.ventilate", f"{scores.ventilate:.6f}"), TraceEntry("score.close", f"{scores.close:.6f}"), TraceEntry(f"selection.{reason}")))
+        trace.extend((TraceEntry("score.open", f"{scores.open:.6f}"), TraceEntry("score.ventilate", f"{scores.ventilate:.6f}"), TraceEntry("score.close", f"{scores.close:.6f}"), TraceEntry("score.none", "0.000000"), TraceEntry(f"selection.{reason}")))
         delivered, suppressed = self._delivery(action, snapshot)
         if suppressed:
             trace.append(TraceEntry("delivery.suppressed", suppressed))
-        return self._result(room, action, delivered, scores, max(scores.open, scores.ventilate, scores.close), reason, trace, quality, target_perceived, indoor, outdoor, suggested, suppressed, co2_value, co2_influence, evaluated_at=snapshot.evaluated_at)
+        confidence = max(scores.open, scores.ventilate, scores.close) * (0.8 if pressure_estimated else 1.0)
+        return self._result(room, action, delivered, scores, confidence, reason, trace, quality, target_perceived, indoor, outdoor, suggested, suppressed, co2_value, co2_influence, evaluated_at=snapshot.evaluated_at, baseline=baseline)
 
     def _select(self, scores: CandidateScores) -> tuple[RecommendationAction, str]:
         ranked = sorted(((scores.open, RecommendationAction.OPEN), (scores.ventilate, RecommendationAction.VENTILATE), (scores.close, RecommendationAction.CLOSE)), key=lambda item: (-item[0], item[1].value))
@@ -207,10 +227,10 @@ class DecisionEngine:
             if not optional:
                 discarded_reasons.append(f"{name}:missing")
             return None
-        if observation.availability is Availability.AWAITING_SOURCE:
+        if observation.availability in {Availability.AWAITING_SOURCE, Availability.UNCONFIGURED}:
             awaiting.append(name)
             return None
-        if observation.availability is not Availability.AVAILABLE or observation.validity is not Validity.VALID or observation.value is None:
+        if observation.availability not in {Availability.AVAILABLE, Availability.ESTIMATED} or observation.validity is not Validity.VALID or observation.value is None:
             if optional and observation.availability is Availability.MISSING:
                 awaiting.append(name)
             else:
@@ -246,14 +266,26 @@ class DecisionEngine:
         return observation.value
 
     @staticmethod
-    def _result(room: DecisionRoom, core: RecommendationAction, delivered: RecommendationAction, scores: CandidateScores, confidence: float, reason: str, trace: list[TraceEntry], quality: DataQualitySummary, target: float = 0.0, indoor: float = 0.0, outdoor: float = 0.0, suggested: float = 0.0, suppressed: str | None = None, co2: float | None = None, co2_influence: float = 0.0, *, evaluated_at=None, urgent: bool = False) -> DecisionResult:
-        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, component_contributions=tuple(entry for entry in trace if entry.code.startswith("objective.")), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6))
+    def _result(room: DecisionRoom, core: RecommendationAction, delivered: RecommendationAction, scores: CandidateScores, confidence: float, reason: str, trace: list[TraceEntry], quality: DataQualitySummary, target: float = 0.0, indoor: float = 0.0, outdoor: float = 0.0, suggested: float = 0.0, suppressed: str | None = None, co2: float | None = None, co2_influence: float = 0.0, *, evaluated_at=None, urgent: bool = False, baseline: str = "UNKNOWN") -> DecisionResult:
+        quality_state = Availability.ESTIMATED if any(entry.code == "quality.pressure" for entry in trace) else Availability.AVAILABLE
+        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state)
 
 
 def _perceived(temperature_c: float, humidity_percent: float | None, target_humidity_percent: float) -> float:
     if humidity_percent is None:
         return temperature_c
     return temperature_c + ((humidity_percent - target_humidity_percent) * 0.04)
+
+
+def _baseline(room: DecisionRoom) -> str:
+    """Return the state maintained when no candidate is selected."""
+
+    if room.window_open is not None and room.window_open.availability in {Availability.AVAILABLE, Availability.ESTIMATED}:
+        if room.window_open.value is True:
+            return "KEEP_OPEN"
+        if room.window_open.value is False:
+            return "KEEP_CLOSED"
+    return "KEEP_CLOSED" if not room.window_contact_configured else "UNKNOWN"
 
 
 def _suggested_temperature(target: float, outdoor: float) -> float:

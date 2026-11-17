@@ -25,10 +25,14 @@ from .models import (
 )
 from .decision import DecisionConfig, DecisionEngine
 from .psychrometrics import (
+    DEFAULT_PRESSURE_HPA,
     absolute_humidity_g_m3,
     humidity_ratio_g_kg,
+    humidity_ratio_g_kg_from_relative_humidity,
     moisture_exchange_direction,
+    pressure_hpa_or_default,
     relative_humidity_percent_from_absolute,
+    relative_humidity_percent_from_humidity_ratio,
     saturation_vapor_pressure_hpa,
     vapor_pressure_hpa,
 )
@@ -57,10 +61,14 @@ __all__ = [
     "SeasonMode",
     "TraceEntry",
     "Validity",
+    "DEFAULT_PRESSURE_HPA",
     "absolute_humidity_g_m3",
     "humidity_ratio_g_kg",
+    "humidity_ratio_g_kg_from_relative_humidity",
     "moisture_exchange_direction",
+    "pressure_hpa_or_default",
     "relative_humidity_percent_from_absolute",
+    "relative_humidity_percent_from_humidity_ratio",
     "saturation_vapor_pressure_hpa",
     "vapor_pressure_hpa",
 ]
