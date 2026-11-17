@@ -10,6 +10,7 @@ from custom_components.ventwise.const import (
     UNIT_METERS_PER_SECOND, UNIT_MILES_PER_HOUR,
 )
 from custom_components.ventwise.units import (
+    normalize_measurement,
     temperature_from_celsius, temperature_to_celsius,
     display_value, wind_speed_from_m_s, wind_speed_to_m_s,
 )
@@ -39,3 +40,28 @@ def test_home_assistant_temperature_source_uses_declared_unit() -> None:
 
 def test_display_values_are_limited_to_two_decimal_places() -> None:
     assert display_value(4.4738725841088) == 4.47
+
+
+@pytest.mark.parametrize(
+    ("measurement", "value", "unit", "expected"),
+    (("temperature", 32.0, UNIT_FAHRENHEIT, 0.0), ("temperature", 273.15, "K", 0.0),
+     ("humidity", 0.5, "ratio", 50.0), ("wind_speed", 36.0, UNIT_KILOMETERS_PER_HOUR, 10.0),
+     ("pressure", 1.0, "bar", 1000.0)),
+)
+def test_boundary_normalization_uses_canonical_units(measurement, value, unit, expected) -> None:
+    normalized, _, reason = normalize_measurement(value, unit, measurement)
+    assert normalized == pytest.approx(expected)
+    assert reason is None
+
+
+@pytest.mark.parametrize("value", ("not-a-number", float("nan"), float("inf")))
+def test_boundary_normalization_rejects_non_finite_or_non_numeric_values(value) -> None:
+    normalized, _, reason = normalize_measurement(value, "%", "humidity")
+    assert normalized is None
+    assert reason in {"non_numeric", "non_finite"}
+
+
+def test_boundary_normalization_rejects_unknown_units() -> None:
+    normalized, _, reason = normalize_measurement(20.0, "rankine", "temperature")
+    assert normalized is None
+    assert reason == "unknown_unit"

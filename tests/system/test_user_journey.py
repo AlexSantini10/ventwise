@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -38,11 +39,13 @@ from custom_components.ventwise.configuration.flow import (
 )
 from custom_components.ventwise.application.notification import build_recommendation_explanation
 from custom_components.ventwise.application.runtime import (
+    build_decision_config,
+    build_decision_snapshot,
     build_integration_config,
     build_room_profiles,
-    build_scoring_config,
+    decision_to_summary,
 )
-from custom_components.ventwise.ventwise_core import ComfortRecommender, RecommendationAction
+from custom_components.ventwise.ventwise_core import DecisionEngine, RecommendationAction
 
 
 class _StandaloneVentWiseConfigFlow(VentWiseConfigFlow):
@@ -107,7 +110,10 @@ def _evaluate(options: dict[str, object], states: dict[str, object]):
     config = build_integration_config(options)
     rooms, outdoor = build_room_profiles(config, states.get)
     assert outdoor is not None
-    summary = ComfortRecommender(build_scoring_config(config)).evaluate(rooms, outdoor)
+    summary = decision_to_summary(
+        DecisionEngine(build_decision_config(config)),
+        build_decision_snapshot(rooms, outdoor, datetime.now(timezone.utc)),
+    )
     assert summary.room_recommendations
     return summary, summary.room_recommendations[0]
 

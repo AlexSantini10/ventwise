@@ -30,9 +30,12 @@ from custom_components.ventwise.const import (
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
 from custom_components.ventwise.application.runtime import (
+    build_decision_config,
+    build_decision_snapshot,
     build_integration_config,
     build_debug_attributes,
     build_room_profiles,
+    decision_to_summary,
     dump_runtime_state,
     is_quiet_hours_active,
     load_runtime_state,
@@ -54,11 +57,10 @@ from custom_components.ventwise.const import (
 from custom_components.ventwise.application.runtime import RuntimeSnapshot
 from ventwise_core import (
     ComfortObservation,
-    ComfortRecommender,
-    RecommendationContext,
     RoomObservation,
     RoomProfile,
 )
+from ventwise_core import DecisionEngine
 from custom_components.ventwise.ventwise_core.models import (
     RecommendationAction,
     RecommendationSummary,
@@ -280,7 +282,7 @@ def test_window_states_gate_only_advice_already_satisfied_by_a_contact() -> None
     ]
 
 
-def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_missing() -> None:
+def test_build_room_profiles_preserves_missing_outdoor_humidity() -> None:
     config = build_integration_config(
         {
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
@@ -305,7 +307,7 @@ def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_miss
 
     assert outdoor is not None
     assert outdoor.temperature_c == 20.0
-    assert outdoor.humidity_percent == 50.0
+    assert outdoor.humidity_percent is None
     assert outdoor.wind_speed_m_s is None
     assert len(rooms) == 1
 
@@ -360,7 +362,7 @@ def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> 
 
     assert outdoor is not None
     assert outdoor.temperature_c == 21.5
-    assert outdoor.humidity_percent == 50.0
+    assert outdoor.humidity_percent is None
     assert outdoor.wind_speed_m_s is None
     assert rooms[0].name == "Camera"
 
@@ -410,7 +412,6 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
             ],
         }
     )
-    recommender = ComfortRecommender()
     room_profiles = [
         RoomProfile(
             name="Camera",
@@ -418,10 +419,10 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         )
     ]
     outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
-    summary = recommender.evaluate(
-        room_profiles,
-        outdoor,
-        RecommendationContext(stable_for_seconds=900),
+    evaluated_at = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    summary = decision_to_summary(
+        DecisionEngine(build_decision_config(config)),
+        build_decision_snapshot(room_profiles, outdoor, evaluated_at),
     )
     snapshot = RuntimeSnapshot(
         summary=summary,

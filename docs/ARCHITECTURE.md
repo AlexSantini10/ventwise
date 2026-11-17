@@ -8,7 +8,7 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 ## Final Delivery Model
 
-- Reusable comfort-scoring core in Python.
+- Reusable deterministic decision core in Python.
 - Home Assistant custom integration on top of the core.
 - HACS as the distribution channel.
 - UI-first configuration with no manual YAML required for normal use.
@@ -16,15 +16,15 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 ## High-Level Layers
 
-### 1. Core Engine
+### 1. Decision Engine
 
 - Pure Python logic.
 - Independent from Home Assistant APIs.
 - Handles:
-  - comfort scoring
-  - indoor vs outdoor comparison
-  - humidity and wind modifiers
-  - anti-spam and cooldown decisions
+  - immutable canonical observations and quality states
+  - baseline-relative temperature and humidity decisions
+  - safety constraints before candidate scoring
+  - deterministic actions, reason codes, and traces
 
 ### 2. Home Assistant Integration
 
@@ -93,9 +93,10 @@ The user should be able to:
 
 ## Current Repo Mapping
 
-- `custom_components/ventwise/ventwise_core/`: reusable scoring logic.
+- `custom_components/ventwise/ventwise_core/`: pure decision contracts, engine,
+  and psychrometric calculations.
 - `custom_components/ventwise/`: Home Assistant integration code.
-- `tests/`: scoring and behavior tests.
+- `tests/`: decision-engine, integration, and behavior tests.
 - `examples/`: sample configurations and scenarios.
 - `docs/`: design and usage notes.
 

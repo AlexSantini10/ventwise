@@ -1,8 +1,10 @@
 # DDP Architecture and Decision Pipeline
 
-The Deterministic Decision Pipeline (DDP) is the target architecture for
-VentWise recommendations. It describes intended behavior and contracts; it
-does not claim that every stage is implemented in the current integration.
+The Deterministic Decision Pipeline (DDP) is the active architecture for
+VentWise recommendations. The v0.18 foundation is implemented in the pure
+`DecisionEngine`, with Home Assistant adapters responsible for observation
+acquisition and presentation. Later DDP stages remain explicitly marked as
+future work where applicable.
 
 ## Purpose and invariants
 

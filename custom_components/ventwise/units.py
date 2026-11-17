@@ -2,15 +2,74 @@
 
 from __future__ import annotations
 
+from math import isfinite
+
 from .const import (
     DEFAULT_TEMPERATURE_UNIT, DEFAULT_WIND_SPEED_UNIT, UNIT_CELSIUS,
-    UNIT_FAHRENHEIT, UNIT_KILOMETERS_PER_HOUR, UNIT_KNOTS,
+    UNIT_FAHRENHEIT, UNIT_KELVIN, UNIT_KILOMETERS_PER_HOUR, UNIT_KNOTS,
     UNIT_METERS_PER_SECOND, UNIT_MILES_PER_HOUR,
 )
 
-TEMPERATURE_UNITS = (UNIT_CELSIUS, UNIT_FAHRENHEIT)
+TEMPERATURE_UNITS = (UNIT_CELSIUS, UNIT_FAHRENHEIT, UNIT_KELVIN)
+HUMIDITY_UNITS = ("%", "ratio")
 WIND_SPEED_UNITS = (UNIT_METERS_PER_SECOND, UNIT_KILOMETERS_PER_HOUR, UNIT_MILES_PER_HOUR, UNIT_KNOTS)
+PRESSURE_UNITS = ("hPa", "Pa", "kPa", "bar", "atm", "psi", "inHg")
 DISPLAY_PRECISION = 2
+
+_UNIT_ALIASES = {
+    "temperature": {"°c": UNIT_CELSIUS, "c": UNIT_CELSIUS, "celsius": UNIT_CELSIUS,
+                    "°f": UNIT_FAHRENHEIT, "f": UNIT_FAHRENHEIT, "fahrenheit": UNIT_FAHRENHEIT,
+                    "k": UNIT_KELVIN, "kelvin": UNIT_KELVIN},
+    "humidity": {"%": "%", "percent": "%", "percentage": "%", "ratio": "ratio", "fraction": "ratio"},
+    "wind_speed": {"m/s": UNIT_METERS_PER_SECOND, "mps": UNIT_METERS_PER_SECOND,
+                   "km/h": UNIT_KILOMETERS_PER_HOUR, "kph": UNIT_KILOMETERS_PER_HOUR,
+                   "mph": UNIT_MILES_PER_HOUR, "kn": UNIT_KNOTS, "knot": UNIT_KNOTS, "knots": UNIT_KNOTS},
+    "pressure": {unit.lower(): unit for unit in PRESSURE_UNITS},
+    "co2": {"ppm": "ppm", "parts per million": "ppm"},
+}
+
+
+def canonical_unit(measurement: str, unit: object) -> str:
+    """Return a supported declared unit or reject ambiguous metadata."""
+    key = str(unit).strip().lower() if unit is not None else ""
+    try:
+        return _UNIT_ALIASES[measurement][key]
+    except KeyError as exc:
+        raise ValueError(f"unsupported {measurement} unit: {unit!r}") from exc
+
+
+def canonical_unit_name(measurement: str) -> str:
+    return {"temperature": UNIT_CELSIUS, "humidity": "%", "wind_speed": UNIT_METERS_PER_SECOND, "pressure": "hPa", "co2": "ppm"}[measurement]
+
+
+def normalize_measurement(value: object, unit: object, measurement: str) -> tuple[float | None, str, str | None]:
+    """Normalize a declared measurement and return value, canonical unit, and reason."""
+    try:
+        numeric = float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None, canonical_unit_name(measurement), "non_numeric"
+    try:
+        source_unit = canonical_unit(measurement, unit)
+    except ValueError:
+        return None, canonical_unit_name(measurement), "unknown_unit"
+    if numeric is None:
+        return None, canonical_unit_name(measurement), "missing"
+    if not isfinite(numeric):
+        return None, canonical_unit_name(measurement), "non_finite"
+    if measurement == "temperature":
+        result = numeric - 273.15 if source_unit == UNIT_KELVIN else temperature_to_celsius(numeric, source_unit)
+    elif measurement == "humidity":
+        result = numeric * 100.0 if source_unit == "ratio" else numeric
+    elif measurement == "wind_speed":
+        result = wind_speed_to_m_s(numeric, source_unit)
+    elif measurement == "pressure":
+        factors = {"hPa": 1.0, "Pa": 0.01, "kPa": 10.0, "bar": 1000.0, "atm": 1013.25, "psi": 68.9475729, "inHg": 33.8638867}
+        result = numeric * factors[source_unit]
+    elif measurement == "co2":
+        result = numeric
+    else:
+        raise ValueError(f"unsupported measurement: {measurement}")
+    return result, canonical_unit_name(measurement), None
 
 
 def temperature_unit(value: object) -> str:

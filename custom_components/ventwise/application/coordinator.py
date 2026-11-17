@@ -20,12 +20,10 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from ..ventwise_core import (
-    ComfortRecommender,
+    DecisionEngine,
     ForecastObservation,
     RecommendationAction,
-    RecommendationContext,
     RecommendationSummary,
-    suggested_comfort_temperature,
 )
 
 from .runtime import (
@@ -35,8 +33,10 @@ from .runtime import (
     RuntimeSnapshot,
     RuntimeState,
     build_integration_config,
+    build_decision_config,
+    build_decision_snapshot,
+    decision_to_summary,
     build_room_profiles,
-    build_scoring_config,
     dump_runtime_state,
     gate_room_recommendations,
     load_runtime_state,
@@ -107,7 +107,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     ) -> None:
         self._config_entry = config_entry
         self._config = build_integration_config(config_entry_data)
-        self._recommender = ComfortRecommender(build_scoring_config(self._config))
+        self._decision_engine = DecisionEngine(build_decision_config(self._config))
         self._runtime_state = self._load_runtime_state()
         self._last_action_signature = self._runtime_state.last_action_signature
         self._last_action_started_at = self._runtime_state.last_action_started_at or dt_util.utcnow()
@@ -332,7 +332,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._config = build_integration_config(
             {**self._config_entry.data, **self._config_entry.options}
         )
-        self._recommender = ComfortRecommender(build_scoring_config(self._config))
+        self._decision_engine = DecisionEngine(build_decision_config(self._config))
 
         if not self._config.enabled:
             await self._set_diagnostic_issue(None)
@@ -428,8 +428,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 suggested_comfort_temperature_c=None,
                 outdoor_perceived_c=outdoor.temperature_c
                 + (
-                    (outdoor.humidity_percent - self._config.target_humidity_percent)
-                    * self._recommender.config.humidity_weight
+                    ((outdoor.humidity_percent if outdoor.humidity_percent is not None else self._config.target_humidity_percent) - self._config.target_humidity_percent)
+                    * 0.04
                 ),
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=outdoor.temperature_c,
@@ -451,33 +451,23 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
 
         now = dt_util.now()
         outdoor_perceived_c = outdoor.temperature_c + (
-            (outdoor.humidity_percent - self._config.target_humidity_percent)
-            * self._recommender.config.humidity_weight
+            ((outdoor.humidity_percent if outdoor.humidity_percent is not None else self._config.target_humidity_percent) - self._config.target_humidity_percent) * 0.04
         )
-        suggested_target = suggested_comfort_temperature(
-            self._config.target_temperature_c,
-            outdoor_perceived_c,
+        suggested_target = round(
+            max(18.0, min(26.0, self._config.target_temperature_c + max(-2.0, min(2.0, (outdoor_perceived_c - 20.0) * 0.25)))),
+            1,
         )
-        effective_target_temperature_c = (
-            suggested_target
-            if self._config.auto_comfort_temperature_enabled
-            else self._config.target_temperature_c
+        effective_target_temperature_c = suggested_target if self._config.auto_comfort_temperature_enabled else self._config.target_temperature_c
+        self._decision_engine = DecisionEngine(
+            build_decision_config(replace(self._config, target_temperature_c=effective_target_temperature_c))
         )
-        scoring_config = build_scoring_config(
-            replace(
-                self._config,
-                target_temperature_c=effective_target_temperature_c,
-            )
+        decision_snapshot = build_decision_snapshot(
+            rooms,
+            outdoor,
+            now,
+            window_states=window_states,
         )
-        summary = ComfortRecommender(scoring_config).evaluate(
-            rooms=rooms,
-            outdoor=outdoor,
-            context=RecommendationContext(
-                quiet_hours_active=False,
-                cooldown_active=False,
-                stable_for_seconds=10**6,
-            ),
-        )
+        summary = decision_to_summary(self._decision_engine, decision_snapshot)
         summary = _with_suggested_comfort_temperature(summary, suggested_target)
         summary = gate_room_recommendations(summary, window_states)
         summary = self._apply_room_action_guardrails(summary, now)
