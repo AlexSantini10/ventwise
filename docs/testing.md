@@ -40,6 +40,11 @@ Every user-visible behavior change needs a focused regression in the narrowest
 layer that proves it; use integration or system tests when Home Assistant state
 delivery or the full configuration journey matters.
 
+The documentation-to-test traceability matrix is maintained in
+`tests/fixtures/documentation_decision_matrix.yaml`. Core scenarios must be
+executable without Home Assistant; adapter tests separately verify that
+delivery filters suppress notifications without changing the core result.
+
 ## Supported Home Assistant Version
 
 VentWise currently tests the latest stable Home Assistant release only.
@@ -57,7 +62,7 @@ installed in CI.
 - multi-room evaluation with rooms treated independently
 - configured window contacts suppress only advice already satisfied; multiple
   contacts aggregate deterministically
-- quiet hours and cooldown gate the recommendation
+- quiet hours and cooldown gate notification delivery without changing the core recommendation
 - Home Assistant state events trigger one eligible notification, suppress
   duplicates, and use the configured notify service target
 - persisted state is reloaded after restart

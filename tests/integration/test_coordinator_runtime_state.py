@@ -55,8 +55,8 @@ from custom_components.ventwise.application.runtime import (
     RoomActionGuard,
     RoomConfig,
 )
-from custom_components.ventwise.ventwise_core import RecommendationAction
-from custom_components.ventwise.ventwise_core.models import RoomRecommendation
+from ventwise_core import RecommendationAction
+from ventwise_core.models import RoomRecommendation
 
 
 class _FakeConfigEntries:

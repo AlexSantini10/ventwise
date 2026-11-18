@@ -17,7 +17,7 @@ from .application.runtime import (
     state_to_temperature_c,
 )
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
-from .ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 from .units import display_value, temperature_from_celsius, wind_speed_from_m_s
 from .const import DEFAULT_TEMPERATURE_UNIT, DEFAULT_WIND_SPEED_UNIT
 

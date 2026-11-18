@@ -61,7 +61,7 @@ from ventwise_core import (
     RoomProfile,
 )
 from ventwise_core import DecisionEngine
-from custom_components.ventwise.ventwise_core.models import (
+from ventwise_core.models import (
     RecommendationAction,
     RecommendationSummary,
     RoomRecommendation,

@@ -1,9 +1,10 @@
 # Standalone engine evaluator
 
 `ventwise_core` is the canonical, dependency-free VentWise decision package.
-Home Assistant imports it through a compatibility wrapper, while local tools
-can evaluate the same engine without Docker, Home Assistant, a database, or an
-HA profile.
+Home Assistant imports the same top-level package that local tools execute;
+there is no second decision-engine implementation in the integration.
+Local tools can evaluate the engine without Docker, Home Assistant, a database,
+or an HA profile.
 
 ## Input
 

@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from ..ventwise_core import (
+from ventwise_core import (
     DecisionEngine,
     ForecastObservation,
     perceived_temperature_c,
@@ -44,6 +44,7 @@ from .runtime import (
     is_quiet_hours_active,
     room_window_states,
 )
+from .delivery import DeliveryRequest, evaluate_delivery
 from .notification import (
     async_dismiss_persistent_notification,
     async_create_persistent_notification,
@@ -551,21 +552,26 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 < timedelta(minutes=self._config.cooldown_minutes)
                 and not bypasses_cooldown
             )
-            room_notification_allowed = (
-                notification_channel_available
-                and recommendation.action != RecommendationAction.NONE
-                and recommendation.score >= self._config.minimum_score
-                and not matches_marker
-                and not room_cooldown_active
+            delivery_decision = evaluate_delivery(
+                DeliveryRequest(
+                    action=recommendation.action,
+                    score=recommendation.score,
+                    notification_enabled=self._config.notification_enabled,
+                    channel_available=notification_channel_available,
+                    quiet_hours_active=quiet_hours_active,
+                    cooldown_active=room_cooldown_active,
+                    stable_for_seconds=stable_for_seconds,
+                    stability_seconds_required=self._config.stability_minutes * 60,
+                    duplicate=matches_marker,
+                    minimum_score=self._config.minimum_score,
+                )
             )
+            room_notification_allowed = delivery_decision.should_notify
             if not room_notification_allowed:
                 if recommendation.action is not RecommendationAction.NONE:
                     delivery_suppressed_by.setdefault(
                         recommendation.room_id or recommendation.room_name,
-                        "duplicate" if matches_marker else
-                        "cooldown" if room_cooldown_active else
-                        "minimum_score" if recommendation.score < self._config.minimum_score else
-                        "notification_channel",
+                        delivery_decision.suppressed_by or "notification_channel",
                     )
                 if matches_marker:
                     _LOGGER.debug(

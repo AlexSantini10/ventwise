@@ -8,7 +8,14 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 _ROOT_FILES = ("README.md", "LICENSE", "NOTICE", "hacs.json")
-_CORE_FILES = ("__init__.py", "models.py", "decision.py", "psychrometrics.py", "serialization.py")
+_CORE_FILES = (
+    "__init__.py",
+    "__main__.py",
+    "models.py",
+    "decision.py",
+    "psychrometrics.py",
+    "serialization.py",
+)
 
 
 def _package_files(source_path: Path) -> list[tuple[Path, Path]]:

@@ -106,3 +106,16 @@ The user should be able to:
 VentWise is installable now as a HACS custom repository. Inclusion in HACS's
 public catalogue is a separate publication step; see
 [HACS packaging](hacs-packaging.md).
+# Decision and delivery boundary
+
+`src/ventwise_core/` is the only source of VentWise domain decisions. It is
+dependency-free, deterministic, and consumes a canonical `DecisionSnapshot`.
+The Home Assistant integration converts entity states into that snapshot and
+projects the returned core result directly onto entities and diagnostics.
+
+Notification delivery is an adapter concern. Quiet hours, stability,
+cooldown, duplicate suppression, and notifier availability can suppress a
+notification, but they must never change the core action, score, reason code,
+trace, or data-quality result. The pure delivery policy lives in
+`custom_components/ventwise/application/delivery.py` so it can be tested
+without a Home Assistant instance.

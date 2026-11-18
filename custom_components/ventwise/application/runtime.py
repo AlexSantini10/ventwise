@@ -7,7 +7,7 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
 
-from ..ventwise_core import (
+from ventwise_core import (
     AggregateDecisionResult,
     Availability,
     ComfortObservation,
@@ -28,7 +28,7 @@ from ..ventwise_core import (
     RoomRecommendation,
     TraceEntry,
 )
-from ..ventwise_core.serialization import (
+from ventwise_core.serialization import (
     aggregate_result_to_dict,
     result_to_dict,
     snapshot_to_dict,
@@ -903,15 +903,11 @@ def build_debug_attributes(
 
 def build_delivered_result(
     core_result: AggregateDecisionResult,
-    summary: RecommendationSummary,
+    _summary: RecommendationSummary,
     suppressed_by: Mapping[str, str] | None = None,
 ) -> AggregateDecisionResult:
     """Project HA delivery filters onto the pure core result."""
 
-    by_room = {
-        recommendation.room_id or recommendation.room_name: recommendation
-        for recommendation in summary.room_recommendations
-    }
     suppressed_by = suppressed_by or {}
     room_results = tuple(
         replace(
@@ -919,17 +915,12 @@ def build_delivered_result(
             delivered_action=(
                 RecommendationAction.NONE
                 if result.room_id in suppressed_by
-                else by_room.get(result.room_id).action
-                if by_room.get(result.room_id) is not None
-                else result.delivered_action
+                else result.core_action
             ),
             delivery_suppressed_by=(
                 suppressed_by.get(result.room_id)
                 if result.room_id in suppressed_by
-                else "home_assistant_filter"
-                if by_room.get(result.room_id) is not None
-                and by_room[result.room_id].action != result.delivered_action
-                else result.delivery_suppressed_by
+                else None
             ),
         )
         for result in core_result.room_results
@@ -944,7 +935,8 @@ def build_delivered_result(
     )
     return replace(
         core_result,
-        core_action=selected.core_action if selected else RecommendationAction.NONE,
+        # The core action is immutable truth; only delivery eligibility changes.
+        core_action=core_result.core_action,
         delivered_action=selected.delivered_action if selected else RecommendationAction.NONE,
         room_results=room_results,
         trace=core_result.trace + (TraceEntry("delivery.projected"),),

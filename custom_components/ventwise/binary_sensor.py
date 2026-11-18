@@ -6,7 +6,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 
 from .application.coordinator import VentWiseCoordinator
 from .application.runtime import find_room_recommendation

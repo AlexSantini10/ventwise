@@ -204,7 +204,7 @@ class ExternalConditions:
 
 @dataclass(frozen=True, slots=True)
 class DecisionContext:
-    """Explicit delivery context; the core does not own notification state."""
+    """Compatibility context; delivery flags are intentionally ignored by core."""
 
     quiet_hours_active: bool = False
     cooldown_active: bool = False
@@ -275,7 +275,7 @@ class DataQualitySummary:
 
 @dataclass(frozen=True, slots=True)
 class DecisionResult:
-    """Pure core truth and delivery eligibility for one room."""
+    """Immutable domain result; Home Assistant may project delivery separately."""
 
     room_id: str
     core_action: RecommendationAction

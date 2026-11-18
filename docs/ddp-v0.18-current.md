@@ -261,3 +261,11 @@ The v0.18 behavior is covered by:
 When a future signal is added, it must be introduced through a canonical
 observation, an explicit quality policy, a focused objective change, and
 success/boundary/failure regression scenarios before it can affect actions.
+## Decision and delivery boundary
+
+The standalone `ventwise_core` package is the only implementation of domain
+decisions. Home Assistant creates the canonical snapshot and exposes the core
+result directly. Notification delivery is handled separately by the adapter:
+quiet hours, stability, cooldown, duplicate suppression, and notifier
+availability may suppress delivery, but must not change the core action, score,
+reason code, trace, or data quality.

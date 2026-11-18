@@ -39,7 +39,7 @@ from custom_components.ventwise.application.coordinator import VentWiseCoordinat
 from custom_components.ventwise.application.notification import async_send_notification
 from custom_components.ventwise.application import coordinator as coordinator_module
 from custom_components.ventwise import IntegrationRuntimeData
-from custom_components.ventwise.ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")

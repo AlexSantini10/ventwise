@@ -19,7 +19,7 @@ custom integration.
 
 - `custom_components/ventwise/`
 - `src/ventwise_core/` as the canonical standalone core
-- `custom_components/ventwise/ventwise_core/` as the release-vendored runtime copy
+- `ventwise_core/` at the archive root as the release-vendored runtime package
 - `tests/`
 - `docs/`
 

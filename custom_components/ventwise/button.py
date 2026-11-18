@@ -11,7 +11,7 @@ from .const import DOMAIN
 from .application.coordinator import VentWiseCoordinator
 from .application.runtime import RoomConfig
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
-from .ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 
 _DEBUG_BUTTON_SUFFIXES = ("_debug_open_notification", "_debug_close_notification")
 

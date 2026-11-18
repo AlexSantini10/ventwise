@@ -34,7 +34,7 @@ from custom_components.ventwise.const import (
     CONF_WIND_SPEED_OVERRIDE,
     DOMAIN,
 )
-from custom_components.ventwise.ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")

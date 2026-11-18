@@ -45,7 +45,7 @@ from custom_components.ventwise.application.runtime import (
     build_room_profiles,
     decision_to_summary,
 )
-from custom_components.ventwise.ventwise_core import DecisionEngine, RecommendationAction
+from ventwise_core import DecisionEngine, RecommendationAction
 
 
 class _StandaloneVentWiseConfigFlow(VentWiseConfigFlow):

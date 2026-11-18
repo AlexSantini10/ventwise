@@ -149,6 +149,10 @@ def test_ha_delivery_projection_changes_only_delivered_action():
             ),
         ),
     )
-    delivered = build_delivered_result(core_result, summary)
+    delivered = build_delivered_result(
+        core_result,
+        summary,
+        {core_room.room_id: "quiet_hours"},
+    )
     assert delivered.room_results[0].core_action is core_room.core_action
     assert delivered.room_results[0].delivered_action is RecommendationAction.NONE
