@@ -82,6 +82,18 @@ def test_room_forms_localize_the_window_contacts_field(language: str) -> None:
             )
 
 
+@pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
+def test_room_forms_localize_optional_co2_sensor(language: str) -> None:
+    """Keep the optional room CO2 selector from falling back to its field ID."""
+
+    translation = _load_translation(language)
+    for section in ("config", "options"):
+        for step in ROOM_FORM_STEPS:
+            form = translation[section]["step"][step]
+            assert form["data"]["co2_entity_id"]
+            assert form["data_description"]["co2_entity_id"]
+
+
 def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -> None:
     """Keep the native setup and options help specific and safe for users."""
 
