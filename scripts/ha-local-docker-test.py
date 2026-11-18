@@ -91,6 +91,14 @@ ventwise_test_wind_speed:
   initial: 2
   mode: box
   unit_of_measurement: "m/s"
+ventwise_test_wind_gust:
+  name: VentWise Test Wind Gust
+  min: 0
+  max: 30
+  step: 0.1
+  initial: 2
+  mode: box
+  unit_of_measurement: "m/s"
 """
 
 BOOLEANS_YAML = """ventwise_test_bedroom_window_left:
@@ -111,7 +119,7 @@ ventwise_test_living_room_stop:
 
 CONDITION_YAML = """ventwise_test_weather_condition:
   name: VentWise Test Weather Condition
-  options: [sunny, rainy, thunderstorm]
+  options: [sunny, rainy, lightning-rainy]
   initial: sunny
 """
 
@@ -154,6 +162,10 @@ SCRIPTS_YAML = """ventwise_test_reset:
     - service: input_number.set_value
       target:
         entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 2}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_gust
       data: {value: 2}
     - service: input_select.select_option
       target:
@@ -291,7 +303,7 @@ ventwise_test_weather_block:
     - service: input_select.select_option
       target:
         entity_id: input_select.ventwise_test_weather_condition
-      data: {option: thunderstorm}
+      data: {option: lightning-rainy}
     - service: input_boolean.turn_off
       target:
         entity_id:
@@ -345,10 +357,31 @@ ventwise_test_urgent_close:
     - service: input_select.select_option
       target:
         entity_id: input_select.ventwise_test_weather_condition
-      data: {option: thunderstorm}
+      data: {option: lightning-rainy}
     - service: input_boolean.turn_on
       target:
         entity_id: input_boolean.ventwise_test_bedroom_window_left
+
+ventwise_test_gust_block:
+  alias: VentWise Lab - Gust block
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_bedroom_temperature}
+      data: {value: 28}
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_outdoor_temperature}
+      data: {value: 18}
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_wind_speed}
+      data: {value: 2}
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_wind_gust}
+      data: {value: 15}
+    - service: input_select.select_option
+      target: {entity_id: input_select.ventwise_test_weather_condition}
+      data: {option: sunny}
 
 ventwise_test_multi_room:
   alias: VentWise Lab - Multi-room split
@@ -387,6 +420,86 @@ ventwise_test_multi_room:
           - input_boolean.ventwise_test_bedroom_window_left
           - input_boolean.ventwise_test_bedroom_window_right
           - input_boolean.ventwise_test_living_room_window
+
+ventwise_test_close_recommendation:
+  alias: VentWise Lab - Close recommendation
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_bedroom_temperature}
+      data: {value: 20}
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_outdoor_temperature}
+      data: {value: 30}
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.ventwise_test_bedroom_window_left
+
+ventwise_test_ventilate:
+  alias: VentWise Lab - Ventilate recommendation
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_bedroom_temperature}
+      data: {value: 25}
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_outdoor_temperature}
+      data: {value: 18}
+
+ventwise_test_winter_symmetry:
+  alias: VentWise Lab - Winter symmetry
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_bedroom_temperature}
+      data: {value: 16}
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_outdoor_temperature}
+      data: {value: 22}
+
+ventwise_test_marginal_benefit:
+  alias: VentWise Lab - Marginal benefit
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_bedroom_temperature}
+      data: {value: 22.3}
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_outdoor_temperature}
+      data: {value: 22}
+
+ventwise_test_co2_threshold:
+  alias: VentWise Lab - CO2 threshold
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target: {entity_id: input_number.ventwise_test_bedroom_co2}
+      data: {value: 1000}
+
+ventwise_test_window_already_open:
+  alias: VentWise Lab - Window already open
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_open_recommendation
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.ventwise_test_bedroom_window_left
+
+ventwise_test_multiple_windows:
+  alias: VentWise Lab - Multiple window contacts
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_open_recommendation
+    - service: input_boolean.turn_on
+      target:
+        entity_id:
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
 """
 
 TEMPLATE_YAML = """- binary_sensor:
@@ -405,12 +518,13 @@ TEMPLATE_YAML = """- binary_sensor:
 - weather:
     - name: VentWise Test Weather
       unique_id: ventwise_test_weather
-      condition: "{{ states('input_select.ventwise_test_weather_condition') }}"
-      temperature: "{{ states('input_number.ventwise_test_outdoor_temperature') | float(23) }}"
+      condition_template: "{{ states('input_select.ventwise_test_weather_condition') }}"
+      temperature_template: "{{ states('input_number.ventwise_test_outdoor_temperature') | float(23) }}"
       temperature_unit: "°C"
-      humidity: "{{ states('input_number.ventwise_test_outdoor_humidity') | float(45) }}"
-      wind_speed: "{{ states('input_number.ventwise_test_wind_speed') | float(2) }}"
+      humidity_template: "{{ states('input_number.ventwise_test_outdoor_humidity') | float(45) }}"
+      wind_speed_template: "{{ states('input_number.ventwise_test_wind_speed') | float(2) }}"
       wind_speed_unit: "m/s"
+      wind_gust_speed_template: "{{ states('input_number.ventwise_test_wind_gust') | float(2) }}"
 """
 
 DASHBOARD_CONFIG_YAML = """dashboards:
@@ -420,6 +534,148 @@ DASHBOARD_CONFIG_YAML = """dashboards:
     icon: mdi:test-tube
     show_in_sidebar: true
     filename: ventwise_test_dashboard.yaml
+  ventwise-core-lab:
+    mode: yaml
+    title: VentWise Core Lab
+    icon: mdi:cpu-64-bit
+    show_in_sidebar: true
+    filename: ventwise_core_dashboard.yaml
+"""
+
+CORE_DASHBOARD_YAML = """title: VentWise Core Lab
+views:
+  - title: Motore deterministico
+    path: ventwise-core-lab
+    icon: mdi:cpu-64-bit
+    cards:
+      - type: markdown
+        content: |
+          # VentWise Core Lab
+
+          Questa pagina usa una seconda istanza VentWise con una sola stanza,
+          nessun contatto finestra e nessuna delivery notification. L'unico
+          risultato mostrato è quello prodotto dal motore deterministico.
+
+          Premi un preset, poi **Ricevi consiglio core**.
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: button
+            name: Reset neutral
+            icon: mdi:restore
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_reset}
+          - type: button
+            name: Open
+            icon: mdi:window-open
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_open_recommendation}
+          - type: button
+            name: Close
+            icon: mdi:window-closed
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_close_recommendation}
+          - type: button
+            name: Ventilate
+            icon: mdi:air-filter
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_ventilate}
+          - type: button
+            name: Humidity exchange
+            icon: mdi:water-percent
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_humidity_exchange}
+          - type: button
+            name: CO2 influence
+            icon: mdi:molecule-co2
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_co2}
+          - type: button
+            name: Weather block
+            icon: mdi:weather-lightning-rainy
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_weather_block}
+          - type: button
+            name: Wind block
+            icon: mdi:weather-windy
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_wind_block}
+          - type: button
+            name: Gust block
+            icon: mdi:weather-windy-variant
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_gust_block}
+          - type: button
+            name: Winter symmetry
+            icon: mdi:snowflake-thermometer
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_winter_symmetry}
+          - type: button
+            name: Marginal benefit
+            icon: mdi:scale-balance
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_marginal_benefit}
+          - type: button
+            name: CO2 threshold
+            icon: mdi:molecule-co2
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: {entity_id: script.ventwise_test_co2_threshold}
+      - type: entities
+        title: Core inputs
+        entities:
+          - input_number.ventwise_test_outdoor_temperature
+          - input_number.ventwise_test_outdoor_humidity
+          - input_number.ventwise_test_wind_speed
+          - input_number.ventwise_test_wind_gust
+          - input_select.ventwise_test_weather_condition
+          - input_number.ventwise_test_bedroom_temperature
+          - input_number.ventwise_test_bedroom_humidity
+          - input_number.ventwise_test_bedroom_co2
+      - type: button
+        entity: button.ventwise_core_lab_request_recommendation
+        name: Ricevi consiglio core
+        icon: mdi:cpu-64-bit
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target: {entity_id: button.ventwise_core_lab_request_recommendation}
+      - type: entities
+        title: Core deterministic output
+        entities:
+          - sensor.core_engine_room_recommendation
+          - sensor.core_engine_room_score
+          - sensor.core_engine_room_reason
+          - binary_sensor.core_engine_room_active
+      - type: markdown
+        content: |
+          ```json
+          {{ state_attr('sensor.core_engine_room_recommendation', 'core_result') | tojson }}
+          ```
 """
 
 DASHBOARD_YAML = """title: VentWise Test Lab
@@ -514,6 +770,14 @@ views:
               target:
                 entity_id: script.ventwise_test_wind_block
           - type: button
+            name: Gust block
+            icon: mdi:weather-windy-variant
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_gust_block
+          - type: button
             name: Urgent close
             icon: mdi:window-shutter-alert
             tap_action:
@@ -529,12 +793,69 @@ views:
               perform_action: script.turn_on
               target:
                 entity_id: script.ventwise_test_multi_room
+          - type: button
+            name: Close recommendation
+            icon: mdi:window-closed
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_close_recommendation
+          - type: button
+            name: Ventilate recommendation
+            icon: mdi:air-filter
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_ventilate
+          - type: button
+            name: Winter symmetry
+            icon: mdi:snowflake-thermometer
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_winter_symmetry
+          - type: button
+            name: Marginal benefit
+            icon: mdi:scale-balance
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_marginal_benefit
+          - type: button
+            name: CO2 threshold
+            icon: mdi:molecule-co2
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_co2_threshold
+          - type: button
+            name: Window already open
+            icon: mdi:window-open-variant
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_window_already_open
+          - type: button
+            name: Multiple contacts
+            icon: mdi:window-open
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_multiple_windows
       - type: entities
         title: Dati esterni simulati
         entities:
           - input_number.ventwise_test_outdoor_temperature
           - input_number.ventwise_test_outdoor_humidity
           - input_number.ventwise_test_wind_speed
+          - input_number.ventwise_test_wind_gust
           - input_select.ventwise_test_weather_condition
           - weather.ventwise_test_weather
       - type: entities
@@ -607,14 +928,26 @@ views:
           ```json
           {{ state_attr('sensor.living_room_recommendation', 'core_result') | tojson }}
           ```
+
+      - type: markdown
+        content: |
+          ## Delivery filter checks
+
+          The core result must remain unchanged while delivery is filtered.
+          Enable quiet hours and set its active interval around the current
+          time to verify `quiet_hours`. Set a non-zero stability interval and
+          press **Receive recommendation now** before it expires to verify
+          `stability`. Repeat the same recommendation after a successful
+          notification to verify `duplicate`/`cooldown`. Disable the
+          notification channel to verify `notification_channel`.
 """
 
 BOOTSTRAP_MANIFEST = '{"domain":"ventwise_lab_bootstrap","name":"VentWise Test Lab Bootstrap","version":"1.0.0","integration_type":"helper","requirements":[],"codeowners":[]}'
-BOOTSTRAP_INIT = '''"""Provision the repeatable VentWise Lab config entry."""
+BOOTSTRAP_INIT = '''"""Provision the repeatable VentWise Lab config entries."""
 from homeassistant.config_entries import ConfigEntry
 
 DOMAIN = "ventwise_lab_bootstrap"
-DATA = {
+FULL_DATA = {
     "outdoor_weather_entity_id": "weather.ventwise_test_weather",
     "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
     "stability_minutes": 0, "co2_enabled": True, "co2_threshold_ppm": 1000.0,
@@ -635,11 +968,40 @@ DATA = {
     ],
 }
 
+CORE_DATA = {
+    "outdoor_weather_entity_id": "weather.ventwise_test_weather",
+    "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
+    "stability_minutes": 0, "cooldown_minutes": 0,
+    "quiet_hours_enabled": False, "notification_enabled": False,
+    "co2_enabled": True, "co2_threshold_ppm": 1000.0,
+    "home_assistant_notification_enabled": False,
+    "rooms": [
+        {"kind": "room", "room_id": "core_engine_room", "name": "Core engine room", "enabled": True,
+         "temperature_entity_id": "input_number.ventwise_test_bedroom_temperature",
+         "humidity_entity_id": "input_number.ventwise_test_bedroom_humidity",
+         "co2_entity_id": "input_number.ventwise_test_bedroom_co2"},
+    ],
+}
+
+ENTRIES = (
+    ("ventwise_test_full_lab", "VentWise Test Lab", FULL_DATA),
+    ("ventwise_test_core_lab", "VentWise Core Lab", CORE_DATA),
+)
+
 async def async_setup(hass, config):
-    if any(entry.unique_id == "ventwise_test_lab" for entry in hass.config_entries.async_entries("ventwise")):
-        return True
-    entry = ConfigEntry(domain="ventwise", title="VentWise Test Lab", data=DATA, options={}, source="user", version=2, minor_version=1, unique_id="ventwise_test_lab", discovery_keys={}, subentries_data=None)
-    await hass.config_entries.async_add(entry)
+    existing = {
+        entry.unique_id
+        for entry in hass.config_entries.async_entries("ventwise")
+    }
+    for unique_id, title, data in ENTRIES:
+        if unique_id in existing:
+            continue
+        entry = ConfigEntry(
+            domain="ventwise", title=title, data=data, options={}, source="user",
+            version=3, minor_version=1, unique_id=unique_id,
+            discovery_keys={}, subentries_data=None,
+        )
+        await hass.config_entries.async_add(entry)
     return True
 '''
 
@@ -723,6 +1085,7 @@ def ensure_config(config_root: Path) -> Path:
         "ventwise_test_weather_condition.yaml": CONDITION_YAML, "ventwise_test_template.yaml": TEMPLATE_YAML,
         "ventwise_test_scripts.yaml": SCRIPTS_YAML,
         "ventwise_test_dashboards.yaml": DASHBOARD_CONFIG_YAML, "ventwise_test_dashboard.yaml": DASHBOARD_YAML,
+        "ventwise_core_dashboard.yaml": CORE_DASHBOARD_YAML,
     }.items():
         (config_dir / name).write_text(content, encoding="utf-8")
     bootstrap = config_dir / "custom_components" / "ventwise_lab_bootstrap"

@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from ventwise_core import (
+from ..ventwise_core import (
     DecisionEngine,
     ForecastObservation,
     perceived_temperature_c,

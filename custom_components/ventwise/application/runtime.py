@@ -7,7 +7,7 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
 
-from ventwise_core import (
+from ..ventwise_core import (
     AggregateDecisionResult,
     Availability,
     ComfortObservation,
@@ -28,7 +28,7 @@ from ventwise_core import (
     RoomRecommendation,
     TraceEntry,
 )
-from ventwise_core.serialization import (
+from ..ventwise_core.serialization import (
     aggregate_result_to_dict,
     result_to_dict,
     snapshot_to_dict,
