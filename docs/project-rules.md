@@ -81,8 +81,8 @@ the implementation decisions agreed during development.
   cooldown.
 - A master enable must disable the whole integration.
 - A notification enable must control notifications only.
-- Quiet hours must suppress notifications and recommendation delivery, not the
-  underlying ability to compute the state.
+- Quiet hours must suppress notifications only; recommendation entities must
+  continue to expose the core decision.
 
 ## Comfort Rules
 

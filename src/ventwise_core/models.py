@@ -185,6 +185,8 @@ class DecisionRoom:
     target_humidity_percent: float | None = None
     co2_ppm: Observation[float] | None = None
     window_contact_configured: bool = False
+    action_change_hold_seconds: int = 0
+    action_lockout_seconds: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,6 +210,18 @@ class DecisionContext:
     cooldown_active: bool = False
     stable_for_seconds: int = 0
     stability_seconds_required: int = 0
+    room_guardrails: Tuple["RoomGuardrailState", ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class RoomGuardrailState:
+    """Persisted action-transition state supplied to the core."""
+
+    room_id: str
+    accepted_action: str | None = None
+    lockout_until: datetime | None = None
+    pending_action: str | None = None
+    pending_since: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -285,6 +299,7 @@ class DecisionResult:
     co2_ppm: float | None = None
     co2_influence: float = 0.0
     quality: Availability = Availability.AVAILABLE
+    guardrail_state: RoomGuardrailState | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,3 +311,4 @@ class AggregateDecisionResult:
     room_results: Tuple[DecisionResult, ...] = ()
     trace: Tuple[TraceEntry, ...] = ()
     evaluated_at: datetime | None = None
+    guardrail_states: Tuple[RoomGuardrailState, ...] = ()

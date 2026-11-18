@@ -19,12 +19,13 @@ from .models import (
     DecisionRoom,
     DecisionSnapshot,
     Observation,
+    RoomGuardrailState,
     RecommendationAction,
     TraceEntry,
     Validity,
 )
 
-SCHEMA_VERSION = "ventwise.engine.v1"
+SCHEMA_VERSION = "ventwise.engine.v2"
 
 
 def _datetime(value: Any) -> str | None:
@@ -87,6 +88,8 @@ def snapshot_to_dict(snapshot: DecisionSnapshot) -> dict[str, Any]:
             "target_humidity_percent": room.target_humidity_percent,
             "co2_ppm": observation_to_dict(room.co2_ppm),
             "window_contact_configured": room.window_contact_configured,
+            "action_change_hold_seconds": room.action_change_hold_seconds,
+            "action_lockout_seconds": room.action_lockout_seconds,
         }
 
     outdoor = snapshot.outdoor
@@ -168,6 +171,8 @@ def snapshot_from_dict(data: Mapping[str, Any]) -> DecisionSnapshot:
             target_humidity_percent=room.get("target_humidity_percent"),
             co2_ppm=_observation(room.get("co2_ppm"), f"rooms[{index}].co2_ppm"),
             window_contact_configured=bool(room.get("window_contact_configured", False)),
+            action_change_hold_seconds=int(room.get("action_change_hold_seconds", 0)),
+            action_lockout_seconds=int(room.get("action_lockout_seconds", 0)),
         )
         for index, room in enumerate(data.get("rooms", ()))
     )
@@ -182,11 +187,23 @@ def snapshot_from_dict(data: Mapping[str, Any]) -> DecisionSnapshot:
         pressure_hpa=_observation(raw_outdoor.get("pressure_hpa"), "outdoor.pressure_hpa"),
     )
     raw_context = data.get("context", {})
+    raw_guardrails = raw_context.get("room_guardrails", ())
+    guardrails = tuple(
+        RoomGuardrailState(
+            room_id=str(item["room_id"]),
+            accepted_action=item.get("accepted_action"),
+            lockout_until=_parse_datetime(item["lockout_until"], "context.room_guardrails.lockout_until") if item.get("lockout_until") else None,
+            pending_action=item.get("pending_action"),
+            pending_since=_parse_datetime(item["pending_since"], "context.room_guardrails.pending_since") if item.get("pending_since") else None,
+        )
+        for item in raw_guardrails
+    )
     context = DecisionContext(
         quiet_hours_active=bool(raw_context.get("quiet_hours_active", False)),
         cooldown_active=bool(raw_context.get("cooldown_active", False)),
         stable_for_seconds=int(raw_context.get("stable_for_seconds", 0)),
         stability_seconds_required=int(raw_context.get("stability_seconds_required", 0)),
+        room_guardrails=guardrails,
     )
     return DecisionSnapshot(
         rooms=rooms,

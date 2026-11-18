@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from math import isfinite
 
 from .models import (
@@ -15,6 +16,7 @@ from .models import (
     DecisionSnapshot,
     Observation,
     RecommendationAction,
+    RoomGuardrailState,
     TraceEntry,
     Validity,
 )
@@ -74,6 +76,9 @@ class DecisionEngine:
             room_results=results,
             trace=(TraceEntry("aggregate.selected", best.room_id),),
             evaluated_at=snapshot.evaluated_at,
+            guardrail_states=tuple(
+                result.guardrail_state for result in results if result.guardrail_state is not None
+            ),
         )
 
     def evaluate_room(self, room: DecisionRoom, snapshot: DecisionSnapshot) -> DecisionResult:
@@ -184,7 +189,15 @@ class DecisionEngine:
         if severe or unsafe_wind:
             code = "severe_weather" if severe else "unsafe_wind"
             trace.append(TraceEntry(f"block.{code}"))
-            return self._result(room, RecommendationAction.CLOSE, RecommendationAction.CLOSE, CandidateScores(close=1.0), 1.0, code, trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at, urgent=contact_open)
+            if contact is False:
+                trace.append(TraceEntry("selection.window_already_closed"))
+                return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "window_already_closed", trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at)
+            action, guardrail_state, guardrail_reason = self._apply_guardrails(
+                room, RecommendationAction.CLOSE, snapshot, urgent=contact_open
+            )
+            if guardrail_reason:
+                trace.append(TraceEntry(f"guardrail.{guardrail_reason}"))
+            return self._result(room, action, action, CandidateScores(close=1.0) if action is RecommendationAction.CLOSE else CandidateScores(), 1.0 if action is RecommendationAction.CLOSE else 0.0, code if action is RecommendationAction.CLOSE else guardrail_reason, trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at, urgent=contact_open, guardrail_state=guardrail_state)
 
         if contact_uncertain:
             trace.append(TraceEntry("selection.contact_uncertain"))
@@ -207,11 +220,20 @@ class DecisionEngine:
         else:
             action, reason = self._select(scores)
         trace.extend((TraceEntry("score.open", f"{scores.open:.6f}"), TraceEntry("score.ventilate", f"{scores.ventilate:.6f}"), TraceEntry("score.close", f"{scores.close:.6f}"), TraceEntry("score.none", "0.000000"), TraceEntry(f"selection.{reason}")))
-        delivered, suppressed = self._delivery(action, snapshot)
-        if suppressed:
-            trace.append(TraceEntry("delivery.suppressed", suppressed))
+        action, window_reason = self._apply_window_state(room, action, contact)
+        if window_reason:
+            trace.append(TraceEntry(f"selection.{window_reason}"))
+        if window_reason is None:
+            action, guardrail_state, guardrail_reason = self._apply_guardrails(room, action, snapshot)
+        else:
+            guardrail_state, guardrail_reason = None, None
+        if guardrail_reason:
+            trace.append(TraceEntry(f"guardrail.{guardrail_reason}"))
+        if action is RecommendationAction.NONE and (window_reason or guardrail_reason):
+            scores = CandidateScores()
         confidence = max(scores.open, scores.ventilate, scores.close) * (0.8 if pressure_estimated else 1.0)
-        return self._result(room, action, delivered, scores, confidence, reason, trace, quality, target_perceived, indoor, outdoor, suggested, suppressed, co2_value, co2_influence, evaluated_at=snapshot.evaluated_at, baseline=baseline)
+        final_reason = window_reason or guardrail_reason or reason
+        return self._result(room, action, action, scores, confidence if action is not RecommendationAction.NONE else 0.0, final_reason, trace, quality, target_perceived, indoor, outdoor, suggested, None, co2_value, co2_influence, evaluated_at=snapshot.evaluated_at, baseline=baseline, guardrail_state=guardrail_state)
 
     def _select(self, scores: CandidateScores) -> tuple[RecommendationAction, str]:
         ranked = sorted(((scores.open, RecommendationAction.OPEN), (scores.ventilate, RecommendationAction.VENTILATE), (scores.close, RecommendationAction.CLOSE)), key=lambda item: (-item[0], item[1].value))
@@ -221,19 +243,32 @@ class DecisionEngine:
         return action, {RecommendationAction.OPEN: "comfort_open", RecommendationAction.VENTILATE: "comfort_ventilate", RecommendationAction.CLOSE: "comfort_close"}[action]
 
     @staticmethod
-    def _delivery(action: RecommendationAction, snapshot: DecisionSnapshot) -> tuple[RecommendationAction, str | None]:
-        context = snapshot.context
-        if action is RecommendationAction.NONE:
-            return action, None
-        if action is RecommendationAction.CLOSE:
-            return action, None
-        if context.quiet_hours_active:
-            return RecommendationAction.NONE, "quiet_hours"
-        if context.cooldown_active:
-            return RecommendationAction.NONE, "cooldown"
-        if context.stable_for_seconds < context.stability_seconds_required:
-            return RecommendationAction.NONE, "stability"
+    def _apply_window_state(room: DecisionRoom, action: RecommendationAction, contact) -> tuple[RecommendationAction, str | None]:
+        if contact is True and action in {RecommendationAction.OPEN, RecommendationAction.VENTILATE}:
+            return RecommendationAction.NONE, "window_already_open"
+        if contact is False and action is RecommendationAction.CLOSE:
+            return RecommendationAction.NONE, "window_already_closed"
         return action, None
+
+    def _apply_guardrails(self, room: DecisionRoom, action: RecommendationAction, snapshot: DecisionSnapshot, *, urgent: bool = False) -> tuple[RecommendationAction, RoomGuardrailState | None, str | None]:
+        state = next((item for item in snapshot.context.room_guardrails if item.room_id == room.room_id), None)
+        if action is RecommendationAction.NONE:
+            return action, state, None
+        now = snapshot.evaluated_at
+        if state is None:
+            state = RoomGuardrailState(room.room_id, action.value, now + timedelta(seconds=room.action_lockout_seconds) if room.action_lockout_seconds else None)
+            return action, state, None
+        if action.value == state.accepted_action:
+            return action, RoomGuardrailState(room.room_id, state.accepted_action, state.lockout_until), None
+        if urgent and action is RecommendationAction.CLOSE:
+            return action, RoomGuardrailState(room.room_id, action.value, now + timedelta(seconds=room.action_lockout_seconds) if room.action_lockout_seconds else None), None
+        if state.lockout_until is not None and now < state.lockout_until:
+            return RecommendationAction.NONE, state, "action_lockout"
+        if state.pending_action != action.value or state.pending_since is None:
+            return RecommendationAction.NONE, RoomGuardrailState(room.room_id, state.accepted_action, state.lockout_until, action.value, now), "action_hold"
+        if (now - state.pending_since).total_seconds() < room.action_change_hold_seconds:
+            return RecommendationAction.NONE, state, "action_hold"
+        return action, RoomGuardrailState(room.room_id, action.value, now + timedelta(seconds=room.action_lockout_seconds) if room.action_lockout_seconds else None), None
 
     def _usable(self, observation: Observation | None, name: str, snapshot: DecisionSnapshot, used: list[str], discarded: list[str], awaiting: list[str], discarded_reasons: list[str], optional: bool = False):
         if observation is None:
@@ -280,9 +315,9 @@ class DecisionEngine:
         return observation.value
 
     @staticmethod
-    def _result(room: DecisionRoom, core: RecommendationAction, delivered: RecommendationAction, scores: CandidateScores, confidence: float, reason: str, trace: list[TraceEntry], quality: DataQualitySummary, target: float = 0.0, indoor: float = 0.0, outdoor: float = 0.0, suggested: float = 0.0, suppressed: str | None = None, co2: float | None = None, co2_influence: float = 0.0, *, evaluated_at=None, urgent: bool = False, baseline: str = "UNKNOWN") -> DecisionResult:
+    def _result(room: DecisionRoom, core: RecommendationAction, delivered: RecommendationAction, scores: CandidateScores, confidence: float, reason: str, trace: list[TraceEntry], quality: DataQualitySummary, target: float = 0.0, indoor: float = 0.0, outdoor: float = 0.0, suggested: float = 0.0, suppressed: str | None = None, co2: float | None = None, co2_influence: float = 0.0, *, evaluated_at=None, urgent: bool = False, baseline: str = "UNKNOWN", guardrail_state: RoomGuardrailState | None = None) -> DecisionResult:
         quality_state = Availability.ESTIMATED if any(entry.code == "quality.pressure" for entry in trace) else Availability.AVAILABLE
-        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state)
+        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state, guardrail_state=guardrail_state)
 
 
 def _baseline(room: DecisionRoom) -> str:

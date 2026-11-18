@@ -199,17 +199,18 @@ HA states and config
     -> build_decision_snapshot()
     -> DecisionEngine.evaluate()
     -> decision_to_summary()
-    -> window-state guards
-    -> action guards and notification policy
+    -> decision_to_summary()  # direct core projection
+    -> notification delivery projection
     -> HA entities and notifications
 ```
 
-The engine never sends notifications. The application layer applies:
+The engine never sends notifications. The core receives window state and
+persisted action-guardrail state, returns explicit traces and updated state,
+and remains the source of truth for all recommendation entities. The
+application layer applies:
 
-- known window contact state, suppressing `OPEN`/`VENTILATE` when windows are
-  already open and suppressing `CLOSE` when they are already closed;
 - quiet hours and notification cooldown;
-- persisted room action guards;
+- channel availability and notification stability;
 - localized explanations and notification delivery.
 
 VentWise remains recommendation-only. No result invokes a window, fan, HVAC,

@@ -22,6 +22,7 @@ from ..ventwise_core import (
     RecommendationAction,
     RecommendationSummary,
     RoomObservation,
+    RoomGuardrailState,
     RoomProfile,
     SourceReading,
     RoomRecommendation,
@@ -349,6 +350,7 @@ def build_decision_snapshot(
     evaluated_at: datetime,
     *,
     window_states: Mapping[str, str] | None = None,
+    room_action_guards: Mapping[str, "RoomActionGuard"] | None = None,
 ) -> DecisionSnapshot:
     """Build the immutable core input from already normalized HA values."""
 
@@ -409,6 +411,8 @@ def build_decision_snapshot(
             ),
             window_contact_configured=(room.room_id or room.name) in window_states
             and window_states[room.room_id or room.name] != WINDOW_STATE_NOT_CONFIGURED,
+            action_change_hold_seconds=getattr(room, "action_change_hold_minutes", 0) * 60,
+            action_lockout_seconds=getattr(room, "action_lockout_minutes", 0) * 60,
             target_temperature_c=(
                 room.target_temperature_c_override
                 if room.target_temperature_c_override_enabled
@@ -436,7 +440,19 @@ def build_decision_snapshot(
             safety_evidence_configured=outdoor.safety_evidence_configured,
         ),
         evaluated_at=snapshot_evaluated_at,
-        context=DecisionContext(stable_for_seconds=10**9),
+        context=DecisionContext(
+            stable_for_seconds=10**9,
+            room_guardrails=tuple(
+                RoomGuardrailState(
+                    room_id=room_id,
+                    accepted_action=guard.accepted_action,
+                    lockout_until=guard.lockout_until,
+                    pending_action=guard.pending_action,
+                    pending_since=guard.pending_since,
+                )
+                for room_id, guard in sorted((room_action_guards or {}).items())
+            ),
+        ),
     )
 
 
@@ -452,7 +468,7 @@ def decision_to_summary(
         RoomRecommendation(
             room_id=room.room_id,
             room_name=room.name,
-            action=room_result.delivered_action,
+            action=room_result.core_action,
             score=room_result.score,
             reason=room_result.reason,
             target_perceived_c=room_result.target_perceived_c,
@@ -483,7 +499,7 @@ def decision_to_summary(
         None,
     )
     return RecommendationSummary(
-        action=result.delivered_action,
+        action=result.core_action,
         score=selected.score if selected else 0.0,
         reason=selected.reason if selected else "No actionable recommendation.",
         suggested_comfort_temperature_c=(selected.suggested_comfort_temperature_c if selected else None),
@@ -888,6 +904,7 @@ def build_debug_attributes(
 def build_delivered_result(
     core_result: AggregateDecisionResult,
     summary: RecommendationSummary,
+    suppressed_by: Mapping[str, str] | None = None,
 ) -> AggregateDecisionResult:
     """Project HA delivery filters onto the pure core result."""
 
@@ -895,14 +912,21 @@ def build_delivered_result(
         recommendation.room_id or recommendation.room_name: recommendation
         for recommendation in summary.room_recommendations
     }
+    suppressed_by = suppressed_by or {}
     room_results = tuple(
         replace(
             result,
-            delivered_action=by_room.get(result.room_id).action
-            if by_room.get(result.room_id) is not None
-            else result.delivered_action,
+            delivered_action=(
+                RecommendationAction.NONE
+                if result.room_id in suppressed_by
+                else by_room.get(result.room_id).action
+                if by_room.get(result.room_id) is not None
+                else result.delivered_action
+            ),
             delivery_suppressed_by=(
-                "home_assistant_filter"
+                suppressed_by.get(result.room_id)
+                if result.room_id in suppressed_by
+                else "home_assistant_filter"
                 if by_room.get(result.room_id) is not None
                 and by_room[result.room_id].action != result.delivered_action
                 else result.delivery_suppressed_by
@@ -910,9 +934,13 @@ def build_delivered_result(
         )
         for result in core_result.room_results
     )
-    selected = next(
-        (item for item in room_results if item.delivered_action is not RecommendationAction.NONE),
-        None,
+    delivered_candidates = [
+        item for item in room_results if item.delivered_action is not RecommendationAction.NONE
+    ]
+    selected = max(
+        delivered_candidates,
+        key=lambda item: (item.score, item.room_id),
+        default=None,
     )
     return replace(
         core_result,

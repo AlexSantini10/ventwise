@@ -72,7 +72,7 @@ def test_evaluator_output_is_json_stable_and_complete():
     assert json.dumps(first, sort_keys=True, separators=(",", ":")) == json.dumps(
         second, sort_keys=True, separators=(",", ":")
     )
-    assert first["schema_version"] == "ventwise.engine.v1"
+    assert first["schema_version"] == "ventwise.engine.v2"
     assert first["normalized_input"]["rooms"][0]["temperature_c"]["source_id"] == (
         "sensor.bedroom_temperature"
     )
@@ -102,7 +102,7 @@ def test_cli_emits_only_deterministic_json():
     assert completed.stderr == ""
 
 
-def test_standalone_core_keeps_core_action_when_delivery_is_suppressed():
+def test_standalone_core_keeps_core_action_independent_of_delivery_filters():
     room = DecisionRoom(
         "room",
         "Room",
@@ -124,7 +124,7 @@ def test_standalone_core_keeps_core_action_when_delivery_is_suppressed():
         )
     ).room_results[0]
     assert result.core_action is RecommendationAction.OPEN
-    assert result.delivered_action is RecommendationAction.NONE
+    assert result.delivered_action is RecommendationAction.OPEN
 
 
 def test_ha_delivery_projection_changes_only_delivered_action():

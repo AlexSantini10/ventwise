@@ -76,13 +76,25 @@ def test_severe_weather_has_priority_over_comfort():
     assert result.reason_code == "severe_weather"
 
 
-def test_quiet_hours_suppresses_delivery_but_preserves_core_truth():
+def test_quiet_hours_does_not_change_core_result():
     result = DecisionEngine().evaluate(
         snapshot(context=DecisionContext(quiet_hours_active=True))
     ).room_results[0]
     assert result.core_action is RecommendationAction.OPEN
-    assert result.delivered_action is RecommendationAction.NONE
-    assert result.delivery_suppressed_by == "quiet_hours"
+    assert result.delivered_action is RecommendationAction.OPEN
+    assert result.delivery_suppressed_by is None
+
+
+def test_window_state_suppresses_already_satisfied_open_action():
+    data = snapshot()
+    room = DecisionRoom(
+        "room", "Room", data.rooms[0].temperature_c, data.rooms[0].humidity_percent,
+        window_open=obs(True),
+    )
+    result = DecisionEngine().evaluate(DecisionSnapshot((room,), data.outdoor, NOW)).room_results[0]
+    assert result.core_action is RecommendationAction.NONE
+    assert result.reason_code == "window_already_open"
+    assert any(entry.code == "selection.window_already_open" for entry in result.trace)
 
 
 def test_invalid_observation_is_reported():
