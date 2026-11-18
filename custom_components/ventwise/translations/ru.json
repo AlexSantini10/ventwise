@@ -9,7 +9,7 @@
         "title": "Первоначальная настройка",
         "description": "Выберите источник погоды, задайте комфортные значения для помещения и при желании укажите устройства для уведомлений.",
         "data": {
-          "debug_mode_enabled": "Debug mode",
+          "debug_mode_enabled": "Режим отладки",
           "outdoor_weather_entity_id": "Источник погоды",
           "temperature_unit": "Единица температуры",
           "wind_speed_unit": "Единица скорости ветра",
@@ -36,8 +36,8 @@
         }
       },
       "units": {
-        "title": "Units of measurement",
-        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+        "title": "Единицы измерения",
+        "data": {"temperature_unit": "Единица температуры", "wind_speed_unit": "Единица скорости ветра"}
       },
       "outdoor": {
         "title": "Наружные данные",
@@ -241,7 +241,7 @@
         "title": "Настройка VentWise",
         "description": "Выберите, что хотите изменить.",
         "menu_options": {
-          "units": "Units of measurement",
+          "units": "Единицы измерения",
           "settings": "Настройки",
           "rooms": "Комнаты"
         },
@@ -251,8 +251,8 @@
         }
       },
       "units": {
-        "title": "Units of measurement",
-        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+        "title": "Единицы измерения",
+        "data": {"temperature_unit": "Единица температуры", "wind_speed_unit": "Единица скорости ветра"}
       },
       "settings": {
         "title": "Настройки VentWise",
@@ -523,6 +523,11 @@
     }
   },
   "entity": {
+    "button": {
+      "request_recommendation": {"name": "Получить рекомендацию сейчас"},
+      "debug_open_notification": {"name": "Получить уведомление об открытии"},
+      "debug_close_notification": {"name": "Получить уведомление о закрытии"}
+    },
     "binary_sensor": {
       "notifications_currently_allowed": {
         "name": "Уведомления сейчас разрешены"
@@ -580,7 +585,22 @@
         "name": "Скорость ветра на улице"
       },
       "recommendation": {
-        "name": "Рекомендация"
+        "name": "Рекомендация",
+        "state": {
+          "open": "Открыть окна",
+          "ventilate": "Ненадолго проветрить",
+          "close": "Закрыть окна",
+          "none": "Нет рекомендации"
+        }
+      },
+      "window_state": {
+        "name": "Состояние окон",
+        "state": {
+          "open": "Открыты",
+          "closed": "Закрыты",
+          "not_configured": "Не настроено",
+          "unavailable": "Недоступно"
+        }
       },
       "recommendation_score": {
         "name": "Оценка рекомендации"

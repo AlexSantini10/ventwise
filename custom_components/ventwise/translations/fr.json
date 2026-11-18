@@ -36,8 +36,8 @@
         }
       },
       "units": {
-        "title": "Units of measurement",
-        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+        "title": "Unités de mesure",
+        "data": {"temperature_unit": "Unité de température", "wind_speed_unit": "Unité de vitesse du vent"}
       },
       "outdoor": {
         "title": "Données extérieures",
@@ -241,7 +241,7 @@
         "title": "Ajuster VentWise",
         "description": "Choisissez ce que vous souhaitez gérer.",
         "menu_options": {
-          "units": "Units of measurement",
+          "units": "Unités de mesure",
           "settings": "Paramètres",
           "rooms": "Chambres"
         },
@@ -251,8 +251,8 @@
         }
       },
       "units": {
-        "title": "Units of measurement",
-        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+        "title": "Unités de mesure",
+        "data": {"temperature_unit": "Unité de température", "wind_speed_unit": "Unité de vitesse du vent"}
       },
       "settings": {
         "title": "Paramètres VentWise",
@@ -523,6 +523,11 @@
     }
   },
   "entity": {
+    "button": {
+      "request_recommendation": {"name": "Recevoir la recommandation maintenant"},
+      "debug_open_notification": {"name": "Recevoir la notification d'ouverture"},
+      "debug_close_notification": {"name": "Recevoir la notification de fermeture"}
+    },
     "binary_sensor": {
       "notifications_currently_allowed": {
         "name": "Notifications actuellement autorisées"
@@ -580,7 +585,22 @@
         "name": "Vitesse du vent extérieur"
       },
       "recommendation": {
-        "name": "Recommandation"
+        "name": "Recommandation",
+        "state": {
+          "open": "Ouvrir les fenêtres",
+          "ventilate": "Aérer brièvement",
+          "close": "Fermer les fenêtres",
+          "none": "Aucune recommandation"
+        }
+      },
+      "window_state": {
+        "name": "État des fenêtres",
+        "state": {
+          "open": "Ouvertes",
+          "closed": "Fermées",
+          "not_configured": "Non configuré",
+          "unavailable": "Indisponible"
+        }
       },
       "recommendation_score": {
         "name": "Note de recommandation"

@@ -89,7 +89,7 @@ def test_on_demand_recommendation_button_has_a_stable_identity() -> None:
     button = VentWiseRequestRecommendationButton(_coordinator())
 
     assert button.unique_id == "entry-1_request_recommendation"
-    assert button.name == "Request recommendation now"
+    assert button.translation_key == "request_recommendation"
     assert button.suggested_object_id == "request_recommendation"
 
 
@@ -103,8 +103,8 @@ def test_debug_room_buttons_have_stable_room_identities() -> None:
 
     assert open_button.unique_id == "entry-1_camera-1_debug_open_notification"
     assert close_button.unique_id == "entry-1_camera-1_debug_close_notification"
-    assert open_button.name == "Receive open notification"
-    assert close_button.name == "Receive close notification"
+    assert open_button.translation_key == "debug_open_notification"
+    assert close_button.translation_key == "debug_close_notification"
     assert open_button.suggested_object_id == "debug_open_notification"
     assert close_button.suggested_object_id == "debug_close_notification"
 
@@ -116,7 +116,7 @@ def test_suggested_object_id_does_not_follow_the_ui_language() -> None:
     italian.hass.config.language = "it"
     sensor = OutdoorTemperatureSensor(italian)
 
-    assert sensor.name == "Temperatura esterna"
+    assert sensor.translation_key == "outdoor_temperature"
     assert sensor.suggested_object_id == "outdoor_temperature"
 
 

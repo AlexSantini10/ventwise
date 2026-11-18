@@ -145,8 +145,10 @@ testing can use stale code.
 
 VentWise entity IDs in the Lab are deterministic English technical IDs (for
 example `sensor.camera_test_recommendation`), independent of the Home Assistant
-UI language. Only the displayed labels are localized, so automations and the
-dashboard remain stable when users change language.
+UI language. Entity labels and supported sensor state labels are resolved from
+Home Assistant's native translation catalog, so the frontend can reflect a
+language change without changing the technical entity IDs. Automations and
+dashboards therefore remain stable when users change language.
 
 The sandbox automatically provisions adjustable test fixtures:
 

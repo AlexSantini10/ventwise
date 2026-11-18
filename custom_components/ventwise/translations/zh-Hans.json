@@ -6,7 +6,7 @@
         "title": "初始设置",
         "description": "选择天气来源，设置室内舒适值，如果需要，还可以选择一个或多个通知设备。",
         "data": {
-          "debug_mode_enabled": "Debug mode",
+          "debug_mode_enabled": "调试模式",
           "outdoor_weather_entity_id": "天气来源",
           "temperature_unit": "温度单位",
           "wind_speed_unit": "风速单位",
@@ -33,8 +33,8 @@
         }
       },
       "units": {
-        "title": "Units of measurement",
-        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+        "title": "测量单位",
+        "data": {"temperature_unit": "温度单位", "wind_speed_unit": "风速单位"}
       },
       "outdoor": {
         "title": "室外数据",
@@ -241,7 +241,7 @@
         "title": "调整 VentWise",
         "description": "选择你想编辑的内容。",
         "menu_options": {
-          "units": "Units of measurement",
+          "units": "测量单位",
           "rooms": "房间",
           "settings": "设置"
         },
@@ -453,8 +453,8 @@
         }
       },
       "units": {
-        "title": "Units of measurement",
-        "data": {"temperature_unit": "Temperature unit", "wind_speed_unit": "Wind speed unit"}
+        "title": "测量单位",
+        "data": {"temperature_unit": "温度单位", "wind_speed_unit": "风速单位"}
       },
       "settings": {
         "title": "VentWise 设置",
@@ -526,6 +526,11 @@
     }
   },
   "entity": {
+    "button": {
+      "request_recommendation": {"name": "立即获取建议"},
+      "debug_open_notification": {"name": "接收开窗通知"},
+      "debug_close_notification": {"name": "接收关窗通知"}
+    },
     "binary_sensor": {
       "notifications_currently_allowed": {
         "name": "当前允许通知"
@@ -583,7 +588,22 @@
         "name": "室外风速"
       },
       "recommendation": {
-        "name": "建议"
+        "name": "建议",
+        "state": {
+          "open": "打开窗户",
+          "ventilate": "短暂通风",
+          "close": "关闭窗户",
+          "none": "无建议"
+        }
+      },
+      "window_state": {
+        "name": "窗户状态",
+        "state": {
+          "open": "打开",
+          "closed": "关闭",
+          "not_configured": "未配置",
+          "unavailable": "不可用"
+        }
       },
       "recommendation_score": {
         "name": "建议分数"

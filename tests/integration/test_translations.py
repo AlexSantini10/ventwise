@@ -41,6 +41,20 @@ def _leaf_paths(value: Any, prefix: str = "") -> set[str]:
     }
 
 
+def _leaf_values(value: Any, prefix: str = "") -> dict[str, str]:
+    """Return string leaves keyed by their nested translation path."""
+
+    if isinstance(value, str):
+        return {prefix: value}
+    if not isinstance(value, dict):
+        return {}
+    return {
+        path: child
+        for key, nested in value.items()
+        for path, child in _leaf_values(nested, f"{prefix}.{key}" if prefix else key).items()
+    }
+
+
 REVIEWED_LANGUAGES = ("it", "es", "ru", "zh-Hans", "fr", "de")
 ROOM_FORM_STEPS = (
     "add_room",
@@ -68,6 +82,21 @@ def test_translation_files_reject_duplicate_keys(language: str) -> None:
         _load_translation(language)
     except ValueError as error:
         pytest.fail(f"{language}.json is invalid: {error}")
+
+
+@pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
+def test_localized_catalogs_do_not_copy_english_user_facing_values(language: str) -> None:
+    """Catch untranslated UI strings while allowing the integration title."""
+
+    english = _leaf_values(_load_translation("en"))
+    localized = _leaf_values(_load_translation(language))
+    copied = {
+        path
+        for path, value in localized.items()
+        if path != "title" and value == english.get(path)
+    }
+
+    assert not copied, f"{language} copies English UI values: {sorted(copied)}"
 
 
 @pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))

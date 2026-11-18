@@ -331,14 +331,26 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     ]
 
 
-def test_room_schema_localizes_default_names() -> None:
+@pytest.mark.parametrize(
+    ("language", "room_name", "macro_room_name"),
+    (
+        ("it", "Stanza 1", "Macro-stanza 1"),
+        ("fr", "Pièce 1", "Macro-pièce 1"),
+        ("de", "Zimmer 1", "Makro-Zimmer 1"),
+    ),
+)
+def test_room_schema_localizes_default_names(
+    language: str,
+    room_name: str,
+    macro_room_name: str,
+) -> None:
     """Room defaults should follow the requested language."""
 
-    room_schema = build_room_schema({}, 0, "room", "it")
-    macro_schema = build_room_schema({}, 0, "macro_room", "it")
+    room_schema = build_room_schema({}, 0, "room", language)
+    macro_schema = build_room_schema({}, 0, "macro_room", language)
 
-    assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == "Stanza 1"
-    assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro-stanza 1"
+    assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == room_name
+    assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == macro_room_name
 
 
 def test_room_selection_label_localizes_room_kind() -> None:

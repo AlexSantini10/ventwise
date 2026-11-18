@@ -98,6 +98,8 @@ ROOM_KIND_LABELS: dict[str, dict[str, str]] = {
     "es": {"room": "Habitación", "macro_room": "Macrohabitación"},
     "it": {"room": "Stanza", "macro_room": "Macro-stanza"},
     "ru": {"room": "Комната", "macro_room": "Макрокомната"},
+    "fr": {"room": "Pièce", "macro_room": "Macro-pièce"},
+    "de": {"room": "Zimmer", "macro_room": "Makro-Zimmer"},
     "zh-hans": {"room": "房间", "macro_room": "宏房间"},
 }
 OUTDOOR_OVERRIDE_FIELDS: tuple[tuple[str, str, str], ...] = (

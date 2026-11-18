@@ -529,6 +529,11 @@
     }
   },
   "entity": {
+    "button": {
+      "request_recommendation": {"name": "Request recommendation now"},
+      "debug_open_notification": {"name": "Receive open notification"},
+      "debug_close_notification": {"name": "Receive close notification"}
+    },
     "binary_sensor": {
       "notifications_currently_allowed": {
         "name": "Notifications currently allowed"
@@ -586,7 +591,22 @@
         "name": "Outdoor wind speed"
       },
       "recommendation": {
-        "name": "Recommendation"
+        "name": "Recommendation",
+        "state": {
+          "open": "Open windows",
+          "ventilate": "Ventilate briefly",
+          "close": "Close windows",
+          "none": "No recommendation"
+        }
+      },
+      "window_state": {
+        "name": "Window state",
+        "state": {
+          "open": "Open",
+          "closed": "Closed",
+          "not_configured": "Not configured",
+          "unavailable": "Unavailable"
+        }
       },
       "recommendation_score": {
         "name": "Recommendation score"
