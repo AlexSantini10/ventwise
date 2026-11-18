@@ -16,7 +16,8 @@
           "notification_device_id": "Dispositivos de notificación",
           "diagnostic_notification_level": "Notificaciones de diagnóstico",
           "auto_comfort_temperature": "Utilice un objetivo de confort adaptativo al clima",
-          "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant"
+          "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant",
+          "safety_bypass_quiet_hours": "Permitir notificaciones de seguridad durante las horas de silencio"
         },
         "data_description": {
           "debug_mode_enabled": "Muestra controles de prueba de apertura y cierre para cada habitacion.",
@@ -27,6 +28,7 @@
           "notification_device_id": "Elige uno o más dispositivos que recibirán las notificaciones de VentWise.",
           "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de seguridad interior de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla un termostato ni un sistema HVAC.",
           "home_assistant_notification_enabled": "Muestra cada recomendación de VentWise en el panel de notificaciones de Home Assistant.",
+          "safety_bypass_quiet_hours": "Cuando está activado, las notificaciones de seguridad urgentes pueden enviarse durante las horas de silencio.",
           "diagnostic_notification_level": "Elija si Home Assistant muestra notificaciones adicionales para problemas de configuración o de datos del sensor."
         }
       },
@@ -452,6 +454,7 @@
           "stability_minutes": "Esperar antes de recomendar (minutos)",
           "notification_device_id": "Dispositivos de notificación",
           "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant",
+          "safety_bypass_quiet_hours": "Permitir notificaciones de seguridad durante las horas de silencio",
           "diagnostic_notification_level": "Notificaciones de diagnóstico",
           "co2_enabled": "Considere el CO₂ en las recomendaciones",
           "co2_entity_id": "Inicio Sensor de CO₂",
@@ -474,6 +477,7 @@
           "stability_minutes": "Cuánto tiempo debe permanecer sin cambios una recomendación antes de que VentWise le notifique.",
           "notification_device_id": "Opcional. Elija los dispositivos que deberían recibir notificaciones VentWise.",
           "home_assistant_notification_enabled": "Muestra cada recomendación de VentWise en el panel de notificaciones de Home Assistant.",
+          "safety_bypass_quiet_hours": "Cuando está activado, las notificaciones de seguridad urgentes pueden enviarse durante las horas de silencio. La estabilidad, la pausa y la deduplicación siguen aplicándose.",
           "diagnostic_notification_level": "Elija si Home Assistant muestra notificaciones adicionales para problemas de configuración o de datos del sensor.",
           "co2_enabled": "Recomendado cuando hay un sensor de CO₂ disponible. Da prioridad al aire fresco cuando el CO₂ es alto.",
           "co2_entity_id": "Sensor de CO₂ predeterminado opcional utilizado en habitaciones sin sensor propio.",

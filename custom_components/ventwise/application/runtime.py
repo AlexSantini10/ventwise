@@ -55,6 +55,7 @@ from ..const import (
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_ROOM_KIND,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
@@ -97,6 +98,7 @@ from ..const import (
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
     DEFAULT_QUIET_HOURS_START,
+    DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
@@ -152,6 +154,7 @@ class IntegrationConfig:
     quiet_hours_enabled: bool = True
     quiet_hours_start: str = DEFAULT_QUIET_HOURS_START
     quiet_hours_end: str = DEFAULT_QUIET_HOURS_END
+    safety_bypass_quiet_hours: bool = DEFAULT_SAFETY_BYPASS_QUIET_HOURS
     enabled: bool = True
     outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_temperature_entity_id: str | None = None
@@ -302,6 +305,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             data.get(CONF_QUIET_HOURS_START), DEFAULT_QUIET_HOURS_START
         ),
         quiet_hours_end=_time_or_default(data.get(CONF_QUIET_HOURS_END), DEFAULT_QUIET_HOURS_END),
+        safety_bypass_quiet_hours=bool(
+            data.get(CONF_SAFETY_BYPASS_QUIET_HOURS, DEFAULT_SAFETY_BYPASS_QUIET_HOURS)
+        ),
         enabled=bool(data.get(CONF_ENABLED, True)),
         outdoor_temperature_source=_outdoor_source(
             data,
@@ -498,12 +504,24 @@ def decision_to_summary(
         ),
         None,
     )
+    blocked_by = None
+    if (
+        selected is None
+        and recommendations
+        and all(item.action is RecommendationAction.NONE for item in recommendations)
+        and any(
+            item.reason_code in {"window_already_open", "window_already_closed"}
+            for item in recommendations
+        )
+    ):
+        blocked_by = "window_state"
     return RecommendationSummary(
         action=result.core_action,
         score=selected.score if selected else 0.0,
         reason=selected.reason if selected else "No actionable recommendation.",
         suggested_comfort_temperature_c=(selected.suggested_comfort_temperature_c if selected else None),
         room_recommendations=recommendations,
+        blocked_by=blocked_by,
         best_room=selected.room_name if selected else None,
     )
 
@@ -877,6 +895,7 @@ def build_debug_attributes(
         "stability_minutes": config.stability_minutes,
         "cooldown_minutes": config.cooldown_minutes,
         "quiet_hours_enabled": config.quiet_hours_enabled,
+        "safety_bypass_quiet_hours": config.safety_bypass_quiet_hours,
         "room_recommendations": room_details,
         "best_room_recommendation": best_room_details,
         "normalized_input_snapshot": (

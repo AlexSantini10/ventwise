@@ -19,6 +19,7 @@
           "stability_minutes": "Attendez avant de recommander (minutes)",
           "notification_device_id": "Dispositifs de notification",
           "home_assistant_notification_enabled": "Afficher les notifications dans Home Assistant",
+          "safety_bypass_quiet_hours": "Autoriser les notifications de sécurité pendant les heures silencieuses",
           "diagnostic_notification_level": "Notifications de diagnostic"
         },
         "data_description": {
@@ -30,6 +31,7 @@
           "stability_minutes": "Combien de temps la recommandation doit rester inchangée avant que VentWise vous en informe. Si vous n'êtes pas sûr, laissez la valeur par défaut.",
           "notification_device_id": "Facultatif. Choisissez un ou plusieurs appareils qui doivent recevoir les notifications VentWise.",
           "home_assistant_notification_enabled": "Affichez chaque recommandation VentWise dans le panneau de notification de Home Assistant.",
+          "safety_bypass_quiet_hours": "Si cette option est activée, les notifications de sécurité urgentes peuvent être envoyées pendant les heures silencieuses. La stabilité, le délai et la déduplication restent appliqués.",
           "diagnostic_notification_level": "Choisissez si Home Assistant affiche des notifications supplémentaires pour les problèmes de configuration ou de données de capteur."
         }
       },
@@ -264,6 +266,7 @@
           "co2_threshold_ppm": "Seuil CO₂ (ppm)",
           "soft_outdoor_threshold_c": "Seuil de confort extérieur",
           "cooldown_minutes": "Temps de recharge des notifications par pièce (minutes)",
+          "safety_bypass_quiet_hours": "Autoriser les notifications de sécurité pendant les heures silencieuses",
           "outdoor_temperature_override": "Utiliser la température extérieure manuelle",
           "outdoor_humidity_override": "Utiliser l'humidité extérieure manuelle",
           "wind_speed_override": "Utiliser la vitesse manuelle du vent extérieur",
@@ -286,6 +289,7 @@
           "co2_threshold_ppm": "Niveau de CO₂ auquel VentWise commence à donner la priorité à l'air frais.",
           "soft_outdoor_threshold_c": "Au-dessus de cette température extérieure, ouvrir les fenêtres devient moins utile.",
           "cooldown_minutes": "Combien de temps VentWise attend avant d’envoyer une recommandation mise à jour pour chaque pièce. Les recommandations identiques restent supprimées.",
+          "safety_bypass_quiet_hours": "Si cette option est activée, les notifications de sécurité urgentes peuvent être envoyées pendant les heures silencieuses. La stabilité, le délai et la déduplication restent appliqués.",
           "outdoor_temperature_override": "Utilisez l'entité de température manuelle ci-dessous au lieu des prévisions météorologiques.",
           "outdoor_humidity_override": "Utilisez l'entité d'humidité manuelle ci-dessous au lieu des prévisions météorologiques.",
           "wind_speed_override": "Utilisez l'entité manuelle de vitesse du vent ci-dessous au lieu des prévisions météorologiques.",

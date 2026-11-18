@@ -31,6 +31,7 @@ from ..const import (
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
     CONF_DEBUG_MODE_ENABLED,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -75,6 +76,7 @@ from ..const import (
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
+    DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     DEFAULT_TARGET_TEMPERATURE_C,
     DEFAULT_TEMPERATURE_UNIT,
     DEFAULT_WIND_SPEED_UNIT,
@@ -277,6 +279,13 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
             vol.Required(
                 CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
                 default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
+            ): cv.boolean,
+            vol.Required(
+                CONF_SAFETY_BYPASS_QUIET_HOURS,
+                default=defaults.get(
+                    CONF_SAFETY_BYPASS_QUIET_HOURS,
+                    DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
+                ),
             ): cv.boolean,
             vol.Required(
                 CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
@@ -565,6 +574,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED),
         CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
         default=False,
+    )
+    data[CONF_SAFETY_BYPASS_QUIET_HOURS] = _normalize_bool(
+        data.get(CONF_SAFETY_BYPASS_QUIET_HOURS),
+        CONF_SAFETY_BYPASS_QUIET_HOURS,
+        default=DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     )
     level = data.get(
         CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,

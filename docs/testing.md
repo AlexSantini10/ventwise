@@ -63,6 +63,8 @@ installed in CI.
 - configured window contacts suppress only advice already satisfied; multiple
   contacts aggregate deterministically
 - quiet hours and cooldown gate notification delivery without changing the core recommendation
+- safety notifications bypass stability and cooldown, respect quiet hours by default, and optionally bypass quiet hours when configured
+- identical safety notifications remain deduplicated even when the safety quiet-hours bypass is enabled
 - Home Assistant state events trigger one eligible notification, suppress
   duplicates, and use the configured notify service target
 - persisted state is reloaded after restart
@@ -90,6 +92,11 @@ It uses the Python, Home Assistant and test dependency versions pinned in
 The checkout is mounted read-only, the container is removed after every run,
 and per-layer JUnit, XML/HTML coverage, and timing reports are saved under
 `.test-artifacts/`. Select a layer or pass pytest flags after `--`:
+
+Tests that cannot run reliably on Windows must be executed through this Docker
+workflow. In particular, Home Assistant integration/system tests and checks
+that depend on the pinned CI environment must not be validated only with the
+host Python interpreter.
 
 ```powershell
 python scripts/run_tests.py --layer unit

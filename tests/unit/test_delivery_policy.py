@@ -47,3 +47,50 @@ def test_no_recommendation_never_notifies():
     decision = evaluate_delivery(request(action=RecommendationAction.NONE))
     assert decision.should_notify is False
     assert decision.suppressed_by == "no_recommendation"
+
+
+def test_safety_bypasses_stability_and_cooldown():
+    decision = evaluate_delivery(
+        request(
+            is_safety=True,
+            stable_for_seconds=0,
+            cooldown_active=True,
+        )
+    )
+
+    assert decision.should_notify is True
+
+
+def test_safety_respects_quiet_hours_by_default():
+    decision = evaluate_delivery(
+        request(is_safety=True, quiet_hours_active=True)
+    )
+
+    assert decision.should_notify is False
+    assert decision.suppressed_by == "quiet_hours"
+
+
+def test_safety_can_bypass_quiet_hours_when_enabled():
+    decision = evaluate_delivery(
+        request(
+            is_safety=True,
+            quiet_hours_active=True,
+            safety_bypasses_quiet_hours=True,
+        )
+    )
+
+    assert decision.should_notify is True
+
+
+def test_duplicate_safety_is_suppressed_even_when_quiet_hours_are_bypassed():
+    decision = evaluate_delivery(
+        request(
+            is_safety=True,
+            duplicate=True,
+            quiet_hours_active=True,
+            safety_bypasses_quiet_hours=True,
+        )
+    )
+
+    assert decision.should_notify is False
+    assert decision.suppressed_by == "duplicate"

@@ -16,7 +16,8 @@
           "notification_device_id": "通知设备",
           "diagnostic_notification_level": "诊断通知",
           "auto_comfort_temperature": "使用适应气候的舒适度目标",
-          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知"
+          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
+          "safety_bypass_quiet_hours": "允许在静默时段发送安全通知"
         },
         "data_description": {
           "debug_mode_enabled": "Shows per-room open and close notification test controls.",
@@ -27,6 +28,7 @@
           "notification_device_id": "选择一个或多个接收 VentWise 通知的设备。",
           "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
           "home_assistant_notification_enabled": "在 Home Assistant 的通知面板中显示每个 VentWise 建议。",
+          "safety_bypass_quiet_hours": "启用后，紧急安全通知可以在静默时段发送。",
           "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。"
         }
       },
@@ -452,6 +454,7 @@
           "stability_minutes": "推荐前等待（分钟）",
           "notification_device_id": "通知设备",
           "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
+          "safety_bypass_quiet_hours": "允许在静默时段发送安全通知",
           "diagnostic_notification_level": "诊断通知",
           "co2_enabled": "在建议中考虑二氧化碳",
           "co2_entity_id": "家用二氧化碳传感器",
@@ -474,6 +477,7 @@
           "stability_minutes": "在 VentWise 通知您之前，建议必须保持不变多长时间。",
           "notification_device_id": "选修的。选择应接收 VentWise 通知的设备。",
           "home_assistant_notification_enabled": "在 Home Assistant 的通知面板中显示每个 VentWise 建议。",
+          "safety_bypass_quiet_hours": "启用后，紧急安全通知可以在静默时段发送。稳定性、冷却时间和重复抑制仍然有效。",
           "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。",
           "co2_enabled": "当有 CO2 传感器可用时推荐使用。当二氧化碳浓度较高时，它会优先考虑新鲜空气。",
           "co2_entity_id": "没有自己的传感器的房间使用可选的默认二氧化碳传感器。",

@@ -476,6 +476,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         )
         core_result = self._decision_engine.evaluate(decision_snapshot)
         self._update_room_action_guards_from_core(core_result)
+        core_result_by_room = {
+            room_result.room_id: room_result for room_result in core_result.room_results
+        }
         summary = decision_to_summary(
             self._decision_engine,
             decision_snapshot,
@@ -501,6 +504,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             ),
             None,
         )
+        best_room_result = (
+            core_result_by_room.get(best_recommendation.room_id or "")
+            if best_recommendation is not None
+            else None
+        )
         notification_marker = self._notification_markers.get(summary.best_room or "")
         cooldown_active = (
             notification_marker is not None
@@ -510,6 +518,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             and not self._should_bypass_notification_cooldown(
                 notification_marker,
                 best_recommendation,
+                is_safety=bool(best_room_result and best_room_result.urgent),
             )
         )
 
@@ -519,24 +528,15 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 bool(notification_entity_ids)
                 or self._config.home_assistant_notification_enabled
             )
-            and not quiet_hours_active
-            and stable_for_seconds >= self._config.stability_minutes * 60
         )
         if self._suppress_automatic_notifications:
             notification_channel_available = False
-        delivery_suppressed_by = {
-            (recommendation.room_id or recommendation.room_name): (
-                "quiet_hours" if quiet_hours_active else
-                "stability" if stable_for_seconds < self._config.stability_minutes * 60 else
-                "notification_channel"
-            )
-            for recommendation in summary.room_recommendations
-            if recommendation.action is not RecommendationAction.NONE
-            and not notification_channel_available
-        }
+        delivery_suppressed_by: dict[str, str] = {}
         notification_allowed = False
         for recommendation in summary.room_recommendations:
             room_signature = self._notification_identity(recommendation)
+            room_result = core_result_by_room.get(recommendation.room_id or "")
+            is_safety = bool(room_result and room_result.urgent)
             room_marker = self._notification_markers.get(recommendation.room_name)
             matches_marker = room_marker is not None and self._matches_notification_marker(
                 room_marker,
@@ -545,6 +545,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             bypasses_cooldown = room_marker is not None and self._should_bypass_notification_cooldown(
                 room_marker,
                 recommendation,
+                is_safety=is_safety,
             )
             room_cooldown_active = (
                 room_marker is not None
@@ -564,6 +565,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     stability_seconds_required=self._config.stability_minutes * 60,
                     duplicate=matches_marker,
                     minimum_score=self._config.minimum_score,
+                    is_safety=is_safety,
+                    safety_bypasses_quiet_hours=self._config.safety_bypass_quiet_hours,
                 )
             )
             room_notification_allowed = delivery_decision.should_notify
@@ -928,6 +931,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self,
         marker: NotificationMarker,
         recommendation,
+        *,
+        is_safety: bool = False,
     ) -> bool:
         """Allow only stable action changes and urgent escalations through a cooldown."""
 
@@ -936,6 +941,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             or marker.reason is None
             or marker.severity is None
         ):
+            return True
+        if is_safety:
             return True
         return (
             self._notification_severity(recommendation.score) == "urgent"

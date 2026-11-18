@@ -27,6 +27,8 @@ class DeliveryRequest:
     stability_seconds_required: int = 0
     duplicate: bool = False
     minimum_score: float = 0.0
+    is_safety: bool = False
+    safety_bypasses_quiet_hours: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,15 +44,19 @@ def evaluate_delivery(request: DeliveryRequest) -> DeliveryDecision:
 
     if request.action is RecommendationAction.NONE:
         return DeliveryDecision(False, "no_recommendation")
-    if request.quiet_hours_active:
-        return DeliveryDecision(False, "quiet_hours")
-    if request.stable_for_seconds < request.stability_seconds_required:
-        return DeliveryDecision(False, "stability")
     if not request.notification_enabled or not request.channel_available:
         return DeliveryDecision(False, "notification_channel")
     if request.duplicate:
         return DeliveryDecision(False, "duplicate")
-    if request.cooldown_active:
+    if request.quiet_hours_active:
+        if not (request.is_safety and request.safety_bypasses_quiet_hours):
+            return DeliveryDecision(False, "quiet_hours")
+    if (
+        not request.is_safety
+        and request.stable_for_seconds < request.stability_seconds_required
+    ):
+        return DeliveryDecision(False, "stability")
+    if request.cooldown_active and not request.is_safety:
         return DeliveryDecision(False, "cooldown")
     if request.score < request.minimum_score:
         return DeliveryDecision(False, "minimum_score")

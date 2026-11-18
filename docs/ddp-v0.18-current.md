@@ -184,8 +184,9 @@ ordinary candidate scoring and retain an explicit blocker reason.
 Weather and wind remain optional only when unconfigured. Once a safety source
 is configured, missing, stale, invalid, future, or non-finite safety evidence
 fails closed for new openings. A known-open contact under a hard safety block
-produces an urgent `CLOSE`; delivery bypasses quiet hours, cooldown, and
-stability. A configured but unknown contact never proves that a window is open
+produces an urgent `CLOSE`; delivery bypasses cooldown and stability. Quiet
+hours are respected unless the user explicitly enables the safety notification
+quiet-hours bypass. A configured but unknown contact never proves that a window is open
 and therefore prevents a new `OPEN` or `VENTILATE` recommendation. It does not
 hide an independent hard safety `CLOSE` recommendation.
 
@@ -210,6 +211,7 @@ and remains the source of truth for all recommendation entities. The
 application layer applies:
 
 - quiet hours and notification cooldown;
+- the user-configurable safety bypass for quiet hours;
 - channel availability and notification stability;
 - localized explanations and notification delivery.
 

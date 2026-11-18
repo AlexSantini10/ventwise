@@ -116,6 +116,8 @@ projects the returned core result directly onto entities and diagnostics.
 Notification delivery is an adapter concern. Quiet hours, stability,
 cooldown, duplicate suppression, and notifier availability can suppress a
 notification, but they must never change the core action, score, reason code,
-trace, or data-quality result. The pure delivery policy lives in
+trace, or data-quality result. Safety notifications bypass stability and
+cooldown; quiet-hours bypass is an explicit user option and is disabled by
+default. The pure delivery policy lives in
 `custom_components/ventwise/application/delivery.py` so it can be tested
 without a Home Assistant instance.

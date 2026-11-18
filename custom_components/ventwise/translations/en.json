@@ -18,6 +18,7 @@
           "stability_minutes": "Wait before recommending (minutes)",
           "notification_device_id": "Notification devices",
           "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "safety_bypass_quiet_hours": "Allow safety notifications during quiet hours",
           "diagnostic_notification_level": "Diagnostic notifications",
           "debug_mode_enabled": "Enable debug mode"
         },
@@ -29,6 +30,7 @@
           "stability_minutes": "How long the recommendation must stay unchanged before VentWise notifies you. If you are not sure, leave the default value.",
           "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications.",
           "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
+          "safety_bypass_quiet_hours": "When enabled, urgent safety notifications may be delivered during quiet hours. Stability, cooldown, and duplicate suppression still apply.",
           "diagnostic_notification_level": "Choose whether Home Assistant shows extra notifications for configuration or sensor-data problems.",
           "debug_mode_enabled": "Shows per-room open and close notification test controls. Confirming a debug notification can run the configured automation."
         }
@@ -270,6 +272,7 @@
           "co2_threshold_ppm": "CO₂ threshold (ppm)",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Per-room notification cooldown (minutes)",
+          "safety_bypass_quiet_hours": "Allow safety notifications during quiet hours",
           "outdoor_temperature_override": "Use manual outdoor temperature",
           "outdoor_humidity_override": "Use manual outdoor humidity",
           "wind_speed_override": "Use manual outdoor wind speed",
@@ -292,6 +295,7 @@
           "co2_threshold_ppm": "CO₂ level at which VentWise starts prioritizing fresh air.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending an updated recommendation for each room. Identical recommendations stay suppressed.",
+          "safety_bypass_quiet_hours": "When enabled, urgent safety notifications may be delivered during quiet hours. Stability, cooldown, and duplicate suppression still apply.",
           "outdoor_temperature_override": "Use the manual temperature entity below instead of the weather forecast.",
           "outdoor_humidity_override": "Use the manual humidity entity below instead of the weather forecast.",
           "wind_speed_override": "Use the manual wind-speed entity below instead of the weather forecast.",

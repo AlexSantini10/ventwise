@@ -55,7 +55,16 @@ from custom_components.ventwise.application.runtime import (
     RoomActionGuard,
     RoomConfig,
 )
-from ventwise_core import RecommendationAction
+from ventwise_core import (
+    DecisionContext,
+    DecisionEngine,
+    DecisionOutdoor,
+    DecisionRoom,
+    DecisionSnapshot,
+    Observation,
+    RecommendationAction,
+    RoomGuardrailState,
+)
 from ventwise_core.models import RoomRecommendation
 
 
@@ -429,60 +438,104 @@ def test_coordinator_persists_notification_reason_and_severity() -> None:
     assert marker["message"] == "VentWise · Camera: Outside is more comfortable."
 
 
-def test_room_action_guard_holds_reversals_and_survives_restart() -> None:
-    """A room cannot flip from open to close until its own guards permit it."""
+def test_core_guardrail_holds_reversals_until_the_room_action_is_stable() -> None:
+    """The core owns reversal holds and action lockouts."""
 
-    coordinator, hass, entry = _make_coordinator({CONF_ENABLED: True})
-    room = RoomConfig(
-        room_id="bedroom-1",
-        name="Bedroom",
-        temperature_entity_id="sensor.bedroom_temperature",
-        action_change_hold_minutes=5,
-        action_lockout_minutes=30,
-    )
     started_at = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
-    open_recommendation = RoomRecommendation(
-        "Bedroom", RecommendationAction.OPEN, 0.5, "Fresh air helps.", 22.0, 25.0, 20.0, 22.0,
-        room_id="bedroom-1",
+
+    def evaluate(at: datetime, outdoor_temperature: float, guardrails=()):
+        observation = lambda value, unit: Observation(value, unit, at, "test")
+        room = DecisionRoom(
+            "bedroom-1",
+            "Bedroom",
+            observation(28.0, "Â°C"),
+            observation(50.0, "%"),
+            action_change_hold_seconds=5 * 60,
+            action_lockout_seconds=30 * 60,
+        )
+        outdoor = DecisionOutdoor(
+            observation(outdoor_temperature, "Â°C"),
+            observation(50.0, "%"),
+            observation(1.0, "m/s"),
+            weather_condition=observation("clear", ""),
+        )
+        return DecisionEngine().evaluate(
+            DecisionSnapshot(
+                (room,),
+                outdoor,
+                at,
+                DecisionContext(room_guardrails=tuple(guardrails)),
+            )
+        ).room_results[0]
+
+    opened = evaluate(started_at, 20.0)
+    assert opened.core_action is RecommendationAction.OPEN
+    guardrail = opened.guardrail_state
+    assert guardrail is not None
+
+    held_by_lockout = evaluate(
+        started_at + timedelta(minutes=1),
+        30.0,
+        (guardrail,),
     )
-    close_recommendation = RoomRecommendation(
-        "Bedroom", RecommendationAction.CLOSE, 0.5, "Keep the room closed.", 22.0, 25.0, 30.0, 22.0,
-        room_id="bedroom-1",
+    assert held_by_lockout.core_action is RecommendationAction.NONE
+    assert held_by_lockout.reason_code == "action_lockout"
+
+    pending = evaluate(
+        started_at + timedelta(minutes=31),
+        30.0,
+        (held_by_lockout.guardrail_state,),
     )
+    assert pending.core_action is RecommendationAction.NONE
+    assert pending.reason_code == "action_hold"
+    assert pending.guardrail_state is not None
 
-    assert coordinator._guard_room_recommendation(open_recommendation, room, started_at).action == RecommendationAction.OPEN
-    assert coordinator._guard_room_recommendation(
-        close_recommendation, room, started_at + timedelta(minutes=1)
-    ).action == RecommendationAction.NONE
-    assert coordinator._guard_room_recommendation(
-        close_recommendation, room, started_at + timedelta(minutes=31)
-    ).action == RecommendationAction.NONE
-    assert coordinator._guard_room_recommendation(
-        close_recommendation, room, started_at + timedelta(minutes=36)
-    ).action == RecommendationAction.CLOSE
-
-    coordinator._persist_runtime_state()
-    restored = _FakeConfigEntry(entry_id="abc123", data={}, options=hass.config_entries.updated[-1])
-    restarted = VentWiseCoordinator(
-        SimpleNamespace(config_entries=_FakeConfigEntries(), states=SimpleNamespace(get=lambda *_: None)),
-        restored,
-        restored.options,
+    accepted = evaluate(
+        started_at + timedelta(minutes=36),
+        30.0,
+        (pending.guardrail_state,),
     )
-    assert restarted._room_action_guards["bedroom-1"].accepted_action == "close"
+    assert accepted.core_action is RecommendationAction.CLOSE
 
 
-def test_urgent_close_bypasses_room_action_guard() -> None:
-    coordinator, _, _ = _make_coordinator({CONF_ENABLED: True})
-    room = RoomConfig(None, "Bedroom", "sensor.bedroom_temperature")
+def test_core_urgent_close_bypasses_room_action_guard() -> None:
+    """The core lets an urgent safety close bypass a previous lockout."""
+
     now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
-    coordinator._room_action_guards["Bedroom"] = RoomActionGuard(
-        "open", lockout_until=now + timedelta(minutes=30)
+    observation = lambda value, unit: Observation(value, unit, now, "test")
+    room = DecisionRoom(
+        "bedroom-1",
+        "Bedroom",
+        observation(25.0, "Â°C"),
+        observation(50.0, "%"),
+        window_open=observation(True, ""),
+        action_lockout_seconds=30 * 60,
     )
-    urgent_close = RoomRecommendation(
-        "Bedroom", RecommendationAction.CLOSE, 0.8, "Storm incoming.", 22.0, 25.0, 20.0, 22.0
+    outdoor = DecisionOutdoor(
+        observation(20.0, "Â°C"),
+        observation(50.0, "%"),
+        observation(20.0, "m/s"),
+        weather_condition=observation("storm", ""),
     )
+    result = DecisionEngine().evaluate(
+        DecisionSnapshot(
+            (room,),
+            outdoor,
+            now,
+            DecisionContext(
+                room_guardrails=(
+                    RoomGuardrailState(
+                        "bedroom-1",
+                        "open",
+                        lockout_until=now + timedelta(minutes=30),
+                    ),
+                )
+            ),
+        )
+    ).room_results[0]
 
-    assert coordinator._guard_room_recommendation(urgent_close, room, now).action == RecommendationAction.CLOSE
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.urgent is True
 
 
 def test_confirmed_room_automation_is_one_time_and_rechecks_recommendation(

@@ -53,6 +53,11 @@ python scripts/run_tests.py --layer unit
 python scripts/run_tests.py --layer integration -- -k notification
 ```
 
+Tests that are not executable or reliable on Windows, including Home Assistant
+integration/system tests and tests requiring the pinned CI dependencies, must
+be run through this Docker workflow. Do not treat a host-Python run as
+equivalent validation; use the disposable Linux container used by CI.
+
 The complete run writes `junit-unit.xml`, `junit-integration.xml`, and
 `junit-system.xml`, together with aggregated `coverage.xml`, `htmlcov/`, and
 `timing.json`. A failing layer does not prevent the remaining layers or

@@ -23,6 +23,7 @@ from custom_components.ventwise.const import (
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
@@ -89,6 +90,7 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "SelectSelector"
+    assert _schema_default(_schema_entry(schema, CONF_SAFETY_BYPASS_QUIET_HOURS)) is False
 
 
 def test_debug_mode_is_normalized_with_a_safe_default() -> None:
@@ -99,6 +101,7 @@ def test_debug_mode_is_normalized_with_a_safe_default() -> None:
     )
 
     assert normalized[CONF_DEBUG_MODE_ENABLED] is False
+    assert normalized[CONF_SAFETY_BYPASS_QUIET_HOURS] is False
 
 
 def test_setup_overrides_schema_is_checkbox_based() -> None:

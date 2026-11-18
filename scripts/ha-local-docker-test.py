@@ -998,7 +998,7 @@ async def async_setup(hass, config):
             continue
         entry = ConfigEntry(
             domain="ventwise", title=title, data=data, options={}, source="user",
-            version=3, minor_version=1, unique_id=unique_id,
+            version=4, minor_version=1, unique_id=unique_id,
             discovery_keys={}, subentries_data=None,
         )
         await hass.config_entries.async_add(entry)

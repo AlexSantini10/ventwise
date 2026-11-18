@@ -95,6 +95,11 @@ settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
 climate-adaptive option changes only VentWise's recommendation target; it does
 not change a thermostat or HVAC setpoint.
 
+Safety notifications bypass stability and cooldown. By default they still
+respect quiet hours; enable **Allow safety notifications during quiet hours**
+in the notification settings only if you want urgent safety alerts delivered
+overnight. Identical safety alerts remain suppressed.
+
 ### Receive a recommendation now
 
 The VentWise device includes a **Receive recommendation now** button. Use it
