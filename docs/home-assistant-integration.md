@@ -55,15 +55,20 @@ changes in the config entry.
 
 Expose one logical device that groups runtime state and controls:
 
-- recommendation state
-- score
-- reason
+- aggregate recommendation, score, and localized reason
+- current weather, forecast temperature, outdoor pressure, wind speed, and wind gust
 - master enable control
 - quiet-hour or notification state
 - notification target or delivery state
 - detailed debug attributes for the recommendation sensors
 - one room-level window-state sensor that reports `open`, `closed`,
   `unavailable`, or `not_configured`
+
+The optional global CO₂ sensor is used as the fallback for rooms without a
+room-specific CO₂ sensor. A room-specific sensor always takes precedence.
+Decision diagnostics remain available as structured attributes on aggregate
+and room recommendation entities, including normalized inputs, quality,
+traces, candidate scores, core results, and delivery projections.
 
 Use the config flow and options flow for all user-editable inputs such as room
 sensors, comfort temperature, notification target entities, quiet hours, and

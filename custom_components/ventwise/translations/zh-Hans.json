@@ -563,6 +563,12 @@
       }
     },
     "sensor": {
+      "recommendation_confidence": {"name": "建议置信度"},
+      "ventilation_score": {"name": "通风分数"},
+      "co2": {"name": "室内二氧化碳"},
+      "forecast_temperature": {"name": "预测温度"},
+      "outdoor_pressure": {"name": "室外气压"},
+      "wind_gust": {"name": "室外阵风"},
       "weather_condition": {
         "name": "天气状况"
       },

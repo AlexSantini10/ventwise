@@ -566,6 +566,12 @@
       }
     },
     "sensor": {
+      "recommendation_confidence": {"name": "Recommendation confidence"},
+      "ventilation_score": {"name": "Ventilation score"},
+      "co2": {"name": "Indoor CO₂"},
+      "forecast_temperature": {"name": "Forecast temperature"},
+      "outdoor_pressure": {"name": "Outdoor pressure"},
+      "wind_gust": {"name": "Outdoor wind gust"},
       "weather_condition": {
         "name": "Weather condition"
       },

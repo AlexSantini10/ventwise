@@ -56,4 +56,4 @@ def test_release_package_core_runs_without_the_repository_on_pythonpath(tmp_path
         check=False,
     )
     assert result.returncode == 0, result.stderr
-    assert '"schema_version":"ventwise.engine.v2"' in result.stdout
+    assert '"schema_version":"ventwise.engine.v3"' in result.stdout

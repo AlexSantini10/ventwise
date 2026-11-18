@@ -88,6 +88,7 @@ class ComfortObservation:
     humidity_percent: float | None
     wind_speed_m_s: float | None = None
     wind_gust_m_s: float | None = None
+    pressure_hpa: float | None = None
     weather_condition: str | None = None
     forecast_temperature_c: float | None = None
     forecast: ForecastObservation | None = None
@@ -95,6 +96,7 @@ class ComfortObservation:
     humidity_source: SourceReading | None = None
     wind_speed_source: SourceReading | None = None
     wind_gust_source: SourceReading | None = None
+    pressure_source: SourceReading | None = None
     safety_evidence_configured: bool = False
 
 
@@ -198,6 +200,7 @@ class ExternalConditions:
     wind_speed_m_s: Observation[float] | None = None
     wind_gust_m_s: Observation[float] | None = None
     weather_condition: Observation[str] | None = None
+    forecast: "ForecastObservation" | None = None
     safety_evidence_configured: bool = False
     pressure_hpa: Observation[float] | None = None
 

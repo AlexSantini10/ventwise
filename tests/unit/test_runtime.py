@@ -8,6 +8,8 @@ from datetime import datetime, time, timezone
 from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
     CONF_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -18,6 +20,7 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -57,6 +60,7 @@ from custom_components.ventwise.const import (
 from custom_components.ventwise.application.runtime import RuntimeSnapshot
 from ventwise_core import (
     ComfortObservation,
+    ForecastObservation,
     RoomObservation,
     RoomProfile,
 )
@@ -136,6 +140,41 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert outdoor.temperature_c == 20.0
     assert len(rooms) == 1
     assert rooms[0].name == "Camera"
+
+
+def test_build_room_profiles_uses_global_co2_for_rooms_without_local_sensor() -> None:
+    config = build_integration_config(
+        {
+            CONF_CO2_ENABLED: True,
+            CONF_CO2_ENTITY_ID: "sensor.home_co2",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                },
+                {
+                    CONF_ROOM_NAME: "Studio",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.studio_temp",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.studio_co2",
+                },
+            ],
+        }
+    )
+    states = {
+        "sensor.home_co2": SimpleNamespace(state="900", attributes={"unit_of_measurement": "ppm"}),
+        "sensor.studio_co2": SimpleNamespace(state="1400", attributes={"unit_of_measurement": "ppm"}),
+        "sensor.room_temp": SimpleNamespace(state="22"),
+        "sensor.studio_temp": SimpleNamespace(state="22"),
+    }
+
+    rooms, _ = build_room_profiles(config, states.get)
+
+    assert rooms[0].co2_ppm == 900.0
+    assert rooms[0].co2_source is not None
+    assert rooms[0].co2_source.source_id == "sensor.home_co2"
+    assert rooms[1].co2_ppm == 1400.0
+    assert rooms[1].co2_source is not None
+    assert rooms[1].co2_source.source_id == "sensor.studio_co2"
 
 
 def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
@@ -339,6 +378,48 @@ def test_build_room_profiles_reads_wind_gust_from_weather_attributes() -> None:
     assert outdoor is not None
     assert outdoor.wind_gust_m_s == 14.5
     assert len(rooms) == 1
+
+
+def test_decision_snapshot_carries_forecast_and_pressure() -> None:
+    config = build_integration_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                }
+            ],
+        }
+    )
+    states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={
+                "temperature": 20.0,
+                "humidity": 50.0,
+                "pressure": 1012.0,
+                "wind_gust_speed": 8.0,
+            },
+        ),
+        "sensor.room_temp": SimpleNamespace(state="24.0"),
+    }
+    rooms, outdoor = build_room_profiles(
+        config,
+        states.get,
+        forecast=ForecastObservation(temperature_c=18.0, weather_condition="rainy"),
+    )
+
+    snapshot = build_decision_snapshot(
+        rooms,
+        outdoor,
+        datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc),
+    )
+
+    assert snapshot.outdoor.pressure_hpa is not None
+    assert snapshot.outdoor.pressure_hpa.value == 1012.0
+    assert snapshot.outdoor.forecast is not None
+    assert snapshot.outdoor.forecast.temperature_c == 18.0
 
 
 def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> None:

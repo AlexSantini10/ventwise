@@ -560,6 +560,12 @@
       }
     },
     "sensor": {
+      "recommendation_confidence": {"name": "Confiance de la recommandation"},
+      "ventilation_score": {"name": "Score de ventilation"},
+      "co2": {"name": "CO₂ intérieur"},
+      "forecast_temperature": {"name": "Température prévue"},
+      "outdoor_pressure": {"name": "Pression extérieure"},
+      "wind_gust": {"name": "Rafale de vent extérieure"},
       "weather_condition": {
         "name": "Conditions météorologiques"
       },

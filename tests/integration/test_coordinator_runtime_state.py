@@ -156,6 +156,7 @@ def test_coordinator_watches_window_contacts_and_co2_sources() -> None:
         "binary_sensor.studio_window",
         "sensor.camera_co2",
         "sensor.camera_temperature",
+        "sensor.home_co2",
         "sensor.studio_temperature",
         "weather.home",
     ]

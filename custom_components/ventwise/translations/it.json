@@ -566,6 +566,12 @@
       }
     },
     "sensor": {
+      "recommendation_confidence": {"name": "Affidabilità della raccomandazione"},
+      "ventilation_score": {"name": "Punteggio ventilazione"},
+      "co2": {"name": "CO₂ interna"},
+      "forecast_temperature": {"name": "Temperatura prevista"},
+      "outdoor_pressure": {"name": "Pressione esterna"},
+      "wind_gust": {"name": "Raffica di vento esterna"},
       "weather_condition": {
         "name": "Condizione meteo"
       },

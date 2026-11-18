@@ -18,6 +18,7 @@ from .models import (
     DecisionResult,
     DecisionRoom,
     DecisionSnapshot,
+    ForecastObservation,
     Observation,
     RoomGuardrailState,
     RecommendationAction,
@@ -25,7 +26,7 @@ from .models import (
     Validity,
 )
 
-SCHEMA_VERSION = "ventwise.engine.v2"
+SCHEMA_VERSION = "ventwise.engine.v3"
 
 
 def _datetime(value: Any) -> str | None:
@@ -101,6 +102,7 @@ def snapshot_to_dict(snapshot: DecisionSnapshot) -> dict[str, Any]:
             "wind_speed_m_s": observation_to_dict(outdoor.wind_speed_m_s),
             "wind_gust_m_s": observation_to_dict(outdoor.wind_gust_m_s),
             "weather_condition": observation_to_dict(outdoor.weather_condition),
+        "forecast": _json_value(outdoor.forecast),
             "safety_evidence_configured": outdoor.safety_evidence_configured,
             "pressure_hpa": observation_to_dict(outdoor.pressure_hpa),
         },
@@ -177,12 +179,26 @@ def snapshot_from_dict(data: Mapping[str, Any]) -> DecisionSnapshot:
         for index, room in enumerate(data.get("rooms", ()))
     )
     raw_outdoor = data["outdoor"]
+    raw_forecast = raw_outdoor.get("forecast")
+    forecast = (
+        ForecastObservation(
+            temperature_c=raw_forecast.get("temperature_c"),
+            humidity_percent=raw_forecast.get("humidity_percent"),
+            wind_speed_m_s=raw_forecast.get("wind_speed_m_s"),
+            wind_gust_m_s=raw_forecast.get("wind_gust_m_s"),
+            weather_condition=raw_forecast.get("weather_condition"),
+            precipitation_probability=raw_forecast.get("precipitation_probability"),
+        )
+        if isinstance(raw_forecast, Mapping)
+        else None
+    )
     outdoor = DecisionOutdoor(
         temperature_c=_observation(raw_outdoor["temperature_c"], "outdoor.temperature_c"),
         humidity_percent=_observation(raw_outdoor.get("humidity_percent"), "outdoor.humidity_percent"),
         wind_speed_m_s=_observation(raw_outdoor.get("wind_speed_m_s"), "outdoor.wind_speed_m_s"),
         wind_gust_m_s=_observation(raw_outdoor.get("wind_gust_m_s"), "outdoor.wind_gust_m_s"),
         weather_condition=_observation(raw_outdoor.get("weather_condition"), "outdoor.weather_condition"),
+        forecast=forecast,
         safety_evidence_configured=bool(raw_outdoor.get("safety_evidence_configured", False)),
         pressure_hpa=_observation(raw_outdoor.get("pressure_hpa"), "outdoor.pressure_hpa"),
     )

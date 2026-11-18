@@ -72,7 +72,7 @@ def test_evaluator_output_is_json_stable_and_complete():
     assert json.dumps(first, sort_keys=True, separators=(",", ":")) == json.dumps(
         second, sort_keys=True, separators=(",", ":")
     )
-    assert first["schema_version"] == "ventwise.engine.v2"
+    assert first["schema_version"] == "ventwise.engine.v3"
     assert first["normalized_input"]["rooms"][0]["temperature_c"]["source_id"] == (
         "sensor.bedroom_temperature"
     )

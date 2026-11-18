@@ -43,6 +43,12 @@ Implementation:
 | Notification cooldown | Yes, integration layer | Suppress repeated ordinary notifications. |
 | Evaluation timestamp | Yes | Makes freshness and deterministic replay explicit. |
 
+The integration also carries the nearest forecast observation and optional
+atmospheric pressure through the normalized snapshot. Forecast data is
+retained as explicit context until a corresponding core safety or scoring rule
+is enabled; pressure is available to the psychrometric calculations when a
+weather source provides it.
+
 Missing optional humidity is not replaced with `50%`. The decision remains
 possible using temperature, but the result does not claim a humidity benefit.
 Missing required temperatures produce `NONE` with `insufficient_evidence`.

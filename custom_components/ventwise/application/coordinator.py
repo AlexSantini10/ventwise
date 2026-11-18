@@ -354,6 +354,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_temperature_c=None,
                 forecast_temperature_c=None,
                 outdoor_humidity_percent=None,
+                outdoor_pressure_hpa=None,
                 wind_speed_m_s=None,
                 wind_gust_m_s=None,
                 notification_allowed=False,
@@ -402,6 +403,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_temperature_c=None,
                 forecast_temperature_c=forecast.temperature_c if forecast else None,
                 outdoor_humidity_percent=None,
+                outdoor_pressure_hpa=None,
                 wind_speed_m_s=None,
                 wind_gust_m_s=None,
                 notification_allowed=False,
@@ -438,6 +440,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_temperature_c=outdoor.temperature_c,
                 forecast_temperature_c=forecast.temperature_c if forecast else None,
                 outdoor_humidity_percent=outdoor.humidity_percent,
+                outdoor_pressure_hpa=outdoor.pressure_hpa,
                 wind_speed_m_s=outdoor.wind_speed_m_s,
                 wind_gust_m_s=outdoor.wind_gust_m_s,
                 notification_allowed=False,
@@ -687,6 +690,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             outdoor_temperature_c=outdoor.temperature_c,
             forecast_temperature_c=forecast.temperature_c if forecast else None,
             outdoor_humidity_percent=outdoor.humidity_percent,
+            outdoor_pressure_hpa=outdoor.pressure_hpa,
             wind_speed_m_s=outdoor.wind_speed_m_s,
             wind_gust_m_s=outdoor.wind_gust_m_s,
             notification_allowed=notification_allowed,
@@ -1069,6 +1073,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             and self._config.wind_speed_entity_id
         ):
             entity_ids.add(self._config.wind_speed_entity_id)
+        if self._config.co2_enabled and self._config.co2_entity_id:
+            entity_ids.add(self._config.co2_entity_id)
         for room in self._config.rooms:
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:

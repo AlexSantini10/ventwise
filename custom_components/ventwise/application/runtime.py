@@ -194,6 +194,7 @@ class RuntimeSnapshot:
     enabled: bool
     stable_for_seconds: int
     last_updated: datetime
+    outdoor_pressure_hpa: float | None = None
     window_states: Mapping[str, str] = field(default_factory=dict)
     core_snapshot: DecisionSnapshot | None = None
     core_result: AggregateDecisionResult | None = None
@@ -365,10 +366,12 @@ def build_decision_snapshot(
         for reading in (
             *(room.indoor.temperature_source for room in rooms),
             *(room.indoor.humidity_source for room in rooms),
+            *(room.co2_source for room in rooms),
             outdoor.temperature_source,
             outdoor.humidity_source,
             outdoor.wind_speed_source,
             outdoor.wind_gust_source,
+            outdoor.pressure_source,
         )
         if reading is not None and reading.observed_at is not None
     ]
@@ -442,7 +445,9 @@ def build_decision_snapshot(
             humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor", "humidity", outdoor.humidity_source),
             wind_speed_m_s=(observation(outdoor.wind_speed_m_s, "m/s", "outdoor", "wind_speed", outdoor.wind_speed_source) if outdoor.wind_speed_m_s is not None else None),
             wind_gust_m_s=(observation(outdoor.wind_gust_m_s, "m/s", "outdoor", "wind_speed", outdoor.wind_gust_source) if outdoor.wind_gust_m_s is not None else None),
+            pressure_hpa=(observation(outdoor.pressure_hpa, "hPa", "outdoor", "pressure", outdoor.pressure_source) if outdoor.pressure_hpa is not None else None),
             weather_condition=(Observation(outdoor.weather_condition, "", snapshot_evaluated_at, "manual:outdoor") if outdoor.weather_condition is not None else None),
+            forecast=outdoor.forecast,
             safety_evidence_configured=outdoor.safety_evidence_configured,
         ),
         evaluated_at=snapshot_evaluated_at,
@@ -669,11 +674,19 @@ def build_room_profiles(
             config.outdoor_weather_entity_id,
             state_getter,
         )
+        pressure_state = _weather_pressure_state(
+            config.outdoor_weather_entity_id,
+            state_getter,
+        )
+        pressure_hpa = _canonical_measurement_value(
+            state_to_float(pressure_state), pressure_state, "pressure"
+        )
         outdoor = ComfortObservation(
             temperature_c=outdoor_temp,
             humidity_percent=outdoor_humidity,
             wind_speed_m_s=wind_speed,
             wind_gust_m_s=wind_gust,
+            pressure_hpa=pressure_hpa,
             weather_condition=weather_condition,
             forecast_temperature_c=forecast_temperature_c,
             forecast=forecast,
@@ -691,6 +704,11 @@ def build_room_profiles(
                 "wind_speed",
                 "outdoor.gust",
             ),
+            pressure_source=_source_reading(
+                pressure_state,
+                "pressure",
+                "outdoor.pressure",
+            ) if pressure_state is not None else None,
             safety_evidence_configured=bool(
                 config.outdoor_weather_entity_id
                 or config.wind_speed_entity_id
@@ -703,7 +721,13 @@ def build_room_profiles(
         humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
         temperature = state_to_temperature_c(temperature_state)
         humidity = state_to_float(humidity_state) if humidity_state is not None else None
-        co2 = state_to_float(state_getter(room.co2_entity_id)) if config.co2_enabled and room.co2_entity_id else None
+        co2_entity_id = room.co2_entity_id or config.co2_entity_id
+        co2_state = (
+            state_getter(co2_entity_id)
+            if config.co2_enabled and co2_entity_id
+            else None
+        )
+        co2 = state_to_float(co2_state)
         if temperature is None:
             continue
         rooms.append(
@@ -725,17 +749,17 @@ def build_room_profiles(
                 co2_ppm=co2,
                 co2_source=(
                     _source_reading(
-                        state_getter(room.co2_entity_id),
+                        co2_state,
                         "co2",
-                        room.co2_entity_id,
+                        co2_entity_id,
                     )
                     or SourceReading(
                         None,
                         "ppm",
                         None,
-                        room.co2_entity_id,
+                        co2_entity_id,
                     )
-                ) if config.co2_enabled and room.co2_entity_id else None,
+                ) if config.co2_enabled and co2_entity_id else None,
             )
         )
 
@@ -883,6 +907,7 @@ def build_debug_attributes(
         "co2_enabled": config.co2_enabled,
         "co2_threshold_ppm": config.co2_threshold_ppm,
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
+        "outdoor_pressure_hpa": snapshot.outdoor_pressure_hpa,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "wind_gust_m_s": snapshot.wind_gust_m_s,
         "target_temperature_c": config.target_temperature_c,
@@ -911,6 +936,11 @@ def build_debug_attributes(
         "delivered_result": (
             aggregate_result_to_dict(snapshot.delivered_result)
             if snapshot.delivered_result is not None
+            else None
+        ),
+        "decision_context": (
+            snapshot_to_dict(snapshot.core_snapshot).get("context")
+            if snapshot.core_snapshot is not None
             else None
         ),
         "delivery_transformations": _delivery_transformations(
@@ -993,6 +1023,16 @@ def build_room_diagnostic_attributes(
         },
         "core_result": result_to_dict(core) if core else None,
         "delivered_result": result_to_dict(delivered) if delivered else None,
+        "aggregate_core_result": (
+            aggregate_result_to_dict(snapshot.core_result)
+            if snapshot.core_result
+            else None
+        ),
+        "aggregate_delivered_result": (
+            aggregate_result_to_dict(snapshot.delivered_result)
+            if snapshot.delivered_result
+            else None
+        ),
         "core_action": core.core_action.value if core else RecommendationAction.NONE.value,
         "delivered_action": delivered.delivered_action.value if delivered else RecommendationAction.NONE.value,
         "delivery_suppressed_by": delivered.delivery_suppressed_by if delivered else None,
@@ -1122,6 +1162,10 @@ def _canonical_measurement_value(value: float | None, state: Any | None, measure
         return temperature_to_celsius(value, state_unit(state, DEFAULT_TEMPERATURE_UNIT, "temperature"))
     if measurement == "wind_speed":
         return wind_speed_to_m_s(value, state_unit(state, DEFAULT_WIND_SPEED_UNIT, "wind_speed"))
+    if measurement == "pressure":
+        unit = state_unit(state, "hPa", "pressure")
+        factors = {"hPa": 1.0, "Pa": 0.01, "kPa": 10.0, "bar": 1000.0, "atm": 1013.25, "psi": 68.9475729, "inHg": 33.8638867}
+        return value * factors.get(unit, 1.0)
     return value
 
 
@@ -1277,6 +1321,33 @@ def _weather_gust_value(
     return None
 
 
+def _weather_pressure_state(
+    weather_entity_id: str | None,
+    state_getter: Callable[[str], Any],
+) -> Any | None:
+    """Return atmospheric pressure from the configured weather entity."""
+
+    if not weather_entity_id:
+        return None
+    state = state_getter(weather_entity_id)
+    if state is None:
+        return None
+    attributes = getattr(state, "attributes", {}) or {}
+    for key in ("pressure", "pressure_hpa", "atmospheric_pressure"):
+        value = attributes.get(key)
+        if value is not None:
+            return type(
+                "AttributeState",
+                (),
+                {
+                    "state": value,
+                    "attributes": attributes,
+                    "last_updated": getattr(state, "last_updated", None),
+                },
+            )()
+    return None
+
+
 def _outdoor_state(
     source: str,
     weather_entity_id: str | None,
@@ -1306,7 +1377,7 @@ def _source_reading(state: Any | None, measurement: str, source_id: str | None) 
     if state is None:
         return None
     attributes = getattr(state, "attributes", {}) or {}
-    fallback_units = {"temperature": "°C", "humidity": "%", "wind_speed": "m/s", "co2": "ppm"}
+    fallback_units = {"temperature": "°C", "humidity": "%", "wind_speed": "m/s", "pressure": "hPa", "co2": "ppm"}
     unit = state_unit(state, fallback_units.get(measurement, ""), measurement)
     observed_at = getattr(state, "last_updated", None) or getattr(state, "last_changed", None)
     return SourceReading(

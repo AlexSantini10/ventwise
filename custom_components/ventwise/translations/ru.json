@@ -560,6 +560,12 @@
       }
     },
     "sensor": {
+      "recommendation_confidence": {"name": "Уверенность рекомендации"},
+      "ventilation_score": {"name": "Оценка проветривания"},
+      "co2": {"name": "CO₂ в помещении"},
+      "forecast_temperature": {"name": "Прогноз температуры"},
+      "outdoor_pressure": {"name": "Давление на улице"},
+      "wind_gust": {"name": "Порыв ветра на улице"},
       "weather_condition": {
         "name": "Погодные условия"
       },

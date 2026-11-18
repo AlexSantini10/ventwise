@@ -11,6 +11,7 @@ from .application.notification import build_recommendation_explanation, build_re
 from .application.runtime import (
     RoomConfig,
     WINDOW_STATE_NOT_CONFIGURED,
+    build_debug_attributes,
     find_room_recommendation,
     build_room_diagnostic_attributes,
     state_to_float,
@@ -49,6 +50,9 @@ async def async_setup_entry(
 
     coordinator = hass.data[entry.domain][entry.entry_id].coordinator
     entities: list[SensorEntity] = [
+        AggregateRecommendationSensor(coordinator),
+        AggregateRecommendationScoreSensor(coordinator),
+        AggregateRecommendationReasonSensor(coordinator),
         WeatherConditionSensor(coordinator),
         PerceivedIndoorTemperatureSensor(coordinator),
         PerceivedOutdoorTemperatureSensor(coordinator),
@@ -56,13 +60,18 @@ async def async_setup_entry(
         SuggestedComfortTemperatureSensor(coordinator),
         OutdoorTemperatureSensor(coordinator),
         OutdoorHumiditySensor(coordinator),
+        OutdoorPressureSensor(coordinator),
         WindSpeedSensor(coordinator),
+        WindGustSensor(coordinator),
+        ForecastTemperatureSensor(coordinator),
     ]
     for room in coordinator.config.rooms:
         entities.extend(
             [
                 RoomRecommendationStateSensor(coordinator, room),
                 RoomRecommendationScoreSensor(coordinator, room),
+                RoomRecommendationConfidenceSensor(coordinator, room),
+                RoomVentilationScoreSensor(coordinator, room),
                 RoomRecommendationReasonSensor(coordinator, room),
                 RoomWindowStateSensor(coordinator, room),
                 RoomWeatherConditionSensor(coordinator, room),
@@ -72,12 +81,124 @@ async def async_setup_entry(
                 RoomSuggestedComfortTemperatureSensor(coordinator, room),
                 RoomIndoorTemperatureSensor(coordinator, room),
                 RoomIndoorHumiditySensor(coordinator, room),
+                RoomCo2Sensor(coordinator, room),
                 RoomOutdoorTemperatureSensor(coordinator, room),
                 RoomOutdoorHumiditySensor(coordinator, room),
                 RoomWindSpeedSensor(coordinator, room),
             ]
         )
     async_add_entities(entities)
+
+
+def _room_core_result(coordinator: VentWiseCoordinator, room: RoomConfig):
+    """Return the latest core result for a configured room."""
+
+    room_id = room.room_id or room.name
+    return next(
+        (
+            result
+            for result in (coordinator.data.core_result.room_results if coordinator.data.core_result else ())
+            if result.room_id == room_id
+        ),
+        None,
+    )
+
+
+class AggregateRecommendationSensor(VentWiseEntity, SensorEntity):
+    """Aggregate core recommendation across enabled rooms."""
+
+    _attr_icon = "mdi:window-open-variant"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "recommendation", "recommendation")
+
+    @property
+    def native_value(self) -> str:
+        return self.coordinator.data.summary.action.value
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return build_debug_attributes(self.coordinator.config, self.coordinator.data)
+
+
+class AggregateRecommendationScoreSensor(VentWiseEntity, SensorEntity):
+    """Aggregate recommendation score across enabled rooms."""
+
+    _attr_icon = "mdi:chart-line"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "recommendation_score", "recommendation_score")
+
+    @property
+    def native_value(self) -> float:
+        return self.coordinator.data.summary.score
+
+
+class AggregateRecommendationReasonSensor(VentWiseEntity, SensorEntity):
+    """Localized aggregate recommendation explanation."""
+
+    _attr_icon = "mdi:text-box-outline"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "recommendation_reason", "recommendation_reason")
+
+    @property
+    def native_value(self) -> str:
+        summary = self.coordinator.data.summary
+        if summary.best_room:
+            recommendation = next(
+                (item for item in summary.room_recommendations if item.room_name == summary.best_room),
+                None,
+            )
+            if recommendation is not None:
+                return build_recommendation_explanation(
+                    recommendation,
+                    language=self.hass.config.language,
+                )
+        return build_recommendation_status(
+            blocked_by=summary.blocked_by,
+            language=self.hass.config.language,
+        )
+
+
+class ForecastTemperatureSensor(TemperatureUnitMixin, VentWiseEntity, SensorEntity):
+    """Nearest forecast temperature used by the runtime."""
+
+    _attr_icon = "mdi:thermometer-chevron-up"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "forecast_temperature", "forecast_temperature")
+
+    @property
+    def native_value(self) -> float | None:
+        return self._temperature(self.coordinator.data.forecast_temperature_c)
+
+
+class OutdoorPressureSensor(VentWiseEntity, SensorEntity):
+    """Current outdoor atmospheric pressure."""
+
+    _attr_icon = "mdi:gauge"
+    _attr_native_unit_of_measurement = "hPa"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "outdoor_pressure", "outdoor_pressure")
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.data.outdoor_pressure_hpa
+
+
+class WindGustSensor(WindSpeedUnitMixin, VentWiseEntity, SensorEntity):
+    """Current outdoor wind gust."""
+
+    _attr_icon = "mdi:weather-windy-variant"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "wind_gust", "wind_gust")
+
+    @property
+    def native_value(self) -> float | None:
+        return self._wind_speed(self.coordinator.data.wind_gust_m_s)
 
 
 class WeatherConditionSensor(VentWiseEntity, SensorEntity):
@@ -253,6 +374,35 @@ class RoomRecommendationScoreSensor(VentWiseRoomEntity, SensorEntity):
         return 0.0 if recommendation is None else recommendation.score
 
 
+class RoomRecommendationConfidenceSensor(VentWiseRoomEntity, SensorEntity):
+    """Core confidence for the room recommendation."""
+
+    _attr_icon = "mdi:percent-outline"
+    _attr_native_unit_of_measurement = "%"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "confidence", "recommendation_confidence")
+
+    @property
+    def native_value(self) -> float | None:
+        result = _room_core_result(self.coordinator, self.room)
+        return None if result is None else round(result.confidence * 100.0, 2)
+
+
+class RoomVentilationScoreSensor(VentWiseRoomEntity, SensorEntity):
+    """Core short-ventilation candidate score for the room."""
+
+    _attr_icon = "mdi:fan-clock"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "ventilation_score", "ventilation_score")
+
+    @property
+    def native_value(self) -> float | None:
+        result = _room_core_result(self.coordinator, self.room)
+        return None if result is None else result.candidate_scores.ventilate
+
+
 class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
     """Recommendation reason for a single room."""
 
@@ -278,6 +428,25 @@ class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
             recommendation,
             language=self.hass.config.language,
         )
+
+
+class RoomCo2Sensor(VentWiseRoomEntity, SensorEntity):
+    """Effective indoor CO₂ reading used by the decision engine."""
+
+    _attr_icon = "mdi:molecule-co2"
+    _attr_native_unit_of_measurement = "ppm"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "co2", "co2")
+
+    @property
+    def native_value(self) -> float | None:
+        if not self.coordinator.config.co2_enabled:
+            return None
+        entity_id = self.room.co2_entity_id or self.coordinator.config.co2_entity_id
+        if not entity_id:
+            return None
+        return state_to_float(self.hass.states.get(entity_id))
 
 
 class RoomWindowStateSensor(VentWiseRoomEntity, SensorEntity):
