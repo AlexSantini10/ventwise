@@ -11,6 +11,7 @@ _ROOT_FILES = ("README.md", "LICENSE", "NOTICE", "hacs.json")
 _CORE_FILES = (
     "__init__.py",
     "__main__.py",
+    "_version.py",
     "models.py",
     "decision.py",
     "psychrometrics.py",
