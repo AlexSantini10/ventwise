@@ -115,6 +115,280 @@ CONDITION_YAML = """ventwise_test_weather_condition:
   initial: sunny
 """
 
+SCRIPTS_YAML = """ventwise_test_reset:
+  alias: VentWise Lab - Reset neutral
+  mode: restart
+  sequence:
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 22}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_humidity
+      data: {value: 50}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_co2
+      data: {value: 700}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_living_room_temperature
+      data: {value: 22}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_living_room_humidity
+      data: {value: 50}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_living_room_co2
+      data: {value: 700}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 22}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_humidity
+      data: {value: 50}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 2}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: sunny}
+    - service: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
+          - input_boolean.ventwise_test_living_room_window
+
+ventwise_test_open_recommendation:
+  alias: VentWise Lab - Open recommendation
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 28}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_humidity
+      data: {value: 55}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 18}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_humidity
+      data: {value: 45}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 2}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: sunny}
+    - service: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
+
+ventwise_test_humidity_exchange:
+  alias: VentWise Lab - Humidity exchange
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 24}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_humidity
+      data: {value: 75}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 20}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_humidity
+      data: {value: 35}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 2}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: sunny}
+    - service: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
+          - input_boolean.ventwise_test_living_room_window
+
+ventwise_test_co2:
+  alias: VentWise Lab - CO2 influence
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 23}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_humidity
+      data: {value: 50}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_co2
+      data: {value: 1800}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 22}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_humidity
+      data: {value: 45}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 2}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: sunny}
+
+ventwise_test_weather_block:
+  alias: VentWise Lab - Severe weather block
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 28}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 18}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 2}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: thunderstorm}
+    - service: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
+
+ventwise_test_wind_block:
+  alias: VentWise Lab - Wind block
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 28}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 18}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 15}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: sunny}
+    - service: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
+
+ventwise_test_urgent_close:
+  alias: VentWise Lab - Urgent close
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 23}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 5}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 15}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: thunderstorm}
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.ventwise_test_bedroom_window_left
+
+ventwise_test_multi_room:
+  alias: VentWise Lab - Multi-room split
+  mode: restart
+  sequence:
+    - service: script.ventwise_test_reset
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_bedroom_temperature
+      data: {value: 28}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_living_room_temperature
+      data: {value: 18}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_outdoor_temperature
+      data: {value: 22}
+    - service: input_number.set_value
+      target:
+        entity_id:
+          - input_number.ventwise_test_bedroom_humidity
+          - input_number.ventwise_test_living_room_humidity
+      data: {value: 50}
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ventwise_test_wind_speed
+      data: {value: 2}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.ventwise_test_weather_condition
+      data: {option: sunny}
+    - service: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.ventwise_test_bedroom_window_left
+          - input_boolean.ventwise_test_bedroom_window_right
+          - input_boolean.ventwise_test_living_room_window
+"""
+
 TEMPLATE_YAML = """- binary_sensor:
     - name: VentWise Test Bedroom Window Left
       unique_id: ventwise_test_bedroom_window_left
@@ -181,6 +455,80 @@ views:
             icon: mdi:window-open-variant
             tap_action:
               action: toggle
+      - type: markdown
+        content: |
+          ## Preset v0.18
+
+          Each button sets the complete scenario. Press **Receive recommendation
+          now** after selecting a preset. **Reset neutral** restores the baseline.
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: button
+            name: Reset neutral
+            icon: mdi:restore
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_reset
+          - type: button
+            name: Open recommendation
+            icon: mdi:window-open
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_open_recommendation
+          - type: button
+            name: Humidity exchange
+            icon: mdi:water-percent
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_humidity_exchange
+          - type: button
+            name: CO2 influence
+            icon: mdi:molecule-co2
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_co2
+          - type: button
+            name: Weather block
+            icon: mdi:weather-lightning-rainy
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_weather_block
+          - type: button
+            name: Wind block
+            icon: mdi:weather-windy
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_wind_block
+          - type: button
+            name: Urgent close
+            icon: mdi:window-shutter-alert
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_urgent_close
+          - type: button
+            name: Multi-room split
+            icon: mdi:home-split
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.ventwise_test_multi_room
       - type: entities
         title: Dati esterni simulati
         entities:
@@ -241,6 +589,24 @@ views:
           - sensor.living_room_reason
           - sensor.living_room_window_state
           - binary_sensor.living_room_active
+      - type: markdown
+        content: |
+          ## Raw engine output
+
+          The cards below expose structured, non-localized diagnostics. `core_action`
+          is the pure engine result; `delivered_action` includes HA delivery filters.
+
+          **Camera** — core: `{{ state_attr('sensor.camera_test_recommendation', 'core_action') }}`; delivered: `{{ state_attr('sensor.camera_test_recommendation', 'delivered_action') }}`
+
+          ```json
+          {{ state_attr('sensor.camera_test_recommendation', 'core_result') | tojson }}
+          ```
+
+          **Living room** — core: `{{ state_attr('sensor.living_room_recommendation', 'core_action') }}`; delivered: `{{ state_attr('sensor.living_room_recommendation', 'delivered_action') }}`
+
+          ```json
+          {{ state_attr('sensor.living_room_recommendation', 'core_result') | tojson }}
+          ```
 """
 
 BOOTSTRAP_MANIFEST = '{"domain":"ventwise_lab_bootstrap","name":"VentWise Test Lab Bootstrap","version":"1.0.0","integration_type":"helper","requirements":[],"codeowners":[]}'
@@ -344,6 +710,7 @@ def ensure_config(config_root: Path) -> Path:
     lines = (
         "input_number: !include ventwise_test_helpers.yaml", "input_boolean: !include ventwise_test_booleans.yaml",
         "input_select: !include ventwise_test_weather_condition.yaml", "template: !include ventwise_test_template.yaml",
+        "script: !include ventwise_test_scripts.yaml",
         "lovelace: !include ventwise_test_dashboards.yaml", "ventwise_lab_bootstrap:",
     )
     text = configuration.read_text(encoding="utf-8")
@@ -354,6 +721,7 @@ def ensure_config(config_root: Path) -> Path:
     for name, content in {
         "ventwise_test_helpers.yaml": HELPERS_YAML, "ventwise_test_booleans.yaml": BOOLEANS_YAML,
         "ventwise_test_weather_condition.yaml": CONDITION_YAML, "ventwise_test_template.yaml": TEMPLATE_YAML,
+        "ventwise_test_scripts.yaml": SCRIPTS_YAML,
         "ventwise_test_dashboards.yaml": DASHBOARD_CONFIG_YAML, "ventwise_test_dashboard.yaml": DASHBOARD_YAML,
     }.items():
         (config_dir / name).write_text(content, encoding="utf-8")

@@ -77,6 +77,15 @@ def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> Non
     assert "button.ventwise_test_lab_request_recommendation" in dashboard
     assert "switch.ventwise_test_lab_quiet_hours_enable" in dashboard
     assert "sensor.camera_test_recommendation" in dashboard
+    assert "Raw engine output" in dashboard
+    assert "core_result" in dashboard
+    assert "script.ventwise_test_open_recommendation" in dashboard
+    assert "script.ventwise_test_urgent_close" in dashboard
+    scripts = (config_dir / "ventwise_test_scripts.yaml").read_text(encoding="utf-8")
+    assert "ventwise_test_reset:" in scripts
+    assert "value: 1800" in scripts
+    assert "option: thunderstorm" in scripts
+    assert scripts.count("service: script.ventwise_test_reset") == 7
     assert '"home_assistant_notification_enabled": True' in (
         config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py"
     ).read_text(encoding="utf-8")

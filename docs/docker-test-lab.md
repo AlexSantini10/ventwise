@@ -26,7 +26,8 @@ python scripts/ha-local-docker-test.py up
 
 Al primo avvio Docker scarica l'immagine di Home Assistant se non è già
 presente, crea il pacchetto `ventwise-lab.zip`, installa l'integrazione nel
-profilo del Lab e avvia Home Assistant su [http://localhost:8123](http://localhost:8123).
+profilo del Lab (incluso il core standalone vendorizzato) e avvia Home
+Assistant su [http://localhost:8123](http://localhost:8123).
 
 ## Primo accesso
 
@@ -66,6 +67,27 @@ notifiche, comfort automatico e fascia silenziosa, senza riconfigurare il Lab.
 
 La Camera ha due contatti: l'apertura di uno qualunque produce lo stato
 aggregato `open`.
+
+## v0.18 preset buttons
+
+The dashboard includes preset buttons. Select a preset, press **Receive
+recommendation now**, and inspect the room result cards. The presets are
+deterministic and use these values:
+
+| Preset | Main values | Expected check |
+| --- | --- | --- |
+| Reset neutral | Room 22 °C / 50% RH / 700 ppm; outside 22 °C / 50% RH / 2 m/s; sunny; windows closed | Neutral baseline |
+| Open recommendation | Bedroom 28 °C / 55% RH; outside 18 °C / 45% RH / 2 m/s; sunny; windows closed | Opening advice for the bedroom |
+| Humidity exchange | Rooms 24 °C / 75% RH; outside 20 °C / 35% RH / 2 m/s; sunny; windows closed | Moisture-exchange influence |
+| CO2 influence | Bedroom 23 °C / 50% RH / 1800 ppm; outside 22 °C / 45% RH / 2 m/s; sunny | Bounded CO₂ influence |
+| Weather block | Bedroom 28 °C; outside 18 °C / 2 m/s; thunderstorm; windows closed | No opening advice under severe weather |
+| Wind block | Bedroom 28 °C; outside 18 °C / 15 m/s; sunny; windows closed | No opening advice under high wind |
+| Urgent close | Bedroom 23 °C; outside 5 °C / 15 m/s; thunderstorm; left bedroom window open | Urgent close advice is not suppressed |
+| Multi-room split | Bedroom 28 °C, living room 18 °C; outside 22 °C / 2 m/s; sunny; windows closed | Independent room recommendations |
+
+The buttons only change the isolated Lab helpers. They do not control real
+devices or the user's Home Assistant instance. The **Reset neutral** preset is
+safe to use between scenarios.
 
 ## Comandi
 

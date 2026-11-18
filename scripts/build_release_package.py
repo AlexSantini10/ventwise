@@ -8,6 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 _ROOT_FILES = ("README.md", "LICENSE", "NOTICE", "hacs.json")
+_CORE_FILES = ("__init__.py", "models.py", "decision.py", "psychrometrics.py", "serialization.py")
 
 
 def _package_files(source_path: Path) -> list[tuple[Path, Path]]:
@@ -24,7 +25,16 @@ def _package_files(source_path: Path) -> list[tuple[Path, Path]]:
         and path.name != ".gitkeep"
         and "__pycache__" not in path.parts
         and path.suffix != ".pyc"
+        and "ventwise_core" not in path.relative_to(integration_path).parts
     ]
+
+    standalone_core = source_path / "src" / "ventwise_core"
+    for name in _CORE_FILES:
+        path = standalone_core / name
+        if not path.is_file():
+            msg = f"Required standalone core file not found: {path}"
+            raise FileNotFoundError(msg)
+        files.append((path, Path("ventwise_core") / name))
 
     for name in _ROOT_FILES:
         path = source_path / name
