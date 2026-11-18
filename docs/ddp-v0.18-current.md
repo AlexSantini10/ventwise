@@ -18,8 +18,8 @@ notifications.
 
 Implementation:
 
-- `custom_components/ventwise/ventwise_core/decision.py`
-- `custom_components/ventwise/ventwise_core/models.py`
+- `src/ventwise_core/decision.py`
+- `src/ventwise_core/models.py`
 - `custom_components/ventwise/application/runtime.py`
 - `custom_components/ventwise/application/coordinator.py`
 

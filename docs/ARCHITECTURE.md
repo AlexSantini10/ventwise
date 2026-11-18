@@ -93,8 +93,9 @@ The user should be able to:
 
 ## Current Repo Mapping
 
-- `custom_components/ventwise/ventwise_core/`: pure decision contracts, engine,
-  and psychrometric calculations.
+- `src/ventwise_core/`: canonical pure decision contracts, engine,
+  serialization, and psychrometric calculations. The release builder embeds
+  it into the integration package for Home Assistant.
 - `custom_components/ventwise/`: Home Assistant integration code.
 - `tests/`: decision-engine, integration, and behavior tests.
 - `examples/`: sample configurations and scenarios.

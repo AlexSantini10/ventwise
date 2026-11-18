@@ -36,6 +36,7 @@ from .runtime import (
     build_integration_config,
     build_decision_config,
     build_decision_snapshot,
+    build_delivered_result,
     decision_to_summary,
     build_room_profiles,
     dump_runtime_state,
@@ -472,10 +473,16 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             now,
             window_states=window_states,
         )
-        summary = decision_to_summary(self._decision_engine, decision_snapshot)
+        core_result = self._decision_engine.evaluate(decision_snapshot)
+        summary = decision_to_summary(
+            self._decision_engine,
+            decision_snapshot,
+            result=core_result,
+        )
         summary = _with_suggested_comfort_temperature(summary, suggested_target)
         summary = gate_room_recommendations(summary, window_states)
         summary = self._apply_room_action_guardrails(summary, now)
+        delivered_result = build_delivered_result(core_result, summary)
         signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -659,6 +666,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             stable_for_seconds=stable_for_seconds,
             last_updated=now,
             window_states=window_states,
+            core_snapshot=decision_snapshot,
+            core_result=core_result,
+            delivered_result=delivered_result,
         )
         self._persist_runtime_state()
         self._refresh_time_listener(now, snapshot)

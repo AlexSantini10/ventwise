@@ -1,3 +1,69 @@
-"""Compatibility wrapper for the shared VentWise core."""
+"""Standalone, deterministic VentWise decision core."""
 
-from custom_components.ventwise.ventwise_core import *  # noqa: F403
+from .models import (
+    AggregateDecisionResult,
+    Availability,
+    CandidateScores,
+    ComfortObservation,
+    DataQualitySummary,
+    DecisionContext,
+    DecisionOutdoor,
+    ExternalConditions,
+    DecisionResult,
+    DecisionRoom,
+    DecisionSnapshot,
+    ForecastObservation,
+    Observation,
+    RecommendationAction,
+    RecommendationSummary,
+    RoomObservation,
+    SourceReading,
+    RoomProfile,
+    RoomRecommendation,
+    SeasonMode,
+    TraceEntry,
+    Validity,
+)
+from .decision import DecisionConfig, DecisionEngine
+from .psychrometrics import (
+    DEFAULT_PRESSURE_HPA,
+    absolute_humidity_g_m3,
+    humidity_ratio_g_kg,
+    humidity_ratio_g_kg_from_relative_humidity,
+    moisture_exchange_direction,
+    pressure_hpa_or_default,
+    perceived_temperature_c,
+    relative_humidity_percent_from_absolute,
+    relative_humidity_percent_from_humidity_ratio,
+    saturation_vapor_pressure_hpa,
+    vapor_pressure_hpa,
+)
+from .serialization import (
+    SCHEMA_VERSION,
+    aggregate_result_to_dict,
+    config_to_dict,
+    evaluate_scenario,
+    result_to_dict,
+    snapshot_from_dict,
+    snapshot_to_dict,
+)
+
+__all__ = [
+    "ComfortObservation", "AggregateDecisionResult", "Availability",
+    "CandidateScores", "DataQualitySummary", "DecisionConfig",
+    "DecisionContext", "DecisionEngine", "DecisionOutdoor",
+    "ExternalConditions", "DecisionResult", "DecisionRoom",
+    "DecisionSnapshot", "ForecastObservation", "Observation",
+    "RecommendationAction", "RecommendationSummary", "RoomObservation",
+    "SourceReading", "RoomProfile", "RoomRecommendation", "SeasonMode",
+    "TraceEntry", "Validity", "DEFAULT_PRESSURE_HPA",
+    "absolute_humidity_g_m3", "humidity_ratio_g_kg",
+    "humidity_ratio_g_kg_from_relative_humidity", "moisture_exchange_direction",
+    "pressure_hpa_or_default", "perceived_temperature_c",
+    "relative_humidity_percent_from_absolute",
+    "relative_humidity_percent_from_humidity_ratio",
+    "saturation_vapor_pressure_hpa", "vapor_pressure_hpa",
+    "SCHEMA_VERSION", "aggregate_result_to_dict", "config_to_dict",
+    "evaluate_scenario", "result_to_dict", "snapshot_from_dict",
+    "snapshot_to_dict",
+]

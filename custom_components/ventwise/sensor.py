@@ -12,6 +12,7 @@ from .application.runtime import (
     RoomConfig,
     WINDOW_STATE_NOT_CONFIGURED,
     find_room_recommendation,
+    build_room_diagnostic_attributes,
     state_to_float,
     state_to_temperature_c,
 )
@@ -224,6 +225,18 @@ class RoomRecommendationStateSensor(VentWiseRoomEntity, SensorEntity):
         if recommendation is None:
             return RecommendationAction.NONE.value
         return recommendation.action.value
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Expose structured core output without localized presentation text."""
+
+        snapshot = self.coordinator.data
+        if snapshot is None:
+            return {}
+        return build_room_diagnostic_attributes(
+            snapshot,
+            self.room.room_id or self.room.name,
+        )
 
 
 class RoomRecommendationScoreSensor(VentWiseRoomEntity, SensorEntity):

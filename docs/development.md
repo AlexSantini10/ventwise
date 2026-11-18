@@ -74,7 +74,8 @@ physical hardware.
 
 ## Repository Layout
 
-- `custom_components/ventwise/ventwise_core/` for the reusable decision core
+- `src/ventwise_core/` for the canonical reusable decision core; the release
+  builder embeds it under `custom_components/ventwise/ventwise_core/`
 - `custom_components/ventwise/application/` for runtime coordination, state, and notifications
 - `custom_components/ventwise/configuration/` for shared config and options-flow logic
 - `custom_components/ventwise/entities/` for shared entity behavior

@@ -8,6 +8,7 @@ from datetime import datetime, time
 from typing import Any
 
 from ..ventwise_core import (
+    AggregateDecisionResult,
     Availability,
     ComfortObservation,
     DecisionConfig,
@@ -24,6 +25,12 @@ from ..ventwise_core import (
     RoomProfile,
     SourceReading,
     RoomRecommendation,
+    TraceEntry,
+)
+from ..ventwise_core.serialization import (
+    aggregate_result_to_dict,
+    result_to_dict,
+    snapshot_to_dict,
 )
 
 from ..const import (
@@ -184,6 +191,9 @@ class RuntimeSnapshot:
     stable_for_seconds: int
     last_updated: datetime
     window_states: Mapping[str, str] = field(default_factory=dict)
+    core_snapshot: DecisionSnapshot | None = None
+    core_result: AggregateDecisionResult | None = None
+    delivered_result: AggregateDecisionResult | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -381,6 +391,7 @@ def build_decision_snapshot(
         return Observation(
             normalized, canonical, observed_at, reading.source_id,
             availability=availability, quality_reason=reason,
+            original_value=reading.value, original_unit=reading.unit,
         )
 
     window_states = window_states or {}
@@ -432,10 +443,11 @@ def build_decision_snapshot(
 def decision_to_summary(
     engine: DecisionEngine,
     snapshot: DecisionSnapshot,
+    result: AggregateDecisionResult | None = None,
 ) -> RecommendationSummary:
     """Render a pure DDP result for existing HA presentation entities."""
 
-    result = engine.evaluate(snapshot)
+    result = result or engine.evaluate(snapshot)
     recommendations = tuple(
         RoomRecommendation(
             room_id=room.room_id,
@@ -851,7 +863,119 @@ def build_debug_attributes(
         "quiet_hours_enabled": config.quiet_hours_enabled,
         "room_recommendations": room_details,
         "best_room_recommendation": best_room_details,
+        "normalized_input_snapshot": (
+            snapshot_to_dict(snapshot.core_snapshot)
+            if snapshot.core_snapshot is not None
+            else None
+        ),
+        "core_result": (
+            aggregate_result_to_dict(snapshot.core_result)
+            if snapshot.core_result is not None
+            else None
+        ),
+        "delivered_result": (
+            aggregate_result_to_dict(snapshot.delivered_result)
+            if snapshot.delivered_result is not None
+            else None
+        ),
+        "delivery_transformations": _delivery_transformations(
+            snapshot.core_result,
+            snapshot.delivered_result,
+        ),
     }
+
+
+def build_delivered_result(
+    core_result: AggregateDecisionResult,
+    summary: RecommendationSummary,
+) -> AggregateDecisionResult:
+    """Project HA delivery filters onto the pure core result."""
+
+    by_room = {
+        recommendation.room_id or recommendation.room_name: recommendation
+        for recommendation in summary.room_recommendations
+    }
+    room_results = tuple(
+        replace(
+            result,
+            delivered_action=by_room.get(result.room_id).action
+            if by_room.get(result.room_id) is not None
+            else result.delivered_action,
+            delivery_suppressed_by=(
+                "home_assistant_filter"
+                if by_room.get(result.room_id) is not None
+                and by_room[result.room_id].action != result.delivered_action
+                else result.delivery_suppressed_by
+            ),
+        )
+        for result in core_result.room_results
+    )
+    selected = next(
+        (item for item in room_results if item.delivered_action is not RecommendationAction.NONE),
+        None,
+    )
+    return replace(
+        core_result,
+        core_action=selected.core_action if selected else RecommendationAction.NONE,
+        delivered_action=selected.delivered_action if selected else RecommendationAction.NONE,
+        room_results=room_results,
+        trace=core_result.trace + (TraceEntry("delivery.projected"),),
+    )
+
+
+def build_room_diagnostic_attributes(
+    snapshot: RuntimeSnapshot,
+    room_id: str,
+) -> dict[str, Any]:
+    """Return the complete structured core/delivery view for one room."""
+
+    core = next(
+        (item for item in (snapshot.core_result.room_results if snapshot.core_result else ())
+         if item.room_id == room_id),
+        None,
+    )
+    delivered = next(
+        (item for item in (snapshot.delivered_result.room_results if snapshot.delivered_result else ())
+         if item.room_id == room_id),
+        None,
+    )
+    normalized = snapshot_to_dict(snapshot.core_snapshot) if snapshot.core_snapshot else None
+    room_input = None
+    if normalized is not None:
+        room_input = next(
+            (item for item in normalized["rooms"] if item["room_id"] == room_id),
+            None,
+        )
+    return {
+        "normalized_input": {
+            "room": room_input,
+            "outdoor": normalized["outdoor"] if normalized else None,
+            "evaluated_at": normalized["evaluated_at"] if normalized else None,
+        },
+        "core_result": result_to_dict(core) if core else None,
+        "delivered_result": result_to_dict(delivered) if delivered else None,
+        "core_action": core.core_action.value if core else RecommendationAction.NONE.value,
+        "delivered_action": delivered.delivered_action.value if delivered else RecommendationAction.NONE.value,
+        "delivery_suppressed_by": delivered.delivery_suppressed_by if delivered else None,
+    }
+
+
+def _delivery_transformations(
+    core_result: AggregateDecisionResult | None,
+    delivered_result: AggregateDecisionResult | None,
+) -> list[dict[str, Any]]:
+    if core_result is None or delivered_result is None:
+        return []
+    delivered_by_room = {item.room_id: item for item in delivered_result.room_results}
+    return [
+        {
+            "room_id": item.room_id,
+            "core_action": item.core_action.value,
+            "delivered_action": delivered_by_room.get(item.room_id, item).delivered_action.value,
+            "suppressed_by": delivered_by_room.get(item.room_id, item).delivery_suppressed_by,
+        }
+        for item in core_result.room_results
+    ]
 
 
 def _string_or_none(value: Any) -> str | None:
