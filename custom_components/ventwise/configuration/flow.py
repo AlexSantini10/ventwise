@@ -52,8 +52,6 @@ from ..const import (
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
-    CONF_ROOM_START_ENTITY_ID,
-    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
@@ -87,10 +85,7 @@ from ..const import (
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from ..units import TEMPERATURE_UNITS, WIND_SPEED_UNITS, temperature_from_celsius, temperature_to_celsius, temperature_unit, wind_speed_unit
-from ..application.notification import (
-    is_companion_app_notification_entity,
-    notification_entity_ids_for_device_ids,
-)
+from ..application.notification import notification_entity_ids_for_device_ids
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
 SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
@@ -190,38 +185,6 @@ def _notification_device_options(hass) -> list[dict[str, str]]:
         label = device.name_by_user or device.name or entry.device_id
         options.append({"value": entry.entity_id, "label": label})
     return sorted(options, key=lambda option: option["label"].casefold())
-
-
-def has_companion_app_notification_device(hass, device_ids: Sequence[str]) -> bool:
-    """Return whether configured devices include a Companion App notify target."""
-
-    if hass is None:
-        return False
-    configured_ids = set(device_ids)
-    if not configured_ids:
-        return False
-    return any(
-        is_companion_app_notification_entity(hass, entity_id)
-        for entity_id in notification_entity_ids_for_device_ids(hass, configured_ids)
-    )
-
-
-def validate_room_automation_confirmation(
-    rooms: Sequence[Mapping[str, object]],
-    config: Mapping[str, object],
-    hass,
-) -> None:
-    """Require a Companion App target for configured room automations."""
-
-    has_automation = any(
-        room.get(CONF_ROOM_START_ENTITY_ID) or room.get(CONF_ROOM_STOP_ENTITY_ID)
-        for room in rooms
-    )
-    if has_automation and not has_companion_app_notification_device(
-        hass,
-        _normalize_notification_device_ids(config.get(CONF_NOTIFICATION_DEVICE_ID)) or [],
-    ):
-        raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID, "companion_app_required")
 
 
 def build_unit_schema(defaults: Mapping[str, object]) -> vol.Schema:
@@ -508,16 +471,6 @@ def build_room_schema(
             ): EntitySelector(
                 EntitySelectorConfig(domain="binary_sensor", multiple=True)
             ),
-            **_optional_selector_field(
-                CONF_ROOM_START_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain="automation")),
-                defaults.get(CONF_ROOM_START_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_ROOM_STOP_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain="automation")),
-                defaults.get(CONF_ROOM_STOP_ENTITY_ID),
-            ),
             vol.Required(
                 CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
                 default=defaults.get(
@@ -729,8 +682,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
         CONF_ROOM_CO2_ENTITY_ID,
-        CONF_ROOM_START_ENTITY_ID,
-        CONF_ROOM_STOP_ENTITY_ID,
     )
     data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
@@ -800,12 +751,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS),
         CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
         domain="binary_sensor",
-    )
-    _normalize_optional_entity_ids(
-        data,
-        CONF_ROOM_START_ENTITY_ID,
-        CONF_ROOM_STOP_ENTITY_ID,
-        domain="automation",
     )
     return data
 

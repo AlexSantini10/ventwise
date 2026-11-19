@@ -12,10 +12,11 @@ You need a working Home Assistant installation and at least one Home Assistant
 temperature sensor and one indoor humidity sensor for each room you want to
 configure.
 
-VentWise does not directly open or close windows, change a thermostat, or
-replace a safety, weather-protection, or security system. If you opt in to room
-automations, VentWise runs the selected automation only after your explicit
-confirmation in a Companion App notification.
+VentWise does not directly open or close windows, change a thermostat, execute
+Home Assistant automations, or replace a safety, weather-protection, or
+security system. If you want an action to happen automatically, create and
+maintain that Home Assistant automation yourself using VentWise's recommendation
+entities.
 
 ## Install with HACS
 
@@ -112,30 +113,48 @@ The VentWise device includes a **Receive recommendation now** button. Use it
 when you want an immediate answer to “what is best right now?”
 It refreshes the available weather and room data and sends the current advice
 to the configured notification targets without waiting for the regular
-notification cooldown or stability interval. For each actionable room, the
-notification is the same as a regular VentWise recommendation and includes a
-Companion App confirmation button when that room has an automation configured.
-Pressing this device button never runs an automation by itself.
+notification cooldown or stability interval. The notification is informational
+and contains no action that VentWise can use to execute a Home Assistant
+automation.
 
 ### Debug room notifications
 
 Enable **Debug mode** in VentWise settings only when testing notifications or
-automations. Each room then exposes **Receive open notification** and
-**Receive close notification** controls. They send the normal operational
-notification with the requested action, bypassing notification timing and
-without suppressing later real recommendations. A Companion App confirmation
-is valid for 15 minutes and can run the configured room automation even when
-the current recommendation differs; its own conditions still apply. Disable
-Debug mode when testing is complete to remove these controls from every room.
+your own Home Assistant automations. Each room then exposes **Receive open
+notification** and **Receive close notification** controls. They send the
+normal informational notification with the requested action, bypassing
+notification timing and without suppressing later real recommendations.
+Disable Debug mode when testing is complete to remove these controls from every
+room.
 
-### Confirming room automations
+### Build your own Home Assistant automation
 
-For a room's open or close automation, select at least one Home Assistant
-Companion App notification device. A matching recommendation includes a
-confirmation button that is valid for 15 minutes and runs the automation only
-if the same recommendation is still current. VentWise respects the automation's
-own conditions. Persistent Home Assistant notifications and non-Companion
-notification services cannot confirm or trigger an automation.
+Use the room recommendation sensor as the trigger for any action you want to
+automate. Its state is one of `open`, `close`, `ventilate`, or `none`; the
+sensor attributes contain the structured score, reason code, room, and input
+quality used by the decision. For example, an automation can trigger when
+`sensor.<room>_recommendation` changes to `open`, then apply its own safety
+conditions and actions:
+
+```yaml
+alias: VentWise open-window reminder
+triggers:
+  - trigger: state
+    entity_id: sensor.bedroom_recommendation
+    to: "open"
+conditions:
+  - condition: state
+    entity_id: binary_sensor.bedroom_window
+    state: "off"
+actions:
+  - action: notify.mobile_app_phone
+    data:
+      title: VentWise
+      message: Open the bedroom window when convenient.
+```
+
+The entity ID and actions are examples owned by the user. VentWise does not
+store, validate, or execute that automation.
 
 ## Update
 

@@ -13,6 +13,8 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 - HACS as the distribution channel.
 - UI-first configuration with no manual YAML required for normal use.
 - No AppDaemon layer.
+- VentWise exposes decisions and informative notifications; users own any
+  automations that act on those decisions.
 
 ## High-Level Layers
 
@@ -121,3 +123,7 @@ cooldown; quiet-hours bypass is an explicit user option and is disabled by
 default. The pure delivery policy lives in
 `custom_components/ventwise/application/delivery.py` so it can be tested
 without a Home Assistant instance.
+
+VentWise never selects, confirms, or triggers a Home Assistant automation.
+Users can build their own automations from the recommendation sensor states
+and structured attributes exposed by the integration.

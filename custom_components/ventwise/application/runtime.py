@@ -69,8 +69,6 @@ from ..const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
-    CONF_ROOM_START_ENTITY_ID,
-    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOMS,
@@ -133,8 +131,6 @@ class RoomConfig:
     co2_enabled: bool = False
     co2_entity_id: str | None = None
     window_sensor_entity_ids: tuple[str, ...] = ()
-    start_entity_id: str | None = None
-    stop_entity_id: str | None = None
     action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
     action_lockout_minutes: int = DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES
 
@@ -287,8 +283,6 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             window_sensor_entity_ids=_string_list(
                 room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
             ),
-            start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
-            stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
             action_change_hold_minutes=int(
                 room.get(
                     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import secrets
 from math import fsum
 from dataclasses import dataclass, replace
 from collections.abc import Callable
@@ -11,7 +10,7 @@ from datetime import datetime, time, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_point_in_time, async_track_state_change_event
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -55,7 +54,6 @@ from .notification import (
     home_assistant_diagnostic_notification_id,
     home_assistant_notification_id_for_room,
     home_assistant_on_demand_notification_id,
-    is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
 from ..const import (
@@ -84,20 +82,6 @@ _LOGGER = logging.getLogger(__name__)
 
 _NOTIFICATION_SEVERITY_ELEVATED_SCORE = 0.55
 _NOTIFICATION_SEVERITY_URGENT_SCORE = 0.75
-_CONFIRMATION_TTL = timedelta(minutes=15)
-_MOBILE_APP_NOTIFICATION_ACTION = "mobile_app_notification_action"
-
-
-@dataclass(frozen=True, slots=True)
-class PendingAutomationConfirmation:
-    """A short-lived, explicit request to run one room automation."""
-
-    room_key: str
-    action: RecommendationAction
-    expires_at: datetime
-    debug: bool = False
-
-
 class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     """Coordinate state across all VentWise entities."""
 
@@ -121,16 +105,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._last_diagnostic_log_issue: str | None = None
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
-        self._pending_confirmations: dict[str, PendingAutomationConfirmation] = {}
-        self._confirmation_listener_unsub: Callable[[], None] | None = None
         self._listeners_initialized = False
         self._suppress_automatic_notifications = False
-        bus = getattr(hass, "bus", None)
-        if bus is not None:
-            self._confirmation_listener_unsub = bus.async_listen(
-                _MOBILE_APP_NOTIFICATION_ACTION,
-                self._handle_mobile_app_notification_action,
-            )
         config_entry.async_on_unload(self._async_remove_listeners)
         super().__init__(
             hass,
@@ -205,17 +181,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             )
 
         delivered = False
-        has_mobile_app_target = any(
-            is_companion_app_notification_entity(self.hass, entity_id)
-            for entity_id in notification_entity_ids
-        )
         for recommendation in actionable_recommendations:
             title, message = build_room_notification_payload(recommendation, language=language)
-            mobile_action = (
-                self._mobile_confirmation_action(recommendation)
-                if has_mobile_app_target
-                else None
-            )
             sent = await async_send_notification(
                 self.hass,
                 notification_entity_ids,
@@ -226,7 +193,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 home_assistant_notification_id=home_assistant_notification_id_for_room(
                     recommendation
                 ),
-                mobile_action=mobile_action,
             )
             if sent:
                 delivered = True
@@ -238,14 +204,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     title,
                     message,
                 )
-                if mobile_action is not None:
-                    self._pending_confirmations[mobile_action["action"]] = (
-                        PendingAutomationConfirmation(
-                            recommendation.room_id or recommendation.room_name,
-                            recommendation.action,
-                            dt_util.now() + _CONFIRMATION_TTL,
-                        )
-                    )
         if delivered:
             self._persist_runtime_state()
         return delivered
@@ -299,14 +257,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             forced_recommendation,
             language=language,
         )
-        mobile_action = (
-            self._mobile_confirmation_action(forced_recommendation)
-            if any(
-                is_companion_app_notification_entity(self.hass, entity_id)
-                for entity_id in notification_entity_ids
-            )
-            else None
-        )
         delivered = await async_send_notification(
             self.hass,
             notification_entity_ids,
@@ -317,15 +267,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             home_assistant_notification_id=home_assistant_notification_id_for_room(
                 forced_recommendation
             ),
-            mobile_action=mobile_action,
         )
-        if delivered and mobile_action is not None:
-            self._pending_confirmations[mobile_action["action"]] = PendingAutomationConfirmation(
-                forced_recommendation.room_id or forced_recommendation.room_name,
-                action,
-                dt_util.now() + _CONFIRMATION_TTL,
-                debug=True,
-            )
         return delivered
 
     async def _async_update_data(self) -> RuntimeSnapshot:
@@ -638,14 +580,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 recommendation,
                 language=getattr(getattr(self.hass, "config", None), "language", None),
             )
-            mobile_action = (
-                self._mobile_confirmation_action(recommendation)
-                if any(
-                    is_companion_app_notification_entity(self.hass, entity_id)
-                    for entity_id in notification_entity_ids
-                )
-                else None
-            )
             delivered = await async_send_notification(
                 self.hass,
                 notification_entity_ids,
@@ -656,7 +590,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 home_assistant_notification_id=home_assistant_notification_id_for_room(
                     recommendation
                 ),
-                mobile_action=mobile_action,
             )
             if delivered:
                 self._notification_markers[recommendation.room_name] = NotificationMarker(
@@ -667,14 +600,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     title,
                     message,
                 )
-                if mobile_action is not None:
-                    self._pending_confirmations[mobile_action["action"]] = (
-                        PendingAutomationConfirmation(
-                            recommendation.room_id or recommendation.room_name,
-                            recommendation.action,
-                            now + _CONFIRMATION_TTL,
-                        )
-                    )
                 notification_allowed = True
 
         delivered_result = build_delivered_result(
@@ -1100,105 +1025,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         for unsub in self._time_listener_unsubs:
             unsub()
         self._time_listener_unsubs = []
-        if self._confirmation_listener_unsub is not None:
-            self._confirmation_listener_unsub()
-            self._confirmation_listener_unsub = None
-        self._pending_confirmations.clear()
-
-    def _mobile_confirmation_action(self, recommendation) -> dict[str, str] | None:
-        """Build a Companion App confirmation button for a configured room action."""
-
-        if recommendation.action not in {RecommendationAction.OPEN, RecommendationAction.CLOSE}:
-            return None
-        room = next(
-            (
-                configured_room
-                for configured_room in self._config.rooms
-                if (configured_room.room_id or configured_room.name)
-                == (recommendation.room_id or recommendation.room_name)
-            ),
-            None,
-        )
-        if room is None:
-            return None
-        automation_id = (
-            room.start_entity_id
-            if recommendation.action == RecommendationAction.OPEN
-            else room.stop_entity_id
-        )
-        if automation_id is None:
-            return None
-        token = f"ventwise_confirm_{secrets.token_urlsafe(24)}"
-        language = getattr(getattr(self.hass, "config", None), "language", None)
-        italian = str(language or "").lower().startswith("it")
-        return {
-            "action": token,
-            "title": (
-                "Conferma apertura"
-                if recommendation.action == RecommendationAction.OPEN
-                else "Conferma chiusura"
-            )
-            if italian
-            else (
-                "Confirm opening"
-                if recommendation.action == RecommendationAction.OPEN
-                else "Confirm closing"
-            ),
-        }
-
-    @callback
-    def _handle_mobile_app_notification_action(self, event: Event) -> None:
-        """Schedule validation of a Companion App confirmation event."""
-
-        token = event.data.get("action")
-        if not isinstance(token, str) or token not in self._pending_confirmations:
-            return
-        self.hass.async_create_task(self._async_confirm_room_automation(token))
-
-    async def _async_confirm_room_automation(self, token: str) -> None:
-        """Run a configured automation only after a valid explicit confirmation."""
-
-        pending = self._pending_confirmations.pop(token, None)
-        if pending is None or dt_util.now() > pending.expires_at:
-            return
-        await self.async_request_refresh()
-        if not pending.debug:
-            recommendation = next(
-                (
-                    candidate
-                    for candidate in self.data.summary.room_recommendations
-                    if (candidate.room_id or candidate.room_name) == pending.room_key
-                ),
-                None,
-            )
-            if recommendation is None or recommendation.action != pending.action:
-                return
-        room = next(
-            (
-                configured_room
-                for configured_room in self._config.rooms
-                if (configured_room.room_id or configured_room.name) == pending.room_key
-            ),
-            None,
-        )
-        automation_id = (
-            room.start_entity_id
-            if pending.action == RecommendationAction.OPEN
-            else room.stop_entity_id
-        ) if room is not None else None
-        if automation_id is None:
-            return
-        try:
-            await self.hass.services.async_call(
-                "automation",
-                "trigger",
-                {"skip_condition": False},
-                target={"entity_id": automation_id},
-                blocking=True,
-            )
-        except Exception:
-            _LOGGER.exception("VentWise could not run a confirmed room automation")
-
     def _persist_runtime_state(self) -> None:
         runtime_state = RuntimeState(
             last_action_signature=self._last_action_signature,

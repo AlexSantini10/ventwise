@@ -6,7 +6,7 @@
         "title": "初始设置",
         "description": "选择天气来源，设置室内舒适值，如果需要，还可以选择一个或多个通知设备。",
         "data": {
-          "debug_mode_enabled": "调试模式",
+          "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试控件。调试通知仅供参考，绝不会执行 Home Assistant 自动化。",
           "outdoor_weather_entity_id": "天气来源",
           "temperature_unit": "温度单位",
           "wind_speed_unit": "风速单位",
@@ -21,7 +21,7 @@
           "co2_threshold_ppm": "CO2 阈值 (ppm)"
         },
         "data_description": {
-          "debug_mode_enabled": "Shows per-room open and close notification test controls.",
+          "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试控件。调试通知仅供参考，绝不会执行 Home Assistant 自动化。",
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
           "target_temperature_c": "设置你在家时感觉舒适的室内温度。",
           "target_humidity_percent": "设置你在家时感觉舒适的室内湿度。",
@@ -119,8 +119,6 @@
           "co2_entity_id": "室内二氧化碳传感器",
           "co2_enabled": "使用此房间的二氧化碳",
           "window_sensor_entity_ids": "窗户传感器",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
@@ -135,8 +133,6 @@
           "humidity_entity_id": "可选。选择房间湿度传感器。",
           "co2_entity_id": "可选。选择房间二氧化碳传感器。",
           "co2_enabled": "使用所选的房间二氧化碳传感器。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
@@ -156,8 +152,6 @@
           "co2_entity_id": "室内二氧化碳传感器",
           "co2_enabled": "使用此房间的二氧化碳",
           "window_sensor_entity_ids": "窗户传感器",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
           "target_temperature_c_override_enabled": "启用室温覆盖",
@@ -172,8 +166,6 @@
           "humidity_entity_id": "可选。选择房间湿度传感器。",
           "co2_entity_id": "可选。选择房间二氧化碳传感器。",
           "co2_enabled": "使用所选的房间二氧化碳传感器。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
@@ -193,8 +185,6 @@
           "co2_entity_id": "区域二氧化碳传感器",
           "co2_enabled": "使用此区域的二氧化碳",
           "window_sensor_entity_ids": "窗户传感器",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
@@ -209,8 +199,6 @@
           "humidity_entity_id": "可选。选择该区域的湿度传感器。",
           "co2_entity_id": "可选。选择该区域的二氧化碳传感器。",
           "co2_enabled": "使用所选的区域二氧化碳传感器。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
@@ -230,8 +218,6 @@
           "co2_entity_id": "区域二氧化碳传感器",
           "co2_enabled": "使用此区域的二氧化碳",
           "window_sensor_entity_ids": "窗户传感器",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
           "target_temperature_c_override_enabled": "启用室温覆盖",
@@ -246,8 +232,6 @@
           "humidity_entity_id": "可选。选择该区域的湿度传感器。",
           "co2_entity_id": "可选。选择该区域的二氧化碳传感器。",
           "co2_enabled": "使用所选的区域二氧化碳传感器。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
@@ -257,8 +241,7 @@
       }
     },
     "error": {
-      "invalid_input": "一个或多个值无效。",
-      "companion_app_required": "配置房间自动化前，请先选择 Home Assistant Companion App 通知设备。"
+      "invalid_input": "一个或多个值无效。"
     },
     "abort": {
       "single_instance_allowed": "VentWise 已配置。使用配置来更新它。"
@@ -368,8 +351,6 @@
           "window_sensor_entity_ids": "窗户传感器",
           "target_temperature_c_override": "房间舒适温度覆盖",
           "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
@@ -384,8 +365,6 @@
           "co2_entity_id": "可选。选择房间二氧化碳传感器。",
           "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
           "target_humidity_percent_override": "可选。使用该房间专属的舒适湿度百分比，而不是全局值。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
@@ -405,8 +384,6 @@
           "window_sensor_entity_ids": "窗户传感器",
           "target_temperature_c_override": "房间舒适温度覆盖",
           "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
           "target_temperature_c_override_enabled": "启用室温覆盖",
@@ -421,8 +398,6 @@
           "co2_entity_id": "可选。选择房间二氧化碳传感器。",
           "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
           "target_humidity_percent_override": "可选。使用该房间专属的舒适湿度百分比，而不是全局值。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
@@ -442,8 +417,6 @@
           "window_sensor_entity_ids": "窗户传感器",
           "target_temperature_c_override": "房间舒适温度覆盖",
           "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
@@ -458,8 +431,6 @@
           "co2_entity_id": "可选。选择该区域的二氧化碳传感器。",
           "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
           "target_humidity_percent_override": "可选。使用该区域专属的舒适湿度百分比，而不是全局值。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
@@ -479,8 +450,6 @@
           "window_sensor_entity_ids": "窗户传感器",
           "target_temperature_c_override": "房间舒适温度覆盖",
           "target_humidity_percent_override": "房间舒适湿度覆盖（%）",
-          "start_entity_id": "开窗自动化",
-          "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
           "action_lockout_minutes": "保留房间建议（分钟）",
           "target_temperature_c_override_enabled": "启用室温覆盖",
@@ -495,8 +464,6 @@
           "co2_entity_id": "可选。选择该区域的二氧化碳传感器。",
           "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
           "target_humidity_percent_override": "可选。使用该区域专属的舒适湿度百分比，而不是全局值。",
-          "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
-          "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
           "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
@@ -516,7 +483,7 @@
         "title": "VentWise 设置",
         "description": "在此设置日常舒适度、通知和户外数据。仅当室外实体匹配的开关启用时，才需要手动操作。",
         "data": {
-          "debug_mode_enabled": "启用调试模式",
+          "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试控件。调试通知仅供参考，绝不会执行 Home Assistant 自动化。",
           "outdoor_weather_entity_id": "天气来源",
           "temperature_unit": "温度单位",
           "wind_speed_unit": "风速单位",
@@ -541,7 +508,7 @@
           "wind_speed_entity_id": "手动室外风速"
         },
         "data_description": {
-          "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试按钮。",
+          "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试控件。调试通知仅供参考，绝不会执行 Home Assistant 自动化。",
           "outdoor_weather_entity_id": "选择 VentWise 使用的标准 Home Assistant 天气实体。",
           "target_temperature_c": "设置您在家时感觉舒适的室内温度。",
           "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
@@ -566,8 +533,7 @@
       }
     },
     "error": {
-      "invalid_input": "一个或多个值无效。",
-      "companion_app_required": "配置房间自动化前，请先选择 Home Assistant Companion App 通知设备。"
+      "invalid_input": "一个或多个值无效。"
     }
   },
   "selector": {

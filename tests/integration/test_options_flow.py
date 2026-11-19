@@ -154,8 +154,6 @@ def test_edit_room_replaces_the_selected_room() -> None:
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.studio_temp",
                 "humidity_entity_id": None,
                 "weight": 1.5,
-                "start_entity_id": None,
-                "stop_entity_id": None,
             }
         )
     )

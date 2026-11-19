@@ -32,7 +32,6 @@ from .configuration.flow import (
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
-    validate_room_automation_confirmation,
     split_config_data,
     _localized_room_kind_label,
 )
@@ -41,7 +40,7 @@ from .configuration.flow import (
 class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for the integration."""
 
-    VERSION = 5
+    VERSION = 6
 
     def __init__(self) -> None:
         self._setup_data: dict[str, Any] = {}
@@ -271,9 +270,6 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     candidate_rooms.append(room)
                 else:
                     candidate_rooms[room_index] = room
-                validate_room_automation_confirmation(
-                    candidate_rooms, self._current_config, self.hass
-                )
                 self._rooms = candidate_rooms
                 self._current_config[CONF_ROOMS] = deepcopy(candidate_rooms)
                 self._selected_room_index = None

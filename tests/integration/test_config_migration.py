@@ -59,7 +59,7 @@ def test_migration_preserves_settings_and_notification_devices() -> None:
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 5
+    assert entry.version == 6
     assert entry.data == {
         "target_temperature_c": 21.0,
         CONF_NOTIFICATION_DEVICE_ID: ["device-alice", "device-bob"],
@@ -74,7 +74,7 @@ def test_migration_preserves_settings_and_notification_devices() -> None:
 
 def test_migration_rejects_a_future_entry_version(caplog: pytest.LogCaptureFixture) -> None:
     hass = SimpleNamespace(config_entries=_FakeConfigEntries())
-    entry = _entry(version=6, data={}, options={})
+    entry = _entry(version=7, data={}, options={})
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is False
     assert hass.config_entries.updates == []
@@ -92,7 +92,7 @@ def test_migration_keeps_current_runtime_state_and_unknown_option_data() -> None
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 5
+    assert entry.version == 6
     assert entry.data == {"legacy_data": "kept"}
     assert entry.options[CONF_RUNTIME_STATE] == {"future_marker": "kept"}
     assert entry.options["future_option"] is True
@@ -129,3 +129,39 @@ def test_migration_moves_legacy_global_co2_to_each_room() -> None:
     assert rooms[1][CONF_ROOM_CO2_ENABLED] is True
     assert CONF_CO2_ENABLED not in entry.options
     assert CONF_CO2_ENTITY_ID not in entry.options
+
+
+def test_migration_removes_legacy_room_automations_and_warns(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    hass = SimpleNamespace(config_entries=_FakeConfigEntries())
+    entry = _entry(
+        version=5,
+        data={},
+        options={
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Bedroom",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temperature",
+                    "start_entity_id": "automation.open_bedroom",
+                    "stop_entity_id": "automation.close_bedroom",
+                    "future_room_option": True,
+                }
+            ],
+            "future_option": True,
+        },
+    )
+
+    with caplog.at_level("WARNING"):
+        assert asyncio.run(async_migrate_entry(hass, entry)) is True
+
+    assert entry.version == 6
+    assert entry.options[CONF_ROOMS] == [
+        {
+            CONF_ROOM_NAME: "Bedroom",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temperature",
+            "future_room_option": True,
+        }
+    ]
+    assert entry.options["future_option"] is True
+    assert "Removed 2 legacy room automation reference(s)" in caplog.text

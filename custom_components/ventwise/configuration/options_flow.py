@@ -26,7 +26,6 @@ from .flow import (
     normalize_unit_config,
     normalize_room_config,
     split_config_data,
-    validate_room_automation_confirmation,
 )
 
 
@@ -89,9 +88,6 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                     **self._current_config,
                     **normalize_settings_config(user_input, self._current_config),
                 }
-                validate_room_automation_confirmation(
-                    self._rooms, candidate_config, self.hass
-                )
                 self._current_config = candidate_config
                 return self.async_create_entry(title=NAME, data=self._result_data())
             except ConfigValidationError as err:
@@ -252,9 +248,6 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                     candidate_rooms.append(room)
                 else:
                     candidate_rooms[room_index] = room
-                validate_room_automation_confirmation(
-                    candidate_rooms, self._current_config, self.hass
-                )
                 self._rooms = candidate_rooms
                 self._current_config[CONF_ROOMS] = deepcopy(candidate_rooms)
                 self._selected_room_index = None

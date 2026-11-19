@@ -165,30 +165,6 @@ def notification_entity_ids_for_device_ids(
     return tuple(entity_ids)
 
 
-def is_companion_app_notification_entity(hass, entity_id: str) -> bool:
-    """Return whether a notify entity is provided by the Companion App.
-
-    Older Companion App entities commonly used the ``notify.mobile_app_*``
-    prefix. Newer Home Assistant installations can expose the same service as
-    ``notify.<device_name>``, so the entity-registry platform is authoritative.
-    """
-
-    if entity_id.startswith("notify.mobile_app_"):
-        return True
-
-    entry = er.async_get(hass).async_get(entity_id)
-    return entry is not None and entry.platform == "mobile_app"
-
-
-def mobile_app_notification_service(entity_id: str) -> str:
-    """Return the Companion App notify service for an entity-registry target."""
-
-    object_id = entity_id.removeprefix("notify.")
-    if object_id.startswith("mobile_app_"):
-        return object_id
-    return f"mobile_app_{object_id}"
-
-
 def build_notification_payload(
     summary: RecommendationSummary,
     *,
@@ -408,7 +384,6 @@ async def async_send_notification(
     device_ids: Sequence[str] | None = None,
     send_to_home_assistant: bool = False,
     home_assistant_notification_id: str = _PERSISTENT_RECOMMENDATION_ID,
-    mobile_action: dict[str, str] | None = None,
 ) -> bool:
     """Deliver a recommendation to selected devices and/or Home Assistant."""
 
@@ -423,20 +398,11 @@ async def async_send_notification(
         for entity_id in targets:
             try:
                 service_data: dict[str, object] = {"title": title, "message": message}
-                companion_target = is_companion_app_notification_entity(hass, entity_id)
-                if mobile_action is not None and companion_target:
-                    service_data["data"] = {"actions": [mobile_action]}
-                service = (
-                    mobile_app_notification_service(entity_id)
-                    if mobile_action is not None and companion_target
-                    else "send_message"
-                )
-                target = None if service != "send_message" else {"entity_id": entity_id}
                 await hass.services.async_call(
                     "notify",
-                    service,
+                    "send_message",
                     service_data,
-                    target=target,
+                    target={"entity_id": entity_id},
                     blocking=True,
                 )
                 delivered_targets.append(entity_id)
