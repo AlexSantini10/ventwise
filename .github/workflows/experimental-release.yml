@@ -11,6 +11,12 @@ on:
     types:
       - completed
 
+concurrency:
+  # A push and a pull request can validate the same commit. Serialize release
+  # attempts for that commit so release creation remains idempotent.
+  group: experimental-release-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -18,7 +24,9 @@ jobs:
   release:
     name: Publish experimental GitHub Release
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
