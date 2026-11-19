@@ -64,5 +64,25 @@
       "quiet_hours_start_time": {"name": "Quiet hours start"},
       "quiet_hours_end_time": {"name": "Quiet hours end"}
     }
+  },
+  "config": {
+    "step": {
+      "remove_room_select": {
+        "description": "Confirm removal of room {room_name}.",
+        "data": {
+          "remove_room_confirmation": "Confirm room removal"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "remove_room_select": {
+        "description": "Confirm removal of room {room_name}.",
+        "data": {
+          "remove_room_confirmation": "Confirm room removal"
+        }
+      }
+    }
   }
 }

@@ -99,9 +99,10 @@
       },
       "remove_room_select": {
         "title": "删除房间",
-        "description": "选择要删除的房间。",
+        "description": "请确认删除房间\"{room_name}\"。",
         "data": {
-          "room_selection": "房间"
+          "room_selection": "房间",
+          "remove_room_confirmation": "确认删除房间"
         },
         "data_description": {
           "room_selection": "选择 VentWise 中已保存的一个房间。"
@@ -324,7 +325,8 @@
         "title": "编辑房间",
         "description": "选择要更新的房间。",
         "data": {
-          "room_selection": "房间"
+          "room_selection": "房间",
+          "remove_room_confirmation": "确认删除房间"
         },
         "data_description": {
           "room_selection": "从 VentWise 已保存的房间中选择一个。"
@@ -332,9 +334,10 @@
       },
       "remove_room_select": {
         "title": "删除房间",
-        "description": "选择要删除的房间。",
+        "description": "请确认删除房间\"{room_name}\"。",
         "data": {
-          "room_selection": "房间"
+          "room_selection": "房间",
+          "remove_room_confirmation": "确认删除房间"
         },
         "data_description": {
           "room_selection": "从 VentWise 已保存的房间中选择一个。"

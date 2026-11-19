@@ -99,9 +99,10 @@
       },
       "remove_room_select": {
         "title": "Eliminar habitación",
-        "description": "Elige la habitación que quieres borrar.",
+        "description": "Confirma la eliminación de la habitación \"{room_name}\".",
         "data": {
-          "room_selection": "Habitación"
+          "room_selection": "Habitación",
+          "remove_room_confirmation": "Confirmar eliminación de la habitación"
         },
         "data_description": {
           "room_selection": "Selecciona una de las habitaciones ya guardadas en VentWise."
@@ -324,7 +325,8 @@
         "title": "Editar habitación",
         "description": "Elige la habitación que quieres actualizar.",
         "data": {
-          "room_selection": "Habitación"
+          "room_selection": "Habitación",
+          "remove_room_confirmation": "Confirmar eliminación de la habitación"
         },
         "data_description": {
           "room_selection": "Selecciona una de las habitaciones ya guardadas en VentWise."
@@ -332,9 +334,10 @@
       },
       "remove_room_select": {
         "title": "Eliminar habitación",
-        "description": "Elige la habitación que quieres borrar.",
+        "description": "Confirma la eliminación de la habitación \"{room_name}\".",
         "data": {
-          "room_selection": "Habitación"
+          "room_selection": "Habitación",
+          "remove_room_confirmation": "Confirmar eliminación de la habitación"
         },
         "data_description": {
           "room_selection": "Selecciona una de las habitaciones ya guardadas en VentWise."

@@ -102,9 +102,10 @@
       },
       "remove_room_select": {
         "title": "Remove room",
-        "description": "Choose the room you want to delete.",
+        "description": "Confirm removal of room \"{room_name}\".",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "Room",
+          "remove_room_confirmation": "Confirm room removal"
         },
         "data_description": {
           "room_selection": "Select one of the rooms already saved in VentWise."
@@ -383,7 +384,8 @@
         "title": "Edit room",
         "description": "Choose the room you want to update.",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "Room",
+          "remove_room_confirmation": "Confirm room removal"
         },
         "data_description": {
           "room_selection": "Select one of the rooms already saved in VentWise."
@@ -391,9 +393,10 @@
       },
       "remove_room_select": {
         "title": "Remove room",
-        "description": "Choose the room you want to delete.",
+        "description": "Confirm removal of room \"{room_name}\".",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "Room",
+          "remove_room_confirmation": "Confirm room removal"
         },
         "data_description": {
           "room_selection": "Select one of the rooms already saved in VentWise."

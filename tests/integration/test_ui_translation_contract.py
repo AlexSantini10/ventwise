@@ -31,16 +31,14 @@ LOCALES = ("en", "it", "es", "fr", "de", "ru", "zh-Hans")
 ROOM_STEPS = (
     ("add_room", "room"),
     ("edit_room_form", "room"),
-    ("add_macro_room", "macro_room"),
-    ("edit_macro_room_form", "macro_room"),
 )
 MENU_OPTIONS = {
     "config": {
-        "rooms": {"add_room", "add_macro_room", "edit_room", "remove_room", "finish"},
+        "rooms": {"add_room", "edit_room", "remove_room", "finish"},
     },
     "options": {
         "init": {"units", "settings", "rooms"},
-        "rooms": {"add_room", "add_macro_room", "edit_room", "remove_room", "finish"},
+        "rooms": {"add_room", "edit_room", "remove_room", "finish"},
     },
 }
 

@@ -102,9 +102,10 @@
       },
       "remove_room_select": {
         "title": "Supprimer la pièce",
-        "description": "Choisissez la pièce que vous souhaitez supprimer.",
+        "description": "Confirmez la suppression de la pièce \"{room_name}\".",
         "data": {
-          "room_selection": "Chambre"
+          "room_selection": "Chambre",
+          "remove_room_confirmation": "Confirmer la suppression de la pièce"
         },
         "data_description": {
           "room_selection": "Sélectionnez l'une des pièces déjà enregistrées dans VentWise."
@@ -383,7 +384,8 @@
         "title": "Modifier la salle",
         "description": "Choisissez la pièce que vous souhaitez mettre à jour.",
         "data": {
-          "room_selection": "Chambre"
+          "room_selection": "Chambre",
+          "remove_room_confirmation": "Confirmer la suppression de la pièce"
         },
         "data_description": {
           "room_selection": "Sélectionnez l'une des pièces déjà enregistrées dans VentWise."
@@ -391,9 +393,10 @@
       },
       "remove_room_select": {
         "title": "Supprimer la pièce",
-        "description": "Choisissez la pièce que vous souhaitez supprimer.",
+        "description": "Confirmez la suppression de la pièce \"{room_name}\".",
         "data": {
-          "room_selection": "Chambre"
+          "room_selection": "Chambre",
+          "remove_room_confirmation": "Confirmer la suppression de la pièce"
         },
         "data_description": {
           "room_selection": "Sélectionnez l'une des pièces déjà enregistrées dans VentWise."

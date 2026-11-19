@@ -102,9 +102,10 @@
       },
       "remove_room_select": {
         "title": "Rimuovi stanza",
-        "description": "Scegli la stanza che vuoi eliminare.",
+        "description": "Conferma la rimozione della stanza \"{room_name}\".",
         "data": {
-          "room_selection": "Stanza"
+          "room_selection": "Stanza",
+          "remove_room_confirmation": "Conferma rimozione stanza"
         },
         "data_description": {
           "room_selection": "Seleziona una delle stanze già salvate in VentWise."
@@ -383,7 +384,8 @@
         "title": "Modifica stanza",
         "description": "Scegli la stanza che vuoi aggiornare.",
         "data": {
-          "room_selection": "Stanza"
+          "room_selection": "Stanza",
+          "remove_room_confirmation": "Conferma rimozione stanza"
         },
         "data_description": {
           "room_selection": "Seleziona una delle stanze già salvate in VentWise."
@@ -391,9 +393,10 @@
       },
       "remove_room_select": {
         "title": "Rimuovi stanza",
-        "description": "Scegli la stanza che vuoi eliminare.",
+        "description": "Conferma la rimozione della stanza \"{room_name}\".",
         "data": {
-          "room_selection": "Stanza"
+          "room_selection": "Stanza",
+          "remove_room_confirmation": "Conferma rimozione stanza"
         },
         "data_description": {
           "room_selection": "Seleziona una delle stanze già salvate in VentWise."

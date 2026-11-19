@@ -41,7 +41,7 @@ the implementation decisions agreed during development.
 - Initial setup should collect only the minimum needed to make VentWise work.
 - Post-setup settings should be grouped by purpose, not by internal technical
   details.
-- Rooms and macro-rooms should be configurable from the UI.
+- Rooms should be configurable independently from the UI.
 - A room can be added during the initial setup, but it must not be required.
 - Supported forecast sources should be explicit in the UI.
 - Unsupported forecast sources should be requested through GitHub issues.
@@ -49,7 +49,7 @@ the implementation decisions agreed during development.
 ## Entity Exposure Rules
 
 - Expose one global VentWise device for shared controls and global sensors.
-- Expose one device per room or macro-room for room-specific entities.
+- Expose one device per room for room-specific entities.
 - Keep entity names descriptive and non-technical.
 - Expose useful controls and sensors, but avoid exposing noise that does not
   help the user act.
@@ -144,7 +144,7 @@ Use this checklist before merging any change:
 - [ ] The setup flow remains short and understandable.
 - [ ] The flow only asks for entities or helpers when they are actually needed.
 - [ ] Outdoor manual overrides use checkboxes to unlock the numeric selectors.
-- [ ] Room and macro-room settings remain separate from global settings.
+- [ ] Room settings remain separate from global settings.
 - [ ] Entity names are descriptive for non-technical users.
 - [ ] Global and room entities are exposed in the expected device structure.
 - [ ] The data flow is event-driven wherever possible.

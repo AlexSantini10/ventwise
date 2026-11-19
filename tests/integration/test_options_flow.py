@@ -52,7 +52,7 @@ def test_room_selection_helpers_expose_stable_labels() -> None:
                 },
                 {
                     CONF_ROOM_NAME: "Upstairs",
-                    CONF_ROOM_KIND: "macro_room",
+                    CONF_ROOM_KIND: "room",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temp",
                 },
             ]
@@ -61,9 +61,10 @@ def test_room_selection_helpers_expose_stable_labels() -> None:
 
     assert flow._room_selection_options() == [
         "1. Living room (Room)",
-        "2. Upstairs (Macro Room)",
+        "2. Upstairs (Room)",
+        "Add room",
     ]
-    assert flow._room_selection_index("2. Upstairs (Macro Room)") == 1
+    assert flow._room_selection_index("2. Upstairs (Room)") == 1
 
 
 def test_remove_room_updates_the_saved_list() -> None:
@@ -77,7 +78,7 @@ def test_remove_room_updates_the_saved_list() -> None:
                 },
                 {
                     CONF_ROOM_NAME: "Upstairs",
-                    CONF_ROOM_KIND: "macro_room",
+                    CONF_ROOM_KIND: "room",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temp",
                 },
             ]
@@ -85,6 +86,7 @@ def test_remove_room_updates_the_saved_list() -> None:
     )
 
     asyncio.run(flow.async_step_remove_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
+    asyncio.run(flow.async_step_confirm_remove_room({"remove_room_confirmation": True}))
 
     assert len(flow._rooms) == 1
     assert flow._rooms[0][CONF_ROOM_NAME] == "Upstairs"
@@ -142,14 +144,14 @@ def test_edit_room_replaces_the_selected_room() -> None:
                 },
                 {
                     CONF_ROOM_NAME: "Upstairs",
-                    CONF_ROOM_KIND: "macro_room",
+                    CONF_ROOM_KIND: "room",
                     CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temp",
                 },
             ]
         }
     )
 
-    asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
+    asyncio.run(flow.async_step_rooms({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
     asyncio.run(
         flow.async_step_edit_room_details(
             {
@@ -183,7 +185,7 @@ def test_edit_room_clears_omitted_optional_bindings() -> None:
         }
     )
 
-    asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
+    asyncio.run(flow.async_step_rooms({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
     asyncio.run(
         flow.async_step_edit_room_details(
             {
@@ -199,8 +201,8 @@ def test_edit_room_clears_omitted_optional_bindings() -> None:
     assert room[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] == []
 
 
-def test_options_flow_supports_units_macro_rooms_and_staged_room_changes() -> None:
-    """Cover each options navigation branch without relying on a live HA profile."""
+def test_options_flow_supports_units_and_immediate_room_changes() -> None:
+    """Room changes persist independently and the add option is last."""
 
     flow = _make_flow(
         {
@@ -218,21 +220,24 @@ def test_options_flow_supports_units_macro_rooms_and_staged_room_changes() -> No
     assert asyncio.run(flow.async_step_units({"temperature_unit": "C", "wind_speed_unit": "km/h"}))["type"] == "create_entry"
 
     rooms = asyncio.run(flow.async_step_rooms())
-    assert rooms["menu_options"] == ["add_room", "add_macro_room", "edit_room", "remove_room", "finish"]
-    assert asyncio.run(flow.async_step_add_macro_room())["step_id"] == "add_macro_room"
+    assert rooms["type"] == "form"
+    assert flow._room_selection_options()[-1] == "Add room"
+    assert asyncio.run(flow.async_step_add_room())["step_id"] == "add_room"
     assert asyncio.run(
-        flow.async_step_add_macro_room(
+        flow.async_step_add_room(
             {
                 CONF_ROOM_NAME: "Upstairs",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temp",
             }
         )
-    )["type"] == "menu"
+    )["type"] == "form"
 
     selection = flow._room_selection_options()[0]
-    assert asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: selection}))["step_id"] == "edit_room_form"
+    assert asyncio.run(flow.async_step_rooms({CONF_ROOM_SELECTION: selection}))["step_id"] == "rooms"
+    assert asyncio.run(flow.async_step_edit_room())["step_id"] == "edit_room_form"
     assert asyncio.run(flow.async_step_edit_room_form())["step_id"] == "edit_room_form"
-    assert asyncio.run(flow.async_step_remove_room({CONF_ROOM_SELECTION: selection}))["type"] == "menu"
+    assert asyncio.run(flow.async_step_remove_room())["step_id"] == "remove_room_select"
+    assert asyncio.run(flow.async_step_confirm_remove_room({"remove_room_confirmation": True}))["type"] == "form"
     saved = asyncio.run(flow.async_step_finish())
     assert saved["type"] == "create_entry"
     assert saved["data"][CONF_ROOMS][0][CONF_ROOM_NAME] == "Upstairs"

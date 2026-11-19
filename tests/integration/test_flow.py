@@ -206,14 +206,10 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert CONF_QUIET_HOURS_END not in schema_dict
 
 
-def test_room_schema_supports_room_and_macro_room_defaults() -> None:
-    """Room-like entries should share the same structure."""
+def test_room_schema_supports_normal_room_defaults() -> None:
 
     room_schema = build_room_schema({}, 0, "room")
-    macro_schema = build_room_schema({}, 0, "macro_room")
-
     assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == "Room 1"
-    assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_CO2_ENTITY_ID].__class__.__name__ == "Any"
@@ -239,25 +235,21 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
 
 
 @pytest.mark.parametrize(
-    ("language", "room_name", "macro_room_name"),
+    ("language", "room_name"),
     (
-        ("it", "Stanza 1", "Macro-stanza 1"),
-        ("fr", "Pièce 1", "Macro-pièce 1"),
-        ("de", "Zimmer 1", "Makro-Zimmer 1"),
+        ("it", "Stanza 1"),
+        ("fr", "Pièce 1"),
+        ("de", "Zimmer 1"),
     ),
 )
 def test_room_schema_localizes_default_names(
     language: str,
     room_name: str,
-    macro_room_name: str,
 ) -> None:
     """Room defaults should follow the requested language."""
 
     room_schema = build_room_schema({}, 0, "room", language)
-    macro_schema = build_room_schema({}, 0, "macro_room", language)
-
     assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == room_name
-    assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == macro_room_name
 
 
 def test_room_selection_label_localizes_room_kind() -> None:
@@ -497,10 +489,10 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: "23.5",
                 CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: False,
             },
-        "macro_room",
+        "room",
     )
 
-    assert data[CONF_ROOM_KIND] == "macro_room"
+    assert data[CONF_ROOM_KIND] == "room"
     assert data[CONF_ROOM_NAME] == "Bedroom"
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
     assert data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED] is True

@@ -59,7 +59,7 @@ def test_migration_preserves_settings_and_notification_devices() -> None:
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 6
+    assert entry.version == 7
     assert entry.data == {
         "target_temperature_c": 21.0,
         CONF_NOTIFICATION_DEVICE_ID: ["device-alice", "device-bob"],
@@ -74,7 +74,7 @@ def test_migration_preserves_settings_and_notification_devices() -> None:
 
 def test_migration_rejects_a_future_entry_version(caplog: pytest.LogCaptureFixture) -> None:
     hass = SimpleNamespace(config_entries=_FakeConfigEntries())
-    entry = _entry(version=7, data={}, options={})
+    entry = _entry(version=8, data={}, options={})
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is False
     assert hass.config_entries.updates == []
@@ -92,7 +92,7 @@ def test_migration_keeps_current_runtime_state_and_unknown_option_data() -> None
     )
 
     assert asyncio.run(async_migrate_entry(hass, entry)) is True
-    assert entry.version == 6
+    assert entry.version == 7
     assert entry.data == {"legacy_data": "kept"}
     assert entry.options[CONF_RUNTIME_STATE] == {"future_marker": "kept"}
     assert entry.options["future_option"] is True
@@ -155,7 +155,7 @@ def test_migration_removes_legacy_room_automations_and_warns(
     with caplog.at_level("WARNING"):
         assert asyncio.run(async_migrate_entry(hass, entry)) is True
 
-    assert entry.version == 6
+    assert entry.version == 7
     assert entry.options[CONF_ROOMS] == [
         {
             CONF_ROOM_NAME: "Bedroom",
@@ -165,3 +165,32 @@ def test_migration_removes_legacy_room_automations_and_warns(
     ]
     assert entry.options["future_option"] is True
     assert "Removed 2 legacy room automation reference(s)" in caplog.text
+
+
+def test_migration_converts_macro_rooms_without_changing_room_ids() -> None:
+    hass = SimpleNamespace(config_entries=_FakeConfigEntries())
+    entry = _entry(
+        version=6,
+        data={},
+        options={
+            CONF_ROOMS: [
+                {
+                    "room_id": "upstairs",
+                    "kind": "macro_room",
+                    CONF_ROOM_NAME: "Upstairs",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temperature",
+                    "co2_entity_id": "sensor.upstairs_co2",
+                    "future_room_setting": {"enabled": True},
+                }
+            ]
+        },
+    )
+
+    assert asyncio.run(async_migrate_entry(hass, entry)) is True
+
+    room = entry.options[CONF_ROOMS][0]
+    assert entry.version == 7
+    assert room["kind"] == "room"
+    assert room["room_id"] == "upstairs"
+    assert room["co2_entity_id"] == "sensor.upstairs_co2"
+    assert room["future_room_setting"] == {"enabled": True}

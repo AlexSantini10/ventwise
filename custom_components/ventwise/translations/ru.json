@@ -102,9 +102,10 @@
       },
       "remove_room_select": {
         "title": "Удалить комнату",
-        "description": "Выберите комнату, которую хотите удалить.",
+        "description": "Подтвердите удаление комнаты \"{room_name}\".",
         "data": {
-          "room_selection": "Комната"
+          "room_selection": "Комната",
+          "remove_room_confirmation": "Подтвердить удаление комнаты"
         },
         "data_description": {
           "room_selection": "Выберите одну из комнат, уже сохранённых в VentWise."
@@ -383,7 +384,8 @@
         "title": "Изменить комнату",
         "description": "Выберите комнату, которую хотите изменить.",
         "data": {
-          "room_selection": "Комната"
+          "room_selection": "Комната",
+          "remove_room_confirmation": "Подтвердить удаление комнаты"
         },
         "data_description": {
           "room_selection": "Выберите одну из комнат, уже сохранённых в VentWise."
@@ -391,9 +393,10 @@
       },
       "remove_room_select": {
         "title": "Удалить комнату",
-        "description": "Выберите комнату, которую хотите удалить.",
+        "description": "Подтвердите удаление комнаты \"{room_name}\".",
         "data": {
-          "room_selection": "Комната"
+          "room_selection": "Комната",
+          "remove_room_confirmation": "Подтвердить удаление комнаты"
         },
         "data_description": {
           "room_selection": "Выберите одну из комнат, уже сохранённых в VentWise."

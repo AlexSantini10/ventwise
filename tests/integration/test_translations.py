@@ -60,8 +60,6 @@ REVIEWED_LANGUAGES = ("it", "es", "ru", "zh-Hans", "fr", "de")
 ROOM_FORM_STEPS = (
     "add_room",
     "edit_room_form",
-    "add_macro_room",
-    "edit_macro_room_form",
 )
 
 

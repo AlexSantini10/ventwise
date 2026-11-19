@@ -102,9 +102,10 @@
       },
       "remove_room_select": {
         "title": "Raum entfernen",
-        "description": "Wählen Sie den Raum aus, den Sie löschen möchten.",
+        "description": "Bestätigen Sie das Löschen des Zimmers \"{room_name}\".",
         "data": {
-          "room_selection": "Zimmer"
+          "room_selection": "Zimmer",
+          "remove_room_confirmation": "Löschen des Zimmers bestätigen"
         },
         "data_description": {
           "room_selection": "Wählen Sie einen der bereits in VentWise gespeicherten Räume aus."
@@ -383,7 +384,8 @@
         "title": "Raum bearbeiten",
         "description": "Wählen Sie den Raum aus, den Sie aktualisieren möchten.",
         "data": {
-          "room_selection": "Zimmer"
+          "room_selection": "Zimmer",
+          "remove_room_confirmation": "Löschen des Zimmers bestätigen"
         },
         "data_description": {
           "room_selection": "Wählen Sie einen der bereits in VentWise gespeicherten Räume aus."
@@ -391,9 +393,10 @@
       },
       "remove_room_select": {
         "title": "Raum entfernen",
-        "description": "Wählen Sie den Raum aus, den Sie löschen möchten.",
+        "description": "Bestätigen Sie das Löschen des Zimmers \"{room_name}\".",
         "data": {
-          "room_selection": "Zimmer"
+          "room_selection": "Zimmer",
+          "remove_room_confirmation": "Löschen des Zimmers bestätigen"
         },
         "data_description": {
           "room_selection": "Wählen Sie einen der bereits in VentWise gespeicherten Räume aus."

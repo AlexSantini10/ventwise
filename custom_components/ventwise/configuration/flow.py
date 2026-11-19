@@ -90,13 +90,13 @@ from ..application.notification import notification_entity_ids_for_device_ids
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
 SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
 ROOM_KIND_LABELS: dict[str, dict[str, str]] = {
-    "en": {"room": "Room", "macro_room": "Macro Room"},
-    "es": {"room": "Habitación", "macro_room": "Macrohabitación"},
-    "it": {"room": "Stanza", "macro_room": "Macro-stanza"},
-    "ru": {"room": "Комната", "macro_room": "Макрокомната"},
-    "fr": {"room": "Pièce", "macro_room": "Macro-pièce"},
-    "de": {"room": "Zimmer", "macro_room": "Makro-Zimmer"},
-    "zh-hans": {"room": "房间", "macro_room": "宏房间"},
+    "en": {"room": "Room"},
+    "es": {"room": "Habitación"},
+    "it": {"room": "Stanza"},
+    "ru": {"room": "Комната"},
+    "fr": {"room": "Pièce"},
+    "de": {"room": "Zimmer"},
+    "zh-hans": {"room": "房间"},
 }
 OUTDOOR_OVERRIDE_FIELDS: tuple[tuple[str, str, str], ...] = (
     (
@@ -406,7 +406,7 @@ def build_room_schema(
     room_kind: str,
     language: str | None = None,
 ) -> vol.Schema:
-    """Create the schema for a room or macro-room definition."""
+    """Create the schema for a room definition."""
 
     friendly_default = _localized_room_default(room_kind, room_number, language)
     return vol.Schema(
@@ -991,7 +991,7 @@ def _normalize_required_entity_id(
 
 def _normalize_room_kind(value: object) -> str:
     text = str(value).strip()
-    if text not in {"room", "macro_room"}:
+    if text != "room":
         raise ConfigValidationError(CONF_ROOM_KIND)
     return text
 

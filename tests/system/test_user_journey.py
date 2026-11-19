@@ -184,7 +184,7 @@ def test_config_flow_prevents_a_second_ventwise_entry() -> None:
 
 
 def test_config_flow_room_management_paths_preserve_staged_configuration() -> None:
-    """Exercise macro-room add, edit, remove and finish branches deterministically."""
+    """Exercise room add, edit, remove and finish branches deterministically."""
 
     async def run_flow() -> dict[str, object]:
         flow = _StandaloneVentWiseConfigFlow()
@@ -203,7 +203,7 @@ def test_config_flow_room_management_paths_preserve_staged_configuration() -> No
                 CONF_WIND_SPEED_OVERRIDE: False,
             }
         )
-        added = await flow.async_step_add_macro_room(
+        added = await flow.async_step_add_room(
             {
                 CONF_ROOM_ENABLED: True,
                 CONF_ROOM_NAME: "Piano superiore",
@@ -212,15 +212,16 @@ def test_config_flow_room_management_paths_preserve_staged_configuration() -> No
         )
         assert added["type"] == "menu"
         selection = flow._room_selection_options()[0]
-        assert (await flow.async_step_edit_room({"room_selection": selection}))["step_id"] == "edit_macro_room_form"
-        edited = await flow.async_step_edit_macro_room_form(
+        assert (await flow.async_step_edit_room({"room_selection": selection}))["step_id"] == "edit_room_form"
+        edited = await flow.async_step_edit_room_form(
             {
                 CONF_ROOM_NAME: "Studio",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.study_temperature",
             }
         )
         assert edited["type"] == "menu"
-        assert (await flow.async_step_remove_room({"room_selection": flow._room_selection_options()[0]}))["type"] == "menu"
+        assert (await flow.async_step_remove_room({"room_selection": flow._room_selection_options()[0]}))["step_id"] == "remove_room_select"
+        await flow.async_step_confirm_remove_room({"remove_room_confirmation": True})
         return await flow.async_step_finish()
 
     result = asyncio.run(run_flow())
