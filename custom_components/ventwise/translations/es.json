@@ -255,6 +255,9 @@
         "description": "Elige qué quieres editar.",
         "menu_options": {
           "units": "Unidades de medida",
+          "comfort": "Ajustes de confort",
+          "notifications": "Notificaciones",
+          "overrides": "Anulaciones exteriores",
           "rooms": "Habitaciones",
           "settings": "Ajustes"
         },
@@ -301,6 +304,45 @@
           "soft_outdoor_threshold_c": "Por encima de esta temperatura exterior, abrir las ventanas es menos útil.",
           "cooldown_minutes": "Cuánto espera VentWise antes de enviar una notificación actualizada. Las recomendaciones idénticas permanecen suprimidas.",
           "auto_comfort_temperature": "Utiliza su temperatura de confort como punto de partida y la ajusta gradualmente a partir de la temperatura exterior percibida. El ajuste está limitado a ±2°C dentro de un rango de seguridad interior de 18 a 26°C. Los sensores de la habitación determinan la recomendación pero nunca mueven el objetivo. Esto no controla un termostato ni un sistema HVAC."
+        }
+      },
+      "comfort": {
+        "title": "Ajustes de confort",
+        "description": "Configura los objetivos de confort y los umbrales de calidad del aire de VentWise.",
+        "data": {
+          "target_temperature_c": "Temperatura de confort",
+          "auto_comfort_temperature": "Adaptar automáticamente la temperatura de confort",
+          "target_humidity_percent": "Humedad de confort",
+          "stability_minutes": "Esperar antes de recomendar (minutos)",
+          "soft_outdoor_threshold_c": "Umbral de confort exterior",
+          "co2_enabled": "Considerar el CO₂ en las recomendaciones",
+          "co2_entity_id": "Sensor de CO₂ del hogar",
+          "co2_threshold_ppm": "Umbral de CO₂ (ppm)"
+        }
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "description": "Elige dónde enviar las notificaciones de VentWise y cómo diagnosticar su entrega.",
+        "data": {
+          "notification_device_id": "Dispositivos de notificación",
+          "home_assistant_notification_enabled": "Mostrar notificaciones en Home Assistant",
+          "diagnostic_notification_level": "Notificaciones de diagnóstico",
+          "debug_mode_enabled": "Activar controles de prueba de notificaciones",
+          "safety_bypass_quiet_hours": "Permitir notificaciones de seguridad durante las horas de silencio",
+          "cooldown_minutes": "Pausa de notificaciones (minutos)"
+        }
+      },
+      "overrides": {
+        "title": "Anulaciones exteriores",
+        "description": "Elige la fuente meteorológica y las mediciones exteriores manuales opcionales.",
+        "data": {
+          "outdoor_weather_entity_id": "Fuente meteorológica",
+          "outdoor_temperature_override": "Usar temperatura exterior manual",
+          "outdoor_humidity_override": "Usar humedad exterior manual",
+          "wind_speed_override": "Usar velocidad del viento exterior manual",
+          "outdoor_temperature_entity_id": "Temperatura exterior manual",
+          "outdoor_humidity_entity_id": "Humedad exterior manual",
+          "wind_speed_entity_id": "Velocidad del viento exterior manual"
         }
       },
       "rooms": {

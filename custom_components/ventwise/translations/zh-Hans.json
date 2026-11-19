@@ -255,6 +255,9 @@
         "description": "选择你想编辑的内容。",
         "menu_options": {
           "units": "测量单位",
+          "comfort": "舒适度设置",
+          "notifications": "通知",
+          "overrides": "室外数据覆盖",
           "rooms": "房间",
           "settings": "设置"
         },
@@ -301,6 +304,45 @@
           "soft_outdoor_threshold_c": "高于这个室外温度时，开窗的价值会更低。",
           "cooldown_minutes": "VentWise 发送更新通知前等待的时间；相同的建议会一直被抑制。",
           "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。"
+        }
+      },
+      "comfort": {
+        "title": "舒适度设置",
+        "description": "设置 VentWise 使用的舒适度目标和空气质量阈值。",
+        "data": {
+          "target_temperature_c": "舒适温度",
+          "auto_comfort_temperature": "自动调整舒适温度",
+          "target_humidity_percent": "舒适湿度",
+          "stability_minutes": "建议前等待（分钟）",
+          "soft_outdoor_threshold_c": "室外舒适阈值",
+          "co2_enabled": "在建议中考虑二氧化碳",
+          "co2_entity_id": "室内二氧化碳传感器",
+          "co2_threshold_ppm": "二氧化碳阈值（ppm）"
+        }
+      },
+      "notifications": {
+        "title": "通知",
+        "description": "选择 VentWise 通知的发送位置以及如何诊断通知传递。",
+        "data": {
+          "notification_device_id": "通知设备",
+          "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
+          "diagnostic_notification_level": "诊断通知",
+          "debug_mode_enabled": "启用通知测试控件",
+          "safety_bypass_quiet_hours": "允许在静默时段发送安全通知",
+          "cooldown_minutes": "通知冷却时间（分钟）"
+        }
+      },
+      "overrides": {
+        "title": "室外数据覆盖",
+        "description": "选择天气来源以及可选的手动室外测量值。",
+        "data": {
+          "outdoor_weather_entity_id": "天气来源",
+          "outdoor_temperature_override": "使用手动室外温度",
+          "outdoor_humidity_override": "使用手动室外湿度",
+          "wind_speed_override": "使用手动室外风速",
+          "outdoor_temperature_entity_id": "手动室外温度",
+          "outdoor_humidity_entity_id": "手动室外湿度",
+          "wind_speed_entity_id": "手动室外风速"
         }
       },
       "rooms": {

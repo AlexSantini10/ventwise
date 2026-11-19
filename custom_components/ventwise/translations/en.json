@@ -255,6 +255,9 @@
         "description": "Choose what you want to manage.",
         "menu_options": {
           "units": "Units of measurement",
+          "comfort": "Comfort settings",
+          "notifications": "Notifications",
+          "overrides": "Outdoor overrides",
           "settings": "Settings",
           "rooms": "Rooms"
         },
@@ -360,6 +363,45 @@
           "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending an updated notification. Identical recommendations stay suppressed."
+        }
+      },
+      "comfort": {
+        "title": "Comfort settings",
+        "description": "Set the comfort targets and air-quality thresholds used by VentWise.",
+        "data": {
+          "target_temperature_c": "Comfort temperature",
+          "auto_comfort_temperature": "Adapt comfort temperature automatically",
+          "target_humidity_percent": "Comfort humidity",
+          "stability_minutes": "Wait before recommending (minutes)",
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "co2_enabled": "Consider CO₂ in recommendations",
+          "co2_entity_id": "Home CO₂ sensor",
+          "co2_threshold_ppm": "CO₂ threshold (ppm)"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose where VentWise notifications go and how delivery is diagnosed.",
+        "data": {
+          "notification_device_id": "Notification devices",
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "diagnostic_notification_level": "Diagnostic notifications",
+          "debug_mode_enabled": "Enable notification test controls",
+          "safety_bypass_quiet_hours": "Allow safety notifications during quiet hours",
+          "cooldown_minutes": "Notification cooldown (minutes)"
+        }
+      },
+      "overrides": {
+        "title": "Outdoor overrides",
+        "description": "Choose the weather source and optional manual outdoor measurements.",
+        "data": {
+          "outdoor_weather_entity_id": "Weather source",
+          "outdoor_temperature_override": "Use manual outdoor temperature",
+          "outdoor_humidity_override": "Use manual outdoor humidity",
+          "wind_speed_override": "Use manual outdoor wind speed",
+          "outdoor_temperature_entity_id": "Manual outdoor temperature",
+          "outdoor_humidity_entity_id": "Manual outdoor humidity",
+          "wind_speed_entity_id": "Manual outdoor wind speed"
         }
       },
       "rooms": {

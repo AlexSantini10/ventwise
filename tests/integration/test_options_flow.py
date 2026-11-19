@@ -93,36 +93,38 @@ def test_remove_room_updates_the_saved_list() -> None:
     assert flow._current_config[CONF_ROOMS][0][CONF_ROOM_NAME] == "Upstairs"
 
 
-def test_settings_screen_saves_everyday_and_comfort_values_together() -> None:
-    """Users do not need to navigate between technical settings sections."""
+def test_comfort_screen_saves_only_comfort_values() -> None:
+    """Comfort changes are saved without replacing other global settings."""
 
-    flow = _make_flow()
+    flow = _make_flow(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_TARGET_TEMPERATURE_C: 21.0,
+            CONF_TARGET_HUMIDITY_PERCENT: 50.0,
+            CONF_STABILITY_MINUTES: 10,
+            CONF_SOFT_OUTDOOR_THRESHOLD_C: 23.0,
+        }
+    )
 
     saved = asyncio.run(
-        flow.async_step_settings(
+        flow.async_step_comfort(
             {
-                CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
                 CONF_TARGET_TEMPERATURE_C: 22.0,
                 CONF_AUTO_COMFORT_TEMPERATURE: True,
                 CONF_TARGET_HUMIDITY_PERCENT: 50.0,
                 CONF_STABILITY_MINUTES: 10,
-                CONF_NOTIFICATION_DEVICE_ID: [],
                 CONF_SOFT_OUTDOOR_THRESHOLD_C: 23.0,
-                CONF_COOLDOWN_MINUTES: 45,
-                CONF_OUTDOOR_TEMPERATURE_OVERRIDE: False,
-                CONF_OUTDOOR_HUMIDITY_OVERRIDE: False,
-                CONF_WIND_SPEED_OVERRIDE: False,
             }
         )
     )
 
     assert saved["type"] == "create_entry"
     assert saved["data"][CONF_AUTO_COMFORT_TEMPERATURE] is True
-    assert saved["data"][CONF_COOLDOWN_MINUTES] == 45
+    assert saved["data"][CONF_OUTDOOR_WEATHER_ENTITY_ID] == "weather.home"
 
 
-def test_options_menu_has_one_settings_screen_and_rooms() -> None:
-    """The top level does not fragment everyday settings into submenus."""
+def test_options_menu_groups_settings_by_purpose() -> None:
+    """The top-level menu separates comfort, notifications, and overrides."""
 
     flow = _make_flow()
 
@@ -130,7 +132,13 @@ def test_options_menu_has_one_settings_screen_and_rooms() -> None:
 
     assert overview["type"] == "menu"
     assert overview["step_id"] == "init"
-    assert overview["menu_options"] == ["units", "settings", "rooms"]
+    assert overview["menu_options"] == [
+        "units",
+        "comfort",
+        "notifications",
+        "overrides",
+        "rooms",
+    ]
 
 
 def test_edit_room_replaces_the_selected_room() -> None:

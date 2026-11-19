@@ -255,6 +255,9 @@
         "description": "Wählen Sie aus, was Sie verwalten möchten.",
         "menu_options": {
           "units": "Maßeinheiten",
+          "comfort": "Komforteinstellungen",
+          "notifications": "Benachrichtigungen",
+          "overrides": "Außenwertüberschreibungen",
           "settings": "Einstellungen",
           "rooms": "Zimmer"
         },
@@ -360,6 +363,45 @@
           "auto_comfort_temperature": "Verwendet Ihre Komforttemperatur als Basis und passt sie schrittweise an die wahrgenommene Außentemperatur an. Die Einstellung ist innerhalb eines Sicherheitsbereichs von 18–26 °C für Innenräume auf ±2 °C begrenzt. Raumsensoren ermitteln die Empfehlung, bewegen aber niemals das Ziel. Dadurch wird kein Thermostat oder HVAC-System gesteuert.",
           "soft_outdoor_threshold_c": "Oberhalb dieser Außentemperatur ist das Öffnen von Fenstern weniger sinnvoll.",
           "cooldown_minutes": "Wie lange wartet VentWise, bevor es eine aktualisierte Benachrichtigung sendet? Identische Empfehlungen bleiben unterdrückt."
+        }
+      },
+      "comfort": {
+        "title": "Komforteinstellungen",
+        "description": "Legen Sie Komfortziele und Luftqualitätsschwellen für VentWise fest.",
+        "data": {
+          "target_temperature_c": "Komforttemperatur",
+          "auto_comfort_temperature": "Komforttemperatur automatisch anpassen",
+          "target_humidity_percent": "Komfortluftfeuchtigkeit",
+          "stability_minutes": "Vor der Empfehlung warten (Minuten)",
+          "soft_outdoor_threshold_c": "Komfortschwelle außen",
+          "co2_enabled": "CO₂ bei Empfehlungen berücksichtigen",
+          "co2_entity_id": "CO₂-Sensor im Haus",
+          "co2_threshold_ppm": "CO₂-Schwelle (ppm)"
+        }
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Legen Sie fest, wohin VentWise benachrichtigt und wie die Zustellung diagnostiziert wird.",
+        "data": {
+          "notification_device_id": "Benachrichtigungsgeräte",
+          "home_assistant_notification_enabled": "Benachrichtigungen in Home Assistant anzeigen",
+          "diagnostic_notification_level": "Diagnosebenachrichtigungen",
+          "debug_mode_enabled": "Teststeuerungen für Benachrichtigungen aktivieren",
+          "safety_bypass_quiet_hours": "Sicherheitsbenachrichtigungen während der Ruhezeiten erlauben",
+          "cooldown_minutes": "Benachrichtigungspause (Minuten)"
+        }
+      },
+      "overrides": {
+        "title": "Außenwertüberschreibungen",
+        "description": "Wählen Sie die Wetterquelle und optionale manuelle Außenmessungen.",
+        "data": {
+          "outdoor_weather_entity_id": "Wetterquelle",
+          "outdoor_temperature_override": "Manuelle Außentemperatur verwenden",
+          "outdoor_humidity_override": "Manuelle Außenluftfeuchtigkeit verwenden",
+          "wind_speed_override": "Manuelle Windgeschwindigkeit verwenden",
+          "outdoor_temperature_entity_id": "Manuelle Außentemperatur",
+          "outdoor_humidity_entity_id": "Manuelle Außenluftfeuchtigkeit",
+          "wind_speed_entity_id": "Manuelle Windgeschwindigkeit"
         }
       },
       "rooms": {

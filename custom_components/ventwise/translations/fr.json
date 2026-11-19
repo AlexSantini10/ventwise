@@ -255,6 +255,9 @@
         "description": "Choisissez ce que vous souhaitez gérer.",
         "menu_options": {
           "units": "Unités de mesure",
+          "comfort": "Réglages du confort",
+          "notifications": "Alertes",
+          "overrides": "Remplacements extérieurs",
           "settings": "Paramètres",
           "rooms": "Chambres"
         },
@@ -360,6 +363,45 @@
           "auto_comfort_temperature": "Utilise votre température de confort comme référence et l'ajuste progressivement à partir de la température extérieure perçue. Le réglage est limité à ±2 °C dans une plage de sécurité intérieure de 18 à 26 °C. Les capteurs d'ambiance déterminent la recommandation mais ne déplacent jamais la cible. Cela ne contrôle pas un thermostat ou un système CVC.",
           "soft_outdoor_threshold_c": "Au-dessus de cette température extérieure, ouvrir les fenêtres devient moins utile.",
           "cooldown_minutes": "Combien de temps VentWise attend avant d’envoyer une notification mise à jour. Les recommandations identiques restent supprimées."
+        }
+      },
+      "comfort": {
+        "title": "Réglages du confort",
+        "description": "Définissez les objectifs de confort et les seuils de qualité de l'air utilisés par VentWise.",
+        "data": {
+          "target_temperature_c": "Température de confort",
+          "auto_comfort_temperature": "Adapter automatiquement la température de confort",
+          "target_humidity_percent": "Humidité de confort",
+          "stability_minutes": "Attendre avant de recommander (minutes)",
+          "soft_outdoor_threshold_c": "Seuil de confort extérieur",
+          "co2_enabled": "Tenir compte du CO₂ dans les recommandations",
+          "co2_entity_id": "Capteur CO₂ domestique",
+          "co2_threshold_ppm": "Seuil de CO₂ (ppm)"
+        }
+      },
+      "notifications": {
+        "title": "Alertes",
+        "description": "Choisissez où envoyer les notifications VentWise et comment diagnostiquer leur livraison.",
+        "data": {
+          "notification_device_id": "Dispositifs de notification",
+          "home_assistant_notification_enabled": "Afficher les notifications dans Home Assistant",
+          "diagnostic_notification_level": "Notifications de diagnostic",
+          "debug_mode_enabled": "Activer les contrôles de test des notifications",
+          "safety_bypass_quiet_hours": "Autoriser les notifications de sécurité pendant les heures silencieuses",
+          "cooldown_minutes": "Temps de recharge des notifications (minutes)"
+        }
+      },
+      "overrides": {
+        "title": "Remplacements extérieurs",
+        "description": "Choisissez la source météo et les mesures extérieures manuelles facultatives.",
+        "data": {
+          "outdoor_weather_entity_id": "Source météo",
+          "outdoor_temperature_override": "Utiliser la température extérieure manuelle",
+          "outdoor_humidity_override": "Utiliser l'humidité extérieure manuelle",
+          "wind_speed_override": "Utiliser la vitesse du vent extérieure manuelle",
+          "outdoor_temperature_entity_id": "Température extérieure manuelle",
+          "outdoor_humidity_entity_id": "Humidité extérieure manuelle",
+          "wind_speed_entity_id": "Vitesse du vent extérieure manuelle"
         }
       },
       "rooms": {

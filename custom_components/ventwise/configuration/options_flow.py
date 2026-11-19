@@ -23,11 +23,15 @@ from ..const import (
 from .flow import (
     ConfigValidationError,
     build_room_schema,
-    build_settings_schema,
+    build_comfort_schema,
+    build_notification_schema,
+    build_override_schema,
     build_unit_schema,
     _localized_room_kind_label,
     normalize_room_config,
-    normalize_settings_config,
+    normalize_comfort_config,
+    normalize_notification_config,
+    normalize_override_config,
     normalize_unit_config,
     split_config_data,
 )
@@ -53,7 +57,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             return self.async_abort(reason="invalid_step")
         return self.async_show_menu(
             step_id="init",
-            menu_options=["units", "settings", "rooms"],
+            menu_options=["units", "comfort", "notifications", "overrides", "rooms"],
             description_placeholders={"room_count": str(len(self._rooms))},
         )
 
@@ -65,24 +69,64 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             step_id="units", data_schema=build_unit_schema(self._current_config)
         )
 
-    async def async_step_settings(self, user_input: dict[str, Any] | None = None):
+    async def async_step_comfort(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                self._current_config = {
-                    **self._current_config,
-                    **normalize_settings_config(user_input, self._current_config),
-                }
+                self._current_config.update(
+                    normalize_comfort_config(user_input, self._current_config)
+                )
                 return self.async_create_entry(title=NAME, data=self._result_data())
             except ConfigValidationError as err:
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
                 errors["base"] = "invalid_input"
         return self.async_show_form(
-            step_id="settings",
-            data_schema=build_settings_schema(self._current_config, self.hass),
+            step_id="comfort",
+            data_schema=build_comfort_schema(self._current_config, self.hass),
             errors=errors,
         )
+
+    async def async_step_notifications(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                self._current_config.update(
+                    normalize_notification_config(user_input, self._current_config)
+                )
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        return self.async_show_form(
+            step_id="notifications",
+            data_schema=build_notification_schema(self._current_config, self.hass),
+            errors=errors,
+        )
+
+    async def async_step_overrides(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                self._current_config.update(
+                    normalize_override_config(user_input, self._current_config)
+                )
+                return self.async_create_entry(title=NAME, data=self._result_data())
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        return self.async_show_form(
+            step_id="overrides",
+            data_schema=build_override_schema(self._current_config, self.hass),
+            errors=errors,
+        )
+
+    async def async_step_settings(self, user_input: dict[str, Any] | None = None):
+        """Compatibility alias for older flow links."""
+
+        return await self.async_step_comfort(user_input)
 
     async def async_step_rooms(self, user_input: dict[str, Any] | None = None):
         """Select an existing room or the final add-room option."""

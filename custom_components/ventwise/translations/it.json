@@ -255,6 +255,9 @@
         "description": "Scegli cosa vuoi gestire.",
         "menu_options": {
           "units": "Unità di misura",
+          "comfort": "Impostazioni comfort",
+          "notifications": "Notifiche",
+          "overrides": "Override dati esterni",
           "settings": "Impostazioni",
           "rooms": "Stanze"
         },
@@ -360,6 +363,45 @@
           "auto_comfort_temperature": "Usa la tua temperatura di comfort come base e la corregge gradualmente in base alla temperatura esterna percepita. Lo scostamento è limitato a ±2 °C nel range domestico di sicurezza 18–26 °C. I sensori della stanza determinano il consiglio, ma non spostano il target. Non controlla termostato o HVAC.",
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
           "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare una notifica aggiornata. Le raccomandazioni identiche restano soppresse."
+        }
+      },
+      "comfort": {
+        "title": "Impostazioni comfort",
+        "description": "Imposta comfort, umidità e soglie di qualità dell'aria usati da VentWise.",
+        "data": {
+          "target_temperature_c": "Temperatura di comfort",
+          "auto_comfort_temperature": "Adatta automaticamente la temperatura di comfort",
+          "target_humidity_percent": "Umidità di comfort",
+          "stability_minutes": "Attesa prima della raccomandazione (minuti)",
+          "soft_outdoor_threshold_c": "Soglia di comfort esterna",
+          "co2_enabled": "Considera il CO₂ nelle raccomandazioni",
+          "co2_entity_id": "Sensore CO₂ domestico",
+          "co2_threshold_ppm": "Soglia CO₂ (ppm)"
+        }
+      },
+      "notifications": {
+        "title": "Notifiche",
+        "description": "Scegli dove inviare le notifiche VentWise e come diagnosticarne la consegna.",
+        "data": {
+          "notification_device_id": "Dispositivi da notificare",
+          "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant",
+          "diagnostic_notification_level": "Notifiche diagnostiche",
+          "debug_mode_enabled": "Abilita i controlli di test delle notifiche",
+          "safety_bypass_quiet_hours": "Consenti notifiche di sicurezza durante la fascia silenziosa",
+          "cooldown_minutes": "Pausa notifiche (minuti)"
+        }
+      },
+      "overrides": {
+        "title": "Override dati esterni",
+        "description": "Scegli la sorgente meteo e le eventuali misurazioni esterne manuali.",
+        "data": {
+          "outdoor_weather_entity_id": "Sorgente meteo",
+          "outdoor_temperature_override": "Usa temperatura esterna manuale",
+          "outdoor_humidity_override": "Usa umidità esterna manuale",
+          "wind_speed_override": "Usa velocità del vento esterna manuale",
+          "outdoor_temperature_entity_id": "Temperatura esterna manuale",
+          "outdoor_humidity_entity_id": "Umidità esterna manuale",
+          "wind_speed_entity_id": "Velocità del vento esterna manuale"
         }
       },
       "rooms": {

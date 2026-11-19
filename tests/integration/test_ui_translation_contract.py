@@ -14,9 +14,12 @@ pytest.importorskip("voluptuous")
 from custom_components.ventwise.configuration.flow import (  # noqa: E402
     build_advanced_options_schema,
     build_basic_options_schema,
+    build_comfort_schema,
     build_config_schema,
+    build_notification_schema,
     build_outdoor_override_schema,
     build_outdoor_source_schema,
+    build_override_schema,
     build_room_schema,
     build_settings_schema,
     build_unit_schema,
@@ -37,7 +40,7 @@ MENU_OPTIONS = {
         "rooms": {"add_room", "edit_room", "remove_room", "finish"},
     },
     "options": {
-        "init": {"units", "settings", "rooms"},
+        "init": {"units", "comfort", "notifications", "overrides", "rooms"},
         "rooms": {"add_room", "edit_room", "remove_room", "finish"},
     },
 }
@@ -72,6 +75,9 @@ def _schemas() -> dict[tuple[str, str], Any]:
         ),
         ("options", "units"): build_unit_schema({}),
         ("options", "settings"): build_settings_schema({}),
+        ("options", "comfort"): build_comfort_schema({}),
+        ("options", "notifications"): build_notification_schema({}),
+        ("options", "overrides"): build_override_schema({}),
         ("options", "basic"): build_basic_options_schema({}),
         ("options", "advanced"): build_advanced_options_schema({}),
         **{("config", step): schema for step, kind in ROOM_STEPS for schema in [room_schemas[f"{step}:{kind}"]]},
@@ -118,3 +124,39 @@ def test_menu_options_have_localized_labels(locale: str) -> None:
                 if not labels.get(option)
             )
     assert not missing, f"{locale} exposes untranslated menu IDs: {missing}"
+
+
+@pytest.mark.parametrize("schema_name", ("comfort", "notifications", "overrides"))
+def test_split_options_schemas_do_not_expose_unrelated_fields(schema_name: str) -> None:
+    schemas = _schemas()
+    fields = _field_names(schemas[("options", schema_name)])
+    expected_groups = {
+        "comfort": {
+            "target_temperature_c",
+            "auto_comfort_temperature",
+            "target_humidity_percent",
+            "stability_minutes",
+            "soft_outdoor_threshold_c",
+            "co2_enabled",
+            "co2_entity_id",
+            "co2_threshold_ppm",
+        },
+        "notifications": {
+            "notification_device_id",
+            "home_assistant_notification_enabled",
+            "diagnostic_notification_level",
+            "debug_mode_enabled",
+            "safety_bypass_quiet_hours",
+            "cooldown_minutes",
+        },
+        "overrides": {
+            "outdoor_weather_entity_id",
+            "outdoor_temperature_override",
+            "outdoor_humidity_override",
+            "wind_speed_override",
+            "outdoor_temperature_entity_id",
+            "outdoor_humidity_entity_id",
+            "wind_speed_entity_id",
+        },
+    }
+    assert fields == expected_groups[schema_name]

@@ -110,10 +110,11 @@ Its comfort score also treats temperatures below 18 °C and above 26 °C as
 health-relevant conditions, even if a personal comfort target is outside that
 range.
 
-Use **Configure** on the integration to change units, comfort values, notification
-settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
-climate-adaptive option changes only VentWise's recommendation target; it does
-not change a thermostat or HVAC setpoint.
+Use **Configure** on the integration to change settings through separate
+**Comfort settings**, **Notifications**, **Outdoor overrides**, and **Rooms**
+menus. Units remain in their own menu. The climate-adaptive option changes only
+VentWise's recommendation target; it does not change a thermostat or HVAC
+setpoint.
 
 Safety notifications bypass stability and cooldown. By default they still
 respect quiet hours; enable **Allow safety notifications during quiet hours**
