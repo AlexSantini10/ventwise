@@ -78,6 +78,13 @@ so a room such as `Sala visione` can show the shared outdoor context alongside
 its indoor values. Diagnostic entity categories are reserved for core and
 debug-only values.
 
+VentWise provides native Home Assistant translations for all supported
+platforms, including sensors, controls, diagnostics, time entities, states,
+and weather conditions. Entity names are resolved using the Home Assistant
+server language when the entity is first registered; changing that language
+later requires reloading or recreating the integration entities to replace
+names already stored in the entity registry.
+
 Use the config flow and options flow for all user-editable inputs such as room
 sensors, comfort temperature, notification target entities, quiet hours, and
 outdoor-data overrides.

@@ -29,6 +29,12 @@ presente, crea il pacchetto `ventwise-lab.zip`, installa l'integrazione nel
 profilo del Lab (incluso il core standalone vendorizzato) e avvia Home
 Assistant su [http://localhost:8123](http://localhost:8123).
 
+Il profilo del Lab configura il server Home Assistant in italiano prima di
+creare le entità VentWise. Questo è importante perché Home Assistant
+memorizza il nome tradotto dell'entità quando viene registrata per la prima
+volta. Dopo aver cambiato la lingua del server, usa `reset` e `up` per
+ricreare le entità con i nomi nella nuova lingua.
+
 ## Primo accesso
 
 Un profilo appena creato non ha utenti registrati. Apri

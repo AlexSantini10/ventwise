@@ -1068,7 +1068,10 @@ def ensure_config(config_root: Path) -> Path:
     config_dir.mkdir(parents=True, exist_ok=True)
     configuration = config_dir / "configuration.yaml"
     if not configuration.exists():
-        configuration.write_text("default_config:\n\nhomeassistant:\n  name: VentWise Test Lab\n", encoding="utf-8")
+        configuration.write_text(
+            "default_config:\n\nhomeassistant:\n  name: VentWise Test Lab\n  language: it\n",
+            encoding="utf-8",
+        )
     lines = (
         "input_number: !include ventwise_test_helpers.yaml", "input_boolean: !include ventwise_test_booleans.yaml",
         "input_select: !include ventwise_test_weather_condition.yaml", "template: !include ventwise_test_template.yaml",
@@ -1076,6 +1079,12 @@ def ensure_config(config_root: Path) -> Path:
         "lovelace: !include ventwise_test_dashboards.yaml", "ventwise_lab_bootstrap:",
     )
     text = configuration.read_text(encoding="utf-8")
+    if "  language: it" not in text and "homeassistant:" in text:
+        text = text.replace(
+            "homeassistant:\n  name: VentWise Test Lab",
+            "homeassistant:\n  name: VentWise Test Lab\n  language: it",
+        )
+        configuration.write_text(text, encoding="utf-8")
     missing = [line for line in lines if line not in text]
     if missing:
         marker = f"{FIXTURES_MARKER}\n" if FIXTURES_MARKER not in text else ""

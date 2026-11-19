@@ -624,7 +624,24 @@
         "name": "Rafale de vent extérieure"
       },
       "weather_condition": {
-        "name": "Conditions météorologiques"
+        "name": "Conditions météorologiques",
+        "state": {
+          "clear-night": "Nuit claire",
+          "cloudy": "Nuageux",
+          "exceptional": "Exceptionnel",
+          "fog": "Brouillard",
+          "hail": "Grêle",
+          "lightning": "Foudre",
+          "lightning-rainy": "Orage avec pluie",
+          "partlycloudy": "Partiellement nuageux",
+          "pouring": "Pluie abondante",
+          "rainy": "Pluvieux",
+          "snowy": "Neigeux",
+          "snowy-rainy": "Neige et pluie",
+          "sunny": "Ensoleillé",
+          "windy": "Venteux",
+          "windy-variant": "Vent variable"
+        }
       },
       "average_perceived_indoor_temperature": {
         "name": "Température intérieure moyenne perçue"
@@ -731,6 +748,14 @@
       },
       "humidity_override_enabled": {
         "name": "Remplacement de l'humidité activé"
+      }
+    },
+    "time": {
+      "quiet_hours_start_time": {
+        "name": "Début des heures silencieuses"
+      },
+      "quiet_hours_end_time": {
+        "name": "Fin des heures silencieuses"
       }
     }
   }

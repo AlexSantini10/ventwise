@@ -624,7 +624,24 @@
         "name": "Порыв ветра на улице"
       },
       "weather_condition": {
-        "name": "Погодные условия"
+        "name": "Погодные условия",
+        "state": {
+          "clear-night": "Ясная ночь",
+          "cloudy": "Облачно",
+          "exceptional": "Необычные условия",
+          "fog": "Туман",
+          "hail": "Град",
+          "lightning": "Молния",
+          "lightning-rainy": "Гроза с дождём",
+          "partlycloudy": "Переменная облачность",
+          "pouring": "Ливень",
+          "rainy": "Дождь",
+          "snowy": "Снег",
+          "snowy-rainy": "Снег с дождём",
+          "sunny": "Солнечно",
+          "windy": "Ветрено",
+          "windy-variant": "Переменный ветер"
+        }
       },
       "average_perceived_indoor_temperature": {
         "name": "Средняя ощущаемая температура в помещении"
@@ -731,6 +748,14 @@
       },
       "humidity_override_enabled": {
         "name": "Переопределение влажности включено"
+      }
+    },
+    "time": {
+      "quiet_hours_start_time": {
+        "name": "Начало тихих часов"
+      },
+      "quiet_hours_end_time": {
+        "name": "Конец тихих часов"
       }
     }
   }

@@ -624,7 +624,24 @@
         "name": "Outdoor wind gust"
       },
       "weather_condition": {
-        "name": "Weather condition"
+        "name": "Weather condition",
+        "state": {
+          "clear-night": "Clear night",
+          "cloudy": "Cloudy",
+          "exceptional": "Exceptional",
+          "fog": "Fog",
+          "hail": "Hail",
+          "lightning": "Lightning",
+          "lightning-rainy": "Lightning with rain",
+          "partlycloudy": "Partly cloudy",
+          "pouring": "Pouring rain",
+          "rainy": "Rainy",
+          "snowy": "Snowy",
+          "snowy-rainy": "Snowy rain",
+          "sunny": "Sunny",
+          "windy": "Windy",
+          "windy-variant": "Windy"
+        }
       },
       "average_perceived_indoor_temperature": {
         "name": "Average perceived indoor temperature"
@@ -731,6 +748,14 @@
       },
       "humidity_override_enabled": {
         "name": "Humidity override enabled"
+      }
+    },
+    "time": {
+      "quiet_hours_start_time": {
+        "name": "Quiet hours start"
+      },
+      "quiet_hours_end_time": {
+        "name": "Quiet hours end"
       }
     }
   }

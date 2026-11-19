@@ -627,7 +627,24 @@
         "name": "室外阵风"
       },
       "weather_condition": {
-        "name": "天气状况"
+        "name": "天气状况",
+        "state": {
+          "clear-night": "晴朗夜间",
+          "cloudy": "多云",
+          "exceptional": "异常",
+          "fog": "雾",
+          "hail": "冰雹",
+          "lightning": "雷电",
+          "lightning-rainy": "雷雨",
+          "partlycloudy": "局部多云",
+          "pouring": "暴雨",
+          "rainy": "下雨",
+          "snowy": "下雪",
+          "snowy-rainy": "雨夹雪",
+          "sunny": "晴朗",
+          "windy": "有风",
+          "windy-variant": "阵风"
+        }
       },
       "average_perceived_indoor_temperature": {
         "name": "平均感知室内温度"
@@ -734,6 +751,14 @@
       },
       "humidity_override_enabled": {
         "name": "湿度覆盖已启用"
+      }
+    },
+    "time": {
+      "quiet_hours_start_time": {
+        "name": "安静时段开始"
+      },
+      "quiet_hours_end_time": {
+        "name": "安静时段结束"
       }
     }
   }

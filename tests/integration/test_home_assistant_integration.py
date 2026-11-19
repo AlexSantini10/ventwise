@@ -201,6 +201,18 @@ async def test_entity_ids_stay_english_when_home_assistant_uses_italian(
     assert hass.states.get("sensor.test_room_recommendation") is not None
     assert hass.states.get("sensor.test_room_raccomandazione") is None
 
+    recommendation = hass.states.get("sensor.test_room_recommendation")
+    score = hass.states.get("sensor.test_room_score")
+    reason = hass.states.get("sensor.test_room_reason")
+    assert recommendation is not None
+    assert score is not None
+    assert reason is not None
+    assert "Raccomandazione" in recommendation.attributes["friendly_name"]
+    assert "Punteggio" in score.attributes["friendly_name"]
+    assert "Recommendation" not in recommendation.attributes["friendly_name"]
+    assert "Score" not in score.attributes["friendly_name"]
+    assert "Outside" not in reason.state
+
 
 @pytest.mark.asyncio
 async def test_real_flow_manager_starts_the_ventwise_config_flow(
