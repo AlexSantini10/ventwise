@@ -10,6 +10,7 @@ import pytest
 
 
 TRANSLATIONS_DIR = Path(__file__).parents[2] / "custom_components" / "ventwise" / "translations"
+NATIVE_STRINGS_PATH = TRANSLATIONS_DIR.parent / "strings.json"
 
 
 def _load_translation(language: str) -> dict[str, Any]:
@@ -82,6 +83,14 @@ def test_translation_files_reject_duplicate_keys(language: str) -> None:
         _load_translation(language)
     except ValueError as error:
         pytest.fail(f"{language}.json is invalid: {error}")
+
+
+def test_native_strings_catalog_covers_entity_translations() -> None:
+    """Ensure Home Assistant can resolve every translated entity key."""
+
+    native = json.loads(NATIVE_STRINGS_PATH.read_text(encoding="utf-8"))
+    english = _load_translation("en")
+    assert _leaf_paths(native["entity"]) == _leaf_paths(english["entity"])
 
 
 @pytest.mark.parametrize("language", REVIEWED_LANGUAGES)

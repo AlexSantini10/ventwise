@@ -650,6 +650,35 @@
       "wind_speed": {
         "name": "Velocidad del viento exterior"
       },
+      "outdoor_absolute_humidity": {
+        "name": "Humedad absoluta exterior (calculada)"
+      },
+      "outdoor_humidity_ratio": {
+        "name": "Relacion de humedad exterior (calculada)"
+      },
+      "outdoor_vapor_pressure": {
+        "name": "Presion de vapor exterior (calculada)"
+      },
+      "indoor_absolute_humidity": {
+        "name": "Humedad absoluta interior (calculada)"
+      },
+      "indoor_humidity_ratio": {
+        "name": "Relacion de humedad interior (calculada)"
+      },
+      "indoor_vapor_pressure": {
+        "name": "Presion de vapor interior (calculada)"
+      },
+      "indoor_outdoor_humidity_difference": {
+        "name": "Diferencia de humedad interior/exterior (calculada)"
+      },
+      "moisture_exchange_direction": {
+        "name": "Direccion del intercambio de humedad (calculada)",
+        "state": {
+          "drying": "Secante",
+          "humidifying": "Humidificante",
+          "neutral": "Neutro"
+        }
+      },
       "recommendation": {
         "name": "Recomendación",
         "state": {

@@ -90,6 +90,14 @@ Assistant entities. Check the recommendation before opening or closing a
 window. A recommendation can be delayed by the configured stability period,
 quiet hours, cooldown, missing data, or a disabled room.
 
+Each room device also includes the shared outdoor context. Alongside the
+measured temperature and humidity, VentWise exposes calculated absolute
+humidity (`g/m³`), humidity ratio (`g/kg`), vapor pressure (`hPa`), and the
+outdoor-minus-indoor moisture difference. The moisture exchange direction is
+reported as `drying`, `humidifying`, or `neutral`. Calculated entities are
+regular sensors and are labelled as calculated; diagnostic entities are kept
+for core/debug information only.
+
 When the outdoor temperature can correct the room only temporarily, VentWise
 can recommend **brief ventilation** instead of leaving a window open. In that
 case, air the room for about 10 minutes, close the window, and check the sensor

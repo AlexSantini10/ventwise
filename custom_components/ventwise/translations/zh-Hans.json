@@ -650,6 +650,35 @@
       "wind_speed": {
         "name": "室外风速"
       },
+      "outdoor_absolute_humidity": {
+        "name": "室外绝对湿度（计算）"
+      },
+      "outdoor_humidity_ratio": {
+        "name": "室外含湿量比（计算）"
+      },
+      "outdoor_vapor_pressure": {
+        "name": "室外水蒸气分压（计算）"
+      },
+      "indoor_absolute_humidity": {
+        "name": "室内绝对湿度（计算）"
+      },
+      "indoor_humidity_ratio": {
+        "name": "室内含湿量比（计算）"
+      },
+      "indoor_vapor_pressure": {
+        "name": "室内水蒸气分压（计算）"
+      },
+      "indoor_outdoor_humidity_difference": {
+        "name": "室内外湿度差（计算）"
+      },
+      "moisture_exchange_direction": {
+        "name": "湿度交换方向（计算）",
+        "state": {
+          "drying": "除湿",
+          "humidifying": "加湿",
+          "neutral": "中性"
+        }
+      },
       "recommendation": {
         "name": "建议",
         "state": {

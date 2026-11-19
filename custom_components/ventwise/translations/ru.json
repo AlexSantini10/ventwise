@@ -647,6 +647,35 @@
       "wind_speed": {
         "name": "Скорость ветра на улице"
       },
+      "outdoor_absolute_humidity": {
+        "name": "Absolyutnaya vlazhnost na ulice (raschyotnaya)"
+      },
+      "outdoor_humidity_ratio": {
+        "name": "Otnoshenie vlazhnosti na ulice (raschyotnoe)"
+      },
+      "outdoor_vapor_pressure": {
+        "name": "Davlenie vodianogo para na ulice (raschyotnoe)"
+      },
+      "indoor_absolute_humidity": {
+        "name": "Absolyutnaya vlazhnost v pomeshchenii (raschyotnaya)"
+      },
+      "indoor_humidity_ratio": {
+        "name": "Otnoshenie vlazhnosti v pomeshchenii (raschyotnoe)"
+      },
+      "indoor_vapor_pressure": {
+        "name": "Davlenie vodianogo para v pomeshchenii (raschyotnoe)"
+      },
+      "indoor_outdoor_humidity_difference": {
+        "name": "Raznitsa vlazhnosti v pomeshchenii i na ulice (raschyotnaya)"
+      },
+      "moisture_exchange_direction": {
+        "name": "Napravlenie obmena vlagoi (raschyotnoe)",
+        "state": {
+          "drying": "Osushenie",
+          "humidifying": "Uvlazhnenie",
+          "neutral": "Neitralno"
+        }
+      },
       "recommendation": {
         "name": "Рекомендация",
         "state": {

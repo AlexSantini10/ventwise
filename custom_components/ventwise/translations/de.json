@@ -647,6 +647,35 @@
       "wind_speed": {
         "name": "Windgeschwindigkeit im Freien"
       },
+      "outdoor_absolute_humidity": {
+        "name": "Absolute Luftfeuchtigkeit im Freien (berechnet)"
+      },
+      "outdoor_humidity_ratio": {
+        "name": "Feuchteverhaeltnis im Freien (berechnet)"
+      },
+      "outdoor_vapor_pressure": {
+        "name": "Dampfdruck im Freien (berechnet)"
+      },
+      "indoor_absolute_humidity": {
+        "name": "Absolute Luftfeuchtigkeit im Innenraum (berechnet)"
+      },
+      "indoor_humidity_ratio": {
+        "name": "Feuchteverhaeltnis im Innenraum (berechnet)"
+      },
+      "indoor_vapor_pressure": {
+        "name": "Dampfdruck im Innenraum (berechnet)"
+      },
+      "indoor_outdoor_humidity_difference": {
+        "name": "Feuchtigkeitsdifferenz innen/aussen (berechnet)"
+      },
+      "moisture_exchange_direction": {
+        "name": "Richtung des Feuchteaustauschs (berechnet)",
+        "state": {
+          "drying": "Trocknend",
+          "humidifying": "Befeuchtend",
+          "neutral": "Unveraendert"
+        }
+      },
       "recommendation": {
         "name": "Empfehlung",
         "state": {

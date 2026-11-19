@@ -20,16 +20,27 @@ from custom_components.ventwise.number import (
     RoomTargetTemperatureOverrideNumber,
 )
 from custom_components.ventwise.sensor import (
+    IndoorOutdoorHumidityDifferenceSensor,
+    MoistureExchangeDirectionSensor,
+    OutdoorAbsoluteHumiditySensor,
+    OutdoorHumidityRatioSensor,
     OutdoorTemperatureSensor,
+    OutdoorVaporPressureSensor,
     PerceivedComfortTemperatureSensor,
     PerceivedIndoorTemperatureSensor,
     PerceivedOutdoorTemperatureSensor,
     RoomIndoorTemperatureSensor,
+    RoomIndoorAbsoluteHumiditySensor,
+    RoomIndoorHumidityRatioSensor,
+    RoomIndoorVaporPressureSensor,
     RoomPerceivedComfortTemperatureSensor,
     RoomPerceivedIndoorTemperatureSensor,
     RoomPerceivedOutdoorTemperatureSensor,
     RoomSuggestedComfortTemperatureSensor,
     RoomOutdoorTemperatureSensor,
+    RoomOutdoorAbsoluteHumiditySensor,
+    RoomOutdoorHumidityRatioSensor,
+    RoomOutdoorVaporPressureSensor,
     SuggestedComfortTemperatureSensor,
 )
 
@@ -49,6 +60,29 @@ def _room() -> SimpleNamespace:
         target_temperature_c_override=23.0,
         target_humidity_percent_override=55.0,
     )
+
+
+def _coordinator_with_psychrometric_data() -> tuple[SimpleNamespace, SimpleNamespace]:
+    room = _room()
+    outdoor = SimpleNamespace(
+        temperature_c=SimpleNamespace(value=20.0),
+        humidity_percent=SimpleNamespace(value=50.0),
+        pressure_hpa=SimpleNamespace(value=1013.25),
+    )
+    indoor = SimpleNamespace(
+        room_id="Camera",
+        temperature_c=SimpleNamespace(value=24.0),
+        humidity_percent=SimpleNamespace(value=60.0),
+    )
+    coordinator = _coordinator()
+    coordinator.config.rooms = [room]
+    coordinator.data = SimpleNamespace(
+        core_snapshot=SimpleNamespace(outdoor=outdoor, rooms=[indoor]),
+        outdoor_temperature_c=20.0,
+        outdoor_humidity_percent=50.0,
+        outdoor_pressure_hpa=1013.25,
+    )
+    return coordinator, room
 
 
 def test_celsius_sensor_units_are_consistent() -> None:
@@ -118,6 +152,37 @@ def test_suggested_object_id_does_not_follow_the_ui_language() -> None:
 
     assert sensor.translation_key == "outdoor_temperature"
     assert sensor.suggested_object_id == "outdoor_temperature"
+
+
+def test_calculated_sensors_share_outdoor_values_on_global_and_room_devices() -> None:
+    coordinator, room = _coordinator_with_psychrometric_data()
+
+    outdoor_global = OutdoorAbsoluteHumiditySensor(coordinator)
+    outdoor_room = RoomOutdoorAbsoluteHumiditySensor(coordinator, room)
+
+    assert outdoor_global.native_value == pytest.approx(outdoor_room.native_value)
+    assert outdoor_global.native_unit_of_measurement == "g/m³"
+    assert outdoor_global.entity_category is None
+
+
+def test_calculated_moisture_sensors_are_regular_entities() -> None:
+    coordinator, room = _coordinator_with_psychrometric_data()
+
+    sensors = [
+        RoomIndoorAbsoluteHumiditySensor(coordinator, room),
+        RoomIndoorHumidityRatioSensor(coordinator, room),
+        RoomIndoorVaporPressureSensor(coordinator, room),
+        RoomOutdoorHumidityRatioSensor(coordinator, room),
+        RoomOutdoorVaporPressureSensor(coordinator, room),
+        IndoorOutdoorHumidityDifferenceSensor(coordinator),
+        MoistureExchangeDirectionSensor(coordinator),
+    ]
+
+    assert all(sensor.entity_category is None for sensor in sensors)
+    assert sensors[0].native_value == pytest.approx(13.0, abs=0.2)
+    assert sensors[1].native_value == pytest.approx(11.2, abs=0.3)
+    assert sensors[2].native_value == pytest.approx(17.9, abs=0.2)
+    assert sensors[-1].native_value == "drying"
 
 
 def test_disabling_debug_mode_removes_only_debug_button_registry_entries(

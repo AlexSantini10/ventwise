@@ -57,6 +57,8 @@ Expose one logical device that groups runtime state and controls:
 
 - aggregate recommendation, score, and localized reason
 - current weather, forecast temperature, outdoor pressure, wind speed, and wind gust
+- measured and calculated outdoor moisture sensors, including absolute humidity,
+  humidity ratio, vapor pressure, and indoor/outdoor moisture difference
 - master enable control
 - quiet-hour or notification state
 - notification target or delivery state
@@ -69,6 +71,12 @@ room-specific CO₂ sensor. A room-specific sensor always takes precedence.
 Decision diagnostics remain available as structured attributes on aggregate
 and room recommendation entities, including normalized inputs, quality,
 traces, candidate scores, core results, and delivery projections.
+
+Measured and calculated sensors are regular Home Assistant sensors. The same
+outdoor measurements and calculated values are mirrored on every room device,
+so a room such as `Sala visione` can show the shared outdoor context alongside
+its indoor values. Diagnostic entity categories are reserved for core and
+debug-only values.
 
 Use the config flow and options flow for all user-editable inputs such as room
 sensors, comfort temperature, notification target entities, quiet hours, and

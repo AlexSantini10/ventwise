@@ -20,7 +20,14 @@ from .application.runtime import (
     state_to_temperature_c,
 )
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
-from .ventwise_core import RecommendationAction
+from .ventwise_core import (
+    RecommendationAction,
+    absolute_humidity_g_m3,
+    humidity_ratio_g_kg,
+    moisture_exchange_direction,
+    pressure_hpa_or_default,
+    vapor_pressure_hpa,
+)
 from .units import display_value, temperature_from_celsius, wind_speed_from_m_s
 from .const import DEFAULT_TEMPERATURE_UNIT, DEFAULT_WIND_SPEED_UNIT
 
@@ -31,7 +38,8 @@ class TemperatureUnitMixin:
         return getattr(self.coordinator.config, "temperature_unit", DEFAULT_TEMPERATURE_UNIT)
 
     def _temperature(self, value):
-        return display_value(temperature_from_celsius(value, self.native_unit_of_measurement))
+        converted = temperature_from_celsius(value, self.native_unit_of_measurement)
+        return None if converted is None else round(display_value(converted), 2)
 
 
 class WindSpeedUnitMixin:
@@ -40,7 +48,8 @@ class WindSpeedUnitMixin:
         return getattr(self.coordinator.config, "wind_speed_unit", DEFAULT_WIND_SPEED_UNIT)
 
     def _wind_speed(self, value):
-        return display_value(wind_speed_from_m_s(value, self.native_unit_of_measurement))
+        converted = wind_speed_from_m_s(value, self.native_unit_of_measurement)
+        return None if converted is None else round(display_value(converted), 2)
 
 
 async def async_setup_entry(
@@ -64,6 +73,11 @@ async def async_setup_entry(
         OutdoorTemperatureSensor(coordinator),
         OutdoorHumiditySensor(coordinator),
         OutdoorPressureSensor(coordinator),
+        OutdoorAbsoluteHumiditySensor(coordinator),
+        OutdoorHumidityRatioSensor(coordinator),
+        OutdoorVaporPressureSensor(coordinator),
+        IndoorOutdoorHumidityDifferenceSensor(coordinator),
+        MoistureExchangeDirectionSensor(coordinator),
         WindSpeedSensor(coordinator),
         WindGustSensor(coordinator),
         ForecastTemperatureSensor(coordinator),
@@ -85,9 +99,17 @@ async def async_setup_entry(
                 RoomSuggestedComfortTemperatureSensor(coordinator, room),
                 RoomIndoorTemperatureSensor(coordinator, room),
                 RoomIndoorHumiditySensor(coordinator, room),
+                RoomIndoorAbsoluteHumiditySensor(coordinator, room),
+                RoomIndoorHumidityRatioSensor(coordinator, room),
+                RoomIndoorVaporPressureSensor(coordinator, room),
                 RoomCo2Sensor(coordinator, room),
                 RoomOutdoorTemperatureSensor(coordinator, room),
                 RoomOutdoorHumiditySensor(coordinator, room),
+                RoomOutdoorAbsoluteHumiditySensor(coordinator, room),
+                RoomOutdoorHumidityRatioSensor(coordinator, room),
+                RoomOutdoorVaporPressureSensor(coordinator, room),
+                RoomIndoorOutdoorHumidityDifferenceSensor(coordinator, room),
+                RoomMoistureExchangeDirectionSensor(coordinator, room),
                 RoomWindSpeedSensor(coordinator, room),
             ]
         )
@@ -106,6 +128,121 @@ def _room_core_result(coordinator: VentWiseCoordinator, room: RoomConfig):
         ),
         None,
     )
+
+
+def _outdoor_reading(coordinator: VentWiseCoordinator):
+    """Return the normalized outdoor observation, when available."""
+
+    core_snapshot = getattr(coordinator.data, "core_snapshot", None)
+    return None if core_snapshot is None else core_snapshot.outdoor
+
+
+def _room_reading(coordinator: VentWiseCoordinator, room: RoomConfig):
+    """Return the normalized room observation, when available."""
+
+    core_snapshot = getattr(coordinator.data, "core_snapshot", None)
+    if core_snapshot is None:
+        return None
+    room_id = room.room_id or room.name
+    return next((item for item in core_snapshot.rooms if item.room_id == room_id), None)
+
+
+def _psychrometric_values(temperature_c, humidity_percent, pressure_hpa=None):
+    """Return calculated moisture values for a normalized reading."""
+
+    if temperature_c is None or humidity_percent is None:
+        return None
+    try:
+        pressure, pressure_estimated = pressure_hpa_or_default(pressure_hpa)
+        return {
+            "absolute": round(absolute_humidity_g_m3(temperature_c, humidity_percent), 2),
+            "ratio": round(humidity_ratio_g_kg(temperature_c, humidity_percent, pressure), 2),
+            "vapor_pressure": round(vapor_pressure_hpa(temperature_c, humidity_percent), 2),
+            "pressure_estimated": pressure_estimated,
+        }
+    except (TypeError, ValueError):
+        return None
+
+
+def _outdoor_psychrometrics(coordinator: VentWiseCoordinator):
+    """Return outdoor calculated values from normalized coordinator data."""
+
+    reading = _outdoor_reading(coordinator)
+    if reading is not None:
+        return _psychrometric_values(
+            reading.temperature_c.value,
+            reading.humidity_percent.value if reading.humidity_percent else None,
+            reading.pressure_hpa.value if reading.pressure_hpa else None,
+        )
+    snapshot = coordinator.data
+    return _psychrometric_values(
+        snapshot.outdoor_temperature_c,
+        snapshot.outdoor_humidity_percent,
+        snapshot.outdoor_pressure_hpa,
+    )
+
+
+def _room_psychrometrics(coordinator: VentWiseCoordinator, room: RoomConfig):
+    """Return room indoor calculated values from normalized data."""
+
+    reading = _room_reading(coordinator, room)
+    if reading is None or reading.humidity_percent is None:
+        return None
+    outdoor = _outdoor_reading(coordinator)
+    pressure = outdoor.pressure_hpa.value if outdoor and outdoor.pressure_hpa else None
+    return _psychrometric_values(
+        reading.temperature_c.value,
+        reading.humidity_percent.value,
+        pressure,
+    )
+
+
+def _room_outdoor_psychrometrics(coordinator: VentWiseCoordinator, room: RoomConfig):
+    """Return the shared outdoor calculated values for a room device."""
+
+    return _outdoor_psychrometrics(coordinator)
+
+
+def _room_humidity_delta(coordinator: VentWiseCoordinator, room: RoomConfig):
+    """Return outdoor minus indoor absolute humidity for a room."""
+
+    outdoor = _outdoor_psychrometrics(coordinator)
+    indoor = _room_psychrometrics(coordinator, room)
+    if outdoor is None or indoor is None:
+        return None
+    return round(outdoor["absolute"] - indoor["absolute"], 2)
+
+
+def _global_humidity_delta(coordinator: VentWiseCoordinator):
+    """Return outdoor minus average indoor absolute humidity."""
+
+    outdoor = _outdoor_psychrometrics(coordinator)
+    if outdoor is None:
+        return None
+    values = []
+    for room in coordinator.config.rooms:
+        indoor = _room_psychrometrics(coordinator, room)
+        if indoor is not None:
+            values.append(indoor["absolute"])
+    if not values:
+        return None
+    return round(outdoor["absolute"] - sum(values) / len(values), 2)
+
+
+def _global_moisture_direction(coordinator: VentWiseCoordinator):
+    """Return the moisture exchange direction against average indoor air."""
+
+    outdoor = _outdoor_psychrometrics(coordinator)
+    if outdoor is None:
+        return None
+    values = []
+    for room in coordinator.config.rooms:
+        indoor = _room_psychrometrics(coordinator, room)
+        if indoor is not None:
+            values.append(indoor["absolute"])
+    if not values:
+        return None
+    return moisture_exchange_direction(sum(values) / len(values), outdoor["absolute"])
 
 
 class AggregateRecommendationSensor(VentWiseEntity, SensorEntity):
@@ -135,7 +272,7 @@ class AggregateRecommendationScoreSensor(VentWiseEntity, SensorEntity):
 
     @property
     def native_value(self) -> float:
-        return self.coordinator.data.summary.score
+        return round(self.coordinator.data.summary.score, 2)
 
 
 class AggregateRecommendationReasonSensor(VentWiseEntity, SensorEntity):
@@ -204,7 +341,8 @@ class OutdoorPressureSensor(VentWiseEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.outdoor_pressure_hpa
+        value = self.coordinator.data.outdoor_pressure_hpa
+        return None if value is None else round(value, 2)
 
 
 class WindGustSensor(WindSpeedUnitMixin, VentWiseEntity, SensorEntity):
@@ -335,7 +473,85 @@ class OutdoorHumiditySensor(VentWiseEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.outdoor_humidity_percent
+        value = self.coordinator.data.outdoor_humidity_percent
+        return None if value is None else round(value, 2)
+
+
+class OutdoorAbsoluteHumiditySensor(VentWiseEntity, SensorEntity):
+    """Calculated outdoor absolute humidity."""
+
+    _attr_icon = "mdi:water-opacity"
+    _attr_native_unit_of_measurement = "g/m³"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "outdoor_absolute_humidity", "outdoor_absolute_humidity")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _outdoor_psychrometrics(self.coordinator)
+        return None if values is None else values["absolute"]
+
+
+class OutdoorHumidityRatioSensor(VentWiseEntity, SensorEntity):
+    """Calculated outdoor humidity ratio."""
+
+    _attr_icon = "mdi:water-percent"
+    _attr_native_unit_of_measurement = "g/kg"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "outdoor_humidity_ratio", "outdoor_humidity_ratio")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _outdoor_psychrometrics(self.coordinator)
+        return None if values is None else values["ratio"]
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        values = _outdoor_psychrometrics(self.coordinator)
+        return {} if values is None else {"pressure_estimated": values["pressure_estimated"]}
+
+
+class OutdoorVaporPressureSensor(VentWiseEntity, SensorEntity):
+    """Calculated outdoor water vapor pressure."""
+
+    _attr_icon = "mdi:gauge"
+    _attr_native_unit_of_measurement = "hPa"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "outdoor_vapor_pressure", "outdoor_vapor_pressure")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _outdoor_psychrometrics(self.coordinator)
+        return None if values is None else values["vapor_pressure"]
+
+
+class IndoorOutdoorHumidityDifferenceSensor(VentWiseEntity, SensorEntity):
+    """Calculated outdoor-minus-average-indoor absolute humidity."""
+
+    _attr_icon = "mdi:water-sync"
+    _attr_native_unit_of_measurement = "g/m³"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "indoor_outdoor_humidity_difference", "indoor_outdoor_humidity_difference")
+
+    @property
+    def native_value(self) -> float | None:
+        return _global_humidity_delta(self.coordinator)
+
+
+class MoistureExchangeDirectionSensor(VentWiseEntity, SensorEntity):
+    """Calculated direction of moisture exchange with outdoor air."""
+
+    _attr_icon = "mdi:water-sync"
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "moisture_exchange_direction", "moisture_exchange_direction")
+
+    @property
+    def native_value(self) -> str | None:
+        return _global_moisture_direction(self.coordinator)
 
 
 class WindSpeedSensor(WindSpeedUnitMixin, VentWiseEntity, SensorEntity):
@@ -390,7 +606,7 @@ class RoomRecommendationScoreSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> float:
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
-        return 0.0 if recommendation is None else recommendation.score
+        return 0.0 if recommendation is None else round(recommendation.score, 2)
 
 
 class RoomRecommendationConfidenceSensor(VentWiseRoomEntity, SensorEntity):
@@ -419,7 +635,7 @@ class RoomVentilationScoreSensor(VentWiseRoomEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         result = _room_core_result(self.coordinator, self.room)
-        return None if result is None else result.candidate_scores.ventilate
+        return None if result is None else round(result.candidate_scores.ventilate, 2)
 
 
 class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
@@ -506,7 +722,7 @@ class RoomCo2Sensor(VentWiseRoomEntity, SensorEntity):
             return "sensor_unavailable"
         if value is not None and value.is_integer():
             return int(value)
-        return value
+        return round(value, 2)
 
 
 class RoomWindowStateSensor(VentWiseRoomEntity, SensorEntity):
@@ -650,7 +866,58 @@ class RoomIndoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
     def native_value(self) -> float | None:
         if not self.room.humidity_entity_id:
             return None
-        return state_to_float(self.hass.states.get(self.room.humidity_entity_id))
+        value = state_to_float(self.hass.states.get(self.room.humidity_entity_id))
+        return None if value is None else round(value, 2)
+
+
+class RoomIndoorAbsoluteHumiditySensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated indoor absolute humidity for a room."""
+
+    _attr_icon = "mdi:water-opacity"
+    _attr_native_unit_of_measurement = "g/m³"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "indoor_absolute_humidity", "indoor_absolute_humidity")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _room_psychrometrics(self.coordinator, self.room)
+        return None if values is None else values["absolute"]
+
+
+class RoomIndoorHumidityRatioSensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated indoor humidity ratio for a room."""
+
+    _attr_icon = "mdi:water-percent"
+    _attr_native_unit_of_measurement = "g/kg"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "indoor_humidity_ratio", "indoor_humidity_ratio")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _room_psychrometrics(self.coordinator, self.room)
+        return None if values is None else values["ratio"]
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        values = _room_psychrometrics(self.coordinator, self.room)
+        return {} if values is None else {"pressure_estimated": values["pressure_estimated"]}
+
+
+class RoomIndoorVaporPressureSensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated indoor water vapor pressure for a room."""
+
+    _attr_icon = "mdi:gauge"
+    _attr_native_unit_of_measurement = "hPa"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "indoor_vapor_pressure", "indoor_vapor_pressure")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _room_psychrometrics(self.coordinator, self.room)
+        return None if values is None else values["vapor_pressure"]
 
 
 class RoomOutdoorTemperatureSensor(TemperatureUnitMixin, VentWiseRoomEntity, SensorEntity):
@@ -677,7 +944,89 @@ class RoomOutdoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.outdoor_humidity_percent
+        value = self.coordinator.data.outdoor_humidity_percent
+        return None if value is None else round(value, 2)
+
+
+class RoomOutdoorAbsoluteHumiditySensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated outdoor absolute humidity shown on a room device."""
+
+    _attr_icon = "mdi:water-opacity"
+    _attr_native_unit_of_measurement = "g/m³"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "outdoor_absolute_humidity", "outdoor_absolute_humidity")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _room_outdoor_psychrometrics(self.coordinator, self.room)
+        return None if values is None else values["absolute"]
+
+
+class RoomOutdoorHumidityRatioSensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated outdoor humidity ratio shown on a room device."""
+
+    _attr_icon = "mdi:water-percent"
+    _attr_native_unit_of_measurement = "g/kg"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "outdoor_humidity_ratio", "outdoor_humidity_ratio")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _room_outdoor_psychrometrics(self.coordinator, self.room)
+        return None if values is None else values["ratio"]
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        values = _room_outdoor_psychrometrics(self.coordinator, self.room)
+        return {} if values is None else {"pressure_estimated": values["pressure_estimated"]}
+
+
+class RoomOutdoorVaporPressureSensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated outdoor water vapor pressure shown on a room device."""
+
+    _attr_icon = "mdi:gauge"
+    _attr_native_unit_of_measurement = "hPa"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "outdoor_vapor_pressure", "outdoor_vapor_pressure")
+
+    @property
+    def native_value(self) -> float | None:
+        values = _room_outdoor_psychrometrics(self.coordinator, self.room)
+        return None if values is None else values["vapor_pressure"]
+
+
+class RoomIndoorOutdoorHumidityDifferenceSensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated outdoor-minus-indoor absolute humidity for a room."""
+
+    _attr_icon = "mdi:water-sync"
+    _attr_native_unit_of_measurement = "g/m³"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "indoor_outdoor_humidity_difference", "indoor_outdoor_humidity_difference")
+
+    @property
+    def native_value(self) -> float | None:
+        return _room_humidity_delta(self.coordinator, self.room)
+
+
+class RoomMoistureExchangeDirectionSensor(VentWiseRoomEntity, SensorEntity):
+    """Calculated direction of moisture exchange for a room."""
+
+    _attr_icon = "mdi:water-sync"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "moisture_exchange_direction", "moisture_exchange_direction")
+
+    @property
+    def native_value(self) -> str | None:
+        outdoor = _outdoor_psychrometrics(self.coordinator)
+        indoor = _room_psychrometrics(self.coordinator, self.room)
+        if outdoor is None or indoor is None:
+            return None
+        return moisture_exchange_direction(indoor["absolute"], outdoor["absolute"])
 
 
 class RoomWindSpeedSensor(WindSpeedUnitMixin, VentWiseRoomEntity, SensorEntity):
