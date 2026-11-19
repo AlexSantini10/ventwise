@@ -580,7 +580,14 @@
       },
       "recommendation_confidence": {"name": "Confiance de la recommandation"},
       "ventilation_score": {"name": "Score de ventilation"},
-      "co2": {"name": "CO₂ intérieur"},
+      "co2": {
+        "name": "CO₂ intérieur",
+        "state": {
+          "disabled": "Désactivé",
+          "not_configured": "Non configuré",
+          "sensor_unavailable": "Capteur indisponible"
+        }
+      },
       "forecast_temperature": {"name": "Température prévue"},
       "outdoor_pressure": {"name": "Pression extérieure"},
       "wind_gust": {"name": "Rafale de vent extérieure"},
