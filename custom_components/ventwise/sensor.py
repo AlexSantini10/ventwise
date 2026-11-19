@@ -448,6 +448,8 @@ class RoomCo2Sensor(VentWiseRoomEntity, SensorEntity):
             self.room,
             self.hass.states.get,
         )
+        if value is not None and value.is_integer():
+            return int(value)
         return value
 
 

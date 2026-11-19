@@ -465,6 +465,15 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
             ),
+            **_optional_selector_field(
+                CONF_ROOM_CO2_ENTITY_ID,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_ROOM_CO2_ENTITY_ID),
+            ),
+            vol.Required(
+                CONF_ROOM_CO2_ENABLED,
+                default=_default_room_co2_enabled(defaults),
+            ): cv.boolean,
             vol.Required(
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
                 default=_default_room_override_enabled(
@@ -491,15 +500,6 @@ def build_room_schema(
                 minimum=20.0,
                 maximum=80.0,
             ),
-            **_optional_selector_field(
-                CONF_ROOM_CO2_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_ROOM_CO2_ENTITY_ID),
-            ),
-            vol.Required(
-                CONF_ROOM_CO2_ENABLED,
-                default=_default_room_co2_enabled(defaults),
-            ): cv.boolean,
             vol.Optional(
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
                 default=_default_entity_id_list(
