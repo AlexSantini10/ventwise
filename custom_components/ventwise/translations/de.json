@@ -20,7 +20,8 @@
           "notification_device_id": "Benachrichtigungsgeräte",
           "home_assistant_notification_enabled": "Benachrichtigungen im Home Assistant anzeigen",
           "safety_bypass_quiet_hours": "Sicherheitsbenachrichtigungen während der Ruhezeiten erlauben",
-          "diagnostic_notification_level": "Diagnosebenachrichtigungen"
+          "diagnostic_notification_level": "Diagnosebenachrichtigungen",
+          "co2_threshold_ppm": "CO₂-Grenzwert (ppm)"
         },
         "data_description": {
           "debug_mode_enabled": "Zeigt Teststeuerungen fuer Oeffnungs- und Schliessbenachrichtigungen je Raum an.",
@@ -32,12 +33,16 @@
           "notification_device_id": "Optional. Wählen Sie ein oder mehrere Geräte aus, die VentWise-Benachrichtigungen erhalten sollen.",
           "home_assistant_notification_enabled": "Zeigen Sie jede VentWise-Empfehlung im Benachrichtigungsfeld von Home Assistant an.",
           "safety_bypass_quiet_hours": "Wenn aktiviert, dürfen dringende Sicherheitsbenachrichtigungen während der Ruhezeiten gesendet werden. Stabilität, Abklingzeit und Duplikatunterdrückung bleiben aktiv.",
-          "diagnostic_notification_level": "Wählen Sie, ob Home Assistant zusätzliche Benachrichtigungen bei Konfigurations- oder Sensordatenproblemen anzeigt."
+          "diagnostic_notification_level": "Wählen Sie, ob Home Assistant zusätzliche Benachrichtigungen bei Konfigurations- oder Sensordatenproblemen anzeigt.",
+          "co2_threshold_ppm": "CO₂-Wert, ab dem VentWise Frischluft priorisiert."
         }
       },
       "units": {
         "title": "Maßeinheiten",
-        "data": {"temperature_unit": "Temperatureinheit", "wind_speed_unit": "Windgeschwindigkeitseinheit"}
+        "data": {
+          "temperature_unit": "Temperatureinheit",
+          "wind_speed_unit": "Windgeschwindigkeitseinheit"
+        }
       },
       "outdoor": {
         "title": "Outdoor-Daten",
@@ -122,7 +127,8 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "target_humidity_percent_override": "Übersteuerung der Raumkomfort-Luftfeuchtigkeit (%)"
         },
         "data_description": {
           "enabled": "Schalten Sie diese Option aus, wenn Sie nicht möchten, dass VentWise diesen Raum berücksichtigt.",
@@ -137,7 +143,8 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu schließen.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "target_humidity_percent_override": "Optional. Verwenden Sie diesen raumspezifischen Prozentsatz der Komfortfeuchtigkeit anstelle des globalen Prozentsatzes."
         }
       },
       "edit_room_form": {
@@ -155,7 +162,10 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie die Übersteuerung der Raumtemperatur",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie die Übersteuerung der Raumfeuchtigkeit",
+          "target_humidity_percent_override": "Übersteuerung der Raumkomfort-Luftfeuchtigkeit (%)"
         },
         "data_description": {
           "enabled": "Schalten Sie diese Option aus, wenn Sie nicht möchten, dass VentWise diesen Raum berücksichtigt.",
@@ -168,7 +178,10 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu schließen.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine raumspezifische Komforttemperatur verwenden soll.",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine raumspezifische Komfortfeuchtigkeit verwenden soll.",
+          "target_humidity_percent_override": "Optional. Verwenden Sie diesen raumspezifischen Prozentsatz der Komfortfeuchtigkeit anstelle des globalen Prozentsatzes."
         }
       },
       "add_macro_room": {
@@ -188,7 +201,8 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "target_humidity_percent_override": "Übersteuerung der Raumkomfort-Luftfeuchtigkeit (%)"
         },
         "data_description": {
           "enabled": "Schalten Sie diese Option aus, wenn VentWise diesen Bereich nicht berücksichtigen soll.",
@@ -203,7 +217,8 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Bereich zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es zum Schließen von Fenstern in diesem Bereich auffordert.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "target_humidity_percent_override": "Optional. Verwenden Sie diesen bereichsspezifischen Prozentsatz der Komfortfeuchtigkeit anstelle des globalen Prozentsatzes."
         }
       },
       "edit_macro_room_form": {
@@ -221,7 +236,10 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie die Übersteuerung der Raumtemperatur",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie die Übersteuerung der Raumfeuchtigkeit",
+          "target_humidity_percent_override": "Übersteuerung der Raumkomfort-Luftfeuchtigkeit (%)"
         },
         "data_description": {
           "enabled": "Schalten Sie diese Option aus, wenn VentWise diesen Bereich nicht berücksichtigen soll.",
@@ -234,7 +252,10 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Bereich zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es zum Schließen von Fenstern in diesem Bereich auffordert.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine bereichsspezifische Komforttemperatur verwenden soll.",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine bereichsspezifische Komfortfeuchtigkeit verwenden soll.",
+          "target_humidity_percent_override": "Optional. Verwenden Sie diesen bereichsspezifischen Prozentsatz der Komfortfeuchtigkeit anstelle des globalen Prozentsatzes."
         }
       }
     },
@@ -260,7 +281,10 @@
       },
       "units": {
         "title": "Maßeinheiten",
-        "data": {"temperature_unit": "Temperatureinheit", "wind_speed_unit": "Windgeschwindigkeitseinheit"}
+        "data": {
+          "temperature_unit": "Temperatureinheit",
+          "wind_speed_unit": "Windgeschwindigkeitseinheit"
+        }
       },
       "settings": {
         "title": "VentWise-Einstellungen",
@@ -408,7 +432,9 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "enabled": "Aktivieren Sie diesen Raum",
+          "co2_enabled": "CO₂ für diesen Raum verwenden"
         },
         "data_description": {
           "name": "Ein freundlicher Name für diesen Raum, z. B. Schlafzimmer, Arbeitszimmer oder Büro.",
@@ -422,7 +448,9 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu schließen.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "enabled": "Schalten Sie diese Option aus, wenn Sie nicht möchten, dass VentWise diesen Raum berücksichtigt.",
+          "co2_enabled": "Den ausgewählten CO₂-Sensor für diesen Raum verwenden."
         }
       },
       "edit_room_form": {
@@ -439,7 +467,11 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie die Übersteuerung der Raumtemperatur",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie die Übersteuerung der Raumfeuchtigkeit",
+          "enabled": "Aktivieren Sie diesen Raum",
+          "co2_enabled": "CO₂ für diesen Raum verwenden"
         },
         "data_description": {
           "name": "Ein freundlicher Name für diesen Raum, z. B. Schlafzimmer, Arbeitszimmer oder Büro.",
@@ -451,7 +483,11 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Raum zu schließen.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine raumspezifische Komforttemperatur verwenden soll.",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine raumspezifische Komfortfeuchtigkeit verwenden soll.",
+          "enabled": "Schalten Sie diese Option aus, wenn Sie nicht möchten, dass VentWise diesen Raum berücksichtigt.",
+          "co2_enabled": "Den ausgewählten CO₂-Sensor für diesen Raum verwenden."
         }
       },
       "add_macro_room": {
@@ -470,7 +506,9 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "enabled": "Aktivieren Sie diesen Raum",
+          "co2_enabled": "CO₂ für diesen Bereich verwenden"
         },
         "data_description": {
           "name": "Ein aussagekräftiger Name für diesen größeren Bereich, z. B. „Obergeschoss“ oder „Wohnbereich“.",
@@ -484,7 +522,9 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Bereich zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es zum Schließen von Fenstern in diesem Bereich auffordert.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "enabled": "Schalten Sie diese Option aus, wenn VentWise diesen Bereich nicht berücksichtigen soll.",
+          "co2_enabled": "Den ausgewählten CO₂-Sensor für diesen Bereich verwenden."
         }
       },
       "edit_macro_room_form": {
@@ -501,10 +541,14 @@
           "start_entity_id": "Öffnen Sie die Windows-Automatisierung",
           "stop_entity_id": "Schließen Sie die Windows-Automatisierung",
           "action_change_hold_minutes": "Warten Sie, bevor Sie den Hinweis umkehren (Minuten)",
-          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf."
+          "action_lockout_minutes": "Bewahren Sie den Zimmerhinweis für (Minuten) auf.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie die Übersteuerung der Raumtemperatur",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie die Übersteuerung der Raumfeuchtigkeit",
+          "enabled": "Aktivieren Sie diesen Raum",
+          "co2_enabled": "CO₂ für diesen Bereich verwenden"
         },
         "data_description": {
-          "name": "Ein benutzerfreundlicher Name für diesen gruppierten Bereich, z. B. Obergeschoss oder Wohnbereich.",
+          "name": "Ein aussagekräftiger Name für diesen größeren Bereich, z. B. „Obergeschoss“ oder „Wohnbereich“.",
           "temperature_entity_id": "Wählen Sie den Haupttemperatursensor für diesen Bereich.",
           "humidity_entity_id": "Optional. Wählen Sie den Feuchtigkeitssensor für diesen Bereich.",
           "co2_entity_id": "Optional. Wählen Sie den CO₂-Sensor für diesen Bereich.",
@@ -513,7 +557,11 @@
           "start_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es Sie auffordert, Fenster in diesem Bereich zu öffnen.",
           "stop_entity_id": "Optional. Wählen Sie die Automatisierung aus, die VentWise ausführen soll, wenn es zum Schließen von Fenstern in diesem Bereich auffordert.",
           "action_change_hold_minutes": "Warten Sie so lange, bevor Sie eine offene Empfehlung in eine schließende Empfehlung umwandeln oder umgekehrt.",
-          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert."
+          "action_lockout_minutes": "Verhindern Sie nach einer Eröffnungs- oder Schlussempfehlung so lange eine gegenteilige Empfehlung. Dringende Sicherheitsschließungen werden nie verzögert.",
+          "target_temperature_c_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine bereichsspezifische Komforttemperatur verwenden soll.",
+          "target_humidity_percent_override_enabled": "Aktivieren Sie diese Option, wenn VentWise eine bereichsspezifische Komfortfeuchtigkeit verwenden soll.",
+          "enabled": "Schalten Sie diese Option aus, wenn VentWise diesen Bereich nicht berücksichtigen soll.",
+          "co2_enabled": "Den ausgewählten CO₂-Sensor für diesen Bereich verwenden."
         }
       }
     },
@@ -532,9 +580,15 @@
   },
   "entity": {
     "button": {
-      "request_recommendation": {"name": "Empfehlung jetzt anfordern"},
-      "debug_open_notification": {"name": "Benachrichtigung zum Öffnen empfangen"},
-      "debug_close_notification": {"name": "Benachrichtigung zum Schließen empfangen"}
+      "request_recommendation": {
+        "name": "Empfehlung jetzt anfordern"
+      },
+      "debug_open_notification": {
+        "name": "Benachrichtigung zum Öffnen empfangen"
+      },
+      "debug_close_notification": {
+        "name": "Benachrichtigung zum Schließen empfangen"
+      }
     },
     "binary_sensor": {
       "notifications_currently_allowed": {
@@ -568,7 +622,9 @@
       }
     },
     "sensor": {
-      "core_recommendation": {"name": "Berechnete Empfehlung"},
+      "core_recommendation": {
+        "name": "Berechnete Empfehlung"
+      },
       "co2_status": {
         "name": "CO₂-Status innen",
         "state": {
@@ -578,8 +634,12 @@
           "unavailable": "Sensor nicht verfügbar"
         }
       },
-      "recommendation_confidence": {"name": "Empfehlungssicherheit"},
-      "ventilation_score": {"name": "Lüftungswert"},
+      "recommendation_confidence": {
+        "name": "Empfehlungssicherheit"
+      },
+      "ventilation_score": {
+        "name": "Lüftungswert"
+      },
       "co2": {
         "name": "CO₂ im Innenraum",
         "state": {
@@ -588,9 +648,15 @@
           "sensor_unavailable": "Sensor nicht verfügbar"
         }
       },
-      "forecast_temperature": {"name": "Vorhersagetemperatur"},
-      "outdoor_pressure": {"name": "Außendruck"},
-      "wind_gust": {"name": "Windböe im Freien"},
+      "forecast_temperature": {
+        "name": "Vorhersagetemperatur"
+      },
+      "outdoor_pressure": {
+        "name": "Außendruck"
+      },
+      "wind_gust": {
+        "name": "Windböe im Freien"
+      },
       "weather_condition": {
         "name": "Wetterlage"
       },

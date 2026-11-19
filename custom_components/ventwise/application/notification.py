@@ -17,7 +17,7 @@ _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
 _PERSISTENT_ON_DEMAND_RECOMMENDATION_ID = "ventwise_on_demand_recommendation"
 _PERSISTENT_DELIVERY_FAILURE_ID = "ventwise_notification_delivery_failure"
 _PERSISTENT_DIAGNOSTIC_ID = "ventwise_diagnostic"
-_LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "ru", "zh-hans")
+_LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "fr", "de", "ru", "zh-hans")
 _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
     "en": {
         "open": "open windows.",
@@ -50,6 +50,26 @@ _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
         "failed_title": "Fallo la entrega de la notificacion de VentWise",
         "delivered_to": "Entregada a",
         "failed_targets": "Destinos fallidos",
+    },
+    "fr": {
+        "open": "ouvrez les fenêtres.",
+        "close": "fermez les fenêtres.",
+        "none": "aucune action nécessaire.",
+        "open_reason": "L'extérieur est actuellement plus confortable : {delta:.1f} °C plus proche du confort.",
+        "close_reason": "L'intérieur est actuellement plus confortable : {delta:.1f} °C plus proche du confort.",
+        "forecast_reason": "Prévision à court terme : les conditions extérieures devraient bientôt être moins confortables.",
+        "failed_title": "Échec de la livraison de la notification VentWise",
+        "failed_targets": "Destinataires en échec",
+    },
+    "de": {
+        "open": "Fenster öffnen.",
+        "close": "Fenster schließen.",
+        "none": "keine Aktion erforderlich.",
+        "open_reason": "Draußen ist es derzeit angenehmer: {delta:.1f} °C näher am Komfort.",
+        "close_reason": "Drinnen ist es derzeit angenehmer: {delta:.1f} °C näher am Komfort.",
+        "forecast_reason": "Kurzfristige Vorhersage: Die Bedingungen draußen werden bald weniger angenehm.",
+        "failed_title": "Zustellung der VentWise-Benachrichtigung fehlgeschlagen",
+        "failed_targets": "Fehlgeschlagene Ziele",
     },
     "ru": {
         "open": "откройте окна.",
@@ -269,6 +289,8 @@ def build_diagnostic_notification_payload(
     diagnostics = {
         "unavailable_data": {
             "en": ("VentWise data unavailable", "Required weather or room sensor data is unavailable."),
+            "fr": ("Données VentWise indisponibles", "Les données météo ou des capteurs de la pièce sont indisponibles."),
+            "de": ("VentWise-Daten nicht verfügbar", "Erforderliche Wetter- oder Raumsensordaten sind nicht verfügbar."),
             "it": ("Dati VentWise non disponibili", "I dati meteo o dei sensori della stanza richiesti non sono disponibili."),
             "es": ("Datos de VentWise no disponibles", "Los datos meteorol\u00f3gicos o de sensores de habitaci\u00f3n necesarios no est\u00e1n disponibles."),
             "ru": ("\u0414\u0430\u043d\u043d\u044b\u0435 VentWise \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b", "\u041d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u043e\u0433\u043e\u0434\u044b \u0438\u043b\u0438 \u0434\u0430\u0442\u0447\u0438\u043a\u043e\u0432 \u043a\u043e\u043c\u043d\u0430\u0442\u044b."),
@@ -276,6 +298,8 @@ def build_diagnostic_notification_payload(
         },
         "no_enabled_rooms": {
             "en": ("VentWise needs an enabled room", "No enabled rooms are configured."),
+            "fr": ("VentWise nécessite une pièce activée", "Aucune pièce activée n'est configurée."),
+            "de": ("VentWise benötigt einen aktivierten Raum", "Es sind keine aktivierten Räume konfiguriert."),
             "it": ("VentWise richiede una stanza attiva", "Non sono configurate stanze attive."),
             "es": ("VentWise necesita una habitaci\u00f3n activa", "No hay habitaciones activas configuradas."),
             "ru": ("VentWise \u043d\u0443\u0436\u043d\u0430 \u0430\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u043a\u043e\u043c\u043d\u0430\u0442\u0430", "\u041d\u0435\u0442 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043d\u044b\u0445 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043a\u043e\u043c\u043d\u0430\u0442."),
@@ -325,6 +349,8 @@ def build_recommendation_status(
     status_texts = {
         "quiet_hours": {
             "en": "Recommendations are paused during quiet hours.",
+            "fr": "Les recommandations sont suspendues pendant les heures calmes.",
+            "de": "Empfehlungen sind während der Ruhezeiten pausiert.",
             "it": "Le raccomandazioni sono sospese durante la fascia silenziosa.",
             "es": "Las recomendaciones están pausadas durante las horas de silencio.",
             "ru": "Рекомендации приостановлены в режиме тишины.",
@@ -332,6 +358,8 @@ def build_recommendation_status(
         },
         "cooldown": {
             "en": "The same recommendation was sent recently.",
+            "fr": "La même recommandation a été envoyée récemment.",
+            "de": "Dieselbe Empfehlung wurde kürzlich gesendet.",
             "it": "La stessa raccomandazione è stata inviata di recente.",
             "es": "La misma recomendación se envió recientemente.",
             "ru": "Та же рекомендация была отправлена недавно.",
@@ -339,6 +367,8 @@ def build_recommendation_status(
         },
         "stability": {
             "en": "Waiting for the recommendation to remain stable.",
+            "fr": "La recommandation doit encore rester stable.",
+            "de": "Die Empfehlung muss noch stabil bleiben.",
             "it": "In attesa che la raccomandazione resti stabile.",
             "es": "Esperando a que la recomendación se mantenga estable.",
             "ru": "Ожидание стабилизации рекомендации.",
@@ -346,6 +376,8 @@ def build_recommendation_status(
         },
         "unavailable": {
             "en": "Waiting for the required sensor data.",
+            "fr": "En attente des données nécessaires des capteurs.",
+            "de": "Warten auf die erforderlichen Sensordaten.",
             "it": "In attesa dei dati richiesti dai sensori.",
             "es": "Esperando los datos necesarios de los sensores.",
             "ru": "Ожидание необходимых данных датчиков.",
@@ -353,6 +385,8 @@ def build_recommendation_status(
         },
         "disabled": {
             "en": "VentWise is disabled.",
+            "fr": "VentWise est désactivé.",
+            "de": "VentWise ist deaktiviert.",
             "it": "VentWise è disabilitato.",
             "es": "VentWise está deshabilitado.",
             "ru": "VentWise отключён.",
@@ -518,6 +552,8 @@ def _notification_action_title(action: str, language: str | None) -> str:
             "en": "Ventilate briefly",
             "it": "Arieggia brevemente",
             "es": "Ventila brevemente",
+            "fr": "Aérer brièvement",
+            "de": "Kurz lüften",
             "ru": "Кратко проветрите",
             "zh-hans": "短时通风",
         }.get(_normalize_language_key(language), "Ventilate briefly")
@@ -548,6 +584,8 @@ def _ventilation_reason(language: str | None, minutes: int) -> str:
         "en": "Ventilate for about {minutes} minutes, then close and check again.",
         "it": "Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
         "es": "Ventila durante unos {minutes} minutos, luego cierra y vuelve a comprobarlo.",
+        "fr": "Aérez pendant environ {minutes} minutes, puis fermez et vérifiez à nouveau.",
+        "de": "Lüften Sie etwa {minutes} Minuten, schließen Sie dann und prüfen Sie erneut.",
         "ru": "Проветривайте около {minutes} минут, затем закройте и проверьте снова.",
         "zh-hans": "通风约 {minutes} 分钟，然后关闭并再次检查。",
     }

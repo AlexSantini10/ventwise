@@ -18,6 +18,7 @@ on:
       - "scripts/test-ci-docker.ps1"
       - "scripts/run_tests.py"
       - "scripts/run_test_suite.py"
+      - "scripts/check_localization.py"
       - ".githooks/**"
       - "Dockerfile.ci"
       - "docker-compose.ci.yml"
@@ -44,6 +45,7 @@ on:
       - "scripts/test-ci-docker.ps1"
       - "scripts/run_tests.py"
       - "scripts/run_test_suite.py"
+      - "scripts/check_localization.py"
       - ".githooks/**"
       - "Dockerfile.ci"
       - "docker-compose.ci.yml"
@@ -75,6 +77,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Validate localization catalogs
+        run: python scripts/check_localization.py --strict
 
       - name: Set up runner Python
         uses: actions/setup-python@v5

@@ -17,7 +17,8 @@
           "diagnostic_notification_level": "诊断通知",
           "auto_comfort_temperature": "使用适应气候的舒适度目标",
           "home_assistant_notification_enabled": "在 Home Assistant 中显示通知",
-          "safety_bypass_quiet_hours": "允许在静默时段发送安全通知"
+          "safety_bypass_quiet_hours": "允许在静默时段发送安全通知",
+          "co2_threshold_ppm": "CO2 阈值 (ppm)"
         },
         "data_description": {
           "debug_mode_enabled": "Shows per-room open and close notification test controls.",
@@ -29,12 +30,16 @@
           "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
           "home_assistant_notification_enabled": "在 Home Assistant 的通知面板中显示每个 VentWise 建议。",
           "safety_bypass_quiet_hours": "启用后，紧急安全通知可以在静默时段发送。",
-          "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。"
+          "diagnostic_notification_level": "选择 Home Assistant 是否显示有关配置或传感器数据问题的额外通知。",
+          "co2_threshold_ppm": "VentWise 开始优先考虑新鲜空气的二氧化碳水平。"
         }
       },
       "units": {
         "title": "测量单位",
-        "data": {"temperature_unit": "温度单位", "wind_speed_unit": "风速单位"}
+        "data": {
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位"
+        }
       },
       "outdoor": {
         "title": "室外数据",
@@ -119,7 +124,8 @@
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
@@ -134,7 +140,8 @@
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "target_humidity_percent_override": "可选。使用该房间专属的舒适湿度百分比，而不是全局值。"
         }
       },
       "edit_room_form": {
@@ -152,7 +159,10 @@
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
@@ -165,7 +175,10 @@
           "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
+          "target_humidity_percent_override": "可选。使用该房间专属的舒适湿度百分比，而不是全局值。"
         }
       },
       "add_macro_room": {
@@ -185,7 +198,8 @@
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
@@ -200,7 +214,8 @@
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "target_humidity_percent_override": "可选。使用该区域专属的舒适湿度百分比，而不是全局值。"
         }
       },
       "edit_macro_room_form": {
@@ -218,7 +233,10 @@
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
+          "target_humidity_percent_override": "房间舒适湿度覆盖（%）"
         },
         "data_description": {
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
@@ -231,7 +249,10 @@
           "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
+          "target_humidity_percent_override": "可选。使用该区域专属的舒适湿度百分比，而不是全局值。"
         }
       }
     },
@@ -352,7 +373,9 @@
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "enabled": "包含此房间",
+          "co2_enabled": "使用此房间的二氧化碳"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如卧室、书房或办公室。",
@@ -366,7 +389,9 @@
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
+          "co2_enabled": "使用所选的房间二氧化碳传感器。"
         }
       },
       "edit_room_form": {
@@ -383,7 +408,11 @@
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
+          "enabled": "包含此房间",
+          "co2_enabled": "使用此房间的二氧化碳"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如卧室、书房或办公室。",
@@ -395,7 +424,11 @@
           "start_entity_id": "可选。选择 VentWise 在提示打开此房间窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭此房间窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适温度，请打开此选项。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定于房间的舒适湿度，请打开此选项。",
+          "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
+          "co2_enabled": "使用所选的房间二氧化碳传感器。"
         }
       },
       "add_macro_room": {
@@ -414,7 +447,9 @@
           "target_temperature_c_override_enabled": "启用室温覆盖",
           "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "enabled": "包含此房间",
+          "co2_enabled": "使用此区域的二氧化碳"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
@@ -428,7 +463,9 @@
           "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
           "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
+          "co2_enabled": "使用所选的区域二氧化碳传感器。"
         }
       },
       "edit_macro_room_form": {
@@ -445,7 +482,11 @@
           "start_entity_id": "开窗自动化",
           "stop_entity_id": "关窗自动化",
           "action_change_hold_minutes": "撤销建议前等待（分钟）",
-          "action_lockout_minutes": "保留房间建议（分钟）"
+          "action_lockout_minutes": "保留房间建议（分钟）",
+          "target_temperature_c_override_enabled": "启用室温覆盖",
+          "target_humidity_percent_override_enabled": "启用房间湿度覆盖",
+          "enabled": "包含此房间",
+          "co2_enabled": "使用此区域的二氧化碳"
         },
         "data_description": {
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
@@ -457,12 +498,19 @@
           "start_entity_id": "可选。选择 VentWise 在提示打开该区域窗户时应执行的自动化。",
           "stop_entity_id": "可选。选择 VentWise 在提示关闭该区域窗户时应执行的自动化。",
           "action_change_hold_minutes": "等待这么长时间，然后再将开放推荐更改为关闭推荐，反之亦然。",
-          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。"
+          "action_lockout_minutes": "在提出开仓或平仓建议后，在这么长的时间内防止出现相反的建议。紧急安全关闭绝不拖延。",
+          "target_temperature_c_override_enabled": "如果您希望 VentWise 使用特定于区域的舒适温度，请打开此选项。",
+          "target_humidity_percent_override_enabled": "如果您希望 VentWise 使用特定区域的舒适湿度，请打开此选项。",
+          "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
+          "co2_enabled": "使用所选的区域二氧化碳传感器。"
         }
       },
       "units": {
         "title": "测量单位",
-        "data": {"temperature_unit": "温度单位", "wind_speed_unit": "风速单位"}
+        "data": {
+          "temperature_unit": "温度单位",
+          "wind_speed_unit": "风速单位"
+        }
       },
       "settings": {
         "title": "VentWise 设置",
@@ -535,9 +583,15 @@
   },
   "entity": {
     "button": {
-      "request_recommendation": {"name": "立即获取建议"},
-      "debug_open_notification": {"name": "接收开窗通知"},
-      "debug_close_notification": {"name": "接收关窗通知"}
+      "request_recommendation": {
+        "name": "立即获取建议"
+      },
+      "debug_open_notification": {
+        "name": "接收开窗通知"
+      },
+      "debug_close_notification": {
+        "name": "接收关窗通知"
+      }
     },
     "binary_sensor": {
       "notifications_currently_allowed": {
@@ -571,7 +625,9 @@
       }
     },
     "sensor": {
-      "core_recommendation": {"name": "计算出的建议"},
+      "core_recommendation": {
+        "name": "计算出的建议"
+      },
       "co2_status": {
         "name": "室内二氧化碳状态",
         "state": {
@@ -581,8 +637,12 @@
           "unavailable": "传感器不可用"
         }
       },
-      "recommendation_confidence": {"name": "建议置信度"},
-      "ventilation_score": {"name": "通风分数"},
+      "recommendation_confidence": {
+        "name": "建议置信度"
+      },
+      "ventilation_score": {
+        "name": "通风分数"
+      },
       "co2": {
         "name": "室内二氧化碳",
         "state": {
@@ -591,9 +651,15 @@
           "sensor_unavailable": "传感器不可用"
         }
       },
-      "forecast_temperature": {"name": "预测温度"},
-      "outdoor_pressure": {"name": "室外气压"},
-      "wind_gust": {"name": "室外阵风"},
+      "forecast_temperature": {
+        "name": "预测温度"
+      },
+      "outdoor_pressure": {
+        "name": "室外气压"
+      },
+      "wind_gust": {
+        "name": "室外阵风"
+      },
       "weather_condition": {
         "name": "天气状况"
       },
