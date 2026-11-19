@@ -13,7 +13,7 @@ build/
 .venv*/
 *.egg-info/
 *.log
-AGENTS.md
+AGENTS.local.md
 
 .idea
 /.codex-tmp

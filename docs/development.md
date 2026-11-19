@@ -18,6 +18,18 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
+## Agent Instructions
+
+`AGENTS.md` is the public, versioned guide for repository contributors and
+coding agents. It contains only reproducible project rules and must not contain
+secrets, personal paths, private endpoints, or machine-specific instructions.
+
+For owner- or machine-specific guidance, create `AGENTS.local.md` at the
+repository root. This file is ignored by Git and is loaded only when present;
+it is optional and must never be required to build, test, or contribute to the
+project. Keep credentials in environment variables or a local secret store,
+not in either instructions file.
+
 ## Common Commands
 
 Run the complete automated suite with the exact Python, Home Assistant, pytest,
