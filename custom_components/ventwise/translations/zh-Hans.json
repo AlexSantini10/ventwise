@@ -572,6 +572,15 @@
     },
     "sensor": {
       "core_recommendation": {"name": "计算出的建议"},
+      "co2_status": {
+        "name": "室内二氧化碳状态",
+        "state": {
+          "available": "可用",
+          "disabled": "已禁用",
+          "not_configured": "未配置",
+          "unavailable": "传感器不可用"
+        }
+      },
       "recommendation_confidence": {"name": "建议置信度"},
       "ventilation_score": {"name": "通风分数"},
       "co2": {"name": "室内二氧化碳"},

@@ -569,6 +569,15 @@
     },
     "sensor": {
       "core_recommendation": {"name": "Рассчитанная рекомендация"},
+      "co2_status": {
+        "name": "Состояние CO₂ в помещении",
+        "state": {
+          "available": "Доступен",
+          "disabled": "Отключён",
+          "not_configured": "Не настроен",
+          "unavailable": "Датчик недоступен"
+        }
+      },
       "recommendation_confidence": {"name": "Уверенность рекомендации"},
       "ventilation_score": {"name": "Оценка проветривания"},
       "co2": {"name": "CO₂ в помещении"},

@@ -782,6 +782,20 @@ def room_co2_reading(
     return value, source
 
 
+def room_co2_status(
+    room: RoomConfig,
+    state_getter: Callable[[str], Any],
+) -> str:
+    """Return a user-facing status for the room CO₂ configuration."""
+
+    if not room.co2_enabled:
+        return "disabled"
+    if not room.co2_entity_id:
+        return "not_configured"
+    value, _ = room_co2_reading(room, state_getter)
+    return "available" if value is not None else "unavailable"
+
+
 WINDOW_STATE_NOT_CONFIGURED = "not_configured"
 WINDOW_STATE_OPEN = "open"
 WINDOW_STATE_CLOSED = "closed"

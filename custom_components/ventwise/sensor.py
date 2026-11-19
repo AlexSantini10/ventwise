@@ -16,6 +16,7 @@ from .application.runtime import (
     find_room_recommendation,
     build_room_diagnostic_attributes,
     room_co2_reading,
+    room_co2_status,
     state_to_float,
     state_to_temperature_c,
 )
@@ -86,6 +87,7 @@ async def async_setup_entry(
                 RoomIndoorTemperatureSensor(coordinator, room),
                 RoomIndoorHumiditySensor(coordinator, room),
                 RoomCo2Sensor(coordinator, room),
+                RoomCo2StatusSensor(coordinator, room),
                 RoomOutdoorTemperatureSensor(coordinator, room),
                 RoomOutdoorHumiditySensor(coordinator, room),
                 RoomWindSpeedSensor(coordinator, room),
@@ -486,6 +488,15 @@ class RoomCo2Sensor(VentWiseRoomEntity, SensorEntity):
         super().__init__(coordinator, room, "co2", "co2")
 
     @property
+    def available(self) -> bool:
+        """Keep the numeric sensor unavailable when it cannot provide a reading."""
+
+        if not self.room.co2_enabled:
+            return False
+        value, _ = room_co2_reading(self.room, self.hass.states.get)
+        return value is not None
+
+    @property
     def native_value(self) -> float | None:
         if not self.room.co2_enabled:
             return None
@@ -496,6 +507,19 @@ class RoomCo2Sensor(VentWiseRoomEntity, SensorEntity):
         if value is not None and value.is_integer():
             return int(value)
         return value
+
+
+class RoomCo2StatusSensor(VentWiseRoomEntity, SensorEntity):
+    """Human-readable availability state for the room CO₂ configuration."""
+
+    _attr_icon = "mdi:information-outline"
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "co2_status", "co2_status")
+
+    @property
+    def native_value(self) -> str:
+        return room_co2_status(self.room, self.hass.states.get)
 
 
 class RoomWindowStateSensor(VentWiseRoomEntity, SensorEntity):

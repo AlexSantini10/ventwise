@@ -44,6 +44,7 @@ from custom_components.ventwise.application.runtime import (
     is_quiet_hours_active,
     load_runtime_state,
     room_target_temperature_c,
+    room_co2_status,
     room_window_states,
     gate_room_recommendations,
     state_to_bool,
@@ -78,6 +79,38 @@ def test_state_helpers_parse_values() -> None:
     assert state_to_float(SimpleNamespace(state="unknown")) is None
     assert state_to_float(SimpleNamespace(state="not-a-number")) is None
     assert state_to_bool(SimpleNamespace(state="on")) is True
+
+
+def test_room_co2_status_distinguishes_disabled_and_unavailable() -> None:
+    disabled = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.room_co2",
+                    CONF_ROOM_CO2_ENABLED: False,
+                }
+            ]
+        }
+    ).rooms[0]
+    unavailable = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.room_co2",
+                    CONF_ROOM_CO2_ENABLED: True,
+                }
+            ]
+        }
+    ).rooms[0]
+
+    states = {"sensor.room_co2": SimpleNamespace(state="unavailable")}
+
+    assert room_co2_status(disabled, states.get) == "disabled"
+    assert room_co2_status(unavailable, states.get) == "unavailable"
     assert state_to_bool(SimpleNamespace(state="off")) is False
     assert state_to_bool(SimpleNamespace(state="1")) is True
     assert state_to_bool(SimpleNamespace(state="0")) is False

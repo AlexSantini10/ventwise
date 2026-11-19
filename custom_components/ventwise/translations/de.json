@@ -569,6 +569,15 @@
     },
     "sensor": {
       "core_recommendation": {"name": "Berechnete Empfehlung"},
+      "co2_status": {
+        "name": "CO₂-Status innen",
+        "state": {
+          "available": "Verfügbar",
+          "disabled": "Deaktiviert",
+          "not_configured": "Nicht konfiguriert",
+          "unavailable": "Sensor nicht verfügbar"
+        }
+      },
       "recommendation_confidence": {"name": "Empfehlungssicherheit"},
       "ventilation_score": {"name": "Lüftungswert"},
       "co2": {"name": "CO₂ im Innenraum"},
