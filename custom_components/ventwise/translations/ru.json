@@ -568,6 +568,7 @@
       }
     },
     "sensor": {
+      "core_recommendation": {"name": "Рассчитанная рекомендация"},
       "recommendation_confidence": {"name": "Уверенность рекомендации"},
       "ventilation_score": {"name": "Оценка проветривания"},
       "co2": {"name": "CO₂ в помещении"},

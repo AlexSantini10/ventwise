@@ -571,6 +571,7 @@
       }
     },
     "sensor": {
+      "core_recommendation": {"name": "计算出的建议"},
       "recommendation_confidence": {"name": "建议置信度"},
       "ventilation_score": {"name": "通风分数"},
       "co2": {"name": "室内二氧化碳"},

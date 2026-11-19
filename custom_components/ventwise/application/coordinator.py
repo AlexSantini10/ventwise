@@ -477,6 +477,14 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             window_states=window_states,
             room_action_guards=self._room_action_guards,
         )
+        calculated_snapshot = build_decision_snapshot(
+            rooms,
+            outdoor,
+            now,
+            window_states=window_states,
+            room_action_guards={},
+        )
+        calculated_result = self._decision_engine.evaluate(calculated_snapshot)
         core_result = self._decision_engine.evaluate(decision_snapshot)
         self._update_room_action_guards_from_core(core_result)
         core_result_by_room = {
@@ -702,6 +710,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             window_states=window_states,
             core_snapshot=decision_snapshot,
             core_result=core_result,
+            calculated_result=calculated_result,
             delivered_result=delivered_result,
         )
         self._persist_runtime_state()

@@ -200,6 +200,7 @@ class RuntimeSnapshot:
     window_states: Mapping[str, str] = field(default_factory=dict)
     core_snapshot: DecisionSnapshot | None = None
     core_result: AggregateDecisionResult | None = None
+    calculated_result: AggregateDecisionResult | None = None
     delivered_result: AggregateDecisionResult | None = None
 
 
@@ -948,6 +949,11 @@ def build_debug_attributes(
             if snapshot.core_result is not None
             else None
         ),
+        "calculated_result": (
+            aggregate_result_to_dict(snapshot.calculated_result)
+            if snapshot.calculated_result is not None
+            else None
+        ),
         "delivered_result": (
             aggregate_result_to_dict(snapshot.delivered_result)
             if snapshot.delivered_result is not None
@@ -1018,6 +1024,11 @@ def build_room_diagnostic_attributes(
          if item.room_id == room_id),
         None,
     )
+    calculated = next(
+        (item for item in (snapshot.calculated_result.room_results if snapshot.calculated_result else ())
+         if item.room_id == room_id),
+        None,
+    )
     delivered = next(
         (item for item in (snapshot.delivered_result.room_results if snapshot.delivered_result else ())
          if item.room_id == room_id),
@@ -1037,6 +1048,7 @@ def build_room_diagnostic_attributes(
             "evaluated_at": normalized["evaluated_at"] if normalized else None,
         },
         "core_result": result_to_dict(core) if core else None,
+        "calculated_result": result_to_dict(calculated) if calculated else None,
         "delivered_result": result_to_dict(delivered) if delivered else None,
         "aggregate_core_result": (
             aggregate_result_to_dict(snapshot.core_result)
@@ -1049,6 +1061,7 @@ def build_room_diagnostic_attributes(
             else None
         ),
         "core_action": core.core_action.value if core else RecommendationAction.NONE.value,
+        "calculated_action": calculated.core_action.value if calculated else RecommendationAction.NONE.value,
         "delivered_action": delivered.delivered_action.value if delivered else RecommendationAction.NONE.value,
         "delivery_suppressed_by": delivered.delivery_suppressed_by if delivered else None,
     }

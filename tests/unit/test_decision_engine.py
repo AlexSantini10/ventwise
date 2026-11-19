@@ -12,6 +12,7 @@ from ventwise_core import (
     DecisionSnapshot,
     Observation,
     RecommendationAction,
+    RoomGuardrailState,
     Validity,
 )
 
@@ -234,6 +235,39 @@ def test_custom_co2_threshold_controls_ventilation_trigger():
     )
     above = engine.evaluate(DecisionSnapshot((room,), data.outdoor, NOW)).room_results[0]
     assert above.core_action is RecommendationAction.VENTILATE
+
+
+def test_calculated_co2_recommendation_remains_visible_during_stabilization():
+    """The immediate core result is distinct from the stabilized result."""
+
+    data = snapshot(indoor=23.0, outdoor=15.0, weather="rainy")
+    room = DecisionRoom(
+        "room",
+        "Room",
+        data.rooms[0].temperature_c,
+        data.rooms[0].humidity_percent,
+        co2_ppm=obs(2000.0, "ppm"),
+        action_change_hold_seconds=5 * 60,
+    )
+    config = DecisionConfig(co2_enabled=True, target_temperature_c=19.9)
+    stabilized = DecisionEngine(config).evaluate(
+        DecisionSnapshot(
+            (room,),
+            data.outdoor,
+            NOW,
+            DecisionContext(
+                room_guardrails=(RoomGuardrailState("room", RecommendationAction.NONE.value),)
+            ),
+        )
+    ).room_results[0]
+    calculated = DecisionEngine(config).evaluate(
+        DecisionSnapshot((room,), data.outdoor, NOW)
+    ).room_results[0]
+
+    assert calculated.core_action is RecommendationAction.VENTILATE
+    assert calculated.reason_code == "co2_ventilation"
+    assert stabilized.core_action is RecommendationAction.NONE
+    assert stabilized.reason_code == "action_hold"
 
 
 def test_default_pressure_is_estimated_and_baseline_is_explicit():

@@ -571,6 +571,7 @@
       }
     },
     "sensor": {
+      "core_recommendation": {"name": "Recomendación calculada"},
       "recommendation_confidence": {"name": "Confianza de la recomendación"},
       "ventilation_score": {"name": "Puntuación de ventilación"},
       "co2": {"name": "CO₂ interior"},

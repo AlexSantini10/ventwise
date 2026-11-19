@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 
 from .application.coordinator import VentWiseCoordinator
 from .application.notification import build_recommendation_explanation, build_recommendation_status
@@ -54,6 +55,7 @@ async def async_setup_entry(
         AggregateRecommendationSensor(coordinator),
         AggregateRecommendationScoreSensor(coordinator),
         AggregateRecommendationReasonSensor(coordinator),
+        AggregateCalculatedRecommendationSensor(coordinator),
         WeatherConditionSensor(coordinator),
         PerceivedIndoorTemperatureSensor(coordinator),
         PerceivedOutdoorTemperatureSensor(coordinator),
@@ -74,6 +76,7 @@ async def async_setup_entry(
                 RoomRecommendationConfidenceSensor(coordinator, room),
                 RoomVentilationScoreSensor(coordinator, room),
                 RoomRecommendationReasonSensor(coordinator, room),
+                RoomCalculatedRecommendationSensor(coordinator, room),
                 RoomWindowStateSensor(coordinator, room),
                 RoomWeatherConditionSensor(coordinator, room),
                 RoomPerceivedIndoorTemperatureSensor(coordinator, room),
@@ -160,6 +163,21 @@ class AggregateRecommendationReasonSensor(VentWiseEntity, SensorEntity):
             blocked_by=summary.blocked_by,
             language=self.hass.config.language,
         )
+
+
+class AggregateCalculatedRecommendationSensor(VentWiseEntity, SensorEntity):
+    """Immediate aggregate recommendation before stabilization guardrails."""
+
+    _attr_icon = "mdi:calculator-variant"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: VentWiseCoordinator) -> None:
+        super().__init__(coordinator, "core_recommendation", "core_recommendation")
+
+    @property
+    def native_value(self) -> str:
+        result = self.coordinator.data.calculated_result
+        return RecommendationAction.NONE.value if result is None else result.core_action.value
 
 
 class ForecastTemperatureSensor(TemperatureUnitMixin, VentWiseEntity, SensorEntity):
@@ -429,6 +447,33 @@ class RoomRecommendationReasonSensor(VentWiseRoomEntity, SensorEntity):
             recommendation,
             language=self.hass.config.language,
         )
+
+
+class RoomCalculatedRecommendationSensor(VentWiseRoomEntity, SensorEntity):
+    """Immediate room recommendation before stabilization guardrails."""
+
+    _attr_icon = "mdi:calculator-variant"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
+        super().__init__(coordinator, room, "core_recommendation", "core_recommendation")
+
+    @property
+    def native_value(self) -> str:
+        room_id = self.room.room_id or self.room.name
+        result = next(
+            (
+                item
+                for item in (
+                    self.coordinator.data.calculated_result.room_results
+                    if self.coordinator.data.calculated_result
+                    else ()
+                )
+                if item.room_id == room_id
+            ),
+            None,
+        )
+        return RecommendationAction.NONE.value if result is None else result.core_action.value
 
 
 class RoomCo2Sensor(VentWiseRoomEntity, SensorEntity):
