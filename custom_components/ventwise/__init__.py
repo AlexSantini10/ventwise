@@ -13,6 +13,11 @@ from .const import (
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_STATE,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
+    CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOMS,
     CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
@@ -24,7 +29,7 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-_CONFIG_ENTRY_VERSION = 4
+_CONFIG_ENTRY_VERSION = 5
 _LEGACY_RUNTIME_KEYS = (
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
@@ -73,6 +78,28 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_SAFETY_BYPASS_QUIET_HOURS,
         DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     )
+    if entry.version < 5:
+        legacy_enabled = bool(
+            migrated_options.get(CONF_CO2_ENABLED, migrated_data.get(CONF_CO2_ENABLED, False))
+        )
+        legacy_entity = migrated_options.get(
+            CONF_CO2_ENTITY_ID, migrated_data.get(CONF_CO2_ENTITY_ID)
+        )
+        rooms = migrated_options.get(CONF_ROOMS, migrated_data.get(CONF_ROOMS, []))
+        if isinstance(rooms, list) and (rooms or legacy_entity or legacy_enabled):
+            migrated_rooms = []
+            for raw_room in rooms:
+                room = dict(raw_room) if isinstance(raw_room, Mapping) else {}
+                room_entity = room.get(CONF_ROOM_CO2_ENTITY_ID) or legacy_entity
+                room.setdefault(CONF_ROOM_CO2_ENTITY_ID, room_entity)
+                room.setdefault(CONF_ROOM_CO2_ENABLED, bool(legacy_enabled and room_entity))
+                migrated_rooms.append(room)
+            target = migrated_options if CONF_ROOMS in migrated_options else migrated_data
+            target[CONF_ROOMS] = migrated_rooms
+        migrated_data.pop(CONF_CO2_ENABLED, None)
+        migrated_data.pop(CONF_CO2_ENTITY_ID, None)
+        migrated_options.pop(CONF_CO2_ENABLED, None)
+        migrated_options.pop(CONF_CO2_ENTITY_ID, None)
     runtime_state = migrated_options.get(
         CONF_RUNTIME_STATE, migrated_data.get(CONF_RUNTIME_STATE)
     )

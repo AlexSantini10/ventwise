@@ -77,6 +77,7 @@ CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED = "target_humidity_percent_ov
 CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE = "target_humidity_percent_override"
 CONF_ROOM_TEMPERATURE_ENTITY_ID = "temperature_entity_id"
 CONF_ROOM_HUMIDITY_ENTITY_ID = "humidity_entity_id"
+CONF_ROOM_CO2_ENABLED = "co2_enabled"
 CONF_ROOM_CO2_ENTITY_ID = "co2_entity_id"
 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS = "window_sensor_entity_ids"
 CONF_ROOM_START_ENTITY_ID = "start_entity_id"

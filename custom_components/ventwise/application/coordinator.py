@@ -1073,13 +1073,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             and self._config.wind_speed_entity_id
         ):
             entity_ids.add(self._config.wind_speed_entity_id)
-        if self._config.co2_enabled and self._config.co2_entity_id:
-            entity_ids.add(self._config.co2_entity_id)
         for room in self._config.rooms:
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:
                 entity_ids.add(room.humidity_entity_id)
-            if self._config.co2_enabled and room.co2_entity_id:
+            if room.co2_enabled and room.co2_entity_id:
                 entity_ids.add(room.co2_entity_id)
             entity_ids.update(room.window_sensor_entity_ids)
         return sorted(entity_ids)

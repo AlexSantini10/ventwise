@@ -60,6 +60,7 @@ from ..const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_NAME,
@@ -129,6 +130,7 @@ class RoomConfig:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
+    co2_enabled: bool = False
     co2_entity_id: str | None = None
     window_sensor_entity_ids: tuple[str, ...] = ()
     start_entity_id: str | None = None
@@ -237,6 +239,8 @@ class RoomActionGuard:
 def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     """Convert raw config entry data into a runtime config object."""
 
+    legacy_co2_enabled = bool(data.get(CONF_CO2_ENABLED, False))
+    legacy_co2_entity_id = _string_or_none(data.get(CONF_CO2_ENTITY_ID))
     rooms = tuple(
         RoomConfig(
             room_id=_string_or_none(room.get(CONF_ROOM_ID)),
@@ -265,7 +269,20 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
-            co2_entity_id=_string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID)),
+            co2_enabled=bool(
+                room.get(
+                    CONF_ROOM_CO2_ENABLED,
+                    legacy_co2_enabled
+                    and bool(
+                        _string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID))
+                        or legacy_co2_entity_id
+                    ),
+                )
+            ),
+            co2_entity_id=(
+                _string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID))
+                or (legacy_co2_entity_id if legacy_co2_enabled else None)
+            ),
             window_sensor_entity_ids=_string_list(
                 room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
             ),
@@ -332,8 +349,8 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             data.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
         ),
         debug_mode_enabled=bool(data.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED)),
-        co2_enabled=bool(data.get(CONF_CO2_ENABLED, False)),
-        co2_entity_id=_string_or_none(data.get(CONF_CO2_ENTITY_ID)),
+        co2_enabled=any(room.co2_enabled for room in rooms),
+        co2_entity_id=legacy_co2_entity_id,
         co2_threshold_ppm=float(data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
@@ -721,13 +738,7 @@ def build_room_profiles(
         humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
         temperature = state_to_temperature_c(temperature_state)
         humidity = state_to_float(humidity_state) if humidity_state is not None else None
-        co2_entity_id = room.co2_entity_id or config.co2_entity_id
-        co2_state = (
-            state_getter(co2_entity_id)
-            if config.co2_enabled and co2_entity_id
-            else None
-        )
-        co2 = state_to_float(co2_state)
+        co2, co2_source = room_co2_reading(room, state_getter)
         if temperature is None:
             continue
         rooms.append(
@@ -747,23 +758,27 @@ def build_room_profiles(
                 target_humidity_percent_override_enabled=room.target_humidity_percent_override_enabled,
                 target_humidity_percent_override=room.target_humidity_percent_override,
                 co2_ppm=co2,
-                co2_source=(
-                    _source_reading(
-                        co2_state,
-                        "co2",
-                        co2_entity_id,
-                    )
-                    or SourceReading(
-                        None,
-                        "ppm",
-                        None,
-                        co2_entity_id,
-                    )
-                ) if config.co2_enabled and co2_entity_id else None,
+                co2_source=co2_source,
             )
         )
 
     return rooms, outdoor
+
+
+def room_co2_reading(
+    room: RoomConfig,
+    state_getter: Callable[[str], Any],
+) -> tuple[float | None, SourceReading | None]:
+    """Return the effective, per-room CO₂ value and its source metadata."""
+
+    if not room.co2_enabled or not room.co2_entity_id:
+        return None, None
+    state = state_getter(room.co2_entity_id)
+    value = state_to_float(state)
+    source = _source_reading(state, "co2", room.co2_entity_id)
+    if source is None:
+        source = SourceReading(None, "ppm", None, room.co2_entity_id)
+    return value, source
 
 
 WINDOW_STATE_NOT_CONFIGURED = "not_configured"
@@ -1392,12 +1407,12 @@ def find_room_recommendation(
 ) -> Any | None:
     """Find the recommendation matching a room config."""
 
+    room_key = room.room_id or room.name
     for recommendation in summary.room_recommendations:
-        if recommendation.room_id is not None and room.room_id is not None:
-            if recommendation.room_id == room.room_id:
-                return recommendation
+        if recommendation.room_id == room_key:
+            return recommendation
         if recommendation.room_id is None and recommendation.room_name == room.name:
-                return recommendation
+            return recommendation
     return None
 
 

@@ -28,6 +28,7 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
     CONF_ROOM_NAME,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
@@ -59,6 +60,7 @@ def _options(**overrides: object) -> dict[str, object]:
                 CONF_ROOM_NAME: "Test room",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.test_temperature",
                 CONF_ROOM_CO2_ENTITY_ID: "sensor.test_co2",
+                CONF_ROOM_CO2_ENABLED: True,
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
                     "binary_sensor.test_window_left",
                     "binary_sensor.test_window_right",
@@ -137,6 +139,7 @@ async def test_real_config_entry_setup_creates_entities_and_unloads_cleanly(
     runtime = hass.data[DOMAIN][entry.entry_id]
     assert isinstance(runtime, IntegrationRuntimeData)
     assert hass.states.get("sensor.test_room_recommendation") is not None
+    assert hass.states.get("sensor.test_room_co2").state == "700"
     assert hass.states.get("sensor.test_room_window_state").state == "closed"
 
     assert await hass.config_entries.async_unload(entry.entry_id)

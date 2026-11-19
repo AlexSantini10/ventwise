@@ -43,6 +43,7 @@ from ..const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_KIND,
@@ -307,12 +308,6 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
                 CONF_DEBUG_MODE_ENABLED,
                 default=defaults.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED),
             ): cv.boolean,
-            vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
-            **_optional_selector_field(
-                CONF_CO2_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_CO2_ENTITY_ID),
-            ),
             vol.Required(
                 CONF_CO2_THRESHOLD_PPM,
                 default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
@@ -501,6 +496,10 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_CO2_ENTITY_ID),
             ),
+            vol.Required(
+                CONF_ROOM_CO2_ENABLED,
+                default=_default_room_co2_enabled(defaults),
+            ): cv.boolean,
             vol.Optional(
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
                 default=_default_entity_id_list(
@@ -713,10 +712,6 @@ def normalize_settings_config(
     data.update(normalize_advanced_config(user_input))
     data.update(normalize_outdoor_source_config(user_input))
     data = normalize_outdoor_override_config(data, data)
-    if data[CONF_CO2_ENABLED] and not data.get(CONF_CO2_ENTITY_ID):
-        rooms = data.get(CONF_ROOMS, [])
-        if not any(room.get(CONF_ROOM_CO2_ENTITY_ID) for room in rooms):
-            raise ConfigValidationError(CONF_CO2_ENTITY_ID)
     return data
 
 
@@ -794,6 +789,13 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_CO2_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
+    data[CONF_ROOM_CO2_ENABLED] = _normalize_bool(
+        data.get(CONF_ROOM_CO2_ENABLED),
+        CONF_ROOM_CO2_ENABLED,
+        default=_default_room_co2_enabled(data),
+    )
+    if not data.get(CONF_ROOM_CO2_ENTITY_ID):
+        data[CONF_ROOM_CO2_ENABLED] = False
     data[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] = _normalize_entity_id_list(
         data.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS),
         CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
@@ -948,6 +950,17 @@ def _default_room_override_enabled(
         return enabled
     value = defaults.get(value_field)
     return value is not None and str(value).strip() != ""
+
+
+def _default_room_co2_enabled(defaults: Mapping[str, object]) -> bool:
+    """Return the room CO₂ toggle default, including legacy global settings."""
+
+    if CONF_ROOM_CO2_ENABLED in defaults:
+        return bool(defaults.get(CONF_ROOM_CO2_ENABLED))
+    return bool(
+        defaults.get(CONF_CO2_ENABLED, False)
+        and (defaults.get(CONF_ROOM_CO2_ENTITY_ID) or defaults.get(CONF_CO2_ENTITY_ID))
+    )
 
 
 def _normalize_outdoor_override(value: object, field: str) -> bool:

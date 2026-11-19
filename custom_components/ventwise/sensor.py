@@ -14,6 +14,7 @@ from .application.runtime import (
     build_debug_attributes,
     find_room_recommendation,
     build_room_diagnostic_attributes,
+    room_co2_reading,
     state_to_float,
     state_to_temperature_c,
 )
@@ -441,12 +442,13 @@ class RoomCo2Sensor(VentWiseRoomEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        if not self.coordinator.config.co2_enabled:
+        if not self.room.co2_enabled:
             return None
-        entity_id = self.room.co2_entity_id or self.coordinator.config.co2_entity_id
-        if not entity_id:
-            return None
-        return state_to_float(self.hass.states.get(entity_id))
+        value, _ = room_co2_reading(
+            self.room,
+            self.hass.states.get,
+        )
+        return value
 
 
 class RoomWindowStateSensor(VentWiseRoomEntity, SensorEntity):

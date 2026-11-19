@@ -25,6 +25,8 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
+    CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_ENABLED,
@@ -313,17 +315,21 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
+    assert room_schema.schema[CONF_ROOM_CO2_ENTITY_ID].__class__.__name__ == "Any"
+    assert callable(room_schema.schema[CONF_ROOM_CO2_ENABLED])
     assert callable(room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C].__class__.__name__ == "Any"
     assert callable(room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
     assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
-    assert list(room_schema.schema.keys())[:8] == [
+    assert list(room_schema.schema.keys())[:10] == [
         CONF_ROOM_ENABLED,
         CONF_ROOM_NAME,
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
+        CONF_ROOM_CO2_ENTITY_ID,
+        CONF_ROOM_CO2_ENABLED,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
         CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -603,6 +609,21 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
     assert data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED] is False
     assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
     assert data[CONF_ROOM_STOP_ENTITY_ID] is None
+
+
+def test_normalize_room_config_clears_co2_usage_when_sensor_is_removed() -> None:
+    data = normalize_room_config(
+        {
+            CONF_ROOM_NAME: "Bedroom",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+            CONF_ROOM_CO2_ENTITY_ID: "",
+            CONF_ROOM_CO2_ENABLED: True,
+        },
+        "room",
+    )
+
+    assert data[CONF_ROOM_CO2_ENTITY_ID] is None
+    assert data[CONF_ROOM_CO2_ENABLED] is False
 
 
 def test_normalize_room_config_rejects_invalid_room_kind() -> None:

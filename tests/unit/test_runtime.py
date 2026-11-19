@@ -20,6 +20,7 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -175,6 +176,65 @@ def test_build_room_profiles_uses_global_co2_for_rooms_without_local_sensor() ->
     assert rooms[1].co2_ppm == 1400.0
     assert rooms[1].co2_source is not None
     assert rooms[1].co2_source.source_id == "sensor.studio_co2"
+
+
+def test_build_room_profiles_only_reads_co2_for_enabled_rooms() -> None:
+    config = build_integration_config(
+        {
+            CONF_CO2_ENABLED: True,
+            CONF_CO2_ENTITY_ID: "sensor.home_co2",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Enabled",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.enabled_temp",
+                    CONF_ROOM_CO2_ENABLED: True,
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.enabled_co2",
+                },
+                {
+                    CONF_ROOM_NAME: "Disabled",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.disabled_temp",
+                    CONF_ROOM_CO2_ENABLED: False,
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.disabled_co2",
+                },
+            ],
+        }
+    )
+    states = {
+        "sensor.enabled_temp": SimpleNamespace(state="22"),
+        "sensor.enabled_co2": SimpleNamespace(
+            state="1400", attributes={"unit_of_measurement": "ppm"}
+        ),
+        "sensor.disabled_temp": SimpleNamespace(state="22"),
+        "sensor.disabled_co2": SimpleNamespace(
+            state="1800", attributes={"unit_of_measurement": "ppm"}
+        ),
+    }
+
+    rooms, _ = build_room_profiles(config, states.get)
+
+    assert rooms[0].co2_ppm == 1400.0
+    assert rooms[1].co2_ppm is None
+
+
+def test_find_room_recommendation_matches_legacy_room_without_room_id() -> None:
+    from custom_components.ventwise.application.runtime import find_room_recommendation
+    from custom_components.ventwise.ventwise_core import RecommendationAction, RoomRecommendation
+
+    recommendation = RoomRecommendation(
+        room_name="Bedroom",
+        room_id="Bedroom",
+        action=RecommendationAction.VENTILATE,
+        score=0.5,
+        reason="High CO₂",
+        target_perceived_c=22.0,
+        indoor_perceived_c=22.0,
+        outdoor_perceived_c=20.0,
+        suggested_comfort_temperature_c=22.0,
+    )
+    summary = SimpleNamespace(room_recommendations=(recommendation,))
+    room = SimpleNamespace(room_id=None, name="Bedroom")
+
+    assert find_room_recommendation(summary, room) is recommendation
 
 
 def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
