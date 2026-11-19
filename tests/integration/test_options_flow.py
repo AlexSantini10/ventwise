@@ -10,6 +10,8 @@ import pytest
 pytest.importorskip("homeassistant")
 
 from custom_components.ventwise.const import (
+    CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
     CONF_NOTIFICATION_DEVICE_ID,
@@ -20,6 +22,7 @@ from custom_components.ventwise.const import (
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
@@ -162,6 +165,38 @@ def test_edit_room_replaces_the_selected_room() -> None:
     assert flow._rooms[0][CONF_ROOM_TEMPERATURE_ENTITY_ID] == "sensor.studio_temp"
     assert flow._rooms[0][CONF_ROOM_KIND] == "room"
     assert flow._current_config[CONF_ROOMS][0][CONF_ROOM_NAME] == "Studio"
+
+
+def test_edit_room_clears_omitted_optional_bindings() -> None:
+    flow = _make_flow(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Living room",
+                    CONF_ROOM_KIND: "room",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
+                    CONF_ROOM_HUMIDITY_ENTITY_ID: "sensor.living_humidity",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.living_co2",
+                    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: ["binary_sensor.window"],
+                }
+            ]
+        }
+    )
+
+    asyncio.run(flow.async_step_edit_room({CONF_ROOM_SELECTION: "1. Living room (Room)"}))
+    asyncio.run(
+        flow.async_step_edit_room_details(
+            {
+                CONF_ROOM_NAME: "Living room",
+                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.living_temp",
+            }
+        )
+    )
+
+    room = flow._rooms[0]
+    assert room[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
+    assert room[CONF_ROOM_CO2_ENTITY_ID] is None
+    assert room[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] == []
 
 
 def test_options_flow_supports_units_macro_rooms_and_staged_room_changes() -> None:

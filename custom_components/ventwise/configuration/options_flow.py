@@ -10,9 +10,12 @@ from homeassistant import config_entries
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from ..const import (
+    CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_SELECTION,
+    CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOMS,
     NAME,
 )
@@ -242,6 +245,17 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         if user_input is not None:
             try:
                 room_input = {**(default_room or {}), **user_input}
+                if room_index is not None:
+                    # Optional selectors may be omitted by the frontend when
+                    # the user clears them. Do not merge their old defaults
+                    # back into the edited room.
+                    for field, empty_value in (
+                        (CONF_ROOM_HUMIDITY_ENTITY_ID, None),
+                        (CONF_ROOM_CO2_ENTITY_ID, None),
+                        (CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS, []),
+                    ):
+                        if field not in user_input:
+                            room_input[field] = empty_value
                 room = normalize_room_config(room_input, room_kind)
                 candidate_rooms = list(self._rooms)
                 if room_index is None:

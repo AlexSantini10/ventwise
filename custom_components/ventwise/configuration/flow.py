@@ -602,6 +602,8 @@ def normalize_outdoor_override_config(
             data[entity_field] = None
             data[source_field] = OUTDOOR_SOURCE_FORECAST
             continue
+        if entity_field not in user_input:
+            data[entity_field] = None
         data[entity_field] = _normalize_required_entity_id(
             data.get(entity_field),
             entity_field,
@@ -664,6 +666,9 @@ def normalize_settings_config(
     data.update(normalize_basic_config({**defaults, **user_input}))
     data.update(normalize_advanced_config(user_input))
     data.update(normalize_outdoor_source_config(user_input))
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        if entity_field not in user_input:
+            data[entity_field] = None
     data = normalize_outdoor_override_config(data, data)
     return data
 

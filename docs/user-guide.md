@@ -78,8 +78,10 @@ unavailable, or not configured.
 To use indoor CO₂ for a room, select its optional CO₂ sensor and enable **Use
 CO₂ for this room**. The room's CO₂ entity is then shown in ppm and contributes
 to recommendations when it reaches the configured global threshold. Clear the
-sensor selector to remove the source; VentWise disables CO₂ for that room and
-does not delete the original Home Assistant sensor.
+sensor selector to remove the source; VentWise keeps the room's derived CO₂
+entity but clears its source binding. It then reports the entity as unconfigured
+until a new source is selected, without deleting the original Home Assistant
+sensor. The same rule applies to optional humidity and window-contact entities.
 
 ## Everyday Use
 
