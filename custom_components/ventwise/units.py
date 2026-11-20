@@ -121,6 +121,8 @@ def state_unit(state, fallback: str, measurement: str | None = None) -> str:
         return attributes.get("unit_of_measurement") or attributes.get("temperature_unit") or fallback
     if measurement == "wind_speed":
         return attributes.get("unit_of_measurement") or attributes.get("wind_speed_unit") or fallback
+    if measurement == "pressure":
+        return attributes.get("pressure_unit") or attributes.get("unit_of_measurement") or fallback
     return attributes.get("unit_of_measurement") or fallback
 
 

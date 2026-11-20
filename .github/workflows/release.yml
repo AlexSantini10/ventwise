@@ -10,6 +10,12 @@ on:
       - completed
   workflow_dispatch:
 
+concurrency:
+  # Prevent duplicate release jobs for the same successful CI result or
+  # overlapping manual runs.
+  group: release-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -88,6 +94,12 @@ jobs:
               and path.suffix != ".pyc"
           }
           expected.update({"README.md", "LICENSE", "NOTICE", "hacs.json"})
+          core_dir = repo_root / "src" / "ventwise_core"
+          expected.update(
+              f"ventwise_core/{path.name}"
+              for path in core_dir.iterdir()
+              if path.is_file() and path.suffix != ".pyc"
+          )
 
           if any(entry.startswith("custom_components/ventwise/") for entry in entries):
               raise SystemExit("package contains an extra custom_components/ventwise/ wrapper")

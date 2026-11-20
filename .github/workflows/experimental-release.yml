@@ -11,6 +11,12 @@ on:
     types:
       - completed
 
+concurrency:
+  # A push and a pull request can validate the same commit. Serialize release
+  # attempts for that commit so release creation remains idempotent.
+  group: experimental-release-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -18,7 +24,9 @@ jobs:
   release:
     name: Publish experimental GitHub Release
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -122,6 +130,12 @@ jobs:
               and path.suffix != ".pyc"
           }
           expected.update({"README.md", "LICENSE", "NOTICE", "hacs.json"})
+          core_dir = repo_root / "src" / "ventwise_core"
+          expected.update(
+              f"ventwise_core/{path.name}"
+              for path in core_dir.iterdir()
+              if path.is_file() and path.suffix != ".pyc"
+          )
 
           if any(entry.startswith("custom_components/ventwise/") for entry in entries):
               raise SystemExit("package contains an extra custom_components/ventwise/ wrapper")

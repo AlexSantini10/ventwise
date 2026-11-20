@@ -31,6 +31,7 @@ from ..const import (
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
     CONF_DEBUG_MODE_ENABLED,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -42,6 +43,7 @@ from ..const import (
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_KIND,
@@ -50,8 +52,6 @@ from ..const import (
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
-    CONF_ROOM_START_ENTITY_ID,
-    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
@@ -75,6 +75,7 @@ from ..const import (
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
+    DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     DEFAULT_TARGET_TEMPERATURE_C,
     DEFAULT_TEMPERATURE_UNIT,
     DEFAULT_WIND_SPEED_UNIT,
@@ -84,19 +85,18 @@ from ..const import (
     OUTDOOR_SOURCE_OVERRIDE,
 )
 from ..units import TEMPERATURE_UNITS, WIND_SPEED_UNITS, temperature_from_celsius, temperature_to_celsius, temperature_unit, wind_speed_unit
-from ..application.notification import (
-    is_companion_app_notification_entity,
-    notification_entity_ids_for_device_ids,
-)
+from ..application.notification import notification_entity_ids_for_device_ids
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
 SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
 ROOM_KIND_LABELS: dict[str, dict[str, str]] = {
-    "en": {"room": "Room", "macro_room": "Macro Room"},
-    "es": {"room": "Habitación", "macro_room": "Macrohabitación"},
-    "it": {"room": "Stanza", "macro_room": "Macro-stanza"},
-    "ru": {"room": "Комната", "macro_room": "Макрокомната"},
-    "zh-hans": {"room": "房间", "macro_room": "宏房间"},
+    "en": {"room": "Room"},
+    "es": {"room": "Habitación"},
+    "it": {"room": "Stanza"},
+    "ru": {"room": "Комната"},
+    "fr": {"room": "Pièce"},
+    "de": {"room": "Zimmer"},
+    "zh-hans": {"room": "房间"},
 }
 OUTDOOR_OVERRIDE_FIELDS: tuple[tuple[str, str, str], ...] = (
     (
@@ -187,38 +187,6 @@ def _notification_device_options(hass) -> list[dict[str, str]]:
     return sorted(options, key=lambda option: option["label"].casefold())
 
 
-def has_companion_app_notification_device(hass, device_ids: Sequence[str]) -> bool:
-    """Return whether configured devices include a Companion App notify target."""
-
-    if hass is None:
-        return False
-    configured_ids = set(device_ids)
-    if not configured_ids:
-        return False
-    return any(
-        is_companion_app_notification_entity(hass, entity_id)
-        for entity_id in notification_entity_ids_for_device_ids(hass, configured_ids)
-    )
-
-
-def validate_room_automation_confirmation(
-    rooms: Sequence[Mapping[str, object]],
-    config: Mapping[str, object],
-    hass,
-) -> None:
-    """Require a Companion App target for configured room automations."""
-
-    has_automation = any(
-        room.get(CONF_ROOM_START_ENTITY_ID) or room.get(CONF_ROOM_STOP_ENTITY_ID)
-        for room in rooms
-    )
-    if has_automation and not has_companion_app_notification_device(
-        hass,
-        _normalize_notification_device_ids(config.get(CONF_NOTIFICATION_DEVICE_ID)) or [],
-    ):
-        raise ConfigValidationError(CONF_NOTIFICATION_DEVICE_ID, "companion_app_required")
-
-
 def build_unit_schema(defaults: Mapping[str, object]) -> vol.Schema:
     """Create the independent unit preference step."""
 
@@ -279,6 +247,13 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
                 default=defaults.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False),
             ): cv.boolean,
             vol.Required(
+                CONF_SAFETY_BYPASS_QUIET_HOURS,
+                default=defaults.get(
+                    CONF_SAFETY_BYPASS_QUIET_HOURS,
+                    DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
+                ),
+            ): cv.boolean,
+            vol.Required(
                 CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
                 default=defaults.get(
                     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
@@ -296,12 +271,6 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
                 CONF_DEBUG_MODE_ENABLED,
                 default=defaults.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED),
             ): cv.boolean,
-            vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): cv.boolean,
-            **_optional_selector_field(
-                CONF_CO2_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_CO2_ENTITY_ID),
-            ),
             vol.Required(
                 CONF_CO2_THRESHOLD_PPM,
                 default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
@@ -431,13 +400,94 @@ def build_settings_schema(defaults: Mapping[str, object], hass=None) -> vol.Sche
     return vol.Schema(fields)
 
 
+def _schema_field_name(key: object) -> str:
+    return str(getattr(key, "schema", key))
+
+
+def _select_schema_fields(schema: vol.Schema, names: set[str]) -> dict[object, object]:
+    return {
+        key: value
+        for key, value in schema.schema.items()
+        if _schema_field_name(key) in names
+    }
+
+
+COMFORT_FIELDS = {
+    CONF_TARGET_TEMPERATURE_C,
+    CONF_AUTO_COMFORT_TEMPERATURE,
+    CONF_TARGET_HUMIDITY_PERCENT,
+    CONF_STABILITY_MINUTES,
+    CONF_SOFT_OUTDOOR_THRESHOLD_C,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
+    CONF_CO2_THRESHOLD_PPM,
+}
+NOTIFICATION_FIELDS = {
+    CONF_NOTIFICATION_DEVICE_ID,
+    CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+    CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
+    CONF_DEBUG_MODE_ENABLED,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
+    CONF_COOLDOWN_MINUTES,
+}
+OVERRIDE_FIELDS = {
+    CONF_OUTDOOR_WEATHER_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_WIND_SPEED_OVERRIDE,
+    CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+    CONF_WIND_SPEED_ENTITY_ID,
+}
+
+
+def build_comfort_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
+    fields = {
+        **build_config_schema(defaults, hass, include_units=False).schema,
+        **build_advanced_options_schema(defaults).schema,
+    }
+    fields[vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False))] = cv.boolean
+    fields.update(
+        _optional_selector_field(
+            CONF_CO2_ENTITY_ID,
+            EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+            defaults.get(CONF_CO2_ENTITY_ID),
+        )
+    )
+    return vol.Schema(_select_schema_fields(vol.Schema(fields), COMFORT_FIELDS))
+
+
+def build_notification_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
+    fields = {
+        **build_config_schema(defaults, hass, include_units=False).schema,
+        **build_advanced_options_schema(defaults).schema,
+    }
+    return vol.Schema(_select_schema_fields(vol.Schema(fields), NOTIFICATION_FIELDS))
+
+
+def build_override_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
+    fields = {
+        **build_config_schema(defaults, hass, include_units=False).schema,
+        **build_outdoor_source_schema(defaults).schema,
+    }
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        fields.update(
+            _optional_selector_field(
+                entity_field,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(entity_field),
+            )
+        )
+    return vol.Schema(_select_schema_fields(vol.Schema(fields), OVERRIDE_FIELDS))
+
+
 def build_room_schema(
     defaults: Mapping[str, object],
     room_number: int,
     room_kind: str,
     language: str | None = None,
 ) -> vol.Schema:
-    """Create the schema for a room or macro-room definition."""
+    """Create the schema for a room definition."""
 
     friendly_default = _localized_room_default(room_kind, room_number, language)
     return vol.Schema(
@@ -459,6 +509,15 @@ def build_room_schema(
                 EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
                 defaults.get(CONF_ROOM_HUMIDITY_ENTITY_ID),
             ),
+            **_optional_selector_field(
+                CONF_ROOM_CO2_ENTITY_ID,
+                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
+                defaults.get(CONF_ROOM_CO2_ENTITY_ID),
+            ),
+            vol.Required(
+                CONF_ROOM_CO2_ENABLED,
+                default=_default_room_co2_enabled(defaults),
+            ): cv.boolean,
             vol.Required(
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
                 default=_default_room_override_enabled(
@@ -485,11 +544,6 @@ def build_room_schema(
                 minimum=20.0,
                 maximum=80.0,
             ),
-            **_optional_selector_field(
-                CONF_ROOM_CO2_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain=NUMERIC_ENTITY_DOMAINS)),
-                defaults.get(CONF_ROOM_CO2_ENTITY_ID),
-            ),
             vol.Optional(
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
                 default=_default_entity_id_list(
@@ -497,16 +551,6 @@ def build_room_schema(
                 ),
             ): EntitySelector(
                 EntitySelectorConfig(domain="binary_sensor", multiple=True)
-            ),
-            **_optional_selector_field(
-                CONF_ROOM_START_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain="automation")),
-                defaults.get(CONF_ROOM_START_ENTITY_ID),
-            ),
-            **_optional_selector_field(
-                CONF_ROOM_STOP_ENTITY_ID,
-                EntitySelector(EntitySelectorConfig(domain="automation")),
-                defaults.get(CONF_ROOM_STOP_ENTITY_ID),
             ),
             vol.Required(
                 CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
@@ -565,6 +609,11 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED),
         CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
         default=False,
+    )
+    data[CONF_SAFETY_BYPASS_QUIET_HOURS] = _normalize_bool(
+        data.get(CONF_SAFETY_BYPASS_QUIET_HOURS),
+        CONF_SAFETY_BYPASS_QUIET_HOURS,
+        default=DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     )
     level = data.get(
         CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
@@ -634,6 +683,8 @@ def normalize_outdoor_override_config(
             data[entity_field] = None
             data[source_field] = OUTDOOR_SOURCE_FORECAST
             continue
+        if entity_field not in user_input:
+            data[entity_field] = None
         data[entity_field] = _normalize_required_entity_id(
             data.get(entity_field),
             entity_field,
@@ -696,12 +747,124 @@ def normalize_settings_config(
     data.update(normalize_basic_config({**defaults, **user_input}))
     data.update(normalize_advanced_config(user_input))
     data.update(normalize_outdoor_source_config(user_input))
+    for _, _, entity_field in OUTDOOR_OVERRIDE_FIELDS:
+        if entity_field not in user_input:
+            data[entity_field] = None
     data = normalize_outdoor_override_config(data, data)
-    if data[CONF_CO2_ENABLED] and not data.get(CONF_CO2_ENTITY_ID):
-        rooms = data.get(CONF_ROOMS, [])
-        if not any(room.get(CONF_ROOM_CO2_ENTITY_ID) for room in rooms):
-            raise ConfigValidationError(CONF_CO2_ENTITY_ID)
     return data
+
+
+def normalize_comfort_config(
+    user_input: Mapping[str, object], defaults: Mapping[str, object]
+) -> dict[str, object]:
+    data = dict(defaults)
+    data.update(user_input)
+    selected_unit = temperature_unit(defaults.get(CONF_TEMPERATURE_UNIT))
+    return {
+        CONF_TARGET_TEMPERATURE_C: _normalize_float(
+            temperature_to_celsius(float(data.get(CONF_TARGET_TEMPERATURE_C)), selected_unit),
+            CONF_TARGET_TEMPERATURE_C,
+            10.0,
+            30.0,
+        ),
+        CONF_AUTO_COMFORT_TEMPERATURE: _normalize_bool(
+            data.get(CONF_AUTO_COMFORT_TEMPERATURE),
+            CONF_AUTO_COMFORT_TEMPERATURE,
+            default=DEFAULT_AUTO_COMFORT_TEMPERATURE,
+        ),
+        CONF_TARGET_HUMIDITY_PERCENT: _normalize_float(
+            data.get(CONF_TARGET_HUMIDITY_PERCENT),
+            CONF_TARGET_HUMIDITY_PERCENT,
+            20.0,
+            80.0,
+        ),
+        CONF_STABILITY_MINUTES: _normalize_int(
+            data.get(CONF_STABILITY_MINUTES), CONF_STABILITY_MINUTES, 0, 24 * 60
+        ),
+        CONF_SOFT_OUTDOOR_THRESHOLD_C: _normalize_float(
+            temperature_to_celsius(
+                float(data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C)), selected_unit
+            ),
+            CONF_SOFT_OUTDOOR_THRESHOLD_C,
+            -10.0,
+            40.0,
+        ),
+        CONF_CO2_ENABLED: _normalize_bool(
+            data.get(CONF_CO2_ENABLED), CONF_CO2_ENABLED, default=False
+        ),
+        CONF_CO2_THRESHOLD_PPM: _normalize_float(
+            data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
+            CONF_CO2_THRESHOLD_PPM,
+            400.0,
+            5000.0,
+        ),
+    } | _normalized_optional_co2(data)
+
+
+def _normalized_optional_co2(data: Mapping[str, object]) -> dict[str, object]:
+    result = dict(data)
+    _normalize_optional_entities(result, CONF_CO2_ENTITY_ID)
+    _normalize_optional_entity_ids(result, CONF_CO2_ENTITY_ID, domains=NUMERIC_ENTITY_DOMAINS)
+    return {CONF_CO2_ENTITY_ID: result.get(CONF_CO2_ENTITY_ID)}
+
+
+def normalize_notification_config(
+    user_input: Mapping[str, object], defaults: Mapping[str, object]
+) -> dict[str, object]:
+    data = dict(defaults)
+    data.update(user_input)
+    level = data.get(
+        CONF_DIAGNOSTIC_NOTIFICATION_LEVEL, DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
+    )
+    if level not in {
+        DIAGNOSTIC_NOTIFICATION_LEVEL_ESSENTIAL,
+        DIAGNOSTIC_NOTIFICATION_LEVEL_DIAGNOSTIC,
+    }:
+        raise ConfigValidationError(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
+    return {
+        CONF_NOTIFICATION_DEVICE_ID: _normalize_notification_device_ids(
+            data.get(CONF_NOTIFICATION_DEVICE_ID)
+        ),
+        CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED: _normalize_bool(
+            data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED),
+            CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
+            default=False,
+        ),
+        CONF_DIAGNOSTIC_NOTIFICATION_LEVEL: level,
+        CONF_DEBUG_MODE_ENABLED: _normalize_bool(
+            data.get(CONF_DEBUG_MODE_ENABLED),
+            CONF_DEBUG_MODE_ENABLED,
+            default=DEFAULT_DEBUG_MODE_ENABLED,
+        ),
+        CONF_SAFETY_BYPASS_QUIET_HOURS: _normalize_bool(
+            data.get(CONF_SAFETY_BYPASS_QUIET_HOURS),
+            CONF_SAFETY_BYPASS_QUIET_HOURS,
+            default=DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
+        ),
+        CONF_COOLDOWN_MINUTES: _normalize_int(
+            data.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
+            CONF_COOLDOWN_MINUTES,
+            0,
+            24 * 60,
+        ),
+    }
+
+
+def normalize_override_config(
+    user_input: Mapping[str, object], defaults: Mapping[str, object]
+) -> dict[str, object]:
+    data = dict(defaults)
+    data.update(user_input)
+    data[CONF_OUTDOOR_WEATHER_ENTITY_ID] = _normalize_required_entity_id(
+        data.get(CONF_OUTDOOR_WEATHER_ENTITY_ID), CONF_OUTDOOR_WEATHER_ENTITY_ID, "weather"
+    )
+    normalized = normalize_outdoor_source_config(data)
+    normalized = normalize_outdoor_override_config(normalized, normalized)
+    return {
+        key: normalized.get(key)
+        for key in OVERRIDE_FIELDS
+        if key in normalized
+    }
 
 
 def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> dict[str, object]:
@@ -718,8 +881,6 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
         CONF_ROOM_CO2_ENTITY_ID,
-        CONF_ROOM_START_ENTITY_ID,
-        CONF_ROOM_STOP_ENTITY_ID,
     )
     data[CONF_ROOM_TEMPERATURE_ENTITY_ID] = _normalize_required_entity_id(
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
@@ -778,16 +939,17 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         CONF_ROOM_CO2_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
     )
+    data[CONF_ROOM_CO2_ENABLED] = _normalize_bool(
+        data.get(CONF_ROOM_CO2_ENABLED),
+        CONF_ROOM_CO2_ENABLED,
+        default=_default_room_co2_enabled(data),
+    )
+    if not data.get(CONF_ROOM_CO2_ENTITY_ID):
+        data[CONF_ROOM_CO2_ENABLED] = False
     data[CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS] = _normalize_entity_id_list(
         data.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS),
         CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
         domain="binary_sensor",
-    )
-    _normalize_optional_entity_ids(
-        data,
-        CONF_ROOM_START_ENTITY_ID,
-        CONF_ROOM_STOP_ENTITY_ID,
-        domain="automation",
     )
     return data
 
@@ -934,6 +1096,17 @@ def _default_room_override_enabled(
     return value is not None and str(value).strip() != ""
 
 
+def _default_room_co2_enabled(defaults: Mapping[str, object]) -> bool:
+    """Return the room CO₂ toggle default, including legacy global settings."""
+
+    if CONF_ROOM_CO2_ENABLED in defaults:
+        return bool(defaults.get(CONF_ROOM_CO2_ENABLED))
+    return bool(
+        defaults.get(CONF_CO2_ENABLED, False)
+        and (defaults.get(CONF_ROOM_CO2_ENTITY_ID) or defaults.get(CONF_CO2_ENTITY_ID))
+    )
+
+
 def _normalize_outdoor_override(value: object, field: str) -> bool:
     try:
         return cv.boolean(value)
@@ -1012,7 +1185,7 @@ def _normalize_required_entity_id(
 
 def _normalize_room_kind(value: object) -> str:
     text = str(value).strip()
-    if text not in {"room", "macro_room"}:
+    if text != "room":
         raise ConfigValidationError(CONF_ROOM_KIND)
     return text
 

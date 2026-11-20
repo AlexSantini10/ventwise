@@ -143,7 +143,8 @@ after the heuristic contract is stable and local parameters are available.
 
 Add hysteresis, persistence, rechecks, reason codes, diagnostics, translations,
 entities, and notification policy. Cooldown applies to delivery, not safety
-evaluation. Preserve existing configuration and automation compatibility.
+evaluation. Migrate legacy room-automation references out of persisted
+configuration; user-owned Home Assistant automations remain outside VentWise.
 
 ### Phase 7: optional local calibration
 

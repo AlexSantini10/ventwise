@@ -35,8 +35,6 @@ from custom_components.ventwise.const import (
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
-    CONF_ROOM_START_ENTITY_ID,
-    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
@@ -44,19 +42,24 @@ from custom_components.ventwise.const import (
     CONF_STABILITY_MINUTES,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from custom_components.ventwise.application.coordinator import (
-    PendingAutomationConfirmation,
-    VentWiseCoordinator,
-    _first_forecast_temperature,
-)
+from custom_components.ventwise.application.coordinator import VentWiseCoordinator, _first_forecast_temperature
 from custom_components.ventwise.application import coordinator as coordinator_module
 from custom_components.ventwise.application.runtime import (
     NotificationMarker,
     RoomActionGuard,
     RoomConfig,
 )
-from custom_components.ventwise.ventwise_core import RecommendationAction
-from custom_components.ventwise.ventwise_core.models import RoomRecommendation
+from ventwise_core import (
+    DecisionContext,
+    DecisionEngine,
+    DecisionOutdoor,
+    DecisionRoom,
+    DecisionSnapshot,
+    Observation,
+    RecommendationAction,
+    RoomGuardrailState,
+)
+from ventwise_core.models import RoomRecommendation
 
 
 class _FakeConfigEntries:
@@ -201,7 +204,6 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
             home_assistant_notification_enabled=False,
             minimum_score=0.5,
         ),
-        _pending_confirmations={},
         _notification_markers={},
         _notification_identity=lambda recommendation: (
             recommendation.action.value,
@@ -209,10 +211,6 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
         ),
         _notification_severity=lambda _score: "elevated",
         _persist_runtime_state=lambda: None,
-        _mobile_confirmation_action=lambda _recommendation: {
-            "action": "ventwise_confirm_test",
-            "title": "Conferma apertura",
-        },
     )
     monkeypatch.setattr(
         coordinator_module,
@@ -234,11 +232,6 @@ def test_on_demand_recommendation_sends_the_current_room_recommendation(
     assert notification["device_ids"] == ("phone-1",)
     assert notification["send_to_home_assistant"] is True
     assert notification["home_assistant_notification_id"] == "ventwise_recommendation_camera"
-    assert notification["mobile_action"] == {
-        "action": "ventwise_confirm_test",
-        "title": "Conferma apertura",
-    }
-    assert coordinator._pending_confirmations["ventwise_confirm_test"].room_key == "camera"
     assert coordinator._notification_markers["Camera"].title == "Apri le finestre"
 
 
@@ -276,12 +269,7 @@ def test_debug_notification_forces_the_requested_action_without_marking_delivery
             notification_device_ids=("phone-1",),
             home_assistant_notification_enabled=True,
         ),
-        _pending_confirmations={},
         _notification_markers={"Camera": object()},
-        _mobile_confirmation_action=lambda _recommendation: {
-            "action": "ventwise_confirm_debug",
-            "title": "Conferma apertura",
-        },
     )
     monkeypatch.setattr(
         coordinator_module,
@@ -302,51 +290,7 @@ def test_debug_notification_forces_the_requested_action_without_marking_delivery
     assert coordinator._suppress_automatic_notifications is False
     assert notification_calls[0]["title"] == "Apri le finestre"
     assert notification_calls[0]["home_assistant_notification_id"] == "ventwise_recommendation_camera"
-    assert notification_calls[0]["mobile_action"]["action"] == "ventwise_confirm_debug"
-    assert coordinator._notification_markers == {"Camera": coordinator._notification_markers["Camera"]}
-    assert coordinator._pending_confirmations["ventwise_confirm_debug"].debug is True
-
-
-def test_debug_confirmation_bypasses_changed_recommendation() -> None:
-    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
-    coordinator, hass, _ = _make_coordinator(
-        {
-            CONF_ROOMS: [
-                {
-                    CONF_ROOM_NAME: "Bedroom",
-                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-                    CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
-                }
-            ],
-        }
-    )
-    coordinator.data = SimpleNamespace(summary=SimpleNamespace(room_recommendations=()))
-
-    async def _refresh() -> None:
-        return None
-
-    coordinator.async_request_refresh = _refresh
-    coordinator._pending_confirmations["debug-token"] = PendingAutomationConfirmation(
-        "Bedroom", RecommendationAction.OPEN, now + timedelta(minutes=15), debug=True
-    )
-
-    from custom_components.ventwise.application import coordinator as coordinator_module
-
-    original_now = coordinator_module.dt_util.now
-    coordinator_module.dt_util.now = lambda: now
-    try:
-        asyncio.run(coordinator._async_confirm_room_automation("debug-token"))
-    finally:
-        coordinator_module.dt_util.now = original_now
-
-    assert hass.services.calls == [
-        (
-            "automation",
-            "trigger",
-            {"skip_condition": False},
-            {"entity_id": "automation.open_bedroom"},
-        )
-    ]
+    assert "mobile_action" not in notification_calls[0]
 
 
 def test_coordinator_loads_persisted_runtime_state() -> None:
@@ -430,116 +374,104 @@ def test_coordinator_persists_notification_reason_and_severity() -> None:
     assert marker["message"] == "VentWise · Camera: Outside is more comfortable."
 
 
-def test_room_action_guard_holds_reversals_and_survives_restart() -> None:
-    """A room cannot flip from open to close until its own guards permit it."""
+def test_core_guardrail_holds_reversals_until_the_room_action_is_stable() -> None:
+    """The core owns reversal holds and action lockouts."""
 
-    coordinator, hass, entry = _make_coordinator({CONF_ENABLED: True})
-    room = RoomConfig(
-        room_id="bedroom-1",
-        name="Bedroom",
-        temperature_entity_id="sensor.bedroom_temperature",
-        action_change_hold_minutes=5,
-        action_lockout_minutes=30,
-    )
     started_at = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
-    open_recommendation = RoomRecommendation(
-        "Bedroom", RecommendationAction.OPEN, 0.5, "Fresh air helps.", 22.0, 25.0, 20.0, 22.0,
-        room_id="bedroom-1",
-    )
-    close_recommendation = RoomRecommendation(
-        "Bedroom", RecommendationAction.CLOSE, 0.5, "Keep the room closed.", 22.0, 25.0, 30.0, 22.0,
-        room_id="bedroom-1",
-    )
 
-    assert coordinator._guard_room_recommendation(open_recommendation, room, started_at).action == RecommendationAction.OPEN
-    assert coordinator._guard_room_recommendation(
-        close_recommendation, room, started_at + timedelta(minutes=1)
-    ).action == RecommendationAction.NONE
-    assert coordinator._guard_room_recommendation(
-        close_recommendation, room, started_at + timedelta(minutes=31)
-    ).action == RecommendationAction.NONE
-    assert coordinator._guard_room_recommendation(
-        close_recommendation, room, started_at + timedelta(minutes=36)
-    ).action == RecommendationAction.CLOSE
-
-    coordinator._persist_runtime_state()
-    restored = _FakeConfigEntry(entry_id="abc123", data={}, options=hass.config_entries.updated[-1])
-    restarted = VentWiseCoordinator(
-        SimpleNamespace(config_entries=_FakeConfigEntries(), states=SimpleNamespace(get=lambda *_: None)),
-        restored,
-        restored.options,
-    )
-    assert restarted._room_action_guards["bedroom-1"].accepted_action == "close"
-
-
-def test_urgent_close_bypasses_room_action_guard() -> None:
-    coordinator, _, _ = _make_coordinator({CONF_ENABLED: True})
-    room = RoomConfig(None, "Bedroom", "sensor.bedroom_temperature")
-    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
-    coordinator._room_action_guards["Bedroom"] = RoomActionGuard(
-        "open", lockout_until=now + timedelta(minutes=30)
-    )
-    urgent_close = RoomRecommendation(
-        "Bedroom", RecommendationAction.CLOSE, 0.8, "Storm incoming.", 22.0, 25.0, 20.0, 22.0
-    )
-
-    assert coordinator._guard_room_recommendation(urgent_close, room, now).action == RecommendationAction.CLOSE
-
-
-def test_confirmed_room_automation_is_one_time_and_rechecks_recommendation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
-    from custom_components.ventwise.application import coordinator as coordinator_module
-
-    monkeypatch.setattr(coordinator_module.dt_util, "now", lambda: now)
-    coordinator, hass, _ = _make_coordinator(
-        {
-            CONF_ENABLED: True,
-            CONF_ROOMS: [
-                {
-                    CONF_ROOM_NAME: "Bedroom",
-                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-                    CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
-                    CONF_ROOM_STOP_ENTITY_ID: "automation.close_bedroom",
-                }
-            ],
-        }
-    )
-    coordinator.data = SimpleNamespace(
-        summary=SimpleNamespace(
-            room_recommendations=(
-                RoomRecommendation(
-                    "Bedroom", RecommendationAction.OPEN, 0.5, "Fresh air.", 22.0, 25.0, 20.0, 22.0
-                ),
+    def evaluate(at: datetime, outdoor_temperature: float, guardrails=()):
+        observation = lambda value, unit: Observation(value, unit, at, "test")
+        room = DecisionRoom(
+            "bedroom-1",
+            "Bedroom",
+            observation(28.0, "Â°C"),
+            observation(50.0, "%"),
+            action_change_hold_seconds=5 * 60,
+            action_lockout_seconds=30 * 60,
+        )
+        outdoor = DecisionOutdoor(
+            observation(outdoor_temperature, "Â°C"),
+            observation(50.0, "%"),
+            observation(1.0, "m/s"),
+            weather_condition=observation("clear", ""),
+        )
+        return DecisionEngine().evaluate(
+            DecisionSnapshot(
+                (room,),
+                outdoor,
+                at,
+                DecisionContext(room_guardrails=tuple(guardrails)),
             )
+        ).room_results[0]
+
+    opened = evaluate(started_at, 20.0)
+    assert opened.core_action is RecommendationAction.OPEN
+    guardrail = opened.guardrail_state
+    assert guardrail is not None
+
+    held_by_lockout = evaluate(
+        started_at + timedelta(minutes=1),
+        30.0,
+        (guardrail,),
+    )
+    assert held_by_lockout.core_action is RecommendationAction.NONE
+    assert held_by_lockout.reason_code == "action_lockout"
+
+    pending = evaluate(
+        started_at + timedelta(minutes=31),
+        30.0,
+        (held_by_lockout.guardrail_state,),
+    )
+    assert pending.core_action is RecommendationAction.NONE
+    assert pending.reason_code == "action_hold"
+    assert pending.guardrail_state is not None
+
+    accepted = evaluate(
+        started_at + timedelta(minutes=36),
+        30.0,
+        (pending.guardrail_state,),
+    )
+    assert accepted.core_action is RecommendationAction.CLOSE
+
+
+def test_core_urgent_close_bypasses_room_action_guard() -> None:
+    """The core lets an urgent safety close bypass a previous lockout."""
+
+    now = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    observation = lambda value, unit: Observation(value, unit, now, "test")
+    room = DecisionRoom(
+        "bedroom-1",
+        "Bedroom",
+        observation(25.0, "Â°C"),
+        observation(50.0, "%"),
+        window_open=observation(True, ""),
+        action_lockout_seconds=30 * 60,
+    )
+    outdoor = DecisionOutdoor(
+        observation(20.0, "Â°C"),
+        observation(50.0, "%"),
+        observation(20.0, "m/s"),
+        weather_condition=observation("storm", ""),
+    )
+    result = DecisionEngine().evaluate(
+        DecisionSnapshot(
+            (room,),
+            outdoor,
+            now,
+            DecisionContext(
+                room_guardrails=(
+                    RoomGuardrailState(
+                        "bedroom-1",
+                        "open",
+                        lockout_until=now + timedelta(minutes=30),
+                    ),
+                )
+            ),
         )
-    )
+    ).room_results[0]
 
-    async def _refresh() -> None:
-        return None
-
-    coordinator.async_request_refresh = _refresh
-    coordinator._pending_confirmations["token"] = PendingAutomationConfirmation(
-        "Bedroom", RecommendationAction.OPEN, now + timedelta(minutes=15)
-    )
-    asyncio.run(coordinator._async_confirm_room_automation("token"))
-    asyncio.run(coordinator._async_confirm_room_automation("token"))
-
-    assert hass.services.calls == [
-        (
-            "automation",
-            "trigger",
-            {"skip_condition": False},
-            {"entity_id": "automation.open_bedroom"},
-        )
-    ]
-
-    coordinator._pending_confirmations["stale"] = PendingAutomationConfirmation(
-        "Bedroom", RecommendationAction.CLOSE, now + timedelta(minutes=15)
-    )
-    asyncio.run(coordinator._async_confirm_room_automation("stale"))
-    assert len(hass.services.calls) == 1
+    assert result.core_action is RecommendationAction.CLOSE
+    assert result.urgent is True
 
 
 def test_short_term_forecast_uses_the_nearest_upcoming_temperature() -> None:
@@ -1415,4 +1347,4 @@ def test_coordinator_averages_global_perceived_indoor_across_rooms(
 
     snapshot = asyncio.run(coordinator._async_update_data())
 
-    assert snapshot.active_indoor_perceived_c == pytest.approx(26.0)
+    assert snapshot.active_indoor_perceived_c == pytest.approx(26.2945813951)

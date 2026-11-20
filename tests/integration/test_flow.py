@@ -23,7 +23,10 @@ from custom_components.ventwise.const import (
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
+    CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
     CONF_ROOM_ENABLED,
@@ -31,8 +34,6 @@ from custom_components.ventwise.const import (
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
-    CONF_ROOM_START_ENTITY_ID,
-    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOMS,
@@ -56,13 +57,11 @@ from custom_components.ventwise.configuration.flow import (
     build_room_schema,
     _notification_device_defaults,
     _notification_device_options,
-    has_companion_app_notification_device,
     normalize_advanced_config,
     normalize_basic_config,
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
-    validate_room_automation_confirmation,
     split_config_data,
 )
 
@@ -89,6 +88,7 @@ def test_config_schema_is_simple_and_weather_based() -> None:
     assert schema_dict[CONF_TARGET_HUMIDITY_PERCENT].__class__.__name__ == "All"
     assert schema_dict[CONF_STABILITY_MINUTES].__class__.__name__ == "All"
     assert schema_dict[CONF_NOTIFICATION_DEVICE_ID].__class__.__name__ == "SelectSelector"
+    assert _schema_default(_schema_entry(schema, CONF_SAFETY_BYPASS_QUIET_HOURS)) is False
 
 
 def test_debug_mode_is_normalized_with_a_safe_default() -> None:
@@ -99,6 +99,7 @@ def test_debug_mode_is_normalized_with_a_safe_default() -> None:
     )
 
     assert normalized[CONF_DEBUG_MODE_ENABLED] is False
+    assert normalized[CONF_SAFETY_BYPASS_QUIET_HOURS] is False
 
 
 def test_setup_overrides_schema_is_checkbox_based() -> None:
@@ -191,101 +192,6 @@ def test_notification_device_options_include_only_devices_with_notify_entities(
     ) == ["notify.alex"]
 
 
-def test_room_automation_requires_a_selected_companion_app_device(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from custom_components.ventwise.configuration import flow
-
-    entity_registry = SimpleNamespace(
-        entities={
-            "notify.mobile_app_alex": SimpleNamespace(
-                entity_id="notify.mobile_app_alex", device_id="phone-alex", platform="mobile_app"
-            ),
-            "notify.telegram": SimpleNamespace(
-                entity_id="notify.telegram", device_id="telegram-device", platform="telegram"
-            ),
-            "notify.iphone_di_alex": SimpleNamespace(
-                entity_id="notify.iphone_di_alex", device_id="phone-modern", platform="mobile_app"
-            ),
-        },
-        async_get=lambda entity_id: {
-            "notify.mobile_app_alex": SimpleNamespace(platform="mobile_app"),
-            "notify.telegram": SimpleNamespace(platform="telegram"),
-            "notify.iphone_di_alex": SimpleNamespace(platform="mobile_app"),
-        }.get(entity_id),
-    )
-    monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
-    monkeypatch.setattr(
-        flow.dr,
-        "async_get",
-        lambda _hass: SimpleNamespace(async_get=lambda _device_id: None),
-    )
-    monkeypatch.setattr(
-        flow.er, "async_entries_for_device", lambda registry, device_id: [
-            entry for entry in registry.entities.values() if entry.device_id == device_id
-        ]
-    )
-    room = {
-        CONF_ROOM_NAME: "Bedroom",
-        CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-        CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
-    }
-
-    assert has_companion_app_notification_device(object(), ["phone-alex"])
-    assert has_companion_app_notification_device(object(), ["phone-modern"])
-    validate_room_automation_confirmation(
-        [room], {CONF_NOTIFICATION_DEVICE_ID: ["phone-alex"]}, object()
-    )
-    with pytest.raises(ConfigValidationError) as exc_info:
-        validate_room_automation_confirmation(
-            [room], {CONF_NOTIFICATION_DEVICE_ID: ["telegram-device"]}, object()
-        )
-    assert exc_info.value.field == CONF_NOTIFICATION_DEVICE_ID
-    assert exc_info.value.message == "companion_app_required"
-
-
-def test_room_automation_accepts_a_companion_device_id_after_registry_migration(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from custom_components.ventwise.configuration import flow
-    from custom_components.ventwise.application import notification as notification_module
-
-    entity_registry = SimpleNamespace(
-        entities={
-            "notify.iphone_di_alex": SimpleNamespace(
-                entity_id="notify.iphone_di_alex",
-                device_id="legacy-phone-device",
-                platform="mobile_app",
-                unique_id="phone-uuid",
-            )
-        },
-        async_get=lambda entity_id: SimpleNamespace(platform="mobile_app")
-        if entity_id == "notify.iphone_di_alex"
-        else None,
-    )
-    device_registry = SimpleNamespace(
-        async_get=lambda device_id: (
-            SimpleNamespace(identifiers={("mobile_app", "phone-uuid")})
-            if device_id == "current-phone-device"
-            else None
-        )
-    )
-    monkeypatch.setattr(flow.er, "async_get", lambda _hass: entity_registry)
-    monkeypatch.setattr(notification_module.dr, "async_get", lambda _hass: device_registry)
-    monkeypatch.setattr(
-        notification_module.er, "async_entries_for_device", lambda _registry, _device_id: []
-    )
-    room = {
-        CONF_ROOM_NAME: "Bedroom",
-        CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-        CONF_ROOM_START_ENTITY_ID: "automation.open_bedroom",
-    }
-
-    validate_room_automation_confirmation(
-        [room], {CONF_NOTIFICATION_DEVICE_ID: ["current-phone-device"]}, object()
-    )
-
-
 def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     """The advanced step should carry the detailed tuning controls."""
 
@@ -300,27 +206,27 @@ def test_advanced_options_schema_contains_the_technical_overrides() -> None:
     assert CONF_QUIET_HOURS_END not in schema_dict
 
 
-def test_room_schema_supports_room_and_macro_room_defaults() -> None:
-    """Room-like entries should share the same structure."""
+def test_room_schema_supports_normal_room_defaults() -> None:
 
     room_schema = build_room_schema({}, 0, "room")
-    macro_schema = build_room_schema({}, 0, "macro_room")
-
     assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == "Room 1"
-    assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro Room 1"
     assert room_schema.schema[CONF_ROOM_TEMPERATURE_ENTITY_ID].__class__.__name__ == "EntitySelector"
     assert room_schema.schema[CONF_ROOM_HUMIDITY_ENTITY_ID].__class__.__name__ == "Any"
+    assert room_schema.schema[CONF_ROOM_CO2_ENTITY_ID].__class__.__name__ == "Any"
+    assert callable(room_schema.schema[CONF_ROOM_CO2_ENABLED])
     assert callable(room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C].__class__.__name__ == "Any"
     assert callable(room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED])
     assert room_schema.schema[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE].__class__.__name__ == "Any"
-    assert room_schema.schema[CONF_ROOM_START_ENTITY_ID].__class__.__name__ == "Any"
-    assert room_schema.schema[CONF_ROOM_STOP_ENTITY_ID].__class__.__name__ == "Any"
-    assert list(room_schema.schema.keys())[:8] == [
+    assert "start_entity_id" not in room_schema.schema
+    assert "stop_entity_id" not in room_schema.schema
+    assert list(room_schema.schema.keys())[:10] == [
         CONF_ROOM_ENABLED,
         CONF_ROOM_NAME,
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
         CONF_ROOM_HUMIDITY_ENTITY_ID,
+        CONF_ROOM_CO2_ENTITY_ID,
+        CONF_ROOM_CO2_ENABLED,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
         CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
@@ -328,14 +234,22 @@ def test_room_schema_supports_room_and_macro_room_defaults() -> None:
     ]
 
 
-def test_room_schema_localizes_default_names() -> None:
+@pytest.mark.parametrize(
+    ("language", "room_name"),
+    (
+        ("it", "Stanza 1"),
+        ("fr", "Pièce 1"),
+        ("de", "Zimmer 1"),
+    ),
+)
+def test_room_schema_localizes_default_names(
+    language: str,
+    room_name: str,
+) -> None:
     """Room defaults should follow the requested language."""
 
-    room_schema = build_room_schema({}, 0, "room", "it")
-    macro_schema = build_room_schema({}, 0, "macro_room", "it")
-
-    assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == "Stanza 1"
-    assert _schema_default(_schema_entry(macro_schema, CONF_ROOM_NAME)) == "Macro-stanza 1"
+    room_schema = build_room_schema({}, 0, "room", language)
+    assert _schema_default(_schema_entry(room_schema, CONF_ROOM_NAME)) == room_name
 
 
 def test_room_selection_label_localizes_room_kind() -> None:
@@ -574,20 +488,33 @@ def test_normalize_room_config_sets_kind_and_trims_names() -> None:
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: True,
                 CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: "23.5",
                 CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: False,
-                CONF_ROOM_START_ENTITY_ID: "automation.start_room",
-                CONF_ROOM_STOP_ENTITY_ID: "",
             },
-        "macro_room",
+        "room",
     )
 
-    assert data[CONF_ROOM_KIND] == "macro_room"
+    assert data[CONF_ROOM_KIND] == "room"
     assert data[CONF_ROOM_NAME] == "Bedroom"
     assert data[CONF_ROOM_HUMIDITY_ENTITY_ID] is None
     assert data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED] is True
     assert data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C] == 23.5
     assert data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED] is False
-    assert data[CONF_ROOM_START_ENTITY_ID] == "automation.start_room"
-    assert data[CONF_ROOM_STOP_ENTITY_ID] is None
+    assert "start_entity_id" not in data
+    assert "stop_entity_id" not in data
+
+
+def test_normalize_room_config_clears_co2_usage_when_sensor_is_removed() -> None:
+    data = normalize_room_config(
+        {
+            CONF_ROOM_NAME: "Bedroom",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
+            CONF_ROOM_CO2_ENTITY_ID: "",
+            CONF_ROOM_CO2_ENABLED: True,
+        },
+        "room",
+    )
+
+    assert data[CONF_ROOM_CO2_ENTITY_ID] is None
+    assert data[CONF_ROOM_CO2_ENABLED] is False
 
 
 def test_normalize_room_config_rejects_invalid_room_kind() -> None:
@@ -662,20 +589,6 @@ def test_normalize_room_config_rejects_non_binary_window_contacts() -> None:
         )
 
     assert exc_info.value.field == CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS
-
-
-def test_normalize_room_config_rejects_non_automation_room_actions() -> None:
-    with pytest.raises(ConfigValidationError) as exc_info:
-        normalize_room_config(
-            {
-                CONF_ROOM_NAME: "Bedroom",
-                CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.bedroom_temp",
-                CONF_ROOM_START_ENTITY_ID: "switch.open_room",
-            },
-            "room",
-        )
-
-    assert exc_info.value.field == CONF_ROOM_START_ENTITY_ID
 
 
 def test_split_config_data_separates_rooms_from_global_settings() -> None:

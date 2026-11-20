@@ -8,6 +8,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
@@ -16,6 +17,7 @@ from .const import (
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
+    CONF_ROOM_REMOVE_CONFIRMATION,
     CONF_ROOM_SELECTION,
     CONF_ROOMS,
     DOMAIN,
@@ -32,7 +34,6 @@ from .configuration.flow import (
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
-    validate_room_automation_confirmation,
     split_config_data,
     _localized_room_kind_label,
 )
@@ -41,7 +42,7 @@ from .configuration.flow import (
 class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for the integration."""
 
-    VERSION = 3
+    VERSION = 7
 
     def __init__(self) -> None:
         self._setup_data: dict[str, Any] = {}
@@ -129,7 +130,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _, current_rooms = split_config_data(self._current_config)
         self._rooms = current_rooms
         self._room_index = len(current_rooms)
-        menu_options = ["add_room", "add_macro_room"]
+        menu_options = ["add_room"]
         if self._rooms:
             menu_options.extend(["edit_room", "remove_room"])
         menu_options.append("finish")
@@ -145,11 +146,6 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Add a normal room during initial setup."""
 
         return await self._handle_room_step("room", user_input)
-
-    async def async_step_add_macro_room(self, user_input: dict[str, Any] | None = None):
-        """Add a macro-room during initial setup."""
-
-        return await self._handle_room_step("macro_room", user_input)
 
     async def async_step_edit_room(self, user_input: dict[str, Any] | None = None):
         """Pick a room to edit during setup."""
@@ -179,13 +175,12 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="invalid_step")
 
         selected_room = self._rooms[self._selected_room_index]
-        room_kind = str(selected_room.get(CONF_ROOM_KIND, "room"))
         return await self._handle_room_step(
-            room_kind,
+            "room",
             user_input,
             room_index=self._selected_room_index,
             default_room=selected_room,
-            step_id="edit_room_form" if room_kind == "room" else "edit_macro_room_form",
+            step_id="edit_room_form",
         )
 
     async def async_step_edit_room_form(self, user_input: dict[str, Any] | None = None):
@@ -202,22 +197,8 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="edit_room_form",
         )
 
-    async def async_step_edit_macro_room_form(self, user_input: dict[str, Any] | None = None):
-        """Submit edits for a macro-room during setup."""
-
-        if self._selected_room_index is None or self._selected_room_index >= len(self._rooms):
-            return self.async_abort(reason="invalid_step")
-        selected_room = self._rooms[self._selected_room_index]
-        return await self._handle_room_step(
-            str(selected_room.get(CONF_ROOM_KIND, "macro_room")),
-            user_input,
-            room_index=self._selected_room_index,
-            default_room=selected_room,
-            step_id="edit_macro_room_form",
-        )
-
     async def async_step_remove_room(self, user_input: dict[str, Any] | None = None):
-        """Pick a room to remove during setup."""
+        """Ask for confirmation before removing a room during setup."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -226,10 +207,8 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except (KeyError, ValueError):
                 errors["base"] = "invalid_input"
             else:
-                self._rooms.pop(room_index)
-                self._current_config[CONF_ROOMS] = deepcopy(self._rooms)
-                self._selected_room_index = None
-                return await self.async_step_rooms()
+                self._selected_room_index = room_index
+                return await self.async_step_confirm_remove_room()
 
         return self.async_show_form(
             step_id="remove_room",
@@ -239,6 +218,33 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "room_count": str(len(self._rooms)),
             },
         )
+
+    async def async_step_confirm_remove_room(self, user_input: dict[str, Any] | None = None):
+        """Remove the selected setup room only after explicit confirmation."""
+
+        if user_input is None:
+            return self.async_show_form(
+                step_id="remove_room_select",
+                data_schema=vol.Schema(
+                    {vol.Required(CONF_ROOM_REMOVE_CONFIRMATION, default=False): cv.boolean}
+                ),
+                description_placeholders={
+                    "room_name": str(self._rooms[self._selected_room_index].get(CONF_ROOM_NAME, ""))
+                },
+            )
+        if not user_input.get(CONF_ROOM_REMOVE_CONFIRMATION, False):
+            return await self.async_step_rooms()
+        if self._selected_room_index is None or self._selected_room_index >= len(self._rooms):
+            return await self.async_step_rooms()
+        self._rooms.pop(self._selected_room_index)
+        self._current_config[CONF_ROOMS] = deepcopy(self._rooms)
+        self._selected_room_index = None
+        return await self.async_step_rooms()
+
+    async def async_step_remove_room_select(self, user_input: dict[str, Any] | None = None):
+        """Handle the translated removal confirmation step."""
+
+        return await self.async_step_confirm_remove_room(user_input)
 
     async def async_step_finish(self, user_input: dict[str, Any] | None = None):
         """Finish the initial setup."""
@@ -271,9 +277,6 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     candidate_rooms.append(room)
                 else:
                     candidate_rooms[room_index] = room
-                validate_room_automation_confirmation(
-                    candidate_rooms, self._current_config, self.hass
-                )
                 self._rooms = candidate_rooms
                 self._current_config[CONF_ROOMS] = deepcopy(candidate_rooms)
                 self._selected_room_index = None
@@ -287,7 +290,7 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._room_index = room_index if room_index is not None else len(self._rooms)
         return self.async_show_form(
             step_id=step_id
-            or ("add_room" if room_kind == "room" else "add_macro_room"),
+            or "add_room",
             data_schema=build_room_schema(
                 default_room,
                 self._room_index,

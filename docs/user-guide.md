@@ -12,10 +12,11 @@ You need a working Home Assistant installation and at least one Home Assistant
 temperature sensor and one indoor humidity sensor for each room you want to
 configure.
 
-VentWise does not directly open or close windows, change a thermostat, or
-replace a safety, weather-protection, or security system. If you opt in to room
-automations, VentWise runs the selected automation only after your explicit
-confirmation in a Companion App notification.
+VentWise does not directly open or close windows, change a thermostat, execute
+Home Assistant automations, or replace a safety, weather-protection, or
+security system. If you want an action to happen automatically, create and
+maintain that Home Assistant automation yourself using VentWise's recommendation
+entities.
 
 ## Install with HACS
 
@@ -67,12 +68,23 @@ The setup form asks for:
 
 After initial setup, open **Configure** on the VentWise integration to add a
 room. Give it a clear name and select its indoor temperature and humidity
-sensors. You can add, edit, disable, or remove rooms later from the same menu.
+sensors. The **Rooms** screen lists saved rooms followed by **Add room**. Select
+a saved room to edit or remove it; each room change is saved immediately, and
+removal always requires explicit confirmation. **Done** closes the screen
+without making another change.
 If your room has door or window contacts, select them in the room form as well.
 VentWise treats the room as open when any selected contact is open, and only
 asks you to open or close windows when that action has not already happened.
 The room's **Window state** entity shows whether the contacts are open, closed,
 unavailable, or not configured.
+
+To use indoor CO₂ for a room, select its optional CO₂ sensor and enable **Use
+CO₂ for this room**. The room's CO₂ entity is then shown in ppm and contributes
+to recommendations when it reaches the configured global threshold. Clear the
+sensor selector to remove the source; VentWise keeps the room's derived CO₂
+entity but clears its source binding. It then reports the entity as unconfigured
+until a new source is selected, without deleting the original Home Assistant
+sensor. The same rule applies to optional humidity and window-contact entities.
 
 ## Everyday Use
 
@@ -80,6 +92,14 @@ VentWise exposes its recommendation and supporting measurements through Home
 Assistant entities. Check the recommendation before opening or closing a
 window. A recommendation can be delayed by the configured stability period,
 quiet hours, cooldown, missing data, or a disabled room.
+
+Each room device also includes the shared outdoor context. Alongside the
+measured temperature and humidity, VentWise exposes calculated absolute
+humidity (`g/m³`), humidity ratio (`g/kg`), vapor pressure (`hPa`), and the
+outdoor-minus-indoor moisture difference. The moisture exchange direction is
+reported as `drying`, `humidifying`, or `neutral`. Calculated entities are
+regular sensors and are labelled as calculated; diagnostic entities are kept
+for core/debug information only.
 
 When the outdoor temperature can correct the room only temporarily, VentWise
 can recommend **brief ventilation** instead of leaving a window open. In that
@@ -90,10 +110,16 @@ Its comfort score also treats temperatures below 18 °C and above 26 °C as
 health-relevant conditions, even if a personal comfort target is outside that
 range.
 
-Use **Configure** on the integration to change units, comfort values, notification
-settings, weather source, outdoor-data overrides, quiet hours, or rooms. The
-climate-adaptive option changes only VentWise's recommendation target; it does
-not change a thermostat or HVAC setpoint.
+Use **Configure** on the integration to change settings through separate
+**Comfort settings**, **Notifications**, **Outdoor overrides**, and **Rooms**
+menus. Units remain in their own menu. The climate-adaptive option changes only
+VentWise's recommendation target; it does not change a thermostat or HVAC
+setpoint.
+
+Safety notifications bypass stability and cooldown. By default they still
+respect quiet hours; enable **Allow safety notifications during quiet hours**
+in the notification settings only if you want urgent safety alerts delivered
+overnight. Identical safety alerts remain suppressed.
 
 ### Receive a recommendation now
 
@@ -101,30 +127,48 @@ The VentWise device includes a **Receive recommendation now** button. Use it
 when you want an immediate answer to “what is best right now?”
 It refreshes the available weather and room data and sends the current advice
 to the configured notification targets without waiting for the regular
-notification cooldown or stability interval. For each actionable room, the
-notification is the same as a regular VentWise recommendation and includes a
-Companion App confirmation button when that room has an automation configured.
-Pressing this device button never runs an automation by itself.
+notification cooldown or stability interval. The notification is informational
+and contains no action that VentWise can use to execute a Home Assistant
+automation.
 
 ### Debug room notifications
 
 Enable **Debug mode** in VentWise settings only when testing notifications or
-automations. Each room then exposes **Receive open notification** and
-**Receive close notification** controls. They send the normal operational
-notification with the requested action, bypassing notification timing and
-without suppressing later real recommendations. A Companion App confirmation
-is valid for 15 minutes and can run the configured room automation even when
-the current recommendation differs; its own conditions still apply. Disable
-Debug mode when testing is complete to remove these controls from every room.
+your own Home Assistant automations. Each room then exposes **Receive open
+notification** and **Receive close notification** controls. They send the
+normal informational notification with the requested action, bypassing
+notification timing and without suppressing later real recommendations.
+Disable Debug mode when testing is complete to remove these controls from every
+room.
 
-### Confirming room automations
+### Build your own Home Assistant automation
 
-For a room's open or close automation, select at least one Home Assistant
-Companion App notification device. A matching recommendation includes a
-confirmation button that is valid for 15 minutes and runs the automation only
-if the same recommendation is still current. VentWise respects the automation's
-own conditions. Persistent Home Assistant notifications and non-Companion
-notification services cannot confirm or trigger an automation.
+Use the room recommendation sensor as the trigger for any action you want to
+automate. Its state is one of `open`, `close`, `ventilate`, or `none`; the
+sensor attributes contain the structured score, reason code, room, and input
+quality used by the decision. For example, an automation can trigger when
+`sensor.<room>_recommendation` changes to `open`, then apply its own safety
+conditions and actions:
+
+```yaml
+alias: VentWise open-window reminder
+triggers:
+  - trigger: state
+    entity_id: sensor.bedroom_recommendation
+    to: "open"
+conditions:
+  - condition: state
+    entity_id: binary_sensor.bedroom_window
+    state: "off"
+actions:
+  - action: notify.mobile_app_phone
+    data:
+      title: VentWise
+      message: Open the bedroom window when convenient.
+```
+
+The entity ID and actions are examples owned by the user. VentWise does not
+store, validate, or execute that automation.
 
 ## Update
 

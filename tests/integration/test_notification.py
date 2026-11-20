@@ -302,7 +302,7 @@ def test_async_send_notification_delivers_to_home_assistant_when_selected() -> N
     ]
 
 
-def test_async_send_notification_adds_confirmation_only_for_companion_targets() -> None:
+def test_async_send_notification_never_adds_automation_actions() -> None:
     hass = type("Hass", (), {"services": _FakeServices(), "config": SimpleNamespace(language="en")})()
 
     result = asyncio.run(
@@ -311,51 +311,15 @@ def test_async_send_notification_adds_confirmation_only_for_companion_targets() 
             ["notify.mobile_app_alice", "notify.telegram"],
             title="Open windows",
             message="Bedroom: fresh air helps.",
-            mobile_action={"action": "ventwise_confirm_token", "title": "Confirm opening"},
         )
     )
 
     assert result is True
-    assert hass.services.calls[0][:2] == ("notify", "mobile_app_alice")
-    assert hass.services.calls[0][3] is None
-    assert hass.services.calls[0][2]["data"] == {
-        "actions": [{"action": "ventwise_confirm_token", "title": "Confirm opening"}]
-    }
-    assert "data" not in hass.services.calls[1][2]
-
-
-def test_async_send_notification_adds_confirmation_for_modern_companion_entity(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from custom_components.ventwise.application import notification as notification_module
-
-    registry = SimpleNamespace(
-        async_get=lambda entity_id: (
-            _FakeEntry(entity_id, platform="mobile_app")
-            if entity_id == "notify.iphone_di_alex"
-            else _FakeEntry(entity_id, platform="telegram")
-        )
-    )
-    monkeypatch.setattr(notification_module.er, "async_get", lambda _hass: registry)
-    hass = type("Hass", (), {"services": _FakeServices(), "config": SimpleNamespace(language="it")})()
-
-    result = asyncio.run(
-        async_send_notification(
-            hass,
-            ["notify.iphone_di_alex", "notify.telegram"],
-            title="Apri le finestre",
-            message="Camera: aria fresca.",
-            mobile_action={"action": "ventwise_confirm_token", "title": "Conferma apertura"},
-        )
-    )
-
-    assert result is True
-    assert hass.services.calls[0][:2] == ("notify", "mobile_app_iphone_di_alex")
-    assert hass.services.calls[0][3] is None
-    assert hass.services.calls[0][2]["data"] == {
-        "actions": [{"action": "ventwise_confirm_token", "title": "Conferma apertura"}]
-    }
-    assert "data" not in hass.services.calls[1][2]
+    assert [call[:2] for call in hass.services.calls] == [
+        ("notify", "send_message"),
+        ("notify", "send_message"),
+    ]
+    assert all("data" not in call[2] for call in hass.services.calls)
 
 
 def test_async_send_notification_reports_failure_to_home_assistant(caplog: pytest.LogCaptureFixture) -> None:

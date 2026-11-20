@@ -8,12 +8,13 @@ from datetime import datetime, time
 from typing import Any
 
 from ..ventwise_core import (
+    AggregateDecisionResult,
     Availability,
     ComfortObservation,
     DecisionConfig,
     DecisionContext,
     DecisionEngine,
-    DecisionOutdoor,
+    ExternalConditions,
     DecisionRoom,
     DecisionSnapshot,
     ForecastObservation,
@@ -21,9 +22,16 @@ from ..ventwise_core import (
     RecommendationAction,
     RecommendationSummary,
     RoomObservation,
+    RoomGuardrailState,
     RoomProfile,
     SourceReading,
     RoomRecommendation,
+    TraceEntry,
+)
+from ..ventwise_core.serialization import (
+    aggregate_result_to_dict,
+    result_to_dict,
+    snapshot_to_dict,
 )
 
 from ..const import (
@@ -47,10 +55,12 @@ from ..const import (
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_ROOM_KIND,
     CONF_ROOM_ENABLED,
     CONF_ROOM_ID,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
     CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOM_NAME,
@@ -59,8 +69,6 @@ from ..const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
-    CONF_ROOM_START_ENTITY_ID,
-    CONF_ROOM_STOP_ENTITY_ID,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOMS,
@@ -89,6 +97,7 @@ from ..const import (
     DEFAULT_MINIMUM_SCORE,
     DEFAULT_QUIET_HOURS_END,
     DEFAULT_QUIET_HOURS_START,
+    DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     DEFAULT_SOFT_OUTDOOR_THRESHOLD_C,
     DEFAULT_STABILITY_MINUTES,
     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
@@ -119,10 +128,9 @@ class RoomConfig:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
+    co2_enabled: bool = False
     co2_entity_id: str | None = None
     window_sensor_entity_ids: tuple[str, ...] = ()
-    start_entity_id: str | None = None
-    stop_entity_id: str | None = None
     action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
     action_lockout_minutes: int = DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES
 
@@ -144,6 +152,7 @@ class IntegrationConfig:
     quiet_hours_enabled: bool = True
     quiet_hours_start: str = DEFAULT_QUIET_HOURS_START
     quiet_hours_end: str = DEFAULT_QUIET_HOURS_END
+    safety_bypass_quiet_hours: bool = DEFAULT_SAFETY_BYPASS_QUIET_HOURS
     enabled: bool = True
     outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_temperature_entity_id: str | None = None
@@ -183,7 +192,12 @@ class RuntimeSnapshot:
     enabled: bool
     stable_for_seconds: int
     last_updated: datetime
+    outdoor_pressure_hpa: float | None = None
     window_states: Mapping[str, str] = field(default_factory=dict)
+    core_snapshot: DecisionSnapshot | None = None
+    core_result: AggregateDecisionResult | None = None
+    calculated_result: AggregateDecisionResult | None = None
+    delivered_result: AggregateDecisionResult | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +236,8 @@ class RoomActionGuard:
 def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
     """Convert raw config entry data into a runtime config object."""
 
+    legacy_co2_enabled = bool(data.get(CONF_CO2_ENABLED, False))
+    legacy_co2_entity_id = _string_or_none(data.get(CONF_CO2_ENTITY_ID))
     rooms = tuple(
         RoomConfig(
             room_id=_string_or_none(room.get(CONF_ROOM_ID)),
@@ -250,12 +266,23 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
-            co2_entity_id=_string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID)),
+            co2_enabled=bool(
+                room.get(
+                    CONF_ROOM_CO2_ENABLED,
+                    legacy_co2_enabled
+                    and bool(
+                        _string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID))
+                        or legacy_co2_entity_id
+                    ),
+                )
+            ),
+            co2_entity_id=(
+                _string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID))
+                or (legacy_co2_entity_id if legacy_co2_enabled else None)
+            ),
             window_sensor_entity_ids=_string_list(
                 room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
             ),
-            start_entity_id=_string_or_none(room.get(CONF_ROOM_START_ENTITY_ID)),
-            stop_entity_id=_string_or_none(room.get(CONF_ROOM_STOP_ENTITY_ID)),
             action_change_hold_minutes=int(
                 room.get(
                     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
@@ -291,6 +318,9 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             data.get(CONF_QUIET_HOURS_START), DEFAULT_QUIET_HOURS_START
         ),
         quiet_hours_end=_time_or_default(data.get(CONF_QUIET_HOURS_END), DEFAULT_QUIET_HOURS_END),
+        safety_bypass_quiet_hours=bool(
+            data.get(CONF_SAFETY_BYPASS_QUIET_HOURS, DEFAULT_SAFETY_BYPASS_QUIET_HOURS)
+        ),
         enabled=bool(data.get(CONF_ENABLED, True)),
         outdoor_temperature_source=_outdoor_source(
             data,
@@ -314,8 +344,8 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             data.get(CONF_DIAGNOSTIC_NOTIFICATION_LEVEL)
         ),
         debug_mode_enabled=bool(data.get(CONF_DEBUG_MODE_ENABLED, DEFAULT_DEBUG_MODE_ENABLED)),
-        co2_enabled=bool(data.get(CONF_CO2_ENABLED, False)),
-        co2_entity_id=_string_or_none(data.get(CONF_CO2_ENTITY_ID)),
+        co2_enabled=any(room.co2_enabled for room in rooms),
+        co2_entity_id=legacy_co2_entity_id,
         co2_threshold_ppm=float(data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM)),
         notification_device_ids=_string_list(data.get(CONF_NOTIFICATION_DEVICE_ID)),
         rooms=rooms,
@@ -339,6 +369,7 @@ def build_decision_snapshot(
     evaluated_at: datetime,
     *,
     window_states: Mapping[str, str] | None = None,
+    room_action_guards: Mapping[str, "RoomActionGuard"] | None = None,
 ) -> DecisionSnapshot:
     """Build the immutable core input from already normalized HA values."""
 
@@ -347,10 +378,12 @@ def build_decision_snapshot(
         for reading in (
             *(room.indoor.temperature_source for room in rooms),
             *(room.indoor.humidity_source for room in rooms),
+            *(room.co2_source for room in rooms),
             outdoor.temperature_source,
             outdoor.humidity_source,
             outdoor.wind_speed_source,
             outdoor.wind_gust_source,
+            outdoor.pressure_source,
         )
         if reading is not None and reading.observed_at is not None
     ]
@@ -381,6 +414,7 @@ def build_decision_snapshot(
         return Observation(
             normalized, canonical, observed_at, reading.source_id,
             availability=availability, quality_reason=reason,
+            original_value=reading.value, original_unit=reading.unit,
         )
 
     window_states = window_states or {}
@@ -398,6 +432,8 @@ def build_decision_snapshot(
             ),
             window_contact_configured=(room.room_id or room.name) in window_states
             and window_states[room.room_id or room.name] != WINDOW_STATE_NOT_CONFIGURED,
+            action_change_hold_seconds=getattr(room, "action_change_hold_minutes", 0) * 60,
+            action_lockout_seconds=getattr(room, "action_lockout_minutes", 0) * 60,
             target_temperature_c=(
                 room.target_temperature_c_override
                 if room.target_temperature_c_override_enabled
@@ -416,31 +452,46 @@ def build_decision_snapshot(
     )
     return DecisionSnapshot(
         rooms=decision_rooms,
-        outdoor=DecisionOutdoor(
+        outdoor=ExternalConditions(
             temperature_c=observation(outdoor.temperature_c, "°C", "outdoor", "temperature", outdoor.temperature_source),
             humidity_percent=observation(outdoor.humidity_percent, "%", "outdoor", "humidity", outdoor.humidity_source),
             wind_speed_m_s=(observation(outdoor.wind_speed_m_s, "m/s", "outdoor", "wind_speed", outdoor.wind_speed_source) if outdoor.wind_speed_m_s is not None else None),
             wind_gust_m_s=(observation(outdoor.wind_gust_m_s, "m/s", "outdoor", "wind_speed", outdoor.wind_gust_source) if outdoor.wind_gust_m_s is not None else None),
+            pressure_hpa=(observation(outdoor.pressure_hpa, "hPa", "outdoor", "pressure", outdoor.pressure_source) if outdoor.pressure_hpa is not None else None),
             weather_condition=(Observation(outdoor.weather_condition, "", snapshot_evaluated_at, "manual:outdoor") if outdoor.weather_condition is not None else None),
+            forecast=outdoor.forecast,
             safety_evidence_configured=outdoor.safety_evidence_configured,
         ),
         evaluated_at=snapshot_evaluated_at,
-        context=DecisionContext(stable_for_seconds=10**9),
+        context=DecisionContext(
+            stable_for_seconds=10**9,
+            room_guardrails=tuple(
+                RoomGuardrailState(
+                    room_id=room_id,
+                    accepted_action=guard.accepted_action,
+                    lockout_until=guard.lockout_until,
+                    pending_action=guard.pending_action,
+                    pending_since=guard.pending_since,
+                )
+                for room_id, guard in sorted((room_action_guards or {}).items())
+            ),
+        ),
     )
 
 
 def decision_to_summary(
     engine: DecisionEngine,
     snapshot: DecisionSnapshot,
+    result: AggregateDecisionResult | None = None,
 ) -> RecommendationSummary:
     """Render a pure DDP result for existing HA presentation entities."""
 
-    result = engine.evaluate(snapshot)
+    result = result or engine.evaluate(snapshot)
     recommendations = tuple(
         RoomRecommendation(
             room_id=room.room_id,
             room_name=room.name,
-            action=room_result.delivered_action,
+            action=room_result.core_action,
             score=room_result.score,
             reason=room_result.reason,
             target_perceived_c=room_result.target_perceived_c,
@@ -470,12 +521,24 @@ def decision_to_summary(
         ),
         None,
     )
+    blocked_by = None
+    if (
+        selected is None
+        and recommendations
+        and all(item.action is RecommendationAction.NONE for item in recommendations)
+        and any(
+            item.reason_code in {"window_already_open", "window_already_closed"}
+            for item in recommendations
+        )
+    ):
+        blocked_by = "window_state"
     return RecommendationSummary(
-        action=result.delivered_action,
+        action=result.core_action,
         score=selected.score if selected else 0.0,
         reason=selected.reason if selected else "No actionable recommendation.",
         suggested_comfort_temperature_c=(selected.suggested_comfort_temperature_c if selected else None),
         room_recommendations=recommendations,
+        blocked_by=blocked_by,
         best_room=selected.room_name if selected else None,
     )
 
@@ -623,11 +686,19 @@ def build_room_profiles(
             config.outdoor_weather_entity_id,
             state_getter,
         )
+        pressure_state = _weather_pressure_state(
+            config.outdoor_weather_entity_id,
+            state_getter,
+        )
+        pressure_hpa = _canonical_measurement_value(
+            state_to_float(pressure_state), pressure_state, "pressure"
+        )
         outdoor = ComfortObservation(
             temperature_c=outdoor_temp,
             humidity_percent=outdoor_humidity,
             wind_speed_m_s=wind_speed,
             wind_gust_m_s=wind_gust,
+            pressure_hpa=pressure_hpa,
             weather_condition=weather_condition,
             forecast_temperature_c=forecast_temperature_c,
             forecast=forecast,
@@ -645,6 +716,11 @@ def build_room_profiles(
                 "wind_speed",
                 "outdoor.gust",
             ),
+            pressure_source=_source_reading(
+                pressure_state,
+                "pressure",
+                "outdoor.pressure",
+            ) if pressure_state is not None else None,
             safety_evidence_configured=bool(
                 config.outdoor_weather_entity_id
                 or config.wind_speed_entity_id
@@ -657,7 +733,7 @@ def build_room_profiles(
         humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
         temperature = state_to_temperature_c(temperature_state)
         humidity = state_to_float(humidity_state) if humidity_state is not None else None
-        co2 = state_to_float(state_getter(room.co2_entity_id or config.co2_entity_id)) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None
+        co2, co2_source = room_co2_reading(room, state_getter)
         if temperature is None:
             continue
         rooms.append(
@@ -677,23 +753,41 @@ def build_room_profiles(
                 target_humidity_percent_override_enabled=room.target_humidity_percent_override_enabled,
                 target_humidity_percent_override=room.target_humidity_percent_override,
                 co2_ppm=co2,
-                co2_source=(
-                    _source_reading(
-                        state_getter(room.co2_entity_id or config.co2_entity_id),
-                        "co2",
-                        room.co2_entity_id or config.co2_entity_id,
-                    )
-                    or SourceReading(
-                        None,
-                        "ppm",
-                        None,
-                        room.co2_entity_id or config.co2_entity_id,
-                    )
-                ) if config.co2_enabled and (room.co2_entity_id or config.co2_entity_id) else None,
+                co2_source=co2_source,
             )
         )
 
     return rooms, outdoor
+
+
+def room_co2_reading(
+    room: RoomConfig,
+    state_getter: Callable[[str], Any],
+) -> tuple[float | None, SourceReading | None]:
+    """Return the effective, per-room CO₂ value and its source metadata."""
+
+    if not room.co2_enabled or not room.co2_entity_id:
+        return None, None
+    state = state_getter(room.co2_entity_id)
+    value = state_to_float(state)
+    source = _source_reading(state, "co2", room.co2_entity_id)
+    if source is None:
+        source = SourceReading(None, "ppm", None, room.co2_entity_id)
+    return value, source
+
+
+def room_co2_status(
+    room: RoomConfig,
+    state_getter: Callable[[str], Any],
+) -> str:
+    """Return a user-facing status for the room CO₂ configuration."""
+
+    if not room.co2_enabled:
+        return "disabled"
+    if not room.co2_entity_id:
+        return "not_configured"
+    value, _ = room_co2_reading(room, state_getter)
+    return "available" if value is not None else "unavailable"
 
 
 WINDOW_STATE_NOT_CONFIGURED = "not_configured"
@@ -837,6 +931,7 @@ def build_debug_attributes(
         "co2_enabled": config.co2_enabled,
         "co2_threshold_ppm": config.co2_threshold_ppm,
         "outdoor_humidity_percent": snapshot.outdoor_humidity_percent,
+        "outdoor_pressure_hpa": snapshot.outdoor_pressure_hpa,
         "wind_speed_m_s": snapshot.wind_speed_m_s,
         "wind_gust_m_s": snapshot.wind_gust_m_s,
         "target_temperature_c": config.target_temperature_c,
@@ -849,9 +944,153 @@ def build_debug_attributes(
         "stability_minutes": config.stability_minutes,
         "cooldown_minutes": config.cooldown_minutes,
         "quiet_hours_enabled": config.quiet_hours_enabled,
+        "safety_bypass_quiet_hours": config.safety_bypass_quiet_hours,
         "room_recommendations": room_details,
         "best_room_recommendation": best_room_details,
+        "normalized_input_snapshot": (
+            snapshot_to_dict(snapshot.core_snapshot)
+            if snapshot.core_snapshot is not None
+            else None
+        ),
+        "core_result": (
+            aggregate_result_to_dict(snapshot.core_result)
+            if snapshot.core_result is not None
+            else None
+        ),
+        "calculated_result": (
+            aggregate_result_to_dict(snapshot.calculated_result)
+            if snapshot.calculated_result is not None
+            else None
+        ),
+        "delivered_result": (
+            aggregate_result_to_dict(snapshot.delivered_result)
+            if snapshot.delivered_result is not None
+            else None
+        ),
+        "decision_context": (
+            snapshot_to_dict(snapshot.core_snapshot).get("context")
+            if snapshot.core_snapshot is not None
+            else None
+        ),
+        "delivery_transformations": _delivery_transformations(
+            snapshot.core_result,
+            snapshot.delivered_result,
+        ),
     }
+
+
+def build_delivered_result(
+    core_result: AggregateDecisionResult,
+    _summary: RecommendationSummary,
+    suppressed_by: Mapping[str, str] | None = None,
+) -> AggregateDecisionResult:
+    """Project HA delivery filters onto the pure core result."""
+
+    suppressed_by = suppressed_by or {}
+    room_results = tuple(
+        replace(
+            result,
+            delivered_action=(
+                RecommendationAction.NONE
+                if result.room_id in suppressed_by
+                else result.core_action
+            ),
+            delivery_suppressed_by=(
+                suppressed_by.get(result.room_id)
+                if result.room_id in suppressed_by
+                else None
+            ),
+        )
+        for result in core_result.room_results
+    )
+    delivered_candidates = [
+        item for item in room_results if item.delivered_action is not RecommendationAction.NONE
+    ]
+    selected = max(
+        delivered_candidates,
+        key=lambda item: (item.score, item.room_id),
+        default=None,
+    )
+    return replace(
+        core_result,
+        # The core action is immutable truth; only delivery eligibility changes.
+        core_action=core_result.core_action,
+        delivered_action=selected.delivered_action if selected else RecommendationAction.NONE,
+        room_results=room_results,
+        trace=core_result.trace + (TraceEntry("delivery.projected"),),
+    )
+
+
+def build_room_diagnostic_attributes(
+    snapshot: RuntimeSnapshot,
+    room_id: str,
+) -> dict[str, Any]:
+    """Return the complete structured core/delivery view for one room."""
+
+    core = next(
+        (item for item in (snapshot.core_result.room_results if snapshot.core_result else ())
+         if item.room_id == room_id),
+        None,
+    )
+    calculated = next(
+        (item for item in (snapshot.calculated_result.room_results if snapshot.calculated_result else ())
+         if item.room_id == room_id),
+        None,
+    )
+    delivered = next(
+        (item for item in (snapshot.delivered_result.room_results if snapshot.delivered_result else ())
+         if item.room_id == room_id),
+        None,
+    )
+    normalized = snapshot_to_dict(snapshot.core_snapshot) if snapshot.core_snapshot else None
+    room_input = None
+    if normalized is not None:
+        room_input = next(
+            (item for item in normalized["rooms"] if item["room_id"] == room_id),
+            None,
+        )
+    return {
+        "normalized_input": {
+            "room": room_input,
+            "outdoor": normalized["outdoor"] if normalized else None,
+            "evaluated_at": normalized["evaluated_at"] if normalized else None,
+        },
+        "core_result": result_to_dict(core) if core else None,
+        "calculated_result": result_to_dict(calculated) if calculated else None,
+        "delivered_result": result_to_dict(delivered) if delivered else None,
+        "aggregate_core_result": (
+            aggregate_result_to_dict(snapshot.core_result)
+            if snapshot.core_result
+            else None
+        ),
+        "aggregate_delivered_result": (
+            aggregate_result_to_dict(snapshot.delivered_result)
+            if snapshot.delivered_result
+            else None
+        ),
+        "core_action": core.core_action.value if core else RecommendationAction.NONE.value,
+        "calculated_action": calculated.core_action.value if calculated else RecommendationAction.NONE.value,
+        "delivered_action": delivered.delivered_action.value if delivered else RecommendationAction.NONE.value,
+        "delivery_suppressed_by": delivered.delivery_suppressed_by if delivered else None,
+    }
+
+
+def _delivery_transformations(
+    core_result: AggregateDecisionResult | None,
+    delivered_result: AggregateDecisionResult | None,
+) -> list[dict[str, Any]]:
+    if core_result is None or delivered_result is None:
+        return []
+    delivered_by_room = {item.room_id: item for item in delivered_result.room_results}
+    return [
+        {
+            "room_id": item.room_id,
+            "core_action": item.core_action.value,
+            "delivered_action": delivered_by_room.get(item.room_id, item).delivered_action.value,
+            "suppressed_by": delivered_by_room.get(item.room_id, item).delivery_suppressed_by,
+        }
+        for item in core_result.room_results
+    ]
 
 
 def _string_or_none(value: Any) -> str | None:
@@ -959,6 +1198,10 @@ def _canonical_measurement_value(value: float | None, state: Any | None, measure
         return temperature_to_celsius(value, state_unit(state, DEFAULT_TEMPERATURE_UNIT, "temperature"))
     if measurement == "wind_speed":
         return wind_speed_to_m_s(value, state_unit(state, DEFAULT_WIND_SPEED_UNIT, "wind_speed"))
+    if measurement == "pressure":
+        unit = state_unit(state, "hPa", "pressure")
+        factors = {"hPa": 1.0, "Pa": 0.01, "kPa": 10.0, "bar": 1000.0, "atm": 1013.25, "psi": 68.9475729, "inHg": 33.8638867}
+        return value * factors.get(unit, 1.0)
     return value
 
 
@@ -1114,6 +1357,33 @@ def _weather_gust_value(
     return None
 
 
+def _weather_pressure_state(
+    weather_entity_id: str | None,
+    state_getter: Callable[[str], Any],
+) -> Any | None:
+    """Return atmospheric pressure from the configured weather entity."""
+
+    if not weather_entity_id:
+        return None
+    state = state_getter(weather_entity_id)
+    if state is None:
+        return None
+    attributes = getattr(state, "attributes", {}) or {}
+    for key in ("pressure", "pressure_hpa", "atmospheric_pressure"):
+        value = attributes.get(key)
+        if value is not None:
+            return type(
+                "AttributeState",
+                (),
+                {
+                    "state": value,
+                    "attributes": attributes,
+                    "last_updated": getattr(state, "last_updated", None),
+                },
+            )()
+    return None
+
+
 def _outdoor_state(
     source: str,
     weather_entity_id: str | None,
@@ -1143,7 +1413,7 @@ def _source_reading(state: Any | None, measurement: str, source_id: str | None) 
     if state is None:
         return None
     attributes = getattr(state, "attributes", {}) or {}
-    fallback_units = {"temperature": "°C", "humidity": "%", "wind_speed": "m/s", "co2": "ppm"}
+    fallback_units = {"temperature": "°C", "humidity": "%", "wind_speed": "m/s", "pressure": "hPa", "co2": "ppm"}
     unit = state_unit(state, fallback_units.get(measurement, ""), measurement)
     observed_at = getattr(state, "last_updated", None) or getattr(state, "last_changed", None)
     return SourceReading(
@@ -1158,12 +1428,12 @@ def find_room_recommendation(
 ) -> Any | None:
     """Find the recommendation matching a room config."""
 
+    room_key = room.room_id or room.name
     for recommendation in summary.room_recommendations:
-        if recommendation.room_id is not None and room.room_id is not None:
-            if recommendation.room_id == room.room_id:
-                return recommendation
+        if recommendation.room_id == room_key:
+            return recommendation
         if recommendation.room_id is None and recommendation.room_name == room.name:
-                return recommendation
+            return recommendation
     return None
 
 

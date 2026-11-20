@@ -40,6 +40,11 @@ Every user-visible behavior change needs a focused regression in the narrowest
 layer that proves it; use integration or system tests when Home Assistant state
 delivery or the full configuration journey matters.
 
+The documentation-to-test traceability matrix is maintained in
+`tests/fixtures/documentation_decision_matrix.yaml`. Core scenarios must be
+executable without Home Assistant; adapter tests separately verify that
+delivery filters suppress notifications without changing the core result.
+
 ## Supported Home Assistant Version
 
 VentWise currently tests the latest stable Home Assistant release only.
@@ -57,7 +62,9 @@ installed in CI.
 - multi-room evaluation with rooms treated independently
 - configured window contacts suppress only advice already satisfied; multiple
   contacts aggregate deterministically
-- quiet hours and cooldown gate the recommendation
+- quiet hours and cooldown gate notification delivery without changing the core recommendation
+- safety notifications bypass stability and cooldown, respect quiet hours by default, and optionally bypass quiet hours when configured
+- identical safety notifications remain deduplicated even when the safety quiet-hours bypass is enabled
 - Home Assistant state events trigger one eligible notification, suppress
   duplicates, and use the configured notify service target
 - persisted state is reloaded after restart
@@ -85,6 +92,11 @@ It uses the Python, Home Assistant and test dependency versions pinned in
 The checkout is mounted read-only, the container is removed after every run,
 and per-layer JUnit, XML/HTML coverage, and timing reports are saved under
 `.test-artifacts/`. Select a layer or pass pytest flags after `--`:
+
+Tests that cannot run reliably on Windows must be executed through this Docker
+workflow. In particular, Home Assistant integration/system tests and checks
+that depend on the pinned CI environment must not be validated only with the
+host Python interpreter.
 
 ```powershell
 python scripts/run_tests.py --layer unit
@@ -133,8 +145,10 @@ testing can use stale code.
 
 VentWise entity IDs in the Lab are deterministic English technical IDs (for
 example `sensor.camera_test_recommendation`), independent of the Home Assistant
-UI language. Only the displayed labels are localized, so automations and the
-dashboard remain stable when users change language.
+UI language. Entity labels and supported sensor state labels are resolved from
+Home Assistant's native translation catalog, so the frontend can reflect a
+language change without changing the technical entity IDs. Automations and
+dashboards therefore remain stable when users change language.
 
 The sandbox automatically provisions adjustable test fixtures:
 

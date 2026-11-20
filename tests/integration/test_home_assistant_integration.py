@@ -28,6 +28,8 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
+    CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
@@ -39,7 +41,7 @@ from custom_components.ventwise.application.coordinator import VentWiseCoordinat
 from custom_components.ventwise.application.notification import async_send_notification
 from custom_components.ventwise.application import coordinator as coordinator_module
 from custom_components.ventwise import IntegrationRuntimeData
-from custom_components.ventwise.ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
@@ -59,6 +61,7 @@ def _options(**overrides: object) -> dict[str, object]:
                 CONF_ROOM_NAME: "Test room",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.test_temperature",
                 CONF_ROOM_CO2_ENTITY_ID: "sensor.test_co2",
+                CONF_ROOM_CO2_ENABLED: True,
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
                     "binary_sensor.test_window_left",
                     "binary_sensor.test_window_right",
@@ -137,10 +140,48 @@ async def test_real_config_entry_setup_creates_entities_and_unloads_cleanly(
     runtime = hass.data[DOMAIN][entry.entry_id]
     assert isinstance(runtime, IntegrationRuntimeData)
     assert hass.states.get("sensor.test_room_recommendation") is not None
+    assert hass.states.get("sensor.test_room_co2").state == "700"
     assert hass.states.get("sensor.test_room_window_state").state == "closed"
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert entry.entry_id not in hass.data.get(DOMAIN, {})
+
+
+@pytest.mark.asyncio
+async def test_clearing_optional_bindings_keeps_ventwise_entities_available(
+    hass: HomeAssistant,
+) -> None:
+    """Removing source bindings keeps derived entities with clear states."""
+
+    _seed_states(hass)
+    options = _options()
+    options[CONF_ROOMS][0][CONF_ROOM_HUMIDITY_ENTITY_ID] = "sensor.test_humidity"
+    hass.states.async_set("sensor.test_humidity", "50")
+    entry = MockConfigEntry(domain=DOMAIN, version=6, data={}, options=options)
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    updated_options = dict(options)
+    updated_options[CONF_ROOMS] = [
+        {
+            CONF_ROOM_NAME: "Test room",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.test_temperature",
+            CONF_ROOM_CO2_ENABLED: False,
+            CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [],
+        }
+    ]
+    hass.config_entries.async_update_entry(entry, options=updated_options)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.test_room_co2") is not None
+    assert hass.states.get("sensor.test_room_co2").state == "disabled"
+    assert hass.states.get("sensor.test_room_indoor_humidity") is not None
+    assert hass.states.get("sensor.test_room_indoor_humidity").state in {"unknown", "unavailable"}
+    assert hass.states.get("sensor.test_room_window_state") is not None
+    assert hass.states.get("sensor.test_room_window_state").state == "not_configured"
 
 
 @pytest.mark.asyncio
@@ -159,6 +200,18 @@ async def test_entity_ids_stay_english_when_home_assistant_uses_italian(
 
     assert hass.states.get("sensor.test_room_recommendation") is not None
     assert hass.states.get("sensor.test_room_raccomandazione") is None
+
+    recommendation = hass.states.get("sensor.test_room_recommendation")
+    score = hass.states.get("sensor.test_room_score")
+    reason = hass.states.get("sensor.test_room_reason")
+    assert recommendation is not None
+    assert score is not None
+    assert reason is not None
+    assert "Raccomandazione" in recommendation.attributes["friendly_name"]
+    assert "Punteggio" in score.attributes["friendly_name"]
+    assert "Recommendation" not in recommendation.attributes["friendly_name"]
+    assert "Score" not in score.attributes["friendly_name"]
+    assert "Outside" not in reason.state
 
 
 @pytest.mark.asyncio

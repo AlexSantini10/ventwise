@@ -26,7 +26,14 @@ python scripts/ha-local-docker-test.py up
 
 Al primo avvio Docker scarica l'immagine di Home Assistant se non è già
 presente, crea il pacchetto `ventwise-lab.zip`, installa l'integrazione nel
-profilo del Lab e avvia Home Assistant su [http://localhost:8123](http://localhost:8123).
+profilo del Lab (incluso il core standalone vendorizzato) e avvia Home
+Assistant su [http://localhost:8123](http://localhost:8123).
+
+Il profilo del Lab configura il server Home Assistant in italiano prima di
+creare le entità VentWise. Questo è importante perché Home Assistant
+memorizza il nome tradotto dell'entità quando viene registrata per la prima
+volta. Dopo aver cambiato la lingua del server, usa `reset` e `up` per
+ricreare le entità con i nomi nella nuova lingua.
 
 ## Primo accesso
 
@@ -35,7 +42,12 @@ Un profilo appena creato non ha utenti registrati. Apri
 Home Assistant creando un utente locale dedicato al Lab.
 
 Poi apri dalla barra laterale **VentWise Test Lab**. VentWise è già configurato
-con due stanze simulate: Camera e Soggiorno.
+con due pagine e due istanze:
+
+- **VentWise Core Lab**: una sola stanza, senza finestre e senza delivery;
+  mostra esclusivamente il risultato del motore deterministico.
+- **VentWise Test Lab**: Camera e Soggiorno, contatti finestra, notifiche,
+  quiet hours, cooldown e stabilità.
 
 ## Uso rapido
 
@@ -55,6 +67,11 @@ contatto appena aperto viene considerato anche se premi subito il pulsante.
 I controlli VentWise consentono inoltre di abilitare/disabilitare integrazione,
 notifiche, comfort automatico e fascia silenziosa, senza riconfigurare il Lab.
 
+La pagina **VentWise Core Lab** usa gli stessi preset ma mostra solo il
+risultato della config entry core. Confronta `sensor.core_engine_room_*` con
+`sensor.camera_test_*` nella pagina completa per verificare che l'azione core
+non venga modificata dalla delivery HA.
+
 ### Scenario finestre consigliato
 
 1. Lascia chiusi tutti i contatti.
@@ -66,6 +83,40 @@ notifiche, comfort automatico e fascia silenziosa, senza riconfigurare il Lab.
 
 La Camera ha due contatti: l'apertura di uno qualunque produce lo stato
 aggregato `open`.
+
+## v0.18 preset buttons
+
+The dashboard includes preset buttons. Select a preset, press **Receive
+recommendation now**, and inspect the room result cards. The presets are
+deterministic and use these values:
+
+| Preset | Main values | Expected check |
+| --- | --- | --- |
+| Reset neutral | Room 22 °C / 50% RH / 700 ppm; outside 22 °C / 50% RH / 2 m/s; sunny; windows closed | Neutral baseline |
+| Open recommendation | Bedroom 28 °C / 55% RH; outside 18 °C / 45% RH / 2 m/s; sunny; windows closed | Opening advice for the bedroom |
+| Humidity exchange | Rooms 24 °C / 75% RH; outside 20 °C / 35% RH / 2 m/s; sunny; windows closed | Moisture-exchange influence |
+| CO2 influence | Bedroom 23 °C / 50% RH / 1800 ppm; outside 22 °C / 45% RH / 2 m/s; sunny | Bounded CO₂ influence |
+| Weather block | Bedroom 28 °C; outside 18 °C / 2 m/s; lightning-rainy; windows closed | No opening advice under severe weather |
+| Wind block | Bedroom 28 °C; outside 18 °C / 15 m/s; sunny; windows closed | No opening advice under high wind |
+| Gust block | Bedroom 28 °C; outside 18 °C / 2 m/s with 15 m/s gust; sunny | Gust threshold uses the restrictive value |
+| Urgent close | Bedroom 23 °C; outside 5 °C / 15 m/s; lightning-rainy; left bedroom window open | Urgent close advice is not suppressed |
+| Multi-room split | Bedroom 28 °C, living room 18 °C; outside 22 °C / 2 m/s; sunny; windows closed | Independent room recommendations |
+| Close recommendation | Bedroom 20 °C; outside 30 °C; bedroom window open | Closing advice when indoor air is better |
+| Ventilate recommendation | Bedroom 25 °C; outside 18 °C | Brief ventilation action |
+| Winter symmetry | Bedroom 16 °C; outside 22 °C | Winter-side comfort symmetry |
+| Marginal benefit | Bedroom 22.3 °C; outside 22 °C | No meaningful recommendation |
+| CO₂ threshold | Bedroom CO₂ 1000 ppm | Threshold boundary |
+| Window already open | Open scenario plus one bedroom contact open | No repeated opening advice |
+| Multiple contacts | Open scenario plus both bedroom contacts open | Deterministic aggregate window state |
+
+The buttons only change the isolated Lab helpers. They do not control real
+devices or the user's Home Assistant instance. The **Reset neutral** preset is
+safe to use between scenarios.
+
+The **Delivery filter checks** card explains how to test quiet hours,
+stability, cooldown, duplicate suppression, and unavailable notification
+channels. These checks must change only notification delivery; the raw
+`core_result` card must remain unchanged.
 
 ## Comandi
 
@@ -94,13 +145,19 @@ python scripts/ha-local-docker-test.py restart
 ```
 
 Il runner rigenera `ventwise-lab.zip` dal checkout, sostituisce esclusivamente
-`custom_components/ventwise` nel profilo del Lab e controlla che la versione
-installata corrisponda al manifest del pacchetto. Il profilo e l'utente restano
-invariati.
+`custom_components/ventwise` nel profilo del Lab, incluso il package runtime
+vendorizzato `custom_components/ventwise/ventwise_core`. Controlla inoltre che
+la versione installata corrisponda al manifest del pacchetto. Il profilo e
+l'utente restano invariati.
 
 Usa invece `reset` seguito da `up` quando devi verificare una prima installazione,
 una migrazione di config entry oppure nuovi ID delle entità. Il reset è
 distruttivo per il solo Lab; rifai l'onboarding dell'utente locale dopo l'avvio.
+
+Se i log riportano che la config entry del Lab ha una versione maggiore di
+quella supportata dall'integrazione, il profilo contiene dati di una vecchia
+baseline incompatibile. Esegui `reset` seguito da `up`; non modificare il
+profilo `.storage` manualmente.
 
 ## Entità e stabilità degli ID
 

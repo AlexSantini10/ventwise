@@ -18,6 +18,18 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
+## Agent Instructions
+
+`AGENTS.md` is the public, versioned guide for repository contributors and
+coding agents. It contains only reproducible project rules and must not contain
+secrets, personal paths, private endpoints, or machine-specific instructions.
+
+For owner- or machine-specific guidance, create `AGENTS.local.md` at the
+repository root. This file is ignored by Git and is loaded only when present;
+it is optional and must never be required to build, test, or contribute to the
+project. Keep credentials in environment variables or a local secret store,
+not in either instructions file.
+
 ## Common Commands
 
 Run the complete automated suite with the exact Python, Home Assistant, pytest,
@@ -53,6 +65,11 @@ python scripts/run_tests.py --layer unit
 python scripts/run_tests.py --layer integration -- -k notification
 ```
 
+Tests that are not executable or reliable on Windows, including Home Assistant
+integration/system tests and tests requiring the pinned CI dependencies, must
+be run through this Docker workflow. Do not treat a host-Python run as
+equivalent validation; use the disposable Linux container used by CI.
+
 The complete run writes `junit-unit.xml`, `junit-integration.xml`, and
 `junit-system.xml`, together with aggregated `coverage.xml`, `htmlcov/`, and
 `timing.json`. A failing layer does not prevent the remaining layers or
@@ -74,7 +91,8 @@ physical hardware.
 
 ## Repository Layout
 
-- `custom_components/ventwise/ventwise_core/` for the reusable decision core
+- `src/ventwise_core/` for the canonical reusable decision core; the release
+  builder embeds it at the archive root as `ventwise_core/`
 - `custom_components/ventwise/application/` for runtime coordination, state, and notifications
 - `custom_components/ventwise/configuration/` for shared config and options-flow logic
 - `custom_components/ventwise/entities/` for shared entity behavior
