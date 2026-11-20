@@ -14,6 +14,7 @@ _CORE_FILES = (
     "_version.py",
     "models.py",
     "decision.py",
+    "pipeline.py",
     "psychrometrics.py",
     "serialization.py",
 )
