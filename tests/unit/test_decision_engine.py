@@ -277,3 +277,33 @@ def test_default_pressure_is_estimated_and_baseline_is_explicit():
     assert any(entry.code == "quality.pressure" for entry in result.trace)
     assert any(entry.code == "component.temperature" for entry in result.component_contributions)
     assert result.evaluated_at == NOW
+
+
+def test_result_contains_one_structured_evaluation_per_decision_option():
+    result = DecisionEngine().evaluate(snapshot()).room_results[0]
+
+    assert [item.option.action for item in result.option_evaluations] == [
+        RecommendationAction.OPEN,
+        RecommendationAction.VENTILATE,
+        RecommendationAction.CLOSE,
+        RecommendationAction.NONE,
+    ]
+    assert sum(item.selected for item in result.option_evaluations) == 1
+    assert next(
+        item for item in result.option_evaluations
+        if item.option.action is RecommendationAction.OPEN
+    ).score == result.candidate_scores.open
+
+
+def test_pipeline_components_can_be_replaced_without_changing_result_contract():
+    class OnlyNoneGenerator:
+        def generate(self, context):
+            from ventwise_core import DecisionOption
+
+            return (DecisionOption(RecommendationAction.NONE),)
+
+    result = DecisionEngine(option_generator=OnlyNoneGenerator()).evaluate(snapshot()).room_results[0]
+
+    assert result.core_action is RecommendationAction.OPEN
+    assert len(result.option_evaluations) == 1
+    assert result.option_evaluations[0].option.action is RecommendationAction.NONE

@@ -36,6 +36,10 @@ state and guardrails explicit core inputs and returns updated guardrail state.
 Readers remain compatible with v1 input documents. Localized presentation
 strings are not part of the comparison contract.
 
+Each room result also exposes structured `option_evaluations` for `open`,
+`ventilate`, `close`, and `none`. The legacy `trace` and `candidate_scores`
+fields remain available for existing consumers.
+
 Home Assistant diagnostics expose the same normalized snapshot and core
 result, together with `delivered_result` and explicit delivery
 transformations. Recommendation summaries and sensors project `core_result`

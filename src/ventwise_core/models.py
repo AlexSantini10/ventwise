@@ -256,6 +256,61 @@ class TraceEntry:
 
 
 @dataclass(frozen=True, slots=True)
+class DecisionOption:
+    """One concrete action considered by the decision pipeline."""
+
+    action: RecommendationAction
+    duration_minutes: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class OptionEligibility:
+    """Safety and policy result for one decision option."""
+
+    allowed: bool = True
+    hard_blocks: Tuple[TraceEntry, ...] = ()
+    penalties: Tuple[TraceEntry, ...] = ()
+    reason_code: str = "allowed"
+
+
+@dataclass(frozen=True, slots=True)
+class ExpectedEffect:
+    """Structured effect information retained for one decision option."""
+
+    temperature: float = 0.0
+    humidity: float = 0.0
+    co2: float = 0.0
+    confidence: float = 0.0
+    evidence: Tuple[TraceEntry, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionEvaluationContext:
+    """Immutable context shared by the option-evaluation pipeline."""
+
+    room: DecisionRoom
+    snapshot: DecisionSnapshot | None
+    config: object
+    baseline: str = "UNKNOWN"
+    trace: Tuple[TraceEntry, ...] = ()
+    candidate_scores: CandidateScores | None = None
+    selected_action: RecommendationAction = RecommendationAction.NONE
+
+
+@dataclass(frozen=True, slots=True)
+class OptionEvaluation:
+    """Complete, inspectable evaluation of one decision option."""
+
+    option: DecisionOption
+    eligibility: OptionEligibility = field(default_factory=OptionEligibility)
+    expected_effect: ExpectedEffect = field(default_factory=ExpectedEffect)
+    score: float = 0.0
+    confidence: float = 0.0
+    selected: bool = False
+    reason_code: str = "not_selected"
+
+
+@dataclass(frozen=True, slots=True)
 class CandidateScores:
     """Normalized scores for the supported actions."""
 
@@ -298,6 +353,7 @@ class DecisionResult:
     evaluated_at: datetime | None = None
     baseline: str = "UNKNOWN"
     component_contributions: Tuple[TraceEntry, ...] = ()
+    option_evaluations: Tuple[OptionEvaluation, ...] = ()
     urgent: bool = False
     co2_ppm: float | None = None
     co2_influence: float = 0.0

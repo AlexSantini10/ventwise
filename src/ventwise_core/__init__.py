@@ -4,6 +4,8 @@ from .models import (
     AggregateDecisionResult,
     Availability,
     CandidateScores,
+    DecisionEvaluationContext,
+    DecisionOption,
     ComfortObservation,
     DataQualitySummary,
     DecisionContext,
@@ -23,9 +25,18 @@ from .models import (
     RoomRecommendation,
     SeasonMode,
     TraceEntry,
+    ExpectedEffect,
+    OptionEligibility,
+    OptionEvaluation,
     Validity,
 )
 from .decision import DecisionConfig, DecisionEngine
+from .pipeline import (
+    DecisionOptionGenerator,
+    OptionEligibilityPolicy,
+    ExpectedEffectEstimator,
+    DecisionOptionScorer,
+)
 from .psychrometrics import (
     DEFAULT_PRESSURE_HPA,
     absolute_humidity_g_m3,
@@ -52,6 +63,9 @@ from .serialization import (
 __all__ = [
     "ComfortObservation", "AggregateDecisionResult", "Availability",
     "CandidateScores", "DataQualitySummary", "DecisionConfig",
+    "DecisionEvaluationContext", "DecisionOption", "ExpectedEffect",
+    "OptionEligibility", "OptionEvaluation", "DecisionOptionGenerator",
+    "OptionEligibilityPolicy", "ExpectedEffectEstimator", "DecisionOptionScorer",
     "DecisionContext", "DecisionEngine", "DecisionOutdoor",
     "ExternalConditions", "DecisionResult", "DecisionRoom",
     "DecisionSnapshot", "ForecastObservation", "Observation",

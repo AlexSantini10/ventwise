@@ -11,6 +11,7 @@ from .models import (
     Availability,
     CandidateScores,
     DataQualitySummary,
+    DecisionEvaluationContext,
     DecisionResult,
     DecisionRoom,
     DecisionSnapshot,
@@ -19,6 +20,16 @@ from .models import (
     RoomGuardrailState,
     TraceEntry,
     Validity,
+)
+from .pipeline import (
+    DefaultDecisionOptionGenerator,
+    DecisionOptionGenerator,
+    DecisionOptionScorer,
+    ExpectedEffectEstimator,
+    OptionEligibilityPolicy,
+    ScoreFromV018Result,
+    TraceExpectedEffectEstimator,
+    TraceOptionEligibilityPolicy,
 )
 from .psychrometrics import absolute_humidity_g_m3, perceived_temperature_c, pressure_hpa_or_default
 
@@ -44,8 +55,20 @@ class DecisionConfig:
 class DecisionEngine:
     """Evaluate canonical snapshots without I/O, wall-clock reads, or mutation."""
 
-    def __init__(self, config: DecisionConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: DecisionConfig | None = None,
+        *,
+        option_generator: DecisionOptionGenerator | None = None,
+        eligibility_policy: OptionEligibilityPolicy | None = None,
+        effect_estimator: ExpectedEffectEstimator | None = None,
+        option_scorer: DecisionOptionScorer | None = None,
+    ) -> None:
         self.config = config or DecisionConfig()
+        self.option_generator = option_generator or DefaultDecisionOptionGenerator()
+        self.eligibility_policy = eligibility_policy or TraceOptionEligibilityPolicy()
+        self.effect_estimator = effect_estimator or TraceExpectedEffectEstimator()
+        self.option_scorer = option_scorer or ScoreFromV018Result()
 
     def evaluate(self, snapshot: DecisionSnapshot) -> AggregateDecisionResult:
         results = tuple(
@@ -102,7 +125,7 @@ class DecisionEngine:
         quality = DataQualitySummary(tuple(used), tuple(discarded), tuple(awaiting), tuple(discarded_reasons))
         if indoor_t is None or outdoor_t is None:
             trace.append(TraceEntry("selection.insufficient_evidence"))
-            return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "insufficient_evidence", trace, quality, evaluated_at=snapshot.evaluated_at)
+            return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "insufficient_evidence", trace, quality, evaluated_at=snapshot.evaluated_at, snapshot=snapshot)
         safety_quality = any(
             entry.startswith(("outdoor.wind:", "outdoor.gust:", "outdoor.weather:"))
             for entry in discarded_reasons
@@ -112,7 +135,7 @@ class DecisionEngine:
             and not any(name in used for name in ("outdoor.wind", "outdoor.gust", "outdoor.weather"))
         ):
             trace.append(TraceEntry("selection.safety_uncertain"))
-            return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "safety_uncertain", trace, quality, evaluated_at=snapshot.evaluated_at)
+            return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "safety_uncertain", trace, quality, evaluated_at=snapshot.evaluated_at, snapshot=snapshot)
         if room.window_contact_configured and contact is None:
             # A contact failure must not hide an independent safety close.
             # Ordinary opening/ventilation remains blocked below.
@@ -191,17 +214,17 @@ class DecisionEngine:
             trace.append(TraceEntry(f"block.{code}"))
             if contact is False:
                 trace.append(TraceEntry("selection.window_already_closed"))
-                return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "window_already_closed", trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at)
+                return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "window_already_closed", trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at, snapshot=snapshot)
             action, guardrail_state, guardrail_reason = self._apply_guardrails(
                 room, RecommendationAction.CLOSE, snapshot, urgent=contact_open
             )
             if guardrail_reason:
                 trace.append(TraceEntry(f"guardrail.{guardrail_reason}"))
-            return self._result(room, action, action, CandidateScores(close=1.0) if action is RecommendationAction.CLOSE else CandidateScores(), 1.0 if action is RecommendationAction.CLOSE else 0.0, code if action is RecommendationAction.CLOSE else guardrail_reason, trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at, urgent=contact_open, guardrail_state=guardrail_state)
+            return self._result(room, action, action, CandidateScores(close=1.0) if action is RecommendationAction.CLOSE else CandidateScores(), 1.0 if action is RecommendationAction.CLOSE else 0.0, code if action is RecommendationAction.CLOSE else guardrail_reason, trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at, snapshot=snapshot, urgent=contact_open, guardrail_state=guardrail_state)
 
         if contact_uncertain:
             trace.append(TraceEntry("selection.contact_uncertain"))
-            return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "contact_uncertain", trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at)
+            return self._result(room, RecommendationAction.NONE, RecommendationAction.NONE, CandidateScores(), 0.0, "contact_uncertain", trace, quality, target_perceived, indoor, outdoor, suggested, evaluated_at=snapshot.evaluated_at, snapshot=snapshot)
 
         if effective_wind is not None and effective_wind <= self.config.wind_preference_m_s:
             open_score = _clamp(open_score * (1.0 + effective_wind * 0.02))
@@ -233,7 +256,7 @@ class DecisionEngine:
             scores = CandidateScores()
         confidence = max(scores.open, scores.ventilate, scores.close) * (0.8 if pressure_estimated else 1.0)
         final_reason = window_reason or guardrail_reason or reason
-        return self._result(room, action, action, scores, confidence if action is not RecommendationAction.NONE else 0.0, final_reason, trace, quality, target_perceived, indoor, outdoor, suggested, None, co2_value, co2_influence, evaluated_at=snapshot.evaluated_at, baseline=baseline, guardrail_state=guardrail_state)
+        return self._result(room, action, action, scores, confidence if action is not RecommendationAction.NONE else 0.0, final_reason, trace, quality, target_perceived, indoor, outdoor, suggested, None, co2_value, co2_influence, evaluated_at=snapshot.evaluated_at, snapshot=snapshot, baseline=baseline, guardrail_state=guardrail_state)
 
     def _select(self, scores: CandidateScores) -> tuple[RecommendationAction, str]:
         ranked = sorted(((scores.open, RecommendationAction.OPEN), (scores.ventilate, RecommendationAction.VENTILATE), (scores.close, RecommendationAction.CLOSE)), key=lambda item: (-item[0], item[1].value))
@@ -314,10 +337,23 @@ class DecisionEngine:
         used.append(name)
         return observation.value
 
-    @staticmethod
-    def _result(room: DecisionRoom, core: RecommendationAction, delivered: RecommendationAction, scores: CandidateScores, confidence: float, reason: str, trace: list[TraceEntry], quality: DataQualitySummary, target: float = 0.0, indoor: float = 0.0, outdoor: float = 0.0, suggested: float = 0.0, suppressed: str | None = None, co2: float | None = None, co2_influence: float = 0.0, *, evaluated_at=None, urgent: bool = False, baseline: str = "UNKNOWN", guardrail_state: RoomGuardrailState | None = None) -> DecisionResult:
+    def _result(self, room: DecisionRoom, core: RecommendationAction, delivered: RecommendationAction, scores: CandidateScores, confidence: float, reason: str, trace: list[TraceEntry], quality: DataQualitySummary, target: float = 0.0, indoor: float = 0.0, outdoor: float = 0.0, suggested: float = 0.0, suppressed: str | None = None, co2: float | None = None, co2_influence: float = 0.0, *, evaluated_at=None, snapshot: DecisionSnapshot | None = None, urgent: bool = False, baseline: str = "UNKNOWN", guardrail_state: RoomGuardrailState | None = None) -> DecisionResult:
         quality_state = Availability.ESTIMATED if any(entry.code == "quality.pressure" for entry in trace) else Availability.AVAILABLE
-        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state, guardrail_state=guardrail_state)
+        context = DecisionEvaluationContext(
+            room=room,
+            snapshot=snapshot,
+            config=self.config,
+            baseline=baseline,
+            trace=tuple(trace),
+            candidate_scores=scores,
+            selected_action=core,
+        )
+        evaluations = []
+        for option in self.option_generator.generate(context):
+            eligibility = self.eligibility_policy.check(context, option)
+            effect = self.effect_estimator.estimate(context, option, 30)
+            evaluations.append(self.option_scorer.evaluate(context, option, eligibility, effect))
+        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), option_evaluations=tuple(evaluations), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state, guardrail_state=guardrail_state)
 
 
 def _baseline(room: DecisionRoom) -> str:
