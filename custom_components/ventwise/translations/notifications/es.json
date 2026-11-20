@@ -1,0 +1,12 @@
+{
+  "open": "abre las ventanas.", "close": "cierra las ventanas.", "none": "no se necesita ninguna acción.",
+  "open_reason": "Afuera es más confortable ahora: {delta:.1f}°C más cerca del confort.", "close_reason": "Adentro es más confortable ahora: {delta:.1f}°C más cerca del confort.",
+  "forecast_reason": "Pronóstico a corto plazo: se espera que las condiciones exteriores sean menos confortables pronto.",
+  "failed_title": "Fallo la entrega de la notificación de VentWise", "failed_targets": "Destinos fallidos",
+  "action_ventilate": "Ventila brevemente", "on_demand_title": "VentWise · Recomendación solicitada ahora",
+  "ventilation_reason": "Ventila durante unos {minutes} minutos, luego cierra y vuelve a comprobarlo.",
+  "status_quiet_hours": "Las recomendaciones están pausadas durante las horas de silencio.", "status_cooldown": "La misma recomendación se envió recientemente.",
+  "status_stability": "Esperando a que la recomendación se mantenga estable.", "status_unavailable": "Esperando los datos necesarios de los sensores.", "status_disabled": "VentWise está deshabilitado.",
+  "diagnostic_unavailable_data_title": "Datos de VentWise no disponibles", "diagnostic_unavailable_data_message": "Los datos meteorológicos o de sensores de habitación necesarios no están disponibles.",
+  "diagnostic_no_enabled_rooms_title": "VentWise necesita una habitación activa", "diagnostic_no_enabled_rooms_message": "No hay habitaciones activas configuradas."
+}

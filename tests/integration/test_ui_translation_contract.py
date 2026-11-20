@@ -27,6 +27,7 @@ from custom_components.ventwise.configuration.flow import (  # noqa: E402
 from custom_components.ventwise.const import (  # noqa: E402
     CONF_DIAGNOSTIC_NOTIFICATION_LEVEL,
 )
+from scripts.ui_translation_contract import selector_option_ids, schema_field_ids  # noqa: E402
 
 
 TRANSLATIONS_DIR = Path(__file__).parents[2] / "custom_components" / "ventwise" / "translations"
@@ -51,10 +52,7 @@ def _load(locale: str) -> dict[str, Any]:
 
 
 def _field_names(schema) -> set[str]:
-    return {
-        str(key.schema if hasattr(key, "schema") else key)
-        for key in schema.schema
-    }
+    return set(schema_field_ids(schema))
 
 
 def _schemas() -> dict[tuple[str, str], Any]:
@@ -105,10 +103,25 @@ def test_selector_options_have_localized_labels(locale: str) -> None:
         key for key in schema.schema
         if getattr(key, "schema", key) == CONF_DIAGNOSTIC_NOTIFICATION_LEVEL
     )
-    options = set(schema.schema[entry].config["options"])
+    options = set(selector_option_ids(schema, CONF_DIAGNOSTIC_NOTIFICATION_LEVEL))
     labels = translations["selector"]["diagnostic_notification_level"]["options"]
     missing = sorted(option for option in options if not labels.get(option))
     assert not missing, f"{locale} is missing selector labels: {missing}"
+
+
+def test_selector_options_are_declared_in_the_source_catalog() -> None:
+    source = json.loads(
+        (
+            Path(__file__).parents[2]
+            / "custom_components"
+            / "ventwise"
+            / "strings.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert source["selector"]["diagnostic_notification_level"]["options"] == {
+        "essential": "Essential",
+        "diagnostic": "Diagnostic",
+    }
 
 
 @pytest.mark.parametrize("locale", LOCALES)
