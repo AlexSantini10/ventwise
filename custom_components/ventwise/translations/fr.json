@@ -15,8 +15,8 @@
           "wind_speed_unit": "Unité de vitesse du vent",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Utiliser un objectif de confort adapté au climat",
-          "target_humidity_percent": "Humidité de confort",
-          "stability_minutes": "Attendez avant de recommander (minutes)",
+          "target_humidity_percent": "Humidité de confort (%)",
+          "stability_minutes": "Attendez avant de recommander (min)",
           "notification_device_id": "Dispositifs de notification",
           "home_assistant_notification_enabled": "Afficher les notifications dans Home Assistant",
           "safety_bypass_quiet_hours": "Autoriser les notifications de sécurité pendant les heures silencieuses",
@@ -26,10 +26,10 @@
         "data_description": {
           "debug_mode_enabled": "Affiche des contrôles de test des notifications d’ouverture et de fermeture pour chaque pièce. Les notifications de débogage sont uniquement informatives et n’exécutent jamais d’automatisations Home Assistant.",
           "outdoor_weather_entity_id": "Choisissez l’entité météorologique Home Assistant standard que VentWise peut utiliser aujourd’hui. Si vous ne voyez pas la source dont vous avez besoin, ouvrez un ticket GitHub.",
-          "target_temperature_c": "Réglez la température intérieure qui vous convient lorsque vous êtes à la maison.",
+          "target_temperature_c": "Saisissez la température intérieure en {temperature_unit} qui vous convient lorsque vous êtes à la maison.",
           "auto_comfort_temperature": "Utilise votre température de confort comme référence et l'ajuste progressivement à partir de la température extérieure perçue. Le réglage est limité à ±2 °C dans une plage de sécurité intérieure de 18 à 26 °C. Les capteurs d'ambiance déterminent la recommandation mais ne déplacent jamais la cible. Cela ne contrôle pas un thermostat ou un système CVC.",
           "target_humidity_percent": "Réglez l’humidité intérieure qui vous convient lorsque vous êtes à la maison.",
-          "stability_minutes": "Combien de temps la recommandation doit rester inchangée avant que VentWise vous en informe. Si vous n'êtes pas sûr, laissez la valeur par défaut.",
+          "stability_minutes": "Saisissez le délai d'attente en minutes (min). Si vous n'êtes pas sûr, laissez la valeur par défaut.",
           "notification_device_id": "Facultatif. Choisissez un ou plusieurs appareils qui doivent recevoir les notifications VentWise.",
           "home_assistant_notification_enabled": "Affichez chaque recommandation VentWise dans le panneau de notification de Home Assistant.",
           "safety_bypass_quiet_hours": "Si cette option est activée, les notifications de sécurité urgentes peuvent être envoyées pendant les heures silencieuses. La stabilité, le délai et la déduplication restent appliqués.",
@@ -60,16 +60,36 @@
       },
       "outdoor_overrides": {
         "title": "Valeurs extérieures manuelles",
-        "description": "Remplissez uniquement les champs que vous avez activés avec les cases à cocher.",
+        "description": "Remplissez uniquement les champs que vous avez activés avec les cases à cocher. Unités sources détectées : {sensor_units_summary}.",
         "data": {
+          "outdoor_temperature_unit": "Unité de température extérieure manuelle",
+          "outdoor_humidity_unit": "Unité d’humidité extérieure manuelle",
+          "outdoor_wind_speed_unit": "Unité de vitesse du vent manuelle",
           "outdoor_temperature_entity_id": "Température extérieure manuelle",
           "outdoor_humidity_entity_id": "Humidité extérieure manuelle",
           "wind_speed_entity_id": "Vitesse du vent extérieur manuelle"
         },
         "data_description": {
+          "outdoor_temperature_unit": "Facultatif. À utiliser si le capteur ne déclare pas correctement son unité.",
+          "outdoor_humidity_unit": "Facultatif. À utiliser si le capteur ne déclare pas correctement son unité.",
+          "outdoor_wind_speed_unit": "Facultatif. À utiliser si le capteur ne déclare pas correctement son unité.",
           "outdoor_temperature_entity_id": "Requis uniquement lorsque la température manuelle est activée.",
           "outdoor_humidity_entity_id": "Requis uniquement lorsque l’humidité manuelle est activée.",
           "wind_speed_entity_id": "Requis uniquement lorsque la vitesse du vent manuelle est activée."
+        }
+      },
+      "room_units": {
+        "title": "Unités des capteurs",
+        "description": "Vérifiez les unités détectées pour les capteurs sélectionnés. Unités sources détectées : {sensor_units_summary}. Confirmez-les ou corrigez-les avant de continuer. ratio représente une fraction de 0 à 1.",
+        "data": {
+          "temperature_unit_override": "Unité de température source",
+          "humidity_unit_override": "Unité d’humidité source",
+          "co2_unit_override": "Unité de CO₂ source"
+        },
+        "data_description": {
+          "temperature_unit_override": "Sélectionnez l’unité déclarée par le capteur de température.",
+          "humidity_unit_override": "Sélectionnez l’unité déclarée par le capteur d’humidité.",
+          "co2_unit_override": "Sélectionnez l’unité déclarée par le capteur de CO₂."
         }
       },
       "rooms": {
@@ -115,6 +135,9 @@
         "title": "Ajouter une pièce",
         "description": "Créez une pièce pour un espace avec ses propres fenêtres. Vous pouvez éventuellement remplacer la température de confort pour cette pièce.",
         "data": {
+          "temperature_unit_override": "Unité du capteur de température",
+          "humidity_unit_override": "Unité du capteur d’humidité",
+          "co2_unit_override": "Unité du capteur de CO₂",
           "enabled": "Activer cette salle",
           "name": "Nom de la pièce",
           "temperature_entity_id": "Capteur de température intérieure",
@@ -134,7 +157,7 @@
           "name": "Un nom convivial pour cette pièce, comme Chambre ou Bureau.",
           "temperature_entity_id": "Choisissez le capteur de température ambiante.",
           "target_temperature_c_override_enabled": "Activez cette option si vous souhaitez que VentWise utilise une température de confort spécifique à la pièce.",
-          "target_temperature_c_override": "Facultatif. Utilisez cette température de confort spécifique à la pièce au lieu de la température globale.",
+          "target_temperature_c_override": "Facultatif. Saisissez cette température de confort de la pièce en {temperature_unit}.",
           "target_humidity_percent_override_enabled": "Activez cette option si vous souhaitez que VentWise utilise une humidité de confort spécifique à la pièce.",
           "humidity_entity_id": "Facultatif. Choisissez le capteur d’humidité ambiante.",
           "co2_entity_id": "Facultatif. Choisissez le capteur CO₂ de la pièce.",
@@ -148,6 +171,9 @@
         "title": "Modifier la salle",
         "description": "Mettez à jour la pièce sélectionnée pour un espace avec ses propres fenêtres. Vous pouvez également modifier la dérogation de température de confort spécifique à la pièce.",
         "data": {
+          "temperature_unit_override": "Unité du capteur de température",
+          "humidity_unit_override": "Unité du capteur d’humidité",
+          "co2_unit_override": "Unité du capteur de CO₂",
           "enabled": "Activer cette salle",
           "name": "Nom de la pièce",
           "temperature_entity_id": "Capteur de température intérieure",
@@ -166,7 +192,7 @@
           "enabled": "Désactivez cette option si vous ne souhaitez pas que VentWise prenne en compte cette pièce.",
           "name": "Un nom convivial pour cette pièce, comme Chambre ou Bureau.",
           "temperature_entity_id": "Choisissez le capteur de température ambiante.",
-          "target_temperature_c_override": "Facultatif. Utilisez cette température de confort spécifique à la pièce au lieu de la température globale.",
+          "target_temperature_c_override": "Facultatif. Saisissez cette température de confort de la pièce en {temperature_unit}.",
           "humidity_entity_id": "Facultatif. Choisissez le capteur d’humidité ambiante.",
           "co2_entity_id": "Facultatif. Choisissez le capteur CO₂ de la pièce.",
           "co2_enabled": "Utiliser le capteur CO₂ sélectionné pour cette pièce.",
@@ -181,6 +207,9 @@
         "title": "Ajouter une macro-salle",
         "description": "Créez une zone groupée pour les espaces partageant les mêmes fenêtres. Vous pouvez éventuellement remplacer la température de confort pour cette zone.",
         "data": {
+          "temperature_unit_override": "Unité du capteur de température",
+          "humidity_unit_override": "Unité du capteur d’humidité",
+          "co2_unit_override": "Unité du capteur de CO₂",
           "enabled": "Activer cette salle",
           "name": "Nom de la macro-salle",
           "temperature_entity_id": "Capteur de température intérieure",
@@ -200,7 +229,7 @@
           "name": "Un nom convivial pour cet espace regroupé, comme A l'étage ou Espace de vie.",
           "temperature_entity_id": "Choisissez le capteur de température principal pour cette zone.",
           "target_temperature_c_override_enabled": "Activez cette option si vous souhaitez que VentWise utilise une température de confort spécifique à une zone.",
-          "target_temperature_c_override": "Facultatif. Utilisez cette température de confort spécifique à une zone plutôt que la température globale.",
+          "target_temperature_c_override": "Facultatif. Saisissez cette température de confort de la zone en {temperature_unit}.",
           "target_humidity_percent_override_enabled": "Activez cette option si vous souhaitez que VentWise utilise une humidité de confort spécifique à une zone.",
           "humidity_entity_id": "Facultatif. Choisissez le capteur d'humidité pour cette zone.",
           "co2_entity_id": "Facultatif. Choisissez le capteur CO₂ de cette zone.",
@@ -214,6 +243,9 @@
         "title": "Modifier la macro-salle",
         "description": "Mettez à jour la zone groupée sélectionnée qui partage les mêmes fenêtres. Vous pouvez également modifier la priorité de température de confort spécifique à une zone.",
         "data": {
+          "temperature_unit_override": "Unité du capteur de température",
+          "humidity_unit_override": "Unité du capteur d’humidité",
+          "co2_unit_override": "Unité du capteur de CO₂",
           "enabled": "Activer cette salle",
           "name": "Nom de la macro-salle",
           "temperature_entity_id": "Capteur de température intérieure",
@@ -232,7 +264,7 @@
           "enabled": "Désactivez cette option si vous ne souhaitez pas que VentWise prenne en compte cette zone.",
           "name": "Un nom convivial pour cet espace regroupé, comme A l'étage ou Espace de vie.",
           "temperature_entity_id": "Choisissez le capteur de température principal pour cette zone.",
-          "target_temperature_c_override": "Facultatif. Utilisez cette température de confort spécifique à une zone plutôt que la température globale.",
+          "target_temperature_c_override": "Facultatif. Saisissez cette température de confort de la zone en {temperature_unit}.",
           "humidity_entity_id": "Facultatif. Choisissez le capteur d'humidité pour cette zone.",
           "co2_entity_id": "Facultatif. Choisissez le capteur CO₂ de cette zone.",
           "co2_enabled": "Utiliser le capteur CO₂ sélectionné pour cette zone.",
@@ -245,7 +277,8 @@
       }
     },
     "error": {
-      "invalid_input": "Une ou plusieurs valeurs ne sont pas valides."
+      "invalid_input": "Une ou plusieurs valeurs ne sont pas valides.",
+      "required_unit": "Sélectionnez une unité avant de continuer."
     }
   },
   "options": {
@@ -283,8 +316,8 @@
           "wind_speed_unit": "Unité de vitesse du vent",
           "target_temperature_c": "Température de confort",
           "auto_comfort_temperature": "Adapter automatiquement la température de confort",
-          "target_humidity_percent": "Humidité de confort",
-          "stability_minutes": "Attendez avant de recommander (minutes)",
+          "target_humidity_percent": "Humidité de confort (%)",
+          "stability_minutes": "Attendez avant de recommander (min)",
           "notification_device_id": "Dispositifs de notification",
           "home_assistant_notification_enabled": "Afficher les notifications dans Home Assistant",
           "diagnostic_notification_level": "Notifications de diagnostic",
@@ -377,6 +410,13 @@
           "co2_enabled": "Tenir compte du CO₂ dans les recommandations",
           "co2_entity_id": "Capteur CO₂ domestique",
           "co2_threshold_ppm": "Seuil de CO₂ (ppm)"
+        },
+        "data_description": {
+          "target_temperature_c": "Saisissez la température de confort en {temperature_unit}.",
+          "target_humidity_percent": "Saisissez l’humidité de confort.",
+          "soft_outdoor_threshold_c": "Saisissez le seuil de confort extérieur en {temperature_unit}.",
+          "co2_threshold_ppm": "Saisissez le seuil de CO₂ en ppm.",
+          "stability_minutes": "Saisissez le délai en minutes (min)."
         }
       },
       "notifications": {
@@ -578,7 +618,8 @@
       }
     },
     "error": {
-      "invalid_input": "Une ou plusieurs valeurs ne sont pas valides."
+      "invalid_input": "Une ou plusieurs valeurs ne sont pas valides.",
+      "required_unit": "Sélectionnez une unité avant de continuer."
     }
   },
   "selector": {

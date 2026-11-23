@@ -28,7 +28,13 @@ from .ventwise_core import (
     pressure_hpa_or_default,
     vapor_pressure_hpa,
 )
-from .units import display_value, temperature_from_celsius, wind_speed_from_m_s
+from .units import (
+    display_value,
+    normalize_measurement,
+    state_unit,
+    temperature_from_celsius,
+    wind_speed_from_m_s,
+)
 from .const import DEFAULT_TEMPERATURE_UNIT, DEFAULT_WIND_SPEED_UNIT
 
 
@@ -866,8 +872,11 @@ class RoomIndoorHumiditySensor(VentWiseRoomEntity, SensorEntity):
     def native_value(self) -> float | None:
         if not self.room.humidity_entity_id:
             return None
-        value = state_to_float(self.hass.states.get(self.room.humidity_entity_id))
-        return None if value is None else round(value, 2)
+        state = self.hass.states.get(self.room.humidity_entity_id)
+        value = state_to_float(state)
+        source_unit = self.room.humidity_unit or state_unit(state, "%", "humidity")
+        normalized, _, reason = normalize_measurement(value, source_unit, "humidity")
+        return None if reason is not None else round(normalized, 2)
 
 
 class RoomIndoorAbsoluteHumiditySensor(VentWiseRoomEntity, SensorEntity):

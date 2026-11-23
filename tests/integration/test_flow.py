@@ -18,6 +18,7 @@ from custom_components.ventwise.const import (
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_UNIT,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
@@ -42,6 +43,7 @@ from custom_components.ventwise.const import (
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_OUTDOOR_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     OUTDOOR_SOURCE_FORECAST,
@@ -344,7 +346,9 @@ def test_normalize_outdoor_override_config_accepts_numeric_entities() -> None:
     data = normalize_outdoor_override_config(
         {
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID: "input_number.outdoor_temp",
+            CONF_OUTDOOR_TEMPERATURE_UNIT: "K",
             CONF_WIND_SPEED_ENTITY_ID: "input_number.wind_speed",
+            CONF_OUTDOOR_WIND_SPEED_UNIT: "m/s",
         },
         {
             CONF_OUTDOOR_TEMPERATURE_OVERRIDE: True,

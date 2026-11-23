@@ -51,7 +51,9 @@ from ..const import (
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_UNIT,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
+    CONF_OUTDOOR_HUMIDITY_UNIT,
     CONF_QUIET_HOURS_ENABLED,
     CONF_QUIET_HOURS_END,
     CONF_QUIET_HOURS_START,
@@ -69,6 +71,10 @@ from ..const import (
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_TEMPERATURE_UNIT,
+    CONF_ROOM_HUMIDITY_UNIT,
+    CONF_ROOM_CO2_UNIT,
+    CONF_OUTDOOR_WIND_SPEED_UNIT,
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOMS,
@@ -121,6 +127,7 @@ class RoomConfig:
     room_id: str | None
     name: str
     temperature_entity_id: str
+    temperature_unit: str | None = None
     kind: str = "room"
     enabled: bool = True
     target_temperature_c_override_enabled: bool = False
@@ -128,8 +135,10 @@ class RoomConfig:
     target_humidity_percent_override_enabled: bool = False
     target_humidity_percent_override: float | None = None
     humidity_entity_id: str | None = None
+    humidity_unit: str | None = None
     co2_enabled: bool = False
     co2_entity_id: str | None = None
+    co2_unit: str | None = None
     window_sensor_entity_ids: tuple[str, ...] = ()
     action_change_hold_minutes: int = DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES
     action_lockout_minutes: int = DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES
@@ -156,10 +165,13 @@ class IntegrationConfig:
     enabled: bool = True
     outdoor_temperature_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_temperature_entity_id: str | None = None
+    outdoor_temperature_unit: str | None = None
     outdoor_humidity_source: str = OUTDOOR_SOURCE_FORECAST
     outdoor_humidity_entity_id: str | None = None
+    outdoor_humidity_unit: str | None = None
     wind_speed_source: str = OUTDOOR_SOURCE_FORECAST
     wind_speed_entity_id: str | None = None
+    outdoor_wind_speed_unit: str | None = None
     notification_enabled: bool = True
     home_assistant_notification_enabled: bool = False
     diagnostic_notification_level: str = DEFAULT_DIAGNOSTIC_NOTIFICATION_LEVEL
@@ -244,6 +256,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             kind=str(room.get(CONF_ROOM_KIND, "room")),
             name=str(room[CONF_ROOM_NAME]),
             temperature_entity_id=str(room[CONF_ROOM_TEMPERATURE_ENTITY_ID]),
+            temperature_unit=_string_or_none(room.get(CONF_ROOM_TEMPERATURE_UNIT)),
             enabled=bool(room.get(CONF_ROOM_ENABLED, True)),
             target_temperature_c_override_enabled=bool(
                 room.get(
@@ -266,6 +279,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 room.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE)
             ),
             humidity_entity_id=_string_or_none(room.get(CONF_ROOM_HUMIDITY_ENTITY_ID)),
+            humidity_unit=_string_or_none(room.get(CONF_ROOM_HUMIDITY_UNIT)),
             co2_enabled=bool(
                 room.get(
                     CONF_ROOM_CO2_ENABLED,
@@ -280,6 +294,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
                 _string_or_none(room.get(CONF_ROOM_CO2_ENTITY_ID))
                 or (legacy_co2_entity_id if legacy_co2_enabled else None)
             ),
+            co2_unit=_string_or_none(room.get(CONF_ROOM_CO2_UNIT)),
             window_sensor_entity_ids=_string_list(
                 room.get(CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS)
             ),
@@ -328,14 +343,17 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
             CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
         ),
         outdoor_temperature_entity_id=_string_or_none(data.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID)),
+        outdoor_temperature_unit=_string_or_none(data.get(CONF_OUTDOOR_TEMPERATURE_UNIT)),
         outdoor_humidity_source=_outdoor_source(
             data,
             CONF_OUTDOOR_HUMIDITY_SOURCE,
             CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
         ),
+        outdoor_humidity_unit=_string_or_none(data.get(CONF_OUTDOOR_HUMIDITY_UNIT)),
         outdoor_humidity_entity_id=_string_or_none(data.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID)),
         wind_speed_source=_outdoor_source(data, CONF_WIND_SPEED_SOURCE, CONF_WIND_SPEED_ENTITY_ID),
         wind_speed_entity_id=_string_or_none(data.get(CONF_WIND_SPEED_ENTITY_ID)),
+        outdoor_wind_speed_unit=_string_or_none(data.get(CONF_OUTDOOR_WIND_SPEED_UNIT)),
         notification_enabled=bool(data.get(CONF_NOTIFICATION_ENABLED, True)),
         home_assistant_notification_enabled=bool(
             data.get(CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED, False)
@@ -657,7 +675,7 @@ def build_room_profiles(
         "temperature",
     )
     outdoor_temp = _canonical_measurement_value(
-        state_to_float(outdoor_temp_state), outdoor_temp_state, "temperature"
+        state_to_float(outdoor_temp_state), outdoor_temp_state, "temperature", config.outdoor_temperature_unit
     )
     outdoor_humidity_state = _outdoor_state(
         config.outdoor_humidity_source,
@@ -666,7 +684,9 @@ def build_room_profiles(
         state_getter,
         "humidity",
     )
-    outdoor_humidity = state_to_float(outdoor_humidity_state)
+    outdoor_humidity = _canonical_measurement_value(
+        state_to_float(outdoor_humidity_state), outdoor_humidity_state, "humidity", config.outdoor_humidity_unit
+    )
     if outdoor_temp is None:
         outdoor = None
     else:
@@ -681,7 +701,9 @@ def build_room_profiles(
             state_getter,
             "wind_speed",
         )
-        wind_speed = _canonical_measurement_value(state_to_float(wind_speed_state), wind_speed_state, "wind_speed")
+        wind_speed = _canonical_measurement_value(
+            state_to_float(wind_speed_state), wind_speed_state, "wind_speed", config.outdoor_wind_speed_unit
+        )
         wind_gust = _weather_gust_value(
             config.outdoor_weather_entity_id,
             state_getter,
@@ -702,9 +724,9 @@ def build_room_profiles(
             weather_condition=weather_condition,
             forecast_temperature_c=forecast_temperature_c,
             forecast=forecast,
-            temperature_source=_source_reading(outdoor_temp_state, "temperature", "outdoor.temperature"),
-            humidity_source=_source_reading(outdoor_humidity_state, "humidity", "outdoor.humidity"),
-            wind_speed_source=_source_reading(wind_speed_state, "wind_speed", "outdoor.wind") if wind_speed_state is not None else None,
+            temperature_source=_source_reading(outdoor_temp_state, "temperature", "outdoor.temperature", config.outdoor_temperature_unit),
+            humidity_source=_source_reading(outdoor_humidity_state, "humidity", "outdoor.humidity", config.outdoor_humidity_unit),
+            wind_speed_source=_source_reading(wind_speed_state, "wind_speed", "outdoor.wind", config.outdoor_wind_speed_unit) if wind_speed_state is not None else None,
             wind_gust_source=_source_reading(
                 _outdoor_state(
                     config.wind_speed_source,
@@ -715,6 +737,7 @@ def build_room_profiles(
                 ),
                 "wind_speed",
                 "outdoor.gust",
+                config.outdoor_wind_speed_unit,
             ),
             pressure_source=_source_reading(
                 pressure_state,
@@ -731,8 +754,12 @@ def build_room_profiles(
     for room in config.rooms:
         temperature_state = state_getter(room.temperature_entity_id)
         humidity_state = state_getter(room.humidity_entity_id) if room.humidity_entity_id else None
-        temperature = state_to_temperature_c(temperature_state)
-        humidity = state_to_float(humidity_state) if humidity_state is not None else None
+        temperature = _canonical_measurement_value(
+            state_to_float(temperature_state), temperature_state, "temperature", room.temperature_unit
+        )
+        humidity = _canonical_measurement_value(
+            state_to_float(humidity_state), humidity_state, "humidity", room.humidity_unit
+        ) if humidity_state is not None else None
         co2, co2_source = room_co2_reading(room, state_getter)
         if temperature is None:
             continue
@@ -743,8 +770,8 @@ def build_room_profiles(
                 indoor=RoomObservation(
                     temperature_c=temperature,
                     humidity_percent=humidity,
-                    temperature_source=_source_reading(temperature_state, "temperature", room.temperature_entity_id),
-                    humidity_source=_source_reading(humidity_state, "humidity", room.humidity_entity_id) if humidity_state is not None else None,
+                    temperature_source=_source_reading(temperature_state, "temperature", room.temperature_entity_id, room.temperature_unit),
+                    humidity_source=_source_reading(humidity_state, "humidity", room.humidity_entity_id, room.humidity_unit) if humidity_state is not None else None,
                 ),
                 kind=room.kind,
                 enabled=room.enabled,
@@ -770,7 +797,8 @@ def room_co2_reading(
         return None, None
     state = state_getter(room.co2_entity_id)
     value = state_to_float(state)
-    source = _source_reading(state, "co2", room.co2_entity_id)
+    source = _source_reading(state, "co2", room.co2_entity_id, room.co2_unit)
+    value = _canonical_measurement_value(value, state, "co2", room.co2_unit)
     if source is None:
         source = SourceReading(None, "ppm", None, room.co2_entity_id)
     return value, source
@@ -1191,18 +1219,24 @@ def state_to_temperature_c(state: Any | None) -> float | None:
     return _canonical_measurement_value(state_to_float(state), state, "temperature")
 
 
-def _canonical_measurement_value(value: float | None, state: Any | None, measurement: str | None) -> float | None:
+def _canonical_measurement_value(
+    value: float | None,
+    state: Any | None,
+    measurement: str | None,
+    unit_override: str | None = None,
+) -> float | None:
     if value is None:
         return None
-    if measurement == "temperature":
-        return temperature_to_celsius(value, state_unit(state, DEFAULT_TEMPERATURE_UNIT, "temperature"))
-    if measurement == "wind_speed":
-        return wind_speed_to_m_s(value, state_unit(state, DEFAULT_WIND_SPEED_UNIT, "wind_speed"))
-    if measurement == "pressure":
-        unit = state_unit(state, "hPa", "pressure")
-        factors = {"hPa": 1.0, "Pa": 0.01, "kPa": 10.0, "bar": 1000.0, "atm": 1013.25, "psi": 68.9475729, "inHg": 33.8638867}
-        return value * factors.get(unit, 1.0)
-    return value
+    fallback_units = {
+        "temperature": DEFAULT_TEMPERATURE_UNIT,
+        "humidity": "%",
+        "wind_speed": DEFAULT_WIND_SPEED_UNIT,
+        "pressure": "hPa",
+        "co2": "ppm",
+    }
+    unit = unit_override or state_unit(state, fallback_units.get(measurement or "", ""), measurement)
+    normalized, _, reason = normalize_measurement(value, unit, measurement or "")
+    return normalized if reason is None else None
 
 
 def _outdoor_source(data: Mapping[str, Any], source_key: str, entity_key: str) -> str:
@@ -1351,7 +1385,9 @@ def _weather_gust_value(
         if value is None:
             continue
         try:
-            return wind_speed_to_m_s(float(value), state_unit(state, DEFAULT_WIND_SPEED_UNIT, "wind_speed"))
+            return _canonical_measurement_value(
+                float(value), state, "wind_speed"
+            )
         except (TypeError, ValueError):
             continue
     return None
@@ -1409,12 +1445,17 @@ def _outdoor_state(
     return state if attribute_name == "temperature" else None
 
 
-def _source_reading(state: Any | None, measurement: str, source_id: str | None) -> SourceReading | None:
+def _source_reading(
+    state: Any | None,
+    measurement: str,
+    source_id: str | None,
+    unit_override: str | None = None,
+) -> SourceReading | None:
     if state is None:
         return None
     attributes = getattr(state, "attributes", {}) or {}
     fallback_units = {"temperature": "°C", "humidity": "%", "wind_speed": "m/s", "pressure": "hPa", "co2": "ppm"}
-    unit = state_unit(state, fallback_units.get(measurement, ""), measurement)
+    unit = unit_override or state_unit(state, fallback_units.get(measurement, ""), measurement)
     observed_at = getattr(state, "last_updated", None) or getattr(state, "last_changed", None)
     return SourceReading(
         getattr(state, "state", None), unit, observed_at, source_id,

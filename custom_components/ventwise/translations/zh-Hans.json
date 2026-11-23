@@ -11,8 +11,8 @@
           "temperature_unit": "温度单位",
           "wind_speed_unit": "风速单位",
           "target_temperature_c": "室内舒适温度",
-          "target_humidity_percent": "室内舒适湿度",
-          "stability_minutes": "稳定窗口（分钟）",
+          "target_humidity_percent": "室内舒适湿度 (%)",
+          "stability_minutes": "稳定窗口（min）",
           "notification_device_id": "通知设备",
           "diagnostic_notification_level": "诊断通知",
           "auto_comfort_temperature": "使用适应气候的舒适度目标",
@@ -23,9 +23,9 @@
         "data_description": {
           "debug_mode_enabled": "显示每个房间的开窗和关窗通知测试控件。调试通知仅供参考，绝不会执行 Home Assistant 自动化。",
           "outdoor_weather_entity_id": "选择 VentWise 当前可以使用的 Home Assistant 标准天气实体。如果没有你需要的来源，请到 GitHub 提交 issue。",
-          "target_temperature_c": "设置你在家时感觉舒适的室内温度。",
+          "target_temperature_c": "输入单位为 {temperature_unit} 且让你在家时感到舒适的室内温度。",
           "target_humidity_percent": "设置你在家时感觉舒适的室内湿度。",
-          "stability_minutes": "VentWise 在采取行动前，建议需要保持相同多久。如果不确定，就保留默认值。",
+          "stability_minutes": "输入等待时间，单位为分钟（min）。如果不确定，就保留默认值。",
           "notification_device_id": "选择一个或多个接收 VentWise 通知的设备。",
           "auto_comfort_temperature": "使用您的舒适温度作为基准，并根据感知的室外温度逐渐进行调整。在 18–26°C 室内安全范围内，调节范围限制为 ±2°C。房间传感器确定建议，但永远不会移动目标。这不控制恒温器或 HVAC 系统。",
           "home_assistant_notification_enabled": "在 Home Assistant 的通知面板中显示每个 VentWise 建议。",
@@ -57,16 +57,36 @@
       },
       "outdoor_overrides": {
         "title": "手动室外值",
-        "description": "只填写你通过复选框启用的字段。",
+        "description": "只填写你通过复选框启用的字段。检测到的源单位：{sensor_units_summary}。",
         "data": {
+          "outdoor_temperature_unit": "手动室外温度单位",
+          "outdoor_humidity_unit": "手动室外湿度单位",
+          "outdoor_wind_speed_unit": "手动风速单位",
           "outdoor_temperature_entity_id": "手动室外温度",
           "outdoor_humidity_entity_id": "手动室外湿度",
           "wind_speed_entity_id": "手动室外风速"
         },
         "data_description": {
+          "outdoor_temperature_unit": "可选。传感器未正确声明单位时使用。",
+          "outdoor_humidity_unit": "可选。传感器未正确声明单位时使用。",
+          "outdoor_wind_speed_unit": "可选。传感器未正确声明单位时使用。",
           "outdoor_temperature_entity_id": "仅在启用手动温度时必填。",
           "outdoor_humidity_entity_id": "仅在启用手动湿度时必填。",
           "wind_speed_entity_id": "仅在启用手动风速时必填。"
+        }
+      },
+      "room_units": {
+        "title": "传感器单位",
+        "description": "检查所选传感器检测到的单位。检测到的源单位：{sensor_units_summary}。确认或更正后再继续。ratio 表示 0 到 1 之间的分数。",
+        "data": {
+          "temperature_unit_override": "温度源单位",
+          "humidity_unit_override": "湿度源单位",
+          "co2_unit_override": "CO₂ 源单位"
+        },
+        "data_description": {
+          "temperature_unit_override": "选择温度传感器声明的单位。",
+          "humidity_unit_override": "选择湿度传感器声明的单位。",
+          "co2_unit_override": "选择 CO₂ 传感器声明的单位。"
         }
       },
       "rooms": {
@@ -112,6 +132,9 @@
         "title": "添加房间",
         "description": "创建一个带有自己窗户的普通房间。你也可以为此房间设置舒适温度覆盖值。",
         "data": {
+          "temperature_unit_override": "温度传感器单位",
+          "humidity_unit_override": "湿度传感器单位",
+          "co2_unit_override": "CO₂ 传感器单位",
           "enabled": "包含此房间",
           "name": "房间名称",
           "temperature_entity_id": "室内温度传感器",
@@ -130,7 +153,7 @@
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
           "name": "一个容易识别的名字，例如卧室或书房。",
           "temperature_entity_id": "选择房间温度传感器。",
-          "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "target_temperature_c_override": "可选。请输入该房间的舒适温度，单位为 {temperature_unit}。",
           "humidity_entity_id": "可选。选择房间湿度传感器。",
           "co2_entity_id": "可选。选择房间二氧化碳传感器。",
           "co2_enabled": "使用所选的房间二氧化碳传感器。",
@@ -145,6 +168,9 @@
         "title": "编辑房间",
         "description": "更新所选带窗户的房间。你也可以修改该房间的舒适温度覆盖值。",
         "data": {
+          "temperature_unit_override": "温度传感器单位",
+          "humidity_unit_override": "湿度传感器单位",
+          "co2_unit_override": "CO₂ 传感器单位",
           "enabled": "包含此房间",
           "name": "房间名称",
           "temperature_entity_id": "室内温度传感器",
@@ -163,7 +189,7 @@
           "enabled": "如果不想让 VentWise 处理这个房间，就关闭。",
           "name": "一个容易识别的名字，例如卧室或书房。",
           "temperature_entity_id": "选择房间温度传感器。",
-          "target_temperature_c_override": "可选。使用该房间专属的舒适温度，而不是全局值。",
+          "target_temperature_c_override": "可选。请输入该房间的舒适温度，单位为 {temperature_unit}。",
           "humidity_entity_id": "可选。选择房间湿度传感器。",
           "co2_entity_id": "可选。选择房间二氧化碳传感器。",
           "co2_enabled": "使用所选的房间二氧化碳传感器。",
@@ -178,6 +204,9 @@
         "title": "添加宏房间",
         "description": "为共享同一扇窗的空间创建一个分组区域。你也可以为该区域设置舒适温度覆盖值。",
         "data": {
+          "temperature_unit_override": "温度传感器单位",
+          "humidity_unit_override": "湿度传感器单位",
+          "co2_unit_override": "CO₂ 传感器单位",
           "enabled": "包含此房间",
           "name": "宏房间名称",
           "temperature_entity_id": "室内温度传感器",
@@ -196,7 +225,7 @@
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
           "temperature_entity_id": "选择该区域的主要温度传感器。",
-          "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "target_temperature_c_override": "可选。请输入该区域的舒适温度，单位为 {temperature_unit}。",
           "humidity_entity_id": "可选。选择该区域的湿度传感器。",
           "co2_entity_id": "可选。选择该区域的二氧化碳传感器。",
           "co2_enabled": "使用所选的区域二氧化碳传感器。",
@@ -211,6 +240,9 @@
         "title": "编辑宏房间",
         "description": "更新所选共享同一扇窗的较大区域。你也可以修改该区域的舒适温度覆盖值。",
         "data": {
+          "temperature_unit_override": "温度传感器单位",
+          "humidity_unit_override": "湿度传感器单位",
+          "co2_unit_override": "CO₂ 传感器单位",
           "enabled": "包含此房间",
           "name": "宏房间名称",
           "temperature_entity_id": "室内温度传感器",
@@ -229,7 +261,7 @@
           "enabled": "如果不想让 VentWise 处理该区域，就关闭。",
           "name": "一个容易识别的名字，例如楼上或客厅区域。",
           "temperature_entity_id": "选择该区域的主要温度传感器。",
-          "target_temperature_c_override": "可选。使用该区域专属的舒适温度，而不是全局值。",
+          "target_temperature_c_override": "可选。请输入该区域的舒适温度，单位为 {temperature_unit}。",
           "humidity_entity_id": "可选。选择该区域的湿度传感器。",
           "co2_entity_id": "可选。选择该区域的二氧化碳传感器。",
           "co2_enabled": "使用所选的区域二氧化碳传感器。",
@@ -242,7 +274,8 @@
       }
     },
     "error": {
-      "invalid_input": "一个或多个值无效。"
+      "invalid_input": "一个或多个值无效。",
+      "required_unit": "请选择单位后再继续。"
     },
     "abort": {
       "single_instance_allowed": "VentWise 已配置。使用配置来更新它。"
@@ -312,12 +345,19 @@
         "data": {
           "target_temperature_c": "舒适温度",
           "auto_comfort_temperature": "自动调整舒适温度",
-          "target_humidity_percent": "舒适湿度",
-          "stability_minutes": "建议前等待（分钟）",
+          "target_humidity_percent": "舒适湿度 (%)",
+          "stability_minutes": "建议前等待（min）",
           "soft_outdoor_threshold_c": "室外舒适阈值",
           "co2_enabled": "在建议中考虑二氧化碳",
           "co2_entity_id": "室内二氧化碳传感器",
           "co2_threshold_ppm": "二氧化碳阈值（ppm）"
+        },
+        "data_description": {
+          "target_temperature_c": "输入单位为 {temperature_unit} 的舒适温度。",
+          "target_humidity_percent": "输入舒适湿度。",
+          "soft_outdoor_threshold_c": "输入单位为 {temperature_unit} 的室外舒适温度阈值。",
+          "co2_threshold_ppm": "输入 CO₂ 阈值，单位为 ppm。",
+          "stability_minutes": "输入延迟，单位为分钟 (min)。"
         }
       },
       "notifications": {
@@ -578,7 +618,8 @@
       }
     },
     "error": {
-      "invalid_input": "一个或多个值无效。"
+      "invalid_input": "一个或多个值无效。",
+      "required_unit": "请选择单位后再继续。"
     }
   },
   "selector": {

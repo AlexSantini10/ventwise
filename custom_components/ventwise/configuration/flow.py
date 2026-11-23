@@ -33,11 +33,14 @@ from ..const import (
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
     CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_NOTIFICATION_DEVICE_ID,
+    LAB_NOTIFICATION_ENTITY_ID,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
+    CONF_OUTDOOR_HUMIDITY_UNIT,
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
     CONF_OUTDOOR_HUMIDITY_SOURCE,
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_UNIT,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_TEMPERATURE_SOURCE,
     CONF_ROOM_ENABLED,
@@ -55,6 +58,9 @@ from ..const import (
     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_TEMPERATURE_UNIT,
+    CONF_ROOM_HUMIDITY_UNIT,
+    CONF_ROOM_CO2_UNIT,
     CONF_ROOMS,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_STABILITY_MINUTES,
@@ -63,6 +69,7 @@ from ..const import (
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_OUTDOOR_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_OVERRIDE,
     CONF_WIND_SPEED_SOURCE,
     DEFAULT_COOLDOWN_MINUTES,
@@ -84,7 +91,18 @@ from ..const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from ..units import TEMPERATURE_UNITS, WIND_SPEED_UNITS, temperature_from_celsius, temperature_to_celsius, temperature_unit, wind_speed_unit
+from ..units import (
+    CO2_UNITS,
+    HUMIDITY_UNITS,
+    TEMPERATURE_UNITS,
+    WIND_SPEED_UNITS,
+    temperature_from_celsius,
+    temperature_to_celsius,
+    temperature_unit,
+    wind_speed_unit,
+    canonical_unit,
+    state_unit,
+)
 from ..application.notification import notification_entity_ids_for_device_ids
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
@@ -115,6 +133,16 @@ OUTDOOR_OVERRIDE_FIELDS: tuple[tuple[str, str, str], ...] = (
         CONF_WIND_SPEED_ENTITY_ID,
     ),
 )
+OUTDOOR_UNIT_FIELDS = {
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE: (CONF_OUTDOOR_TEMPERATURE_UNIT, TEMPERATURE_UNITS),
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE: (CONF_OUTDOOR_HUMIDITY_UNIT, HUMIDITY_UNITS),
+    CONF_WIND_SPEED_OVERRIDE: (CONF_OUTDOOR_WIND_SPEED_UNIT, WIND_SPEED_UNITS),
+}
+OUTDOOR_MEASUREMENTS = {
+    CONF_OUTDOOR_TEMPERATURE_OVERRIDE: "temperature",
+    CONF_OUTDOOR_HUMIDITY_OVERRIDE: "humidity",
+    CONF_WIND_SPEED_OVERRIDE: "wind_speed",
+}
 
 
 @dataclass(slots=True)
@@ -184,6 +212,13 @@ def _notification_device_options(hass) -> list[dict[str, str]]:
             continue
         label = device.name_by_user or device.name or entry.device_id
         options.append({"value": entry.entity_id, "label": label})
+    if getattr(hass, "data", {}).get("ventwise_lab_bootstrap") and not options:
+        options.append(
+            {
+                "value": LAB_NOTIFICATION_ENTITY_ID,
+                "label": "VentWise Lab notification device",
+            }
+        )
     return sorted(options, key=lambda option: option["label"].casefold())
 
 
@@ -317,7 +352,87 @@ def build_outdoor_source_schema(defaults: Mapping[str, object]) -> vol.Schema:
     )
 
 
-def build_outdoor_override_schema(defaults: Mapping[str, object]) -> vol.Schema:
+def _detected_source_unit(hass, entity_id: object, measurement: str) -> str | None:
+    """Return a supported unit declared by a selected Home Assistant entity."""
+    if hass is None or not entity_id:
+        return None
+    state = hass.states.get(str(entity_id))
+    if state is None:
+        return None
+    declared = state_unit(state, "", measurement)
+    try:
+        return canonical_unit(measurement, declared)
+    except ValueError:
+        return None
+
+
+def _display_source_unit(unit: str | None) -> str:
+    """Return a user-facing source-unit label without hiding raw metadata."""
+    if unit == "ratio":
+        return "ratio (0–1)"
+    return unit or "missing or unsupported"
+
+
+def source_unit_summary(
+    sources: tuple[tuple[str, object, str], ...], hass=None
+) -> str:
+    """Summarize detected source units for the unit-confirmation step."""
+    return "; ".join(
+        f"{label}: {_display_source_unit(_detected_source_unit(hass, entity_id, measurement))}"
+        for label, entity_id, measurement in sources
+        if entity_id
+    ) or "no sensors selected"
+
+
+def outdoor_source_unit_summary(defaults: Mapping[str, object], hass=None) -> str:
+    """Summarize the units of enabled manual outdoor sources."""
+    sources = (
+        ("temperature", defaults.get(CONF_OUTDOOR_TEMPERATURE_ENTITY_ID), "temperature", CONF_OUTDOOR_TEMPERATURE_OVERRIDE),
+        ("humidity", defaults.get(CONF_OUTDOOR_HUMIDITY_ENTITY_ID), "humidity", CONF_OUTDOOR_HUMIDITY_OVERRIDE),
+        ("wind speed", defaults.get(CONF_WIND_SPEED_ENTITY_ID), "wind_speed", CONF_WIND_SPEED_OVERRIDE),
+    )
+    return source_unit_summary(
+        tuple((label, entity_id, measurement) for label, entity_id, measurement, enabled in sources if defaults.get(enabled)),
+        hass,
+    )
+
+
+def _unit_selector_field(
+    field: str,
+    units: tuple[str, ...],
+    default: str | None,
+) -> tuple[object, object]:
+    """Build a required source-unit selector with an optional default."""
+    key = vol.Required(field, default=default) if default else vol.Required(field)
+    return key, SelectSelector(SelectSelectorConfig(options=list(units)))
+
+
+def build_room_unit_schema(room: Mapping[str, object], hass=None) -> vol.Schema:
+    """Create the explicit unit confirmation step for room source entities."""
+    fields: dict[object, object] = {}
+    temperature_default = room.get(CONF_ROOM_TEMPERATURE_UNIT) or _detected_source_unit(
+        hass, room.get(CONF_ROOM_TEMPERATURE_ENTITY_ID), "temperature"
+    )
+    key, selector = _unit_selector_field(
+        CONF_ROOM_TEMPERATURE_UNIT, TEMPERATURE_UNITS, temperature_default
+    )
+    fields[key] = selector
+    if room.get(CONF_ROOM_HUMIDITY_ENTITY_ID):
+        humidity_default = room.get(CONF_ROOM_HUMIDITY_UNIT) or _detected_source_unit(
+            hass, room.get(CONF_ROOM_HUMIDITY_ENTITY_ID), "humidity"
+        )
+        key, selector = _unit_selector_field(CONF_ROOM_HUMIDITY_UNIT, HUMIDITY_UNITS, humidity_default)
+        fields[key] = selector
+    if room.get(CONF_ROOM_CO2_ENTITY_ID):
+        co2_default = room.get(CONF_ROOM_CO2_UNIT) or _detected_source_unit(
+            hass, room.get(CONF_ROOM_CO2_ENTITY_ID), "co2"
+        )
+        key, selector = _unit_selector_field(CONF_ROOM_CO2_UNIT, CO2_UNITS, co2_default)
+        fields[key] = selector
+    return vol.Schema(fields)
+
+
+def build_outdoor_override_schema(defaults: Mapping[str, object], hass=None) -> vol.Schema:
     """Create the schema for the manual outdoor data step."""
 
     fields: dict[object, object] = {}
@@ -331,6 +446,17 @@ def build_outdoor_override_schema(defaults: Mapping[str, object]) -> vol.Schema:
                 defaults.get(entity_field),
             )
         )
+        unit_field, units = OUTDOOR_UNIT_FIELDS[override_field]
+        measurement = {
+            CONF_OUTDOOR_TEMPERATURE_UNIT: "temperature",
+            CONF_OUTDOOR_HUMIDITY_UNIT: "humidity",
+            CONF_OUTDOOR_WIND_SPEED_UNIT: "wind_speed",
+        }[unit_field]
+        detected = defaults.get(unit_field) or _detected_source_unit(
+            hass, defaults.get(entity_field), measurement
+        )
+        key, selector = _unit_selector_field(unit_field, units, detected)
+        fields[key] = selector
     return vol.Schema(fields)
 
 
@@ -438,6 +564,9 @@ OVERRIDE_FIELDS = {
     CONF_OUTDOOR_TEMPERATURE_ENTITY_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
     CONF_WIND_SPEED_ENTITY_ID,
+    CONF_OUTDOOR_TEMPERATURE_UNIT,
+    CONF_OUTDOOR_HUMIDITY_UNIT,
+    CONF_OUTDOOR_WIND_SPEED_UNIT,
 }
 
 
@@ -478,6 +607,7 @@ def build_override_schema(defaults: Mapping[str, object], hass=None) -> vol.Sche
                 defaults.get(entity_field),
             )
         )
+    fields.update(build_outdoor_override_schema(defaults, hass).schema)
     return vol.Schema(_select_schema_fields(vol.Schema(fields), OVERRIDE_FIELDS))
 
 
@@ -663,8 +793,13 @@ def normalize_outdoor_source_config(user_input: Mapping[str, object]) -> dict[st
         if not override:
             data[entity_field] = None
             data[source_field] = OUTDOOR_SOURCE_FORECAST
+            data[OUTDOOR_UNIT_FIELDS[override_field][0]] = None
             continue
         data[source_field] = OUTDOOR_SOURCE_OVERRIDE
+        unit_field, _ = OUTDOOR_UNIT_FIELDS[override_field]
+        data[unit_field] = _normalize_optional_unit(
+            data.get(unit_field), unit_field, OUTDOOR_MEASUREMENTS[override_field]
+        )
     return data
 
 
@@ -682,6 +817,7 @@ def normalize_outdoor_override_config(
         if not override:
             data[entity_field] = None
             data[source_field] = OUTDOOR_SOURCE_FORECAST
+            data[OUTDOOR_UNIT_FIELDS[override_field][0]] = None
             continue
         if entity_field not in user_input:
             data[entity_field] = None
@@ -691,6 +827,12 @@ def normalize_outdoor_override_config(
             domains=NUMERIC_ENTITY_DOMAINS,
         )
         data[source_field] = OUTDOOR_SOURCE_OVERRIDE
+        unit_field, _ = OUTDOOR_UNIT_FIELDS[override_field]
+        data[unit_field] = _normalize_optional_unit(
+            data.get(unit_field), unit_field, OUTDOOR_MEASUREMENTS[override_field]
+        )
+        if data[unit_field] is None:
+            raise ConfigValidationError(unit_field, "required_unit")
     return data
 
 
@@ -886,6 +1028,15 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data.get(CONF_ROOM_TEMPERATURE_ENTITY_ID),
         CONF_ROOM_TEMPERATURE_ENTITY_ID,
         domains=NUMERIC_ENTITY_DOMAINS,
+    )
+    data[CONF_ROOM_TEMPERATURE_UNIT] = _normalize_optional_unit(
+        data.get(CONF_ROOM_TEMPERATURE_UNIT), CONF_ROOM_TEMPERATURE_UNIT, "temperature"
+    )
+    data[CONF_ROOM_HUMIDITY_UNIT] = _normalize_optional_unit(
+        data.get(CONF_ROOM_HUMIDITY_UNIT), CONF_ROOM_HUMIDITY_UNIT, "humidity"
+    )
+    data[CONF_ROOM_CO2_UNIT] = _normalize_optional_unit(
+        data.get(CONF_ROOM_CO2_UNIT), CONF_ROOM_CO2_UNIT, "co2"
     )
     data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED] = _normalize_bool(
         data.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED),
@@ -1140,6 +1291,16 @@ def _normalize_optional_entity_ids(
             data[key] = None
             continue
         data[key] = _normalize_required_entity_id(text, key, domain, domains)
+
+
+def _normalize_optional_unit(value: object, field: str, measurement: str) -> str | None:
+    """Validate a source-unit override while preserving an omitted override."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        return canonical_unit(measurement, value)
+    except ValueError as exc:
+        raise ConfigValidationError(field) from exc
 
 
 def _normalize_int(value: object, field: str, minimum: int, maximum: int) -> int:

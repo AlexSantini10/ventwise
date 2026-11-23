@@ -169,7 +169,7 @@ def test_split_options_schemas_do_not_expose_unrelated_fields(schema_name: str) 
             "wind_speed_override",
             "outdoor_temperature_entity_id",
             "outdoor_humidity_entity_id",
-            "wind_speed_entity_id",
+                "wind_speed_entity_id",
         },
     }
     assert fields == expected_groups[schema_name]

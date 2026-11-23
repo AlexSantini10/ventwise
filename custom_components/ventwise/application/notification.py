@@ -13,6 +13,7 @@ from homeassistant.helpers import entity_registry as er
 
 from ..ventwise_core import RecommendationSummary
 from ..ventwise_core.models import RoomRecommendation
+from ..const import LAB_NOTIFICATION_ENTITY_ID
 
 _LOGGER = logging.getLogger(__name__)
 _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
@@ -44,6 +45,11 @@ def notification_entity_ids_for_device_ids(
         # device-registry ID, this does not change when the Companion App
         # recreates its device entry.
         if device_id.startswith("notify."):
+            if device_id == LAB_NOTIFICATION_ENTITY_ID:
+                if device_id not in seen:
+                    seen.add(device_id)
+                    entity_ids.append(device_id)
+                continue
             entry = entity_registry.async_get(device_id)
             if entry is not None and entry.entity_id not in seen:
                 seen.add(entry.entity_id)
@@ -324,6 +330,15 @@ async def async_send_notification(
         failed_targets: list[str] = []
         for entity_id in targets:
             try:
+                if entity_id == LAB_NOTIFICATION_ENTITY_ID:
+                    await _async_create_persistent_notification(
+                        hass,
+                        title=title,
+                        message=message,
+                        notification_id=home_assistant_notification_id,
+                    )
+                    delivered_targets.append(entity_id)
+                    continue
                 service_data: dict[str, object] = {"title": title, "message": message}
                 await hass.services.async_call(
                     "notify",

@@ -38,6 +38,16 @@ def test_home_assistant_temperature_source_uses_declared_unit() -> None:
     assert state_to_temperature_c(state) == pytest.approx(20.0)
 
 
+def test_home_assistant_temperature_source_converts_kelvin() -> None:
+    state = SimpleNamespace(state="293.15", attributes={"unit_of_measurement": "K"})
+    assert state_to_temperature_c(state) == pytest.approx(20.0)
+
+
+def test_home_assistant_temperature_source_rejects_unknown_unit() -> None:
+    state = SimpleNamespace(state="20", attributes={"unit_of_measurement": "rankine"})
+    assert state_to_temperature_c(state) is None
+
+
 def test_display_values_are_limited_to_two_decimal_places() -> None:
     assert display_value(4.4738725841088) == 4.47
 

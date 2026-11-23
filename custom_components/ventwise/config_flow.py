@@ -17,9 +17,16 @@ from .const import (
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_ROOM_KIND,
     CONF_ROOM_NAME,
+    CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_REMOVE_CONFIRMATION,
     CONF_ROOM_SELECTION,
     CONF_ROOMS,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
+    DEFAULT_TEMPERATURE_UNIT,
+    DEFAULT_WIND_SPEED_UNIT,
     DOMAIN,
     NAME,
     CONF_WIND_SPEED_OVERRIDE,
@@ -30,10 +37,15 @@ from .configuration.flow import (
     build_outdoor_override_schema,
     build_outdoor_source_schema,
     build_room_schema,
+    build_room_unit_schema,
+    build_unit_schema,
     normalize_basic_config,
     normalize_outdoor_override_config,
     normalize_outdoor_source_config,
     normalize_room_config,
+    normalize_unit_config,
+    outdoor_source_unit_summary,
+    source_unit_summary,
     split_config_data,
     _localized_room_kind_label,
 )
@@ -51,9 +63,16 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._room_index = 0
         self._selected_room_index: int | None = None
         self._setup_completed = False
+        self._units_completed = False
+        self._pending_room_input: dict[str, Any] | None = None
+        self._pending_room_kind: str | None = None
+        self._pending_room_index: int | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Collect the minimal setup required to start."""
+
+        if not self._units_completed:
+            return await self.async_step_units()
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -75,8 +94,23 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_config_schema(self._setup_data, self.hass),
+            data_schema=build_config_schema(self._setup_data, self.hass, include_units=False),
             errors=errors,
+            description_placeholders={
+                "temperature_unit": self._setup_data.get(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT),
+                "wind_speed_unit": self._setup_data.get(CONF_WIND_SPEED_UNIT, DEFAULT_WIND_SPEED_UNIT),
+            },
+        )
+
+    async def async_step_units(self, user_input: dict[str, Any] | None = None):
+        """Choose display units before entering manual numeric values."""
+        if user_input is not None:
+            self._setup_data.update(normalize_unit_config(user_input))
+            self._units_completed = True
+            return await self.async_step_user()
+        return self.async_show_form(
+            step_id="units",
+            data_schema=build_unit_schema(self._setup_data),
         )
 
     async def async_step_outdoor(self, user_input: dict[str, Any] | None = None):
@@ -117,8 +151,11 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="outdoor_overrides",
-            data_schema=build_outdoor_override_schema(self._current_config),
+            data_schema=build_outdoor_override_schema(self._current_config, self.hass),
             errors=errors,
+            description_placeholders={
+                "sensor_units_summary": outdoor_source_unit_summary(self._current_config, self.hass),
+            },
         )
 
     async def async_step_rooms(self, user_input: dict[str, Any] | None = None):
@@ -272,15 +309,10 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 room_input = {**(default_room or {}), **user_input}
                 room = normalize_room_config(room_input, room_kind)
-                candidate_rooms = list(self._rooms)
-                if room_index is None:
-                    candidate_rooms.append(room)
-                else:
-                    candidate_rooms[room_index] = room
-                self._rooms = candidate_rooms
-                self._current_config[CONF_ROOMS] = deepcopy(candidate_rooms)
-                self._selected_room_index = None
-                return await self.async_step_rooms()
+                self._pending_room_input = room
+                self._pending_room_kind = room_kind
+                self._pending_room_index = room_index
+                return await self.async_step_room_units()
             except ConfigValidationError as err:
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
@@ -300,6 +332,51 @@ class VentWiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={
                 "current_room": str(self._room_index + 1),
+                "temperature_unit": self._current_config.get(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT),
+            },
+        )
+
+    async def async_step_room_units(self, user_input: dict[str, Any] | None = None):
+        """Confirm the units used by the selected room sources."""
+        errors: dict[str, str] = {}
+        if self._pending_room_input is None or self._pending_room_kind is None:
+            return await self.async_step_rooms()
+        if user_input is not None:
+            try:
+                room_input = {**self._pending_room_input, **user_input}
+                room = normalize_room_config(room_input, self._pending_room_kind)
+                candidate_rooms = list(self._rooms)
+                if self._pending_room_index is None:
+                    candidate_rooms.append(room)
+                else:
+                    candidate_rooms[self._pending_room_index] = room
+                self._rooms = candidate_rooms
+                self._current_config[CONF_ROOMS] = deepcopy(candidate_rooms)
+                self._selected_room_index = None
+                self._pending_room_input = None
+                self._pending_room_kind = None
+                self._pending_room_index = None
+                return await self.async_step_rooms()
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        return self.async_show_form(
+            step_id="room_units",
+            data_schema=build_room_unit_schema(self._pending_room_input, self.hass),
+            errors=errors,
+            description_placeholders={
+                "sensor_units_summary": source_unit_summary(
+                    tuple(
+                        (label, self._pending_room_input.get(entity_field), measurement)
+                        for label, entity_field, measurement in (
+                            ("temperature", CONF_ROOM_TEMPERATURE_ENTITY_ID, "temperature"),
+                            ("humidity", CONF_ROOM_HUMIDITY_ENTITY_ID, "humidity"),
+                            ("CO₂", CONF_ROOM_CO2_ENTITY_ID, "co2"),
+                        )
+                    ),
+                    self.hass,
+                )
             },
         )
 

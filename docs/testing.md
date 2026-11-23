@@ -167,6 +167,11 @@ to create repeatable open, close, humidity, CO₂, wind, and multiple-window
 scenarios. The dashboard displays the resulting recommendation, score, reason,
 active flag, and aggregate window state for each room.
 
+The Lab also provisions a **VentWise Units Lab** entry and sidebar dashboard.
+Its adjustable helpers use Kelvin for temperature, ratio for humidity, and
+km/h for wind speed. The corresponding VentWise entities must continue to use
+the converted canonical values (Â°C, %, and m/s).
+
 For immediate use, the first dashboard control is **Ricevi consiglio ora**: it
 waits for pending Home Assistant state updates, refreshes the evaluation, and
 creates a persistent notification with the current result. The same screen

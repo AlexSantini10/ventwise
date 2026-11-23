@@ -99,6 +99,62 @@ ventwise_test_wind_gust:
   initial: 2
   mode: box
   unit_of_measurement: "m/s"
+ventwise_test_units_room_temperature:
+  name: VentWise Units Lab Room Temperature
+  min: 250
+  max: 320
+  step: 0.01
+  initial: 295.15
+  mode: box
+  unit_of_measurement: "K"
+ventwise_test_units_room_humidity:
+  name: VentWise Units Lab Room Humidity (ratio 0–1)
+  min: 0
+  max: 1
+  step: 0.01
+  initial: 0.5
+  mode: box
+  unit_of_measurement: "ratio"
+ventwise_test_units_room_co2:
+  name: VentWise Units Lab Room CO₂
+  min: 400
+  max: 5000
+  step: 10
+  initial: 700
+  mode: box
+  unit_of_measurement: "ppm"
+ventwise_test_units_outdoor_temperature:
+  name: VentWise Units Lab Outdoor Temperature
+  min: 250
+  max: 320
+  step: 0.01
+  initial: 296.15
+  mode: box
+  unit_of_measurement: "K"
+ventwise_test_units_outdoor_humidity:
+  name: VentWise Units Lab Outdoor Humidity (ratio 0–1)
+  min: 0
+  max: 1
+  step: 0.01
+  initial: 0.45
+  mode: box
+  unit_of_measurement: "ratio"
+ventwise_test_units_wind_speed:
+  name: VentWise Units Lab Wind Speed
+  min: 0
+  max: 100
+  step: 0.1
+  initial: 14.4
+  mode: box
+  unit_of_measurement: "km/h"
+ventwise_test_units_wind_gust:
+  name: VentWise Units Lab Wind Gust
+  min: 0
+  max: 100
+  step: 0.1
+  initial: 21.6
+  mode: box
+  unit_of_measurement: "km/h"
 """
 
 BOOLEANS_YAML = """ventwise_test_bedroom_window_left:
@@ -540,6 +596,46 @@ DASHBOARD_CONFIG_YAML = """dashboards:
     icon: mdi:cpu-64-bit
     show_in_sidebar: true
     filename: ventwise_core_dashboard.yaml
+  ventwise-units-lab:
+    mode: yaml
+    title: VentWise Units Lab
+    icon: mdi:scale-balance
+    show_in_sidebar: true
+    filename: ventwise_units_dashboard.yaml
+"""
+
+UNITS_DASHBOARD_YAML = """title: VentWise Units Lab
+views:
+  - title: Unità non standard
+    path: ventwise-units-lab
+    icon: mdi:scale-balance
+    cards:
+      - type: markdown
+        content: |
+          # VentWise Units Lab
+
+          Questi helper dichiarano unità diverse da quelle canoniche di
+          VentWise: Kelvin, frazioni di umidità (ratio, 0–1) e km/h. Modifica
+          i valori e osserva che VentWise converte 0,5 ratio in 50% e continua
+          a calcolare usando °C, %, e m/s.
+      - type: entities
+        title: Sorgenti non standard
+        entities:
+          - input_number.ventwise_test_units_room_temperature
+          - input_number.ventwise_test_units_room_humidity
+          - input_number.ventwise_test_units_room_co2
+          - input_number.ventwise_test_units_outdoor_temperature
+          - input_number.ventwise_test_units_outdoor_humidity
+          - input_number.ventwise_test_units_wind_speed
+          - input_number.ventwise_test_units_wind_gust
+      - type: entities
+        title: Risultato VentWise
+        entities:
+          - sensor.units_lab_room_indoor_temperature
+          - sensor.units_lab_room_indoor_humidity
+          - sensor.units_lab_room_recommendation
+          - sensor.units_lab_room_reason
+          - sensor.units_lab_room_wind_speed
 """
 
 CORE_DASHBOARD_YAML = """title: VentWise Core Lab
@@ -942,7 +1038,7 @@ views:
           notification channel to verify `notification_channel`.
 """
 
-BOOTSTRAP_MANIFEST = '{"domain":"ventwise_lab_bootstrap","name":"VentWise Test Lab Bootstrap","version":"1.0.0","integration_type":"helper","requirements":[],"codeowners":[]}'
+BOOTSTRAP_MANIFEST = '{"domain":"ventwise_lab_bootstrap","name":"VentWise Test Lab Bootstrap","version":"1.0.0","integration_type":"helper","config_flow":true,"requirements":[],"codeowners":[]}'
 BOOTSTRAP_INIT = '''"""Provision the repeatable VentWise Lab config entries."""
 from homeassistant.config_entries import ConfigEntry
 
@@ -950,6 +1046,7 @@ DOMAIN = "ventwise_lab_bootstrap"
 FULL_DATA = {
     "outdoor_weather_entity_id": "weather.ventwise_test_weather",
     "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
+    "co2_enabled": True, "co2_threshold_ppm": 1000.0,
     "stability_minutes": 0, "co2_enabled": True, "co2_threshold_ppm": 1000.0,
     "home_assistant_notification_enabled": True,
     "rooms": [
@@ -971,9 +1068,9 @@ FULL_DATA = {
 CORE_DATA = {
     "outdoor_weather_entity_id": "weather.ventwise_test_weather",
     "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
+    "co2_enabled": True, "co2_threshold_ppm": 1000.0,
     "stability_minutes": 0, "cooldown_minutes": 0,
     "quiet_hours_enabled": False, "notification_enabled": False,
-    "co2_enabled": True, "co2_threshold_ppm": 1000.0,
     "home_assistant_notification_enabled": False,
     "rooms": [
         {"kind": "room", "room_id": "core_engine_room", "name": "Core engine room", "enabled": True,
@@ -983,12 +1080,31 @@ CORE_DATA = {
     ],
 }
 
+UNITS_DATA = {
+    "outdoor_temperature_entity_id": "input_number.ventwise_test_units_outdoor_temperature",
+    "outdoor_humidity_entity_id": "input_number.ventwise_test_units_outdoor_humidity",
+    "wind_speed_entity_id": "input_number.ventwise_test_units_wind_speed",
+    "target_temperature_c": 22.0, "target_humidity_percent": 50.0,
+    "co2_enabled": True, "co2_threshold_ppm": 1000.0,
+    "stability_minutes": 0, "cooldown_minutes": 0,
+    "quiet_hours_enabled": False, "notification_enabled": False,
+    "rooms": [
+        {"kind": "room", "room_id": "units_lab_room", "name": "Units lab room", "enabled": True,
+         "temperature_entity_id": "input_number.ventwise_test_units_room_temperature",
+         "humidity_entity_id": "input_number.ventwise_test_units_room_humidity",
+         "co2_entity_id": "input_number.ventwise_test_units_room_co2",
+         "co2_enabled": True},
+    ],
+}
+
 ENTRIES = (
     ("ventwise_test_full_lab", "VentWise Test Lab", FULL_DATA),
     ("ventwise_test_core_lab", "VentWise Core Lab", CORE_DATA),
+    ("ventwise_test_units_lab", "VentWise Units Lab", UNITS_DATA),
 )
 
 async def async_setup(hass, config):
+    hass.data["ventwise_lab_bootstrap"] = True
     existing = {
         entry.unique_id
         for entry in hass.config_entries.async_entries("ventwise")
@@ -1002,7 +1118,75 @@ async def async_setup(hass, config):
             discovery_keys={}, subentries_data=None,
         )
         await hass.config_entries.async_add(entry)
+    bootstrap_entries = hass.config_entries.async_entries(DOMAIN)
+    if not any(entry.unique_id == "ventwise_lab_bootstrap" for entry in bootstrap_entries):
+        async def add_helper_entry() -> None:
+            await hass.config_entries.async_add(
+                ConfigEntry(
+                    domain=DOMAIN,
+                    title="VentWise Lab Helpers",
+                    data={},
+                    options={},
+                    source="import",
+                    version=1,
+                    minor_version=0,
+                    unique_id="ventwise_lab_bootstrap",
+                    discovery_keys={},
+                    subentries_data=None,
+                )
+            )
+        hass.async_create_task(add_helper_entry())
     return True
+
+
+async def async_setup_entry(hass, entry):
+    """Set up the Lab notification helper."""
+    await hass.config_entries.async_forward_entry_setups(entry, ["notify"])
+    return True
+'''
+
+BOOTSTRAP_NOTIFY = '''"""Provide an isolated notification device for the VentWise Lab."""
+
+from homeassistant.components.notify import NotifyEntity
+from homeassistant.helpers.entity import DeviceInfo
+
+
+class VentWiseLabNotifyEntity(NotifyEntity):
+    """A local notification sink used only by the Docker Lab."""
+
+    _attr_name = "VentWise Lab notifications"
+    _attr_unique_id = "ventwise_lab_notifications"
+    _attr_device_info = DeviceInfo(
+        identifiers={("ventwise_lab_bootstrap", "notification_device")},
+        name="VentWise Lab notification device",
+        manufacturer="VentWise",
+    )
+
+    async def async_send_message(self, message: str, title: str | None = None, **kwargs) -> None:
+        """Accept the message without sending it outside the isolated Lab."""
+        self._async_record_notification()
+
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up the Lab notification entity."""
+    async_add_entities([VentWiseLabNotifyEntity()])
+'''
+
+BOOTSTRAP_CONFIG_FLOW = '''"""Keep the internal VentWise Lab helper config entry non-interactive."""
+
+from homeassistant import config_entries
+
+DOMAIN = "ventwise_lab_bootstrap"
+
+
+class VentWiseLabBootstrapConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Do not expose the Lab helper as a user-configurable integration."""
+
+    VERSION = 1
+
+    async def async_step_user(self, user_input=None):
+        """Abort any accidental manual setup attempt."""
+        return self.async_abort(reason="single_instance_allowed")
 '''
 
 
@@ -1095,12 +1279,15 @@ def ensure_config(config_root: Path) -> Path:
         "ventwise_test_scripts.yaml": SCRIPTS_YAML,
         "ventwise_test_dashboards.yaml": DASHBOARD_CONFIG_YAML, "ventwise_test_dashboard.yaml": DASHBOARD_YAML,
         "ventwise_core_dashboard.yaml": CORE_DASHBOARD_YAML,
+        "ventwise_units_dashboard.yaml": UNITS_DASHBOARD_YAML,
     }.items():
         (config_dir / name).write_text(content, encoding="utf-8")
     bootstrap = config_dir / "custom_components" / "ventwise_lab_bootstrap"
     bootstrap.mkdir(parents=True, exist_ok=True)
     (bootstrap / "manifest.json").write_text(BOOTSTRAP_MANIFEST, encoding="utf-8")
     (bootstrap / "__init__.py").write_text(BOOTSTRAP_INIT, encoding="utf-8")
+    (bootstrap / "notify.py").write_text(BOOTSTRAP_NOTIFY, encoding="utf-8")
+    (bootstrap / "config_flow.py").write_text(BOOTSTRAP_CONFIG_FLOW, encoding="utf-8")
     return config_dir
 
 

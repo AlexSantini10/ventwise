@@ -78,6 +78,14 @@ asks you to open or close windows when that action has not already happened.
 The room's **Window state** entity shows whether the contacts are open, closed,
 unavailable, or not configured.
 
+VentWise reads each source sensor's Home Assistant `unit_of_measurement` and
+converts supported units to its canonical calculation units. After selecting
+the entities, the configuration flow shows a separate **Sensor units** step:
+valid units are preselected, while missing or unrecognised units must be chosen
+before the configuration can be saved. The global temperature and wind-speed
+settings control the units used for manual values and displayed VentWise
+entities; source-unit selections remain per sensor.
+
 To use indoor CO₂ for a room, select its optional CO₂ sensor and enable **Use
 CO₂ for this room**. The room's CO₂ entity is then shown in ppm and contributes
 to recommendations when it reaches the configured global threshold. Clear the

@@ -74,6 +74,13 @@ def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> Non
 
     assert "ventwise_lab_bootstrap:" in config_text
     assert "input_boolean: !include ventwise_test_booleans.yaml" in config_text
+    units_dashboard = (config_dir / "ventwise_units_dashboard.yaml").read_text(encoding="utf-8")
+    assert "VentWise Units Lab" in units_dashboard
+    assert "input_number.ventwise_test_units_room_temperature" in units_dashboard
+    assert "input_number.ventwise_test_units_wind_speed" in units_dashboard
+    assert "input_number.ventwise_test_units_room_co2" in units_dashboard
+    assert "sensor.units_lab_room_reason" in units_dashboard
+    assert "sensor.units_lab_room_recommendation_reason" not in units_dashboard
     dashboard = (config_dir / "ventwise_test_dashboard.yaml").read_text(encoding="utf-8")
     assert "input_number.ventwise_test_bedroom_co2" in dashboard
     assert "button.ventwise_test_lab_request_recommendation" in dashboard
@@ -92,6 +99,12 @@ def test_ensure_config_provisions_the_complete_manual_lab(tmp_path: Path) -> Non
     assert "sensor.core_engine_room_recommendation" in core_dashboard
     bootstrap = (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "__init__.py").read_text(encoding="utf-8")
     assert "ventwise_test_core_lab" in bootstrap
+    assert "ventwise_test_units_lab" in bootstrap
+    notify_platform = (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "notify.py").read_text(encoding="utf-8")
+    assert "VentWise Lab notification device" in notify_platform
+    assert "ventwise_lab_notifications" in notify_platform
+    config_flow = (config_dir / "custom_components" / "ventwise_lab_bootstrap" / "config_flow.py").read_text(encoding="utf-8")
+    assert "single_instance_allowed" in config_flow
     assert "window_sensor_entity_ids" in bootstrap.split("CORE_DATA", 1)[0]
     assert "window_sensor_entity_ids" not in bootstrap.split("CORE_DATA", 1)[1].split("ENTRIES", 1)[0]
     scripts = (config_dir / "ventwise_test_scripts.yaml").read_text(encoding="utf-8")

@@ -12,17 +12,26 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from ..const import (
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_UNIT,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_UNIT,
     CONF_ROOM_NAME,
+    CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_REMOVE_CONFIRMATION,
     CONF_ROOM_SELECTION,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_ROOMS,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
+    DEFAULT_TEMPERATURE_UNIT,
+    DEFAULT_WIND_SPEED_UNIT,
     NAME,
 )
 from .flow import (
     ConfigValidationError,
     build_room_schema,
+    build_room_unit_schema,
     build_comfort_schema,
     build_notification_schema,
     build_override_schema,
@@ -33,6 +42,8 @@ from .flow import (
     normalize_notification_config,
     normalize_override_config,
     normalize_unit_config,
+    outdoor_source_unit_summary,
+    source_unit_summary,
     split_config_data,
 )
 
@@ -47,6 +58,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._rooms = current_rooms
         self._room_index = len(current_rooms)
         self._selected_room_index: int | None = None
+        self._pending_room_input: dict[str, Any] | None = None
+        self._pending_room_kind: str | None = None
+        self._pending_room_index: int | None = None
 
     def _language(self) -> str | None:
         hass = getattr(self, "hass", None)
@@ -85,6 +99,10 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             step_id="comfort",
             data_schema=build_comfort_schema(self._current_config, self.hass),
             errors=errors,
+            description_placeholders={
+                "temperature_unit": self._current_config.get(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT),
+                "wind_speed_unit": self._current_config.get(CONF_WIND_SPEED_UNIT, DEFAULT_WIND_SPEED_UNIT),
+            },
         )
 
     async def async_step_notifications(self, user_input: dict[str, Any] | None = None):
@@ -121,6 +139,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
             step_id="overrides",
             data_schema=build_override_schema(self._current_config, self.hass),
             errors=errors,
+            description_placeholders={
+                "sensor_units_summary": outdoor_source_unit_summary(self._current_config, self.hass),
+            },
         )
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None):
@@ -254,21 +275,18 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 if room_index is not None:
                     for field, empty_value in (
                         (CONF_ROOM_HUMIDITY_ENTITY_ID, None),
+                        (CONF_ROOM_HUMIDITY_UNIT, None),
                         (CONF_ROOM_CO2_ENTITY_ID, None),
+                        (CONF_ROOM_CO2_UNIT, None),
                         (CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS, []),
                     ):
                         if field not in user_input:
                             room_input[field] = empty_value
                 room = normalize_room_config(room_input, room_kind)
-                candidate_rooms = list(self._rooms)
-                if room_index is None:
-                    candidate_rooms.append(room)
-                else:
-                    candidate_rooms[room_index] = room
-                self._rooms = candidate_rooms
-                self._selected_room_index = None
-                self._persist_rooms()
-                return await self.async_step_rooms()
+                self._pending_room_input = room
+                self._pending_room_kind = room_kind
+                self._pending_room_index = room_index
+                return await self.async_step_room_units()
             except ConfigValidationError as err:
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
@@ -281,7 +299,54 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 default_room, self._room_index, "room", self._language()
             ),
             errors=errors,
-            description_placeholders={"current_room": str(self._room_index + 1)},
+            description_placeholders={
+                "current_room": str(self._room_index + 1),
+                "temperature_unit": self._current_config.get(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT),
+            },
+        )
+
+    async def async_step_room_units(self, user_input: dict[str, Any] | None = None):
+        """Confirm the units used by the selected room sources."""
+        errors: dict[str, str] = {}
+        if self._pending_room_input is None or self._pending_room_kind is None:
+            return await self.async_step_rooms()
+        if user_input is not None:
+            try:
+                room_input = {**self._pending_room_input, **user_input}
+                room = normalize_room_config(room_input, self._pending_room_kind)
+                candidate_rooms = list(self._rooms)
+                if self._pending_room_index is None:
+                    candidate_rooms.append(room)
+                else:
+                    candidate_rooms[self._pending_room_index] = room
+                self._rooms = candidate_rooms
+                self._selected_room_index = None
+                self._persist_rooms()
+                self._pending_room_input = None
+                self._pending_room_kind = None
+                self._pending_room_index = None
+                return await self.async_step_rooms()
+            except ConfigValidationError as err:
+                errors[err.field] = err.message
+            except (ValueError, TypeError, KeyError):
+                errors["base"] = "invalid_input"
+        return self.async_show_form(
+            step_id="room_units",
+            data_schema=build_room_unit_schema(self._pending_room_input, self.hass),
+            errors=errors,
+            description_placeholders={
+                "sensor_units_summary": source_unit_summary(
+                    tuple(
+                        (label, self._pending_room_input.get(entity_field), measurement)
+                        for label, entity_field, measurement in (
+                            ("temperature", CONF_ROOM_TEMPERATURE_ENTITY_ID, "temperature"),
+                            ("humidity", CONF_ROOM_HUMIDITY_ENTITY_ID, "humidity"),
+                            ("CO₂", CONF_ROOM_CO2_ENTITY_ID, "co2"),
+                        )
+                    ),
+                    self.hass,
+                )
+            },
         )
 
     def _persist_rooms(self) -> None:
