@@ -44,6 +44,8 @@ from custom_components.ventwise.const import (
     CONF_STABILITY_MINUTES,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
     CONF_TARGET_HUMIDITY_PERCENT,
     DOMAIN,
 )
@@ -324,6 +326,12 @@ async def test_real_flow_manager_starts_the_ventwise_config_flow(
         context={"source": SOURCE_USER},
     )
     assert result["type"] == "form"
+    assert result["step_id"] == "units"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TEMPERATURE_UNIT: "°C", CONF_WIND_SPEED_UNIT: "m/s"},
+    )
     assert result["step_id"] == "user"
 
     result = await hass.config_entries.flow.async_configure(

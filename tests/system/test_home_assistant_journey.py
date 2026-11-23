@@ -22,15 +22,19 @@ from custom_components.ventwise.const import (
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_ROOM_ENABLED,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_HUMIDITY_UNIT,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
     CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_TEMPERATURE_UNIT,
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
     CONF_WIND_SPEED_OVERRIDE,
     DOMAIN,
 )
@@ -56,6 +60,10 @@ async def test_onboarding_sensor_update_and_reload_journey(hass: HomeAssistant) 
 
     _seed_states(hass)
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TEMPERATURE_UNIT: "°C", CONF_WIND_SPEED_UNIT: "m/s"},
+    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {
@@ -93,6 +101,10 @@ async def test_onboarding_sensor_update_and_reload_journey(hass: HomeAssistant) 
             CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: False,
             CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE: None,
         },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ROOM_TEMPERATURE_UNIT: "°C", CONF_ROOM_HUMIDITY_UNIT: "%"},
     )
     assert result["type"] == "menu"
     result = await hass.config_entries.flow.async_configure(
