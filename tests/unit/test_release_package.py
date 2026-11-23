@@ -33,6 +33,14 @@ def test_release_package_embeds_the_standalone_core_at_the_integration_root(tmp_
         assert "ModuleNotFoundError" not in archive.read("ventwise_core/__init__.py").decode()
 
 
+def test_release_package_contains_config_flow_when_manifest_enables_it(tmp_path: Path) -> None:
+    output = tmp_path / "ventwise.zip"
+    PACKAGE.build_package(Path(__file__).parents[2], output)
+
+    with ZipFile(output) as archive:
+        assert "config_flow.py" in archive.namelist()
+
+
 def test_release_package_core_runs_without_the_repository_on_pythonpath(tmp_path: Path) -> None:
     output = tmp_path / "ventwise.zip"
     extracted = tmp_path / "package"
