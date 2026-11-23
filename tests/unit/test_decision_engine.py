@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from ventwise_core import (
     Availability,
-    DecisionContext,
+    DecisionRuntimeContext,
     DecisionConfig,
     DecisionEngine,
     DecisionOutdoor,
@@ -34,7 +34,7 @@ def snapshot(*, indoor=28.0, outdoor=20.0, weather="clear", context=None):
             weather_condition=obs(weather),
         ),
         evaluated_at=NOW,
-        context=context or DecisionContext(),
+        context=context or DecisionRuntimeContext(),
     )
 
 
@@ -79,7 +79,7 @@ def test_severe_weather_has_priority_over_comfort():
 
 def test_quiet_hours_does_not_change_core_result():
     result = DecisionEngine().evaluate(
-        snapshot(context=DecisionContext(quiet_hours_active=True))
+        snapshot(context=DecisionRuntimeContext(quiet_hours_active=True))
     ).room_results[0]
     assert result.core_action is RecommendationAction.OPEN
     assert result.delivered_action is RecommendationAction.OPEN
@@ -165,7 +165,7 @@ def test_contact_failure_does_not_hide_safety_close():
 
 
 def test_known_open_window_gets_urgent_close_without_delivery_gates():
-    data = snapshot(weather="storm", context=DecisionContext(quiet_hours_active=True, cooldown_active=True, stability_seconds_required=999))
+    data = snapshot(weather="storm", context=DecisionRuntimeContext(quiet_hours_active=True, cooldown_active=True, stability_seconds_required=999))
     room = DecisionRoom(
         "room",
         "Room",
@@ -255,7 +255,7 @@ def test_calculated_co2_recommendation_remains_visible_during_stabilization():
             (room,),
             data.outdoor,
             NOW,
-            DecisionContext(
+            DecisionRuntimeContext(
                 room_guardrails=(RoomGuardrailState("room", RecommendationAction.NONE.value),)
             ),
         )

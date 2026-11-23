@@ -91,7 +91,8 @@ physical hardware.
 
 ## Repository Layout
 
-- `src/ventwise_core/` for the canonical reusable decision core; the release
+- `src/ventwise_core/` for the canonical reusable decision core, organized by
+  domain, engine, calculations, and serialization; the release
   builder embeds it at the archive root as `ventwise_core/`
 - `custom_components/ventwise/application/` for runtime coordination, state, and notifications
 - `custom_components/ventwise/configuration/` for shared config and options-flow logic

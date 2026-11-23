@@ -7,7 +7,7 @@ import json
 import sys
 from typing import Any
 
-from .serialization import evaluate_scenario
+from .serialization.json_codec import evaluate_scenario
 
 
 def main(argv: list[str] | None = None) -> int:

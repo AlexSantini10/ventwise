@@ -146,7 +146,7 @@ python scripts/ha-local-docker-test.py restart
 
 Il runner rigenera `ventwise-lab.zip` dal checkout, sostituisce esclusivamente
 `custom_components/ventwise` nel profilo del Lab, incluso il package runtime
-vendorizzato `custom_components/ventwise/ventwise_core`. Controlla inoltre che
+incluso nel pacchetto release sotto `ventwise_core/`. Controlla inoltre che
 la versione installata corrisponda al manifest del pacchetto. Il profilo e
 l'utente restano invariati.
 

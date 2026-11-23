@@ -27,7 +27,7 @@ custom integration.
 
 - Keep the core reusable and versioned.
 - Build releases from the canonical `src/ventwise_core/` sources and embed the
-  resulting modules under `ventwise_core/` in the integration package so HA
+  resulting package tree under `ventwise_core/` in the integration package so HA
   installations do not require a separately installed Python distribution.
 - Keep the integration stable before publishing.
 - Add clear install steps for HACS users.

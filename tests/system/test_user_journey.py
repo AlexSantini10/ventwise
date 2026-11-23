@@ -36,13 +36,13 @@ from custom_components.ventwise.const import (
     DOMAIN,
 )
 from custom_components.ventwise.config_flow import VentWiseConfigFlow
-from custom_components.ventwise.configuration.flow import (
+from custom_components.ventwise.configuration.configuration_helpers import (
     normalize_basic_config,
     normalize_outdoor_source_config,
     normalize_room_config,
 )
-from custom_components.ventwise.application.notification import build_recommendation_explanation
-from custom_components.ventwise.application.runtime import (
+from custom_components.ventwise.application.notifications.service import build_recommendation_explanation
+from custom_components.ventwise.application.runtime.integration_runtime import (
     build_decision_config,
     build_decision_snapshot,
     build_integration_config,

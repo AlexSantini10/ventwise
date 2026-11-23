@@ -7,12 +7,12 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
 
-from ..ventwise_core import (
+from ventwise_core import (
     AggregateDecisionResult,
     Availability,
     ComfortObservation,
     DecisionConfig,
-    DecisionContext,
+    DecisionRuntimeContext,
     DecisionEngine,
     ExternalConditions,
     DecisionRoom,
@@ -28,13 +28,13 @@ from ..ventwise_core import (
     RoomRecommendation,
     TraceEntry,
 )
-from ..ventwise_core.serialization import (
+from ventwise_core.serialization.json_codec import (
     aggregate_result_to_dict,
     result_to_dict,
     snapshot_to_dict,
 )
 
-from ..const import (
+from ...const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_CO2_ENABLED,
     CONF_CO2_ENTITY_ID,
@@ -114,9 +114,25 @@ from ..const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from ..units import (
+from ...units import (
     normalize_measurement, state_unit, temperature_to_celsius, temperature_unit,
     wind_speed_to_m_s, wind_speed_unit,
+)
+from ..constants import (
+    DEFAULT_STABLE_FOR_SECONDS_WHEN_DISABLED,
+    DEFAULT_TARGET_HUMIDITY_PERCENT,
+    DEFAULT_VENTILATION_DURATION_MINUTES,
+    SECONDS_PER_MINUTE,
+    MAX_STATE_CO2_PPM,
+    MAX_STATE_HUMIDITY_PERCENT,
+    MAX_STATE_TEMPERATURE_C,
+    MAX_STATE_WIND_SPEED_M_S,
+    MIN_STATE_CO2_PPM,
+    MIN_STATE_HUMIDITY_PERCENT,
+    MIN_STATE_TEMPERATURE_C,
+    MIN_STATE_WIND_SPEED_M_S,
+    STATE_OFF_VALUES,
+    STATE_ON_VALUES,
 )
 
 
@@ -153,7 +169,7 @@ class IntegrationConfig:
     temperature_unit: str = DEFAULT_TEMPERATURE_UNIT
     wind_speed_unit: str = DEFAULT_WIND_SPEED_UNIT
     auto_comfort_temperature_enabled: bool = DEFAULT_AUTO_COMFORT_TEMPERATURE
-    target_humidity_percent: float = 50.0
+    target_humidity_percent: float = DEFAULT_TARGET_HUMIDITY_PERCENT
     soft_outdoor_threshold_c: float = DEFAULT_SOFT_OUTDOOR_THRESHOLD_C
     minimum_score: float = DEFAULT_MINIMUM_SCORE
     cooldown_minutes: int = DEFAULT_COOLDOWN_MINUTES
@@ -321,7 +337,7 @@ def build_integration_config(data: Mapping[str, Any]) -> IntegrationConfig:
         auto_comfort_temperature_enabled=bool(
             data.get(CONF_AUTO_COMFORT_TEMPERATURE, DEFAULT_AUTO_COMFORT_TEMPERATURE)
         ),
-        target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0)),
+        target_humidity_percent=float(data.get(CONF_TARGET_HUMIDITY_PERCENT, DEFAULT_TARGET_HUMIDITY_PERCENT)),
         soft_outdoor_threshold_c=float(
             data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C, DEFAULT_SOFT_OUTDOOR_THRESHOLD_C)
         ),
@@ -417,7 +433,12 @@ def build_decision_snapshot(
             reason = "contradictory_device_class"
             normalized = None
         if reason is None and normalized is not None:
-            limits = {"temperature": (-90.0, 70.0), "humidity": (0.0, 100.0), "wind_speed": (0.0, 150.0), "co2": (0.0, 100000.0)}
+            limits = {
+                "temperature": (MIN_STATE_TEMPERATURE_C, MAX_STATE_TEMPERATURE_C),
+                "humidity": (MIN_STATE_HUMIDITY_PERCENT, MAX_STATE_HUMIDITY_PERCENT),
+                "wind_speed": (MIN_STATE_WIND_SPEED_M_S, MAX_STATE_WIND_SPEED_M_S),
+                "co2": (MIN_STATE_CO2_PPM, MAX_STATE_CO2_PPM),
+            }
             lower, upper = limits.get(measurement, (-float("inf"), float("inf")))
             if not lower <= normalized <= upper:
                 reason = "out_of_range"
@@ -450,8 +471,8 @@ def build_decision_snapshot(
             ),
             window_contact_configured=(room.room_id or room.name) in window_states
             and window_states[room.room_id or room.name] != WINDOW_STATE_NOT_CONFIGURED,
-            action_change_hold_seconds=getattr(room, "action_change_hold_minutes", 0) * 60,
-            action_lockout_seconds=getattr(room, "action_lockout_minutes", 0) * 60,
+            action_change_hold_seconds=getattr(room, "action_change_hold_minutes", 0) * SECONDS_PER_MINUTE,
+            action_lockout_seconds=getattr(room, "action_lockout_minutes", 0) * SECONDS_PER_MINUTE,
             target_temperature_c=(
                 room.target_temperature_c_override
                 if room.target_temperature_c_override_enabled
@@ -481,8 +502,8 @@ def build_decision_snapshot(
             safety_evidence_configured=outdoor.safety_evidence_configured,
         ),
         evaluated_at=snapshot_evaluated_at,
-        context=DecisionContext(
-            stable_for_seconds=10**9,
+        context=DecisionRuntimeContext(
+            stable_for_seconds=DEFAULT_STABLE_FOR_SECONDS_WHEN_DISABLED,
             room_guardrails=tuple(
                 RoomGuardrailState(
                     room_id=room_id,
@@ -519,7 +540,7 @@ def decision_to_summary(
             open_score=room_result.candidate_scores.open,
             close_score=room_result.candidate_scores.close,
             reason_code=room_result.reason_code,
-            ventilation_duration_minutes=(10 if room_result.core_action is RecommendationAction.VENTILATE else None),
+            ventilation_duration_minutes=(DEFAULT_VENTILATION_DURATION_MINUTES if room_result.core_action is RecommendationAction.VENTILATE else None),
             indoor_comfort_severity=abs(room_result.indoor_perceived_c - room_result.target_perceived_c),
             outdoor_comfort_severity=abs(room_result.outdoor_perceived_c - room_result.target_perceived_c),
             co2_ppm=room_result.co2_ppm,
@@ -641,9 +662,9 @@ def state_to_bool(state: Any | None) -> bool | None:
     if raw_state is None or raw_state in {"unknown", "unavailable", ""}:
         return None
     lowered = str(raw_state).lower()
-    if lowered in {"on", "true", "1", "home", "open"}:
+    if lowered in STATE_ON_VALUES:
         return True
-    if lowered in {"off", "false", "0", "closed", "not_home"}:
+    if lowered in STATE_OFF_VALUES:
         return False
     return None
 

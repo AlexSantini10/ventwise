@@ -7,13 +7,13 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Mapping
 
-from .decision import DecisionConfig, DecisionEngine
-from .models import (
+from ..engine.decision_engine import DecisionConfig, DecisionEngine
+from ..domain.decision_contracts import (
     AggregateDecisionResult,
     Availability,
     CandidateScores,
     DataQualitySummary,
-    DecisionContext,
+    DecisionRuntimeContext,
     DecisionOutdoor,
     DecisionResult,
     DecisionRoom,
@@ -214,7 +214,7 @@ def snapshot_from_dict(data: Mapping[str, Any]) -> DecisionSnapshot:
         )
         for item in raw_guardrails
     )
-    context = DecisionContext(
+    context = DecisionRuntimeContext(
         quiet_hours_active=bool(raw_context.get("quiet_hours_active", False)),
         cooldown_active=bool(raw_context.get("cooldown_active", False)),
         stable_for_seconds=int(raw_context.get("stable_for_seconds", 0)),

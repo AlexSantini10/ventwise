@@ -18,15 +18,21 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from ..ventwise_core import (
+from ventwise_core import (
     DecisionEngine,
     ForecastObservation,
     perceived_temperature_c,
     RecommendationAction,
     RecommendationSummary,
 )
+from ventwise_core.domain.constants import (
+    COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C,
+    COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C,
+    MAX_COMFORT_TEMPERATURE_C,
+    MIN_COMFORT_TEMPERATURE_C,
+)
 
-from .runtime import (
+from .runtime.integration_runtime import (
     IntegrationConfig,
     NotificationMarker,
     RoomActionGuard,
@@ -43,8 +49,9 @@ from .runtime import (
     is_quiet_hours_active,
     room_window_states,
 )
-from .delivery import DeliveryRequest, evaluate_delivery
-from .notification import (
+from .notifications.constants import ELEVATED_RECOMMENDATION_SCORE, URGENT_RECOMMENDATION_SCORE
+from .notifications.policy import DeliveryRequest, evaluate_delivery
+from .notifications.service import (
     async_dismiss_persistent_notification,
     async_create_persistent_notification,
     async_send_notification,
@@ -56,6 +63,7 @@ from .notification import (
     home_assistant_on_demand_notification_id,
     notification_entity_ids_for_device_ids,
 )
+from .constants import DEFAULT_FORECAST_FRESHNESS_MINUTES, DEFAULT_FORECAST_LOOKAHEAD_HOURS
 from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
@@ -80,8 +88,6 @@ from ..units import state_unit, temperature_to_celsius, wind_speed_to_m_s
 
 _LOGGER = logging.getLogger(__name__)
 
-_NOTIFICATION_SEVERITY_ELEVATED_SCORE = 0.55
-_NOTIFICATION_SEVERITY_URGENT_SCORE = 0.75
 class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     """Coordinate state across all VentWise entities."""
 
@@ -405,7 +411,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._config.target_humidity_percent,
         )
         suggested_target = round(
-            max(18.0, min(26.0, self._config.target_temperature_c + max(-2.0, min(2.0, (outdoor_perceived_c - 20.0) * 0.25)))),
+            max(MIN_COMFORT_TEMPERATURE_C, min(MAX_COMFORT_TEMPERATURE_C, self._config.target_temperature_c + max(-COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C, min(COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C, (outdoor_perceived_c - COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C) * 0.25)))),
             1,
         )
         effective_target_temperature_c = suggested_target if self._config.auto_comfort_temperature_enabled else self._config.target_temperature_c
@@ -655,7 +661,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return None
         if (
             self._forecast_fetched_at is not None
-            and now - self._forecast_fetched_at < timedelta(minutes=15)
+            and now - self._forecast_fetched_at < timedelta(minutes=DEFAULT_FORECAST_FRESHNESS_MINUTES)
         ):
             return self._forecast
 
@@ -831,9 +837,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     def _notification_severity(score: float) -> str:
         """Bucket a score so material urgency changes bypass the cooldown."""
 
-        if score >= _NOTIFICATION_SEVERITY_URGENT_SCORE:
+        if score >= URGENT_RECOMMENDATION_SCORE:
             return "urgent"
-        if score >= _NOTIFICATION_SEVERITY_ELEVATED_SCORE:
+        if score >= ELEVATED_RECOMMENDATION_SCORE:
             return "elevated"
         return "normal"
 
@@ -1150,7 +1156,7 @@ def _near_term_forecast(
             continue
         if forecast_at.tzinfo is None:
             forecast_at = forecast_at.replace(tzinfo=now.tzinfo)
-        if now <= forecast_at <= now + timedelta(hours=2):
+        if now <= forecast_at <= now + timedelta(hours=DEFAULT_FORECAST_LOOKAHEAD_HOURS):
             candidates.append((forecast_at, ForecastObservation(
                 temperature_c=_convert_optional_temperature(
                     forecast.get("temperature"), temperature_source_unit

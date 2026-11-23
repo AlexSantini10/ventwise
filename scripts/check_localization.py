@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TRANSLATIONS_DIR = ROOT / "custom_components" / "ventwise" / "translations"
 SOURCE_CATALOG = ROOT / "custom_components" / "ventwise" / "strings.json"
 NOTIFICATION_CATALOG = ROOT / "custom_components" / "ventwise" / "translations" / "notifications"
-NOTIFICATION_SOURCE = ROOT / "custom_components" / "ventwise" / "application" / "notification.py"
+NOTIFICATION_SOURCE = ROOT / "custom_components" / "ventwise" / "application" / "notifications" / "service.py"
 REQUIRED_LOCALES = ("en", "it", "es", "fr", "de", "ru", "zh-Hans")
 RUNTIME_LOCALE_KEYS = {locale.lower() for locale in REQUIRED_LOCALES}
 DEFAULT_ALLOWLIST = {"title"}
@@ -234,7 +234,7 @@ def validate(
         scan_inline_ui_text(
             (
                 ROOT / "custom_components" / "ventwise" / "config_flow.py",
-                ROOT / "custom_components" / "ventwise" / "configuration" / "flow.py",
+                ROOT / "custom_components" / "ventwise" / "configuration" / "configuration_helpers.py",
                 ROOT / "custom_components" / "ventwise" / "configuration" / "options_flow.py",
             )
         )

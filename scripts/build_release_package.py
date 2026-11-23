@@ -8,18 +8,6 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 _ROOT_FILES = ("README.md", "LICENSE", "NOTICE", "hacs.json")
-_CORE_FILES = (
-    "__init__.py",
-    "__main__.py",
-    "_version.py",
-    "models.py",
-    "decision.py",
-    "pipeline.py",
-    "psychrometrics.py",
-    "serialization.py",
-)
-
-
 def _package_files(source_path: Path) -> list[tuple[Path, Path]]:
     """Return source and archive paths for every distributable file."""
     integration_path = source_path / "custom_components" / "ventwise"
@@ -38,12 +26,12 @@ def _package_files(source_path: Path) -> list[tuple[Path, Path]]:
     ]
 
     standalone_core = source_path / "src" / "ventwise_core"
-    for name in _CORE_FILES:
-        path = standalone_core / name
-        if not path.is_file():
-            msg = f"Required standalone core file not found: {path}"
-            raise FileNotFoundError(msg)
-        files.append((path, Path("ventwise_core") / name))
+    if not standalone_core.is_dir():
+        msg = f"Required standalone core directory not found: {standalone_core}"
+        raise FileNotFoundError(msg)
+    for path in standalone_core.rglob("*"):
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            files.append((path, Path("ventwise_core") / path.relative_to(standalone_core)))
 
     for name in _ROOT_FILES:
         path = source_path / name

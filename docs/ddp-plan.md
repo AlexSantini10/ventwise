@@ -43,9 +43,9 @@ notifications.
 
 Implementation:
 
-- `src/ventwise_core/decision.py`
-- `src/ventwise_core/models.py`
-- `custom_components/ventwise/application/runtime.py`
+- `src/ventwise_core/engine/decision_engine.py`
+- `src/ventwise_core/domain/decision_contracts.py`
+- `custom_components/ventwise/application/runtime/integration_runtime.py`
 - `custom_components/ventwise/application/coordinator.py`
 
 ## Inputs used today

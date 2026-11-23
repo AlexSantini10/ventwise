@@ -49,7 +49,7 @@ Quiet hours and cooldowns can suppress non-critical delivery, but must not
 change the engine's environmental result.
 
 The core exposes explicit seams for the evaluation pipeline. A
-`DecisionEvaluationContext` is passed to a `DecisionOptionGenerator`, then to
+`OptionEvaluationContext` is passed to a `DecisionOptionGenerator`, then to
 an `OptionEligibilityPolicy`, an `ExpectedEffectEstimator`, and a
 `DecisionOptionScorer`. The result contains one `OptionEvaluation` per option,
 including blocked and non-selected options. The existing trace and candidate

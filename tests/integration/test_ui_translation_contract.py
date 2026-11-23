@@ -11,7 +11,7 @@ import pytest
 pytest.importorskip("homeassistant")
 pytest.importorskip("voluptuous")
 
-from custom_components.ventwise.configuration.flow import (  # noqa: E402
+from custom_components.ventwise.configuration.configuration_helpers import (  # noqa: E402
     build_advanced_options_schema,
     build_basic_options_schema,
     build_comfort_schema,

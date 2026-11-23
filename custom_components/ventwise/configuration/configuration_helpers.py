@@ -103,7 +103,19 @@ from ..units import (
     canonical_unit,
     state_unit,
 )
-from ..application.notification import notification_entity_ids_for_device_ids
+from ..application.notifications.service import notification_entity_ids_for_device_ids
+from .limits import (
+    MAX_CO2_THRESHOLD_PPM,
+    MAX_DURATION_MINUTES,
+    MAX_OUTDOOR_OVERRIDE_TEMPERATURE_C,
+    MAX_TARGET_HUMIDITY_PERCENT,
+    MAX_TARGET_TEMPERATURE_C,
+    MIN_CO2_THRESHOLD_PPM,
+    MIN_DURATION_MINUTES,
+    MIN_OUTDOOR_OVERRIDE_TEMPERATURE_C,
+    MIN_TARGET_HUMIDITY_PERCENT,
+    MIN_TARGET_TEMPERATURE_C,
+)
 
 NUMERIC_ENTITY_DOMAINS = ["sensor", "input_number"]
 SOURCE_OPTIONS = (OUTDOOR_SOURCE_FORECAST, OUTDOOR_SOURCE_OVERRIDE)
@@ -255,8 +267,8 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
             ): vol.All(
                 vol.Coerce(float),
                 vol.Range(
-                    min=temperature_from_celsius(10.0, selected_temperature_unit),
-                    max=temperature_from_celsius(30.0, selected_temperature_unit),
+                    min=temperature_from_celsius(MIN_TARGET_TEMPERATURE_C, selected_temperature_unit),
+                    max=temperature_from_celsius(MAX_TARGET_TEMPERATURE_C, selected_temperature_unit),
                 ),
             ),
             vol.Required(
@@ -268,11 +280,11 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
             vol.Required(
                 CONF_TARGET_HUMIDITY_PERCENT,
                 default=defaults.get(CONF_TARGET_HUMIDITY_PERCENT, 50.0),
-            ): vol.All(vol.Coerce(float), vol.Range(min=20.0, max=80.0)),
+            ): vol.All(vol.Coerce(float), vol.Range(min=MIN_TARGET_HUMIDITY_PERCENT, max=MAX_TARGET_HUMIDITY_PERCENT)),
             vol.Required(
                 CONF_STABILITY_MINUTES,
                 default=defaults.get(CONF_STABILITY_MINUTES, DEFAULT_STABILITY_MINUTES),
-            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            ): vol.All(vol.Coerce(int), vol.Range(min=MIN_DURATION_MINUTES, max=MAX_DURATION_MINUTES)),
             vol.Required(
                 CONF_NOTIFICATION_DEVICE_ID,
                 default=_notification_device_defaults(defaults, hass),
@@ -309,7 +321,7 @@ def build_config_schema(defaults: Mapping[str, object], hass=None, *, include_un
             vol.Required(
                 CONF_CO2_THRESHOLD_PPM,
                 default=defaults.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
-            ): vol.All(vol.Coerce(float), vol.Range(min=400.0, max=5000.0)),
+            ): vol.All(vol.Coerce(float), vol.Range(min=MIN_CO2_THRESHOLD_PPM, max=MAX_CO2_THRESHOLD_PPM)),
     }
     if include_units:
         fields = {**build_unit_schema(defaults).schema, **fields}
@@ -497,14 +509,14 @@ def build_advanced_options_schema(defaults: Mapping[str, object]) -> vol.Schema:
             ): vol.All(
                 vol.Coerce(float),
                 vol.Range(
-                    min=temperature_from_celsius(-10.0, selected_temperature_unit),
-                    max=temperature_from_celsius(40.0, selected_temperature_unit),
+                    min=temperature_from_celsius(MIN_OUTDOOR_OVERRIDE_TEMPERATURE_C, selected_temperature_unit),
+                    max=temperature_from_celsius(MAX_OUTDOOR_OVERRIDE_TEMPERATURE_C, selected_temperature_unit),
                 ),
             ),
             vol.Required(
                 CONF_COOLDOWN_MINUTES,
                 default=defaults.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
-            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            ): vol.All(vol.Coerce(int), vol.Range(min=MIN_DURATION_MINUTES, max=MAX_DURATION_MINUTES)),
         }
     )
 
@@ -671,8 +683,8 @@ def build_room_schema(
             **_optional_numeric_field(
                 CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
                 defaults.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE),
-                minimum=20.0,
-                maximum=80.0,
+                minimum=MIN_TARGET_HUMIDITY_PERCENT,
+                maximum=MAX_TARGET_HUMIDITY_PERCENT,
             ),
             vol.Optional(
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
@@ -688,14 +700,14 @@ def build_room_schema(
                     CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
                     DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES,
                 ),
-            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            ): vol.All(vol.Coerce(int), vol.Range(min=MIN_DURATION_MINUTES, max=MAX_DURATION_MINUTES)),
             vol.Required(
                 CONF_ROOM_ACTION_LOCKOUT_MINUTES,
                 default=defaults.get(
                     CONF_ROOM_ACTION_LOCKOUT_MINUTES,
                     DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES,
                 ),
-            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=24 * 60)),
+            ): vol.All(vol.Coerce(int), vol.Range(min=MIN_DURATION_MINUTES, max=MAX_DURATION_MINUTES)),
         }
     )
 
@@ -711,7 +723,7 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     )
     if CONF_TARGET_TEMPERATURE_C in data:
         value_c = temperature_to_celsius(float(data.get(CONF_TARGET_TEMPERATURE_C)), data[CONF_TEMPERATURE_UNIT])
-        data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(value_c, CONF_TARGET_TEMPERATURE_C, 10.0, 30.0)
+        data[CONF_TARGET_TEMPERATURE_C] = _normalize_float(value_c, CONF_TARGET_TEMPERATURE_C, MIN_TARGET_TEMPERATURE_C, MAX_TARGET_TEMPERATURE_C)
     data[CONF_AUTO_COMFORT_TEMPERATURE] = _normalize_bool(
         data.get(CONF_AUTO_COMFORT_TEMPERATURE),
         CONF_AUTO_COMFORT_TEMPERATURE,
@@ -721,15 +733,15 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
         data[CONF_TARGET_HUMIDITY_PERCENT] = _normalize_float(
             data.get(CONF_TARGET_HUMIDITY_PERCENT),
             CONF_TARGET_HUMIDITY_PERCENT,
-            20.0,
-            80.0,
+            MIN_TARGET_HUMIDITY_PERCENT,
+            MAX_TARGET_HUMIDITY_PERCENT,
         )
     if CONF_STABILITY_MINUTES in data:
         data[CONF_STABILITY_MINUTES] = _normalize_int(
             data.get(CONF_STABILITY_MINUTES),
             CONF_STABILITY_MINUTES,
-            0,
-            24 * 60,
+            MIN_DURATION_MINUTES,
+            MAX_DURATION_MINUTES,
         )
     notification_device_ids = _normalize_notification_device_ids(
         data.get(CONF_NOTIFICATION_DEVICE_ID)
@@ -768,8 +780,8 @@ def normalize_basic_config(user_input: Mapping[str, object]) -> dict[str, object
     data[CONF_CO2_THRESHOLD_PPM] = _normalize_float(
         data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
         CONF_CO2_THRESHOLD_PPM,
-        400.0,
-        5000.0,
+        MIN_CO2_THRESHOLD_PPM,
+        MAX_CO2_THRESHOLD_PPM,
     )
     return data
 
@@ -848,13 +860,13 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
     selected_temperature_unit = temperature_unit(data.get(CONF_TEMPERATURE_UNIT))
     data[CONF_SOFT_OUTDOOR_THRESHOLD_C] = _normalize_float(
         temperature_to_celsius(float(data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C)), selected_temperature_unit),
-        CONF_SOFT_OUTDOOR_THRESHOLD_C, -10.0, 40.0,
+        CONF_SOFT_OUTDOOR_THRESHOLD_C, MIN_OUTDOOR_OVERRIDE_TEMPERATURE_C, MAX_OUTDOOR_OVERRIDE_TEMPERATURE_C,
     )
     data[CONF_COOLDOWN_MINUTES] = _normalize_int(
         data.get(CONF_COOLDOWN_MINUTES),
         CONF_COOLDOWN_MINUTES,
-        0,
-        24 * 60,
+        MIN_DURATION_MINUTES,
+        MAX_DURATION_MINUTES,
     )
     _normalize_optional_entities(
         data,
@@ -873,8 +885,8 @@ def normalize_advanced_config(user_input: Mapping[str, object]) -> dict[str, obj
         data[CONF_STABILITY_MINUTES] = _normalize_int(
             data.get(CONF_STABILITY_MINUTES),
             CONF_STABILITY_MINUTES,
-            0,
-            24 * 60,
+            MIN_DURATION_MINUTES,
+            MAX_DURATION_MINUTES,
         )
     return data
 
@@ -906,8 +918,8 @@ def normalize_comfort_config(
         CONF_TARGET_TEMPERATURE_C: _normalize_float(
             temperature_to_celsius(float(data.get(CONF_TARGET_TEMPERATURE_C)), selected_unit),
             CONF_TARGET_TEMPERATURE_C,
-            10.0,
-            30.0,
+            MIN_TARGET_TEMPERATURE_C,
+            MAX_TARGET_TEMPERATURE_C,
         ),
         CONF_AUTO_COMFORT_TEMPERATURE: _normalize_bool(
             data.get(CONF_AUTO_COMFORT_TEMPERATURE),
@@ -917,19 +929,19 @@ def normalize_comfort_config(
         CONF_TARGET_HUMIDITY_PERCENT: _normalize_float(
             data.get(CONF_TARGET_HUMIDITY_PERCENT),
             CONF_TARGET_HUMIDITY_PERCENT,
-            20.0,
-            80.0,
+            MIN_TARGET_HUMIDITY_PERCENT,
+            MAX_TARGET_HUMIDITY_PERCENT,
         ),
         CONF_STABILITY_MINUTES: _normalize_int(
-            data.get(CONF_STABILITY_MINUTES), CONF_STABILITY_MINUTES, 0, 24 * 60
+            data.get(CONF_STABILITY_MINUTES), CONF_STABILITY_MINUTES, MIN_DURATION_MINUTES, MAX_DURATION_MINUTES
         ),
         CONF_SOFT_OUTDOOR_THRESHOLD_C: _normalize_float(
             temperature_to_celsius(
                 float(data.get(CONF_SOFT_OUTDOOR_THRESHOLD_C)), selected_unit
             ),
             CONF_SOFT_OUTDOOR_THRESHOLD_C,
-            -10.0,
-            40.0,
+            MIN_OUTDOOR_OVERRIDE_TEMPERATURE_C,
+            MAX_OUTDOOR_OVERRIDE_TEMPERATURE_C,
         ),
         CONF_CO2_ENABLED: _normalize_bool(
             data.get(CONF_CO2_ENABLED), CONF_CO2_ENABLED, default=False
@@ -937,8 +949,8 @@ def normalize_comfort_config(
         CONF_CO2_THRESHOLD_PPM: _normalize_float(
             data.get(CONF_CO2_THRESHOLD_PPM, DEFAULT_CO2_THRESHOLD_PPM),
             CONF_CO2_THRESHOLD_PPM,
-            400.0,
-            5000.0,
+            MIN_CO2_THRESHOLD_PPM,
+            MAX_CO2_THRESHOLD_PPM,
         ),
     } | _normalized_optional_co2(data)
 
@@ -987,7 +999,7 @@ def normalize_notification_config(
             data.get(CONF_COOLDOWN_MINUTES, DEFAULT_COOLDOWN_MINUTES),
             CONF_COOLDOWN_MINUTES,
             0,
-            24 * 60,
+            MAX_DURATION_MINUTES,
         ),
     }
 
@@ -1059,14 +1071,14 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
     data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C] = _normalize_optional_float(
         data.get(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C),
         CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
-        10.0,
-        30.0,
+        MIN_TARGET_TEMPERATURE_C,
+        MAX_TARGET_TEMPERATURE_C,
     )
     data[CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE] = _normalize_optional_float(
         data.get(CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE),
         CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
-        20.0,
-        80.0,
+        MIN_TARGET_HUMIDITY_PERCENT,
+        MAX_TARGET_HUMIDITY_PERCENT,
     )
     if data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED] and data[CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C] is None:
         raise ConfigValidationError(CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C)
@@ -1076,13 +1088,13 @@ def normalize_room_config(user_input: Mapping[str, object], room_kind: str) -> d
         data.get(CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES, DEFAULT_ROOM_ACTION_CHANGE_HOLD_MINUTES),
         CONF_ROOM_ACTION_CHANGE_HOLD_MINUTES,
         0,
-        24 * 60,
+        MAX_DURATION_MINUTES,
     )
     data[CONF_ROOM_ACTION_LOCKOUT_MINUTES] = _normalize_int(
         data.get(CONF_ROOM_ACTION_LOCKOUT_MINUTES, DEFAULT_ROOM_ACTION_LOCKOUT_MINUTES),
         CONF_ROOM_ACTION_LOCKOUT_MINUTES,
         0,
-        24 * 60,
+        MAX_DURATION_MINUTES,
     )
     _normalize_optional_entity_ids(
         data,
@@ -1144,8 +1156,8 @@ def _normalize_bool(value: object, field: str, *, default: bool | None = None) -
 def _optional_numeric_field(
     field: str,
     suggested_value: object | None,
-    minimum: float = 10.0,
-    maximum: float = 30.0,
+    minimum: float = MIN_TARGET_TEMPERATURE_C,
+    maximum: float = MAX_TARGET_TEMPERATURE_C,
 ) -> dict[object, object]:
     optional_numeric = vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=minimum, max=maximum)))
     if suggested_value is None:

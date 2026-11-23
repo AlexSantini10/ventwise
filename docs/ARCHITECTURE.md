@@ -96,8 +96,8 @@ The user should be able to:
 ## Current Repo Mapping
 
 - `src/ventwise_core/`: canonical pure decision contracts, engine,
-  serialization, and psychrometric calculations. The release builder embeds
-  it into the integration package for Home Assistant.
+  serialization, and psychrometric calculations, organized by responsibility.
+  The release builder embeds it into the integration package for Home Assistant.
 - `custom_components/ventwise/`: Home Assistant integration code.
 - `tests/`: decision-engine, integration, and behavior tests.
 - `examples/`: sample configurations and scenarios.
@@ -121,7 +121,7 @@ notification, but they must never change the core action, score, reason code,
 trace, or data-quality result. Safety notifications bypass stability and
 cooldown; quiet-hours bypass is an explicit user option and is disabled by
 default. The pure delivery policy lives in
-`custom_components/ventwise/application/delivery.py` so it can be tested
+`custom_components/ventwise/application/notifications/policy.py` so it can be tested
 without a Home Assistant instance.
 
 VentWise never selects, confirms, or triggers a Home Assistant automation.

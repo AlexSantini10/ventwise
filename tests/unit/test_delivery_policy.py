@@ -2,7 +2,7 @@
 
 from ventwise_core import RecommendationAction
 
-from custom_components.ventwise.application.delivery import (
+from custom_components.ventwise.application.notifications.policy import (
     DeliveryRequest,
     evaluate_delivery,
 )

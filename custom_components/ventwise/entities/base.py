@@ -6,7 +6,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from ..application.coordinator import VentWiseCoordinator
-from ..application.runtime import RoomConfig
+from ..application.runtime.integration_runtime import RoomConfig
 from ..const import DOMAIN, MANUFACTURER, NAME
 
 

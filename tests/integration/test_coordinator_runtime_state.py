@@ -44,13 +44,13 @@ from custom_components.ventwise.const import (
 )
 from custom_components.ventwise.application.coordinator import VentWiseCoordinator, _first_forecast_temperature
 from custom_components.ventwise.application import coordinator as coordinator_module
-from custom_components.ventwise.application.runtime import (
+from custom_components.ventwise.application.runtime.integration_runtime import (
     NotificationMarker,
     RoomActionGuard,
     RoomConfig,
 )
 from ventwise_core import (
-    DecisionContext,
+    DecisionRuntimeContext,
     DecisionEngine,
     DecisionOutdoor,
     DecisionRoom,
@@ -59,7 +59,7 @@ from ventwise_core import (
     RecommendationAction,
     RoomGuardrailState,
 )
-from ventwise_core.models import RoomRecommendation
+from ventwise_core.domain.decision_contracts import RoomRecommendation
 
 
 class _FakeConfigEntries:
@@ -400,7 +400,7 @@ def test_core_guardrail_holds_reversals_until_the_room_action_is_stable() -> Non
                 (room,),
                 outdoor,
                 at,
-                DecisionContext(room_guardrails=tuple(guardrails)),
+                DecisionRuntimeContext(room_guardrails=tuple(guardrails)),
             )
         ).room_results[0]
 
@@ -458,7 +458,7 @@ def test_core_urgent_close_bypasses_room_action_guard() -> None:
             (room,),
             outdoor,
             now,
-            DecisionContext(
+            DecisionRuntimeContext(
                 room_guardrails=(
                     RoomGuardrailState(
                         "bedroom-1",

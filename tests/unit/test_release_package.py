@@ -25,11 +25,11 @@ def test_release_package_embeds_the_standalone_core_at_the_integration_root(tmp_
         names = set(archive.namelist())
         assert "ventwise_core/__init__.py" in names
         assert "ventwise_core/__main__.py" in names
-        assert "ventwise_core/decision.py" in names
-        assert "ventwise_core/serialization.py" in names
+        assert "ventwise_core/engine/decision_engine.py" in names
+        assert "ventwise_core/serialization/json_codec.py" in names
         assert "decision.py" not in names
         assert "custom_components/ventwise/ventwise_core/decision.py" not in names
-        assert "ventwise_core/decision.py" in names
+        assert "ventwise_core/engine/decision_engine.py" in names
         assert "ModuleNotFoundError" not in archive.read("ventwise_core/__init__.py").decode()
 
 

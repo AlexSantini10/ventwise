@@ -14,7 +14,7 @@ from custom_components.ventwise.units import (
     temperature_from_celsius, temperature_to_celsius,
     display_value, wind_speed_from_m_s, wind_speed_to_m_s,
 )
-from custom_components.ventwise.application.runtime import state_to_temperature_c
+from custom_components.ventwise.application.runtime.integration_runtime import state_to_temperature_c
 
 
 def test_temperature_conversion_round_trip() -> None:

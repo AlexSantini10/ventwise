@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from .models import (
+from ..domain.decision_contracts import (
     CandidateScores,
-    DecisionEvaluationContext,
+    OptionEvaluationContext,
     DecisionOption,
     ExpectedEffect,
     OptionEligibility,
@@ -24,14 +24,14 @@ from .models import (
 class DecisionOptionGenerator(Protocol):
     """Generate the deterministic set of actions to compare."""
 
-    def generate(self, context: DecisionEvaluationContext) -> tuple[DecisionOption, ...]: ...
+    def generate(self, context: OptionEvaluationContext) -> tuple[DecisionOption, ...]: ...
 
 
 class OptionEligibilityPolicy(Protocol):
     """Decide whether one action is safe and permitted."""
 
     def check(
-        self, context: DecisionEvaluationContext, option: DecisionOption
+        self, context: OptionEvaluationContext, option: DecisionOption
     ) -> OptionEligibility: ...
 
 
@@ -40,7 +40,7 @@ class ExpectedEffectEstimator(Protocol):
 
     def estimate(
         self,
-        context: DecisionEvaluationContext,
+        context: OptionEvaluationContext,
         option: DecisionOption,
         horizon_minutes: int,
     ) -> ExpectedEffect: ...
@@ -51,7 +51,7 @@ class DecisionOptionScorer(Protocol):
 
     def evaluate(
         self,
-        context: DecisionEvaluationContext,
+        context: OptionEvaluationContext,
         option: DecisionOption,
         eligibility: OptionEligibility,
         expected_effect: ExpectedEffect,
@@ -61,7 +61,7 @@ class DecisionOptionScorer(Protocol):
 class DefaultDecisionOptionGenerator:
     """The fixed v0.18 action set, in stable selection order."""
 
-    def generate(self, context: DecisionEvaluationContext) -> tuple[DecisionOption, ...]:
+    def generate(self, context: OptionEvaluationContext) -> tuple[DecisionOption, ...]:
         return tuple(DecisionOption(action) for action in (
             RecommendationAction.OPEN,
             RecommendationAction.VENTILATE,
@@ -74,7 +74,7 @@ class TraceOptionEligibilityPolicy:
     """Project existing v0.18 safety trace entries into structured eligibility."""
 
     def check(
-        self, context: DecisionEvaluationContext, option: DecisionOption
+        self, context: OptionEvaluationContext, option: DecisionOption
     ) -> OptionEligibility:
         blocks = tuple(entry for entry in context.trace if entry.code.startswith("block."))
         uncertain = any(
@@ -97,7 +97,7 @@ class TraceExpectedEffectEstimator:
 
     def estimate(
         self,
-        context: DecisionEvaluationContext,
+        context: OptionEvaluationContext,
         option: DecisionOption,
         horizon_minutes: int,
     ) -> ExpectedEffect:
@@ -107,8 +107,8 @@ class TraceExpectedEffectEstimator:
         return ExpectedEffect(confidence=1.0 if evidence else 0.0, evidence=evidence)
 
 
-class ScoreFromV018Result:
-    """Preserve v0.18 scores while exposing them as option evaluations."""
+class ExistingScoreProjection:
+    """Project the engine's selected-action scores onto option evaluations."""
 
     @staticmethod
     def _score(scores: CandidateScores | None, action: RecommendationAction) -> float:
@@ -123,7 +123,7 @@ class ScoreFromV018Result:
 
     def evaluate(
         self,
-        context: DecisionEvaluationContext,
+        context: OptionEvaluationContext,
         option: DecisionOption,
         eligibility: OptionEligibility,
         expected_effect: ExpectedEffect,

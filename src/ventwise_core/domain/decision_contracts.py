@@ -206,8 +206,8 @@ class ExternalConditions:
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionContext:
-    """Compatibility context; delivery flags are intentionally ignored by core."""
+class DecisionRuntimeContext:
+    """Runtime flags supplied with a snapshot; delivery flags do not alter core scoring."""
 
     quiet_hours_active: bool = False
     cooldown_active: bool = False
@@ -234,7 +234,7 @@ class DecisionSnapshot:
     rooms: Tuple[DecisionRoom, ...]
     outdoor: DecisionOutdoor
     evaluated_at: datetime
-    context: DecisionContext = field(default_factory=DecisionContext)
+    context: DecisionRuntimeContext = field(default_factory=DecisionRuntimeContext)
 
     @property
     def external_conditions(self) -> ExternalConditions:
@@ -285,7 +285,7 @@ class ExpectedEffect:
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionEvaluationContext:
+class OptionEvaluationContext:
     """Immutable context shared by the option-evaluation pipeline."""
 
     room: DecisionRoom

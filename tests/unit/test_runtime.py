@@ -33,7 +33,7 @@ from custom_components.ventwise.const import (
     CONF_TARGET_TEMPERATURE_C,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
-from custom_components.ventwise.application.runtime import (
+from custom_components.ventwise.application.runtime.integration_runtime import (
     build_decision_config,
     build_decision_snapshot,
     build_integration_config,
@@ -59,7 +59,7 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_RUNTIME_ROOM_ACTION_GUARDS,
 )
-from custom_components.ventwise.application.runtime import RuntimeSnapshot
+from custom_components.ventwise.application.runtime.integration_runtime import RuntimeSnapshot
 from ventwise_core import (
     ComfortObservation,
     ForecastObservation,
@@ -67,7 +67,7 @@ from ventwise_core import (
     RoomProfile,
 )
 from ventwise_core import DecisionEngine
-from ventwise_core.models import (
+from ventwise_core.domain.decision_contracts import (
     RecommendationAction,
     RecommendationSummary,
     RoomRecommendation,
@@ -250,8 +250,8 @@ def test_build_room_profiles_only_reads_co2_for_enabled_rooms() -> None:
 
 
 def test_find_room_recommendation_matches_legacy_room_without_room_id() -> None:
-    from custom_components.ventwise.application.runtime import find_room_recommendation
-    from custom_components.ventwise.ventwise_core import RecommendationAction, RoomRecommendation
+    from custom_components.ventwise.application.runtime.integration_runtime import find_room_recommendation
+    from ventwise_core import RecommendationAction, RoomRecommendation
 
     recommendation = RoomRecommendation(
         room_name="Bedroom",

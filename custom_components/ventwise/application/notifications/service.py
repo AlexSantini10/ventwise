@@ -11,9 +11,9 @@ from pathlib import Path
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from ..ventwise_core import RecommendationSummary
-from ..ventwise_core.models import RoomRecommendation
-from ..const import LAB_NOTIFICATION_ENTITY_ID
+from ventwise_core import RecommendationSummary
+from ventwise_core.domain.decision_contracts import RoomRecommendation
+from ...const import LAB_NOTIFICATION_ENTITY_ID
 
 _LOGGER = logging.getLogger(__name__)
 _PERSISTENT_RECOMMENDATION_ID = "ventwise_recommendation"
@@ -21,7 +21,7 @@ _PERSISTENT_ON_DEMAND_RECOMMENDATION_ID = "ventwise_on_demand_recommendation"
 _PERSISTENT_DELIVERY_FAILURE_ID = "ventwise_notification_delivery_failure"
 _PERSISTENT_DIAGNOSTIC_ID = "ventwise_diagnostic"
 _LANGUAGE_PREFIXES: tuple[str, ...] = ("en", "it", "es", "fr", "de", "ru", "zh-hans")
-_NOTIFICATION_CATALOG_DIR = Path(__file__).parents[1] / "translations" / "notifications"
+_NOTIFICATION_CATALOG_DIR = Path(__file__).parents[2] / "translations" / "notifications"
 _NOTIFICATION_CATALOG: dict[str, dict[str, str]] = {
     path.stem.lower(): json.loads(path.read_text(encoding="utf-8"))
     for path in _NOTIFICATION_CATALOG_DIR.glob("*.json")

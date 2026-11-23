@@ -9,7 +9,7 @@ import sys
 from datetime import datetime, timezone
 
 from ventwise_core import (
-    DecisionContext,
+    DecisionRuntimeContext,
     DecisionEngine,
     DecisionOutdoor,
     DecisionRoom,
@@ -19,8 +19,8 @@ from ventwise_core import (
     RecommendationSummary,
     RoomRecommendation,
 )
-from custom_components.ventwise.application.runtime import build_delivered_result
-from ventwise_core.serialization import (
+from custom_components.ventwise.application.runtime.integration_runtime import build_delivered_result
+from ventwise_core.serialization.json_codec import (
     evaluate_scenario,
     snapshot_from_dict,
     snapshot_to_dict,
@@ -120,7 +120,7 @@ def test_standalone_core_keeps_core_action_independent_of_delivery_filters():
             (room,),
             outdoor,
             NOW,
-            context=DecisionContext(quiet_hours_active=True),
+            context=DecisionRuntimeContext(quiet_hours_active=True),
         )
     ).room_results[0]
     assert result.core_action is RecommendationAction.OPEN

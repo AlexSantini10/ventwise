@@ -8,8 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
 from .application.coordinator import VentWiseCoordinator
-from .application.notification import build_recommendation_explanation, build_recommendation_status
-from .application.runtime import (
+from .application.notifications.service import build_recommendation_explanation, build_recommendation_status
+from .application.runtime.integration_runtime import (
     RoomConfig,
     WINDOW_STATE_NOT_CONFIGURED,
     build_debug_attributes,
@@ -20,7 +20,7 @@ from .application.runtime import (
     state_to_temperature_c,
 )
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
-from .ventwise_core import (
+from ventwise_core import (
     RecommendationAction,
     absolute_humidity_g_m3,
     humidity_ratio_g_kg,

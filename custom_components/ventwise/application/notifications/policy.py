@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 
 
 @dataclass(frozen=True, slots=True)

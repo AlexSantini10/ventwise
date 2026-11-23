@@ -28,7 +28,7 @@ from ..const import (
     DEFAULT_WIND_SPEED_UNIT,
     NAME,
 )
-from .flow import (
+from .configuration_helpers import (
     ConfigValidationError,
     build_room_schema,
     build_room_unit_schema,

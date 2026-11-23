@@ -31,7 +31,7 @@ from .const import (
     NAME,
     CONF_WIND_SPEED_OVERRIDE,
 )
-from .configuration.flow import (
+from .configuration.configuration_helpers import (
     ConfigValidationError,
     build_config_schema,
     build_outdoor_override_schema,

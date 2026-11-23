@@ -50,7 +50,7 @@ from custom_components.ventwise.const import (
     DOMAIN,
 )
 from custom_components.ventwise.application.coordinator import VentWiseCoordinator
-from custom_components.ventwise.application.notification import async_send_notification
+from custom_components.ventwise.application.notifications.service import async_send_notification
 from custom_components.ventwise.application import coordinator as coordinator_module
 from custom_components.ventwise import IntegrationRuntimeData
 from ventwise_core import RecommendationAction

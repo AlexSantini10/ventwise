@@ -49,7 +49,7 @@ from custom_components.ventwise.const import (
     OUTDOOR_SOURCE_FORECAST,
     OUTDOOR_SOURCE_OVERRIDE,
 )
-from custom_components.ventwise.configuration.flow import (
+from custom_components.ventwise.configuration.configuration_helpers import (
     ConfigValidationError,
     build_advanced_options_schema,
     build_basic_options_schema,
@@ -152,7 +152,7 @@ def test_notification_device_options_include_only_devices_with_notify_entities(
 ) -> None:
     """The notification picker must store notify entities, not volatile device IDs."""
 
-    from custom_components.ventwise.configuration import flow
+    from custom_components.ventwise.configuration import configuration_helpers as flow
 
     entity_registry = SimpleNamespace(
         entities={

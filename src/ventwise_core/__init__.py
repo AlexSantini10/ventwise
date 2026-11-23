@@ -1,14 +1,14 @@
 """Standalone, deterministic VentWise decision core."""
 
-from .models import (
+from .domain.decision_contracts import (
     AggregateDecisionResult,
     Availability,
     CandidateScores,
-    DecisionEvaluationContext,
+    OptionEvaluationContext,
     DecisionOption,
     ComfortObservation,
     DataQualitySummary,
-    DecisionContext,
+    DecisionRuntimeContext,
     DecisionOutdoor,
     ExternalConditions,
     DecisionResult,
@@ -30,14 +30,14 @@ from .models import (
     OptionEvaluation,
     Validity,
 )
-from .decision import DecisionConfig, DecisionEngine
-from .pipeline import (
+from .engine.decision_engine import DecisionConfig, DecisionEngine
+from .engine.evaluation_pipeline import (
     DecisionOptionGenerator,
     OptionEligibilityPolicy,
     ExpectedEffectEstimator,
     DecisionOptionScorer,
 )
-from .psychrometrics import (
+from .calculations.psychrometrics import (
     DEFAULT_PRESSURE_HPA,
     absolute_humidity_g_m3,
     humidity_ratio_g_kg,
@@ -50,7 +50,7 @@ from .psychrometrics import (
     saturation_vapor_pressure_hpa,
     vapor_pressure_hpa,
 )
-from .serialization import (
+from .serialization.json_codec import (
     SCHEMA_VERSION,
     aggregate_result_to_dict,
     config_to_dict,
@@ -63,10 +63,10 @@ from .serialization import (
 __all__ = [
     "ComfortObservation", "AggregateDecisionResult", "Availability",
     "CandidateScores", "DataQualitySummary", "DecisionConfig",
-    "DecisionEvaluationContext", "DecisionOption", "ExpectedEffect",
+    "OptionEvaluationContext", "DecisionOption", "ExpectedEffect",
     "OptionEligibility", "OptionEvaluation", "DecisionOptionGenerator",
     "OptionEligibilityPolicy", "ExpectedEffectEstimator", "DecisionOptionScorer",
-    "DecisionContext", "DecisionEngine", "DecisionOutdoor",
+    "DecisionRuntimeContext", "DecisionEngine", "DecisionOutdoor",
     "ExternalConditions", "DecisionResult", "DecisionRoom",
     "DecisionSnapshot", "ForecastObservation", "Observation",
     "RecommendationAction", "RecommendationSummary", "RoomObservation",
