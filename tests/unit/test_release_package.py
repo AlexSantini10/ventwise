@@ -49,7 +49,8 @@ def test_release_package_core_runs_without_the_repository_on_pythonpath(tmp_path
     with ZipFile(output) as archive:
         archive.extractall(extracted)
 
-    scenario = extracted / "scenario.json"
+    integration = extracted
+    scenario = integration / "scenario.json"
     scenario.write_text(
         '{"evaluated_at":"2026-11-17T12:00:00+00:00",'
         '"rooms":[],"outdoor":{"temperature_c":null,"humidity_percent":null}}',
@@ -57,7 +58,7 @@ def test_release_package_core_runs_without_the_repository_on_pythonpath(tmp_path
     )
     result = subprocess.run(
         [sys.executable, "-m", "ventwise_core", str(scenario)],
-        cwd=extracted,
+        cwd=integration,
         env=os.environ.copy(),
         capture_output=True,
         text=True,

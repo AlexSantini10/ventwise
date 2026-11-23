@@ -20,14 +20,24 @@ from .application.runtime.integration_runtime import (
     state_to_temperature_c,
 )
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
-from ventwise_core import (
-    RecommendationAction,
-    absolute_humidity_g_m3,
-    humidity_ratio_g_kg,
-    moisture_exchange_direction,
-    pressure_hpa_or_default,
-    vapor_pressure_hpa,
-)
+try:
+    from .ventwise_core import (
+        RecommendationAction,
+        absolute_humidity_g_m3,
+        humidity_ratio_g_kg,
+        moisture_exchange_direction,
+        pressure_hpa_or_default,
+        vapor_pressure_hpa,
+    )
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import (
+        RecommendationAction,
+        absolute_humidity_g_m3,
+        humidity_ratio_g_kg,
+        moisture_exchange_direction,
+        pressure_hpa_or_default,
+        vapor_pressure_hpa,
+    )
 from .units import (
     display_value,
     normalize_measurement,

@@ -7,32 +7,60 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, time
 from typing import Any
 
-from ventwise_core import (
-    AggregateDecisionResult,
-    Availability,
-    ComfortObservation,
-    DecisionConfig,
-    DecisionRuntimeContext,
-    DecisionEngine,
-    ExternalConditions,
-    DecisionRoom,
-    DecisionSnapshot,
-    ForecastObservation,
-    Observation,
-    RecommendationAction,
-    RecommendationSummary,
-    RoomObservation,
-    RoomGuardrailState,
-    RoomProfile,
-    SourceReading,
-    RoomRecommendation,
-    TraceEntry,
-)
-from ventwise_core.serialization.json_codec import (
-    aggregate_result_to_dict,
-    result_to_dict,
-    snapshot_to_dict,
-)
+try:
+    from ...ventwise_core import (
+        AggregateDecisionResult,
+        Availability,
+        ComfortObservation,
+        DecisionConfig,
+        DecisionRuntimeContext,
+        DecisionEngine,
+        ExternalConditions,
+        DecisionRoom,
+        DecisionSnapshot,
+        ForecastObservation,
+        Observation,
+        RecommendationAction,
+        RecommendationSummary,
+        RoomObservation,
+        RoomGuardrailState,
+        RoomProfile,
+        SourceReading,
+        RoomRecommendation,
+        TraceEntry,
+    )
+    from ...ventwise_core.serialization.json_codec import (
+        aggregate_result_to_dict,
+        result_to_dict,
+        snapshot_to_dict,
+    )
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import (
+        AggregateDecisionResult,
+        Availability,
+        ComfortObservation,
+        DecisionConfig,
+        DecisionRuntimeContext,
+        DecisionEngine,
+        ExternalConditions,
+        DecisionRoom,
+        DecisionSnapshot,
+        ForecastObservation,
+        Observation,
+        RecommendationAction,
+        RecommendationSummary,
+        RoomObservation,
+        RoomGuardrailState,
+        RoomProfile,
+        SourceReading,
+        RoomRecommendation,
+        TraceEntry,
+    )
+    from ventwise_core.serialization.json_codec import (
+        aggregate_result_to_dict,
+        result_to_dict,
+        snapshot_to_dict,
+    )
 
 from ...const import (
     CONF_AUTO_COMFORT_TEMPERATURE,

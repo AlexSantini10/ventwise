@@ -11,7 +11,10 @@ from .const import DOMAIN
 from .application.coordinator import VentWiseCoordinator
 from .application.runtime.integration_runtime import RoomConfig
 from .entities.base import VentWiseEntity, VentWiseRoomEntity
-from ventwise_core import RecommendationAction
+try:
+    from .ventwise_core import RecommendationAction
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import RecommendationAction
 
 _DEBUG_BUTTON_SUFFIXES = ("_debug_open_notification", "_debug_close_notification")
 

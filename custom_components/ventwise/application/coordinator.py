@@ -18,19 +18,34 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from ventwise_core import (
-    DecisionEngine,
-    ForecastObservation,
-    perceived_temperature_c,
-    RecommendationAction,
-    RecommendationSummary,
-)
-from ventwise_core.domain.constants import (
-    COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C,
-    COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C,
-    MAX_COMFORT_TEMPERATURE_C,
-    MIN_COMFORT_TEMPERATURE_C,
-)
+try:
+    from ..ventwise_core import (
+        DecisionEngine,
+        ForecastObservation,
+        perceived_temperature_c,
+        RecommendationAction,
+        RecommendationSummary,
+    )
+    from ..ventwise_core.domain.constants import (
+        COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C,
+        COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C,
+        MAX_COMFORT_TEMPERATURE_C,
+        MIN_COMFORT_TEMPERATURE_C,
+    )
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import (
+        DecisionEngine,
+        ForecastObservation,
+        perceived_temperature_c,
+        RecommendationAction,
+        RecommendationSummary,
+    )
+    from ventwise_core.domain.constants import (
+        COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C,
+        COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C,
+        MAX_COMFORT_TEMPERATURE_C,
+        MIN_COMFORT_TEMPERATURE_C,
+    )
 
 from .runtime.integration_runtime import (
     IntegrationConfig,

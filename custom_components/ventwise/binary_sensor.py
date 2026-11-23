@@ -6,7 +6,10 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from ventwise_core import RecommendationAction
+try:
+    from .ventwise_core import RecommendationAction
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import RecommendationAction
 
 from .application.coordinator import VentWiseCoordinator
 from .application.runtime.integration_runtime import find_room_recommendation

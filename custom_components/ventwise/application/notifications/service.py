@@ -11,8 +11,12 @@ from pathlib import Path
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from ventwise_core import RecommendationSummary
-from ventwise_core.domain.decision_contracts import RoomRecommendation
+try:
+    from ...ventwise_core import RecommendationSummary
+    from ...ventwise_core.domain.decision_contracts import RoomRecommendation
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import RecommendationSummary
+    from ventwise_core.domain.decision_contracts import RoomRecommendation
 from ...const import LAB_NOTIFICATION_ENTITY_ID
 
 _LOGGER = logging.getLogger(__name__)

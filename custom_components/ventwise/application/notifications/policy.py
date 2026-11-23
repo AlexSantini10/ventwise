@@ -10,7 +10,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ventwise_core import RecommendationAction
+try:
+    from ...ventwise_core import RecommendationAction
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import RecommendationAction
 
 
 @dataclass(frozen=True, slots=True)
