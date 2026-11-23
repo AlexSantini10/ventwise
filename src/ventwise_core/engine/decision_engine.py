@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta
 from math import isfinite
 
@@ -21,6 +21,8 @@ from ..domain.decision_contracts import (
     TraceEntry,
     Validity,
 )
+from ..domain.baseline import BaselineAssessment
+from ..domain.results import CandidateAssessment
 from ..domain.constants import (
     COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C,
     COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C,
@@ -68,6 +70,16 @@ from .evaluation_pipeline import (
     TraceExpectedEffectEstimator,
     TraceOptionEligibilityPolicy,
 )
+from .baseline_assessor import DefaultBaselineAssessor
+from .contracts import BaselineAssessor, ImpactEstimator, Objective
+from .heuristic_impact_estimator import HeuristicImpactEstimator
+from .candidate_selector import HighestNetBenefitSelector
+from .objective_registry import (
+    CarbonDioxideObjective,
+    MoistureExchangeObjective,
+    ObjectiveRegistry,
+    ThermalComfortObjective,
+)
 from ..calculations.psychrometrics import absolute_humidity_g_m3, perceived_temperature_c, pressure_hpa_or_default
 
 
@@ -100,12 +112,28 @@ class DecisionEngine:
         eligibility_policy: OptionEligibilityPolicy | None = None,
         effect_estimator: ExpectedEffectEstimator | None = None,
         option_scorer: DecisionOptionScorer | None = None,
+        baseline_assessor: BaselineAssessor | None = None,
+        impact_estimator: ImpactEstimator | None = None,
+        objectives: tuple[Objective, ...] | None = None,
+        candidate_selector=None,
     ) -> None:
         self.config = config or DecisionConfig()
         self.option_generator = option_generator or DefaultDecisionOptionGenerator()
         self.eligibility_policy = eligibility_policy or TraceOptionEligibilityPolicy()
         self.effect_estimator = effect_estimator or TraceExpectedEffectEstimator()
         self.option_scorer = option_scorer or ExistingScoreProjection()
+        self.baseline_assessor = baseline_assessor or DefaultBaselineAssessor()
+        self.impact_estimator = impact_estimator or HeuristicImpactEstimator()
+        self.objective_registry = ObjectiveRegistry(
+            objectives
+            if objectives is not None
+            else (
+                ThermalComfortObjective(self.config.target_temperature_c),
+                MoistureExchangeObjective(),
+                CarbonDioxideObjective(),
+            )
+        )
+        self.candidate_selector = candidate_selector or HighestNetBenefitSelector()
 
     def evaluate(self, snapshot: DecisionSnapshot) -> AggregateDecisionResult:
         results = tuple(
@@ -385,12 +413,37 @@ class DecisionEngine:
             candidate_scores=scores,
             selected_action=core,
         )
+        baseline_assessment = self.baseline_assessor.assess(room)
         evaluations = []
+        candidate_assessments = []
         for option in self.option_generator.generate(context):
             eligibility = self.eligibility_policy.check(context, option)
             effect = self.effect_estimator.estimate(context, option, DEFAULT_VENTILATION_DURATION_MINUTES)
-            evaluations.append(self.option_scorer.evaluate(context, option, eligibility, effect))
-        return DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), option_evaluations=tuple(evaluations), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state, guardrail_state=guardrail_state)
+            impact = self.impact_estimator.estimate(room, snapshot, option) if snapshot is not None else None
+            objective_assessment = (
+                self.objective_registry.assess(room, snapshot, baseline_assessment, option, impact)
+                if snapshot is not None and impact is not None
+                else None
+            )
+            option_evaluation = self.option_scorer.evaluate(context, option, eligibility, effect)
+            evaluations.append(
+                replace(
+                    option_evaluation,
+                    baseline_assessment=baseline_assessment,
+                    impact_estimate=impact,
+                    objective_assessment=objective_assessment,
+                )
+            )
+            candidate_assessments.append(
+                CandidateAssessment(option, eligibility, impact, objective_assessment, baseline_assessment)
+            )
+        selection = self.candidate_selector.select(tuple(candidate_assessments))
+        result = DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), option_evaluations=tuple(evaluations), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state, guardrail_state=guardrail_state)
+        return replace(
+            result,
+            candidate_assessments=tuple(candidate_assessments),
+            selection_reason_code=selection.reason_code,
+        )
 
 
 def _determine_baseline(room: DecisionRoom) -> str:

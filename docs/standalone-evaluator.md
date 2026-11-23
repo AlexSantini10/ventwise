@@ -38,7 +38,9 @@ strings are not part of the comparison contract.
 
 Each room result also exposes structured `option_evaluations` for `open`,
 `ventilate`, `close`, and `none`. The legacy `trace` and `candidate_scores`
-fields remain available for existing consumers.
+fields remain available for existing consumers. Each option evaluation also
+contains its explicit baseline assessment, heuristic impact estimate, and
+objective contributions.
 
 Home Assistant diagnostics expose the same normalized snapshot and core
 result, together with `delivered_result` and explicit delivery

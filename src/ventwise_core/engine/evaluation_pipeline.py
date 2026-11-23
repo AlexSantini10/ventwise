@@ -91,6 +91,14 @@ class TraceOptionEligibilityPolicy:
             return OptionEligibility(False, evidence, reason_code=evidence[0].code)
         return OptionEligibility(True)
 
+    def evaluate(self, room, snapshot, candidate) -> OptionEligibility:
+        """Adapt the domain constraint contract to the compatibility context."""
+
+        return self.check(
+            OptionEvaluationContext(room=room, snapshot=snapshot, config=None),
+            candidate,
+        )
+
 
 class TraceExpectedEffectEstimator:
     """Expose current component/objective trace entries as effect evidence."""

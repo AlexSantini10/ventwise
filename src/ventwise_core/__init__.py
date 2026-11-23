@@ -31,6 +31,19 @@ from .domain.decision_contracts import (
     Validity,
 )
 from .engine.decision_engine import DecisionConfig, DecisionEngine
+from .domain.baseline import BaselineAssessment, BaselineState
+from .domain.impacts import ImpactEstimate
+from .domain.objectives import ObjectiveAssessment, ObjectiveContribution
+from .engine.baseline_assessor import DefaultBaselineAssessor
+from .engine.heuristic_impact_estimator import HeuristicImpactEstimator
+from .domain.results import CandidateAssessment, SelectionResult
+from .engine.candidate_selector import HighestNetBenefitSelector
+from .engine.objective_registry import (
+    CarbonDioxideObjective,
+    MoistureExchangeObjective,
+    ObjectiveRegistry,
+    ThermalComfortObjective,
+)
 from .engine.evaluation_pipeline import (
     DecisionOptionGenerator,
     OptionEligibilityPolicy,
@@ -67,6 +80,11 @@ __all__ = [
     "OptionEligibility", "OptionEvaluation", "DecisionOptionGenerator",
     "OptionEligibilityPolicy", "ExpectedEffectEstimator", "DecisionOptionScorer",
     "DecisionRuntimeContext", "DecisionEngine", "DecisionOutdoor",
+    "BaselineAssessment", "BaselineState", "ImpactEstimate",
+    "ObjectiveAssessment", "ObjectiveContribution", "ObjectiveRegistry",
+    "ThermalComfortObjective", "MoistureExchangeObjective", "CarbonDioxideObjective",
+    "DefaultBaselineAssessor", "HeuristicImpactEstimator",
+    "CandidateAssessment", "SelectionResult", "HighestNetBenefitSelector",
     "ExternalConditions", "DecisionResult", "DecisionRoom",
     "DecisionSnapshot", "ForecastObservation", "Observation",
     "RecommendationAction", "RecommendationSummary", "RoomObservation",

@@ -48,12 +48,17 @@ Environmental evaluation and notification delivery are separate concerns.
 Quiet hours and cooldowns can suppress non-critical delivery, but must not
 change the engine's environmental result.
 
-The core exposes explicit seams for the evaluation pipeline. A
-`OptionEvaluationContext` is passed to a `DecisionOptionGenerator`, then to
-an `OptionEligibilityPolicy`, an `ExpectedEffectEstimator`, and a
-`DecisionOptionScorer`. The result contains one `OptionEvaluation` per option,
-including blocked and non-selected options. The existing trace and candidate
-score fields remain compatibility projections of these evaluations.
+The core exposes explicit seams for the evaluation pipeline. A baseline
+assessor establishes the maintained state first. Each candidate then passes
+through constraint evaluation, impact estimation, and the registered
+objectives before selection. The implemented contracts are
+`BaselineAssessor`, `ImpactEstimator`, `Objective`, `CandidateGenerator`,
+`ConstraintPolicy`, and `CandidateSelector` under `src/ventwise_core/engine/`.
+
+The result contains one `OptionEvaluation` per option, including baseline
+assessment, impact estimate, objective contributions, blocked alternatives,
+and non-selected options. Existing trace and candidate-score fields remain
+compatibility projections of these structured assessments.
 
 ## Pipeline stages
 
@@ -127,12 +132,12 @@ complete air replacement.
 
 ### Impact estimation
 
-`HeuristicImpactEstimator` is the initial proposed estimator. It reports
+`HeuristicImpactEstimator` is the active conservative estimator. It reports
 direction, normalized magnitude, and confidence for temperature, humidity, and
 CO2 without inventing future degrees or ppm values that the model cannot
 justify.
 
-`CalibratedImpactEstimator` is a later option. It may produce trajectories
+`CalibratedImpactEstimator` remains a later option. It may produce trajectories
 using local air-exchange rate, thermal inertia, occupancy, and other validated
 parameters. It must return assumptions, confidence, and an explicit fallback.
 

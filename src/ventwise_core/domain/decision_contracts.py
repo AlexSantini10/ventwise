@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Generic, Tuple, TypeVar
+from typing import TYPE_CHECKING, Generic, Tuple, TypeVar
+
+if TYPE_CHECKING:
+    from .baseline import BaselineAssessment
+    from .impacts import ImpactEstimate
+    from .objectives import ObjectiveAssessment
+    from .results import CandidateAssessment
 
 
 T = TypeVar("T")
@@ -308,6 +314,9 @@ class OptionEvaluation:
     confidence: float = 0.0
     selected: bool = False
     reason_code: str = "not_selected"
+    baseline_assessment: "BaselineAssessment | None" = None
+    impact_estimate: "ImpactEstimate | None" = None
+    objective_assessment: "ObjectiveAssessment | None" = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -359,6 +368,8 @@ class DecisionResult:
     co2_influence: float = 0.0
     quality: Availability = Availability.AVAILABLE
     guardrail_state: RoomGuardrailState | None = None
+    candidate_assessments: Tuple["CandidateAssessment", ...] = ()
+    selection_reason_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
