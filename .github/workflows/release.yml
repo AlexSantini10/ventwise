@@ -96,9 +96,11 @@ jobs:
           expected.update({"README.md", "LICENSE", "NOTICE", "hacs.json"})
           core_dir = repo_root / "src" / "ventwise_core"
           expected.update(
-              f"ventwise_core/{path.name}"
-              for path in core_dir.iterdir()
-              if path.is_file() and path.suffix != ".pyc"
+              f"ventwise_core/{path.relative_to(core_dir).as_posix()}"
+              for path in core_dir.rglob("*")
+              if path.is_file()
+              and "__pycache__" not in path.parts
+              and path.suffix != ".pyc"
           )
 
           if any(entry.startswith("custom_components/ventwise/") for entry in entries):
