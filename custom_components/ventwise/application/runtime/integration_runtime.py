@@ -15,6 +15,7 @@ try:
         DecisionConfig,
         DecisionRuntimeContext,
         DecisionEngine,
+        DecisionResult,
         ExternalConditions,
         DecisionRoom,
         DecisionSnapshot,
@@ -42,6 +43,7 @@ except ImportError:  # Local source-tree development uses the standalone package
         DecisionConfig,
         DecisionRuntimeContext,
         DecisionEngine,
+        DecisionResult,
         ExternalConditions,
         DecisionRoom,
         DecisionSnapshot,
@@ -975,7 +977,7 @@ def build_debug_attributes(
     config: IntegrationConfig,
     snapshot: RuntimeSnapshot,
 ) -> dict[str, Any]:
-    """Build user-friendly debug attributes for VentWise entities."""
+    """Build compact, Recorder-safe debug attributes for VentWise entities."""
 
     summary = snapshot.summary
     room_details = [
@@ -1024,35 +1026,9 @@ def build_debug_attributes(
         "safety_bypass_quiet_hours": config.safety_bypass_quiet_hours,
         "room_recommendations": room_details,
         "best_room_recommendation": best_room_details,
-        "normalized_input_snapshot": (
-            snapshot_to_dict(snapshot.core_snapshot)
-            if snapshot.core_snapshot is not None
-            else None
-        ),
-        "core_result": (
-            aggregate_result_to_dict(snapshot.core_result)
-            if snapshot.core_result is not None
-            else None
-        ),
-        "calculated_result": (
-            aggregate_result_to_dict(snapshot.calculated_result)
-            if snapshot.calculated_result is not None
-            else None
-        ),
-        "delivered_result": (
-            aggregate_result_to_dict(snapshot.delivered_result)
-            if snapshot.delivered_result is not None
-            else None
-        ),
-        "decision_context": (
-            snapshot_to_dict(snapshot.core_snapshot).get("context")
-            if snapshot.core_snapshot is not None
-            else None
-        ),
-        "delivery_transformations": _delivery_transformations(
-            snapshot.core_result,
-            snapshot.delivered_result,
-        ),
+        "rooms_evaluated": len(config.rooms),
+        "decision_trace_codes": _trace_codes(snapshot.core_result),
+        "delivery_trace_codes": _trace_codes(snapshot.delivered_result),
     }
 
 
@@ -1102,7 +1078,7 @@ def build_room_diagnostic_attributes(
     snapshot: RuntimeSnapshot,
     room_id: str,
 ) -> dict[str, Any]:
-    """Return the complete structured core/delivery view for one room."""
+    """Return a compact structured core/delivery view for one room."""
 
     core = next(
         (item for item in (snapshot.core_result.room_results if snapshot.core_result else ())
@@ -1119,36 +1095,76 @@ def build_room_diagnostic_attributes(
          if item.room_id == room_id),
         None,
     )
-    normalized = snapshot_to_dict(snapshot.core_snapshot) if snapshot.core_snapshot else None
-    room_input = None
-    if normalized is not None:
-        room_input = next(
-            (item for item in normalized["rooms"] if item["room_id"] == room_id),
-            None,
-        )
+    room_input = _compact_room_input(snapshot.core_snapshot, room_id)
     return {
         "normalized_input": {
             "room": room_input,
-            "outdoor": normalized["outdoor"] if normalized else None,
-            "evaluated_at": normalized["evaluated_at"] if normalized else None,
+            "evaluated_at": (
+                snapshot.core_snapshot.evaluated_at.isoformat()
+                if snapshot.core_snapshot
+                else None
+            ),
         },
-        "core_result": result_to_dict(core) if core else None,
-        "calculated_result": result_to_dict(calculated) if calculated else None,
-        "delivered_result": result_to_dict(delivered) if delivered else None,
-        "aggregate_core_result": (
-            aggregate_result_to_dict(snapshot.core_result)
-            if snapshot.core_result
-            else None
-        ),
-        "aggregate_delivered_result": (
-            aggregate_result_to_dict(snapshot.delivered_result)
-            if snapshot.delivered_result
-            else None
-        ),
+        "core_result": _compact_decision_result(core),
+        "calculated_result": _compact_decision_result(calculated),
+        "delivered_result": _compact_decision_result(delivered),
         "core_action": core.core_action.value if core else RecommendationAction.NONE.value,
         "calculated_action": calculated.core_action.value if calculated else RecommendationAction.NONE.value,
         "delivered_action": delivered.delivered_action.value if delivered else RecommendationAction.NONE.value,
         "delivery_suppressed_by": delivered.delivery_suppressed_by if delivered else None,
+    }
+
+
+def _trace_codes(result: AggregateDecisionResult | None) -> list[str]:
+    """Return bounded trace identifiers suitable for entity attributes."""
+
+    if result is None:
+        return []
+    return list(dict.fromkeys(entry.code for entry in result.trace))[:32]
+
+
+def _compact_decision_result(result: DecisionResult | None) -> dict[str, Any] | None:
+    """Project a result to the stable fields useful in a Home Assistant state."""
+
+    if result is None:
+        return None
+    return {
+        "room_id": result.room_id,
+        "core_action": result.core_action.value,
+        "delivered_action": result.delivered_action.value,
+        "score": round(result.score, 4),
+        "confidence": round(result.confidence, 4),
+        "reason_code": result.reason_code,
+        "reason": result.reason,
+        "candidate_scores": {
+            "open": round(result.candidate_scores.open, 4),
+            "ventilate": round(result.candidate_scores.ventilate, 4),
+            "close": round(result.candidate_scores.close, 4),
+            "none": round(result.candidate_scores.none, 4),
+        },
+        "quality": result.quality.value,
+        "delivery_suppressed_by": result.delivery_suppressed_by,
+        "trace_codes": list(dict.fromkeys(entry.code for entry in result.trace))[:32],
+    }
+
+
+def _compact_room_input(snapshot: DecisionSnapshot | None, room_id: str) -> dict[str, Any] | None:
+    """Project normalized room input without serializing source metadata."""
+
+    if snapshot is None:
+        return None
+    room = next((item for item in snapshot.rooms if item.room_id == room_id), None)
+    if room is None:
+        return None
+    return {
+        "room_id": room.room_id,
+        "name": room.name,
+        "temperature_c": room.temperature_c.value,
+        "humidity_percent": room.humidity_percent.value if room.humidity_percent else None,
+        "co2_ppm": room.co2_ppm.value if room.co2_ppm else None,
+        "window_open": room.window_open.value if room.window_open else None,
+        "target_temperature_c": room.target_temperature_c,
+        "target_humidity_percent": room.target_humidity_percent,
     }
 
 

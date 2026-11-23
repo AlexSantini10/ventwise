@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 from datetime import datetime, time, timezone
 
@@ -638,6 +639,10 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         == summary.room_recommendations[0].suggested_comfort_temperature_c
     )
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
+    encoded = json.dumps(attributes, separators=(",", ":"))
+    assert len(encoded.encode("utf-8")) < 16_384
+    assert "core_result" not in attributes
+    assert "normalized_input_snapshot" not in attributes
 
 
 def test_room_target_temperature_prefers_enabled_override() -> None:
