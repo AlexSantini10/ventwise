@@ -6,8 +6,11 @@ from types import SimpleNamespace
 
 import pytest
 
-pytest.importorskip("voluptuous")
 pytest.importorskip("homeassistant")
+try:
+    import probatio  # noqa: F401
+except ModuleNotFoundError:
+    pytest.importorskip("voluptuous")
 
 from custom_components.ventwise.const import (
     CONF_DEBUG_MODE_ENABLED,

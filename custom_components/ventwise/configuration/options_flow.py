@@ -5,7 +5,10 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-import voluptuous as vol
+try:
+    import probatio as vol
+except ModuleNotFoundError:  # Home Assistant versions before the probatio migration
+    import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig

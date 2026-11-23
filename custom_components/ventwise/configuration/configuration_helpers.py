@@ -8,7 +8,10 @@ from dataclasses import dataclass
 from uuid import uuid4
 from typing import Sequence
 
-import voluptuous as vol
+try:
+    import probatio as vol
+except ModuleNotFoundError:  # Home Assistant versions before the probatio migration
+    import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
