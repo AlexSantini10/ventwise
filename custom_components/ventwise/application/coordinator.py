@@ -645,8 +645,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     async def async_set_enabled(self, enabled: bool) -> None:
         """Persist the master enable flag in config entry options."""
 
-        self._update_entry_options({"enabled": enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({"enabled": enabled})
 
     async def _async_forecast(self, now: datetime) -> ForecastObservation | None:
         """Return the most relevant hourly forecast within the next two hours."""
@@ -736,56 +735,48 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     async def async_set_notification_enabled(self, enabled: bool) -> None:
         """Persist the notification enable flag in config entry options."""
 
-        self._update_entry_options({CONF_NOTIFICATION_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_NOTIFICATION_ENABLED: enabled})
 
     async def async_set_quiet_hours_enabled(self, enabled: bool) -> None:
         """Persist the quiet-hours enable flag in config entry options."""
 
-        self._update_entry_options({CONF_QUIET_HOURS_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_QUIET_HOURS_ENABLED: enabled})
 
     async def async_set_stability_minutes(self, minutes: int) -> None:
         """Persist the global stability window in config entry options."""
 
-        self._update_entry_options({CONF_STABILITY_MINUTES: minutes})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_STABILITY_MINUTES: minutes})
 
     async def async_set_target_temperature(self, temperature_c: float) -> None:
         """Persist the global comfort temperature in config entry options."""
 
-        self._update_entry_options({CONF_TARGET_TEMPERATURE_C: temperature_c})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_TARGET_TEMPERATURE_C: temperature_c})
 
     async def async_set_auto_comfort_temperature_enabled(self, enabled: bool) -> None:
         """Persist the automatic comfort temperature flag in config entry options."""
 
-        self._update_entry_options({CONF_AUTO_COMFORT_TEMPERATURE: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_AUTO_COMFORT_TEMPERATURE: enabled})
 
     async def async_set_target_humidity(self, humidity_percent: float) -> None:
         """Persist the global comfort humidity in config entry options."""
 
-        self._update_entry_options({CONF_TARGET_HUMIDITY_PERCENT: humidity_percent})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_TARGET_HUMIDITY_PERCENT: humidity_percent})
 
     async def async_set_quiet_hours_start(self, value: str) -> None:
         """Persist the global quiet-hours start time in config entry options."""
 
-        self._update_entry_options({CONF_QUIET_HOURS_START: value})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_QUIET_HOURS_START: value})
 
     async def async_set_quiet_hours_end(self, value: str) -> None:
         """Persist the global quiet-hours end time in config entry options."""
 
-        self._update_entry_options({CONF_QUIET_HOURS_END: value})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_QUIET_HOURS_END: value})
 
     async def async_set_room_enabled(self, room_key: str, enabled: bool) -> None:
         """Persist the enabled flag for one room."""
 
         self._update_room(room_key, {CONF_ROOM_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_temperature_override_enabled(
         self,
@@ -795,7 +786,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the temperature override enable flag for one room."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_temperature_override(
         self,
@@ -805,7 +796,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the room comfort temperature override."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: temperature_c})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_humidity_override_enabled(
         self,
@@ -815,7 +806,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the humidity override enable flag for one room."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_humidity_override(
         self,
@@ -825,7 +816,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the room comfort humidity override."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE: humidity_percent})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
         return (summary.action.value, summary.best_room or "")
@@ -1049,6 +1040,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._config_entry,
             options={**self._config_entry.options, **updates},
         )
+
+    async def _async_apply_options(self, updates: dict[str, Any]) -> None:
+        """Apply options and wait until all entities expose the new state."""
+
+        self._update_entry_options(updates)
+        await self._async_reload_after_options_update()
+
+    async def _async_reload_after_options_update(self) -> None:
+        """Schedule the standard Home Assistant config-entry reload."""
+
+        self.hass.config_entries.async_schedule_reload(self._config_entry.entry_id)
 
     def _update_room(self, room_key: str, updates: dict[str, Any]) -> None:
         options = dict(self._config_entry.options)

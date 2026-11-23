@@ -69,6 +69,10 @@ installed in CI.
   duplicates, and use the configured notify service target
 - persisted state is reloaded after restart
 - debug attributes expose summary and per-room details
+- every configuration save completes only after the entry reload and entity states
+  expose the new settings; no previous sensor value may remain visible
+- verify the same behavior for Options Flow settings and direct switch, number,
+  and time entity controls; ordinary source-sensor events use coordinator refresh
 
 ## Local Workflow
 

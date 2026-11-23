@@ -243,7 +243,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         self._rooms.pop(self._selected_room_index)
         self._selected_room_index = None
         self._persist_rooms()
-        return await self.async_step_rooms()
+        return self.async_create_entry(title=NAME, data=self._result_data())
 
     async def async_step_remove_room_select(self, user_input: dict[str, Any] | None = None):
         """Handle the translated removal confirmation step."""
@@ -255,9 +255,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
 
         if user_input is not None:
             return self.async_abort(reason="invalid_step")
-        return self.async_create_entry(
-            title=NAME, data=dict(getattr(self._config_entry, "options", {}))
-        )
+        return self.async_create_entry(title=NAME, data=self._result_data())
 
     async def _handle_room_step(
         self,
@@ -283,9 +281,15 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                         if field not in user_input:
                             room_input[field] = empty_value
                 room = normalize_room_config(room_input, room_kind)
+                pending_index = room_index if room_index is not None else len(self._rooms)
+                if pending_index == len(self._rooms):
+                    self._rooms.append(room)
+                else:
+                    self._rooms[pending_index] = room
+                self._persist_rooms()
                 self._pending_room_input = room
                 self._pending_room_kind = room_kind
-                self._pending_room_index = room_index
+                self._pending_room_index = pending_index
                 return await self.async_step_room_units()
             except ConfigValidationError as err:
                 errors[err.field] = err.message
@@ -325,7 +329,7 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 self._pending_room_input = None
                 self._pending_room_kind = None
                 self._pending_room_index = None
-                return await self.async_step_rooms()
+                return self.async_create_entry(title=NAME, data=self._result_data())
             except ConfigValidationError as err:
                 errors[err.field] = err.message
             except (ValueError, TypeError, KeyError):
@@ -350,16 +354,9 @@ class VentWiseOptionsFlowHandler(config_entries.OptionsFlowWithReload):
         )
 
     def _persist_rooms(self) -> None:
-        """Persist only the room list while preserving all other settings."""
+        """Keep room edits in the flow until the final save."""
 
-        options = dict(getattr(self._config_entry, "options", {}))
-        options[CONF_ROOMS] = deepcopy(self._rooms)
-        hass = getattr(self, "hass", None)
-        if hass is not None:
-            hass.config_entries.async_update_entry(self._config_entry, options=options)
-        elif hasattr(self._config_entry, "options"):
-            self._config_entry.options = options
-        self._current_config = {**getattr(self._config_entry, "data", {}), **options}
+        self._current_config[CONF_ROOMS] = deepcopy(self._rooms)
 
     def _room_selection_schema(self) -> vol.Schema:
         return vol.Schema(

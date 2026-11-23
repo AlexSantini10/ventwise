@@ -245,7 +245,8 @@ def test_options_flow_supports_units_and_immediate_room_changes() -> None:
     assert asyncio.run(flow.async_step_edit_room())["step_id"] == "edit_room_form"
     assert asyncio.run(flow.async_step_edit_room_form())["step_id"] == "edit_room_form"
     assert asyncio.run(flow.async_step_remove_room())["step_id"] == "remove_room_select"
-    assert asyncio.run(flow.async_step_confirm_remove_room({"remove_room_confirmation": True}))["type"] == "form"
-    saved = asyncio.run(flow.async_step_finish())
+    saved = asyncio.run(
+        flow.async_step_confirm_remove_room({"remove_room_confirmation": True})
+    )
     assert saved["type"] == "create_entry"
     assert saved["data"][CONF_ROOMS][0][CONF_ROOM_NAME] == "Upstairs"

@@ -86,6 +86,18 @@ before the configuration can be saved. The global temperature and wind-speed
 settings control the units used for manual values and displayed VentWise
 entities; source-unit selections remain per sensor.
 
+Every configuration save uses Home Assistant's config-entry reload path:
+VentWise reloads the runtime, refreshes the coordinator, and updates its
+entities from the saved settings. A disabled, removed, or unavailable source
+therefore cannot remain valid in the dashboard after the reload completes.
+
+This applies to every user setting exposed by VentWise, including comfort,
+units, weather sources, room sensors, CO₂, rooms, overrides, notifications,
+quiet hours, and thresholds. The same reload path is used by switches, number
+controls, and time controls on the VentWise devices. Changes made by the source
+sensors themselves are different: those are delivered through the coordinator's
+normal Home Assistant state-event refresh path.
+
 To use indoor CO₂ for a room, select its optional CO₂ sensor and enable **Use
 CO₂ for this room**. The room's CO₂ entity is then shown in ppm and contributes
 to recommendations when it reaches the configured global threshold. Clear the
