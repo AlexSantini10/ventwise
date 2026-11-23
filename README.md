@@ -71,7 +71,7 @@ Stable releases are published from `main`. Experimental prereleases from the
 - [User guide: installation, setup, updates, and removal](docs/user-guide.md)
 - [Docker Test Lab: local manual testing without hardware](docs/docker-test-lab.md)
 - [How the Home Assistant integration works](docs/home-assistant-integration.md)
-- [Current v0.18 decision-engine behavior](docs/ddp-v0.18-current.md)
+- [DDP plan: v0.18 scope and future exploration](docs/ddp-plan.md)
 - [Safety, beta status, and reporting guidance](docs/NOTICE.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Documentation index](docs/INDEX.md)

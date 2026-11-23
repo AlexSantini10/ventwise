@@ -1,8 +1,33 @@
-# VentWise v0.18 Decision Engine
+# VentWise DDP plan
 
-This document describes the behavior implemented in the current repository.
-It is intentionally more precise than the target DDP design documents: it
-separates shipped behavior from capabilities planned for later releases.
+This document is the implementation plan for the Deterministic Decision
+Pipeline (DDP). It separates the v0.18 scope already delivered from ideas to
+study in future exploration work. Future ideas are not release commitments or
+acceptance criteria for v0.18.
+
+## v0.18 scope
+
+The v0.18 deliverable is the first usable temperature-and-humidity DDP path:
+canonical observations, deterministic pure evaluation, psychrometric support,
+explicit data quality, minimum safety precedence, recommendation-only
+integration, and separated notification delivery. The implemented contract is
+described in the sections below.
+
+## Future exploration
+
+The following topics are outside the v0.18 scope. They are already represented
+by the later DDP roadmap issues and are not required to complete v0.18:
+
+- forecast-aware safety and candidate-duration filtering;
+- PM2.5, PM10, and pollen policies;
+- adaptive duration and optional room context;
+- advanced hysteresis, lockout, severity, and intensity handling;
+- optional local room-impact calibration;
+- golden replay datasets, cross-climate validation, and audit evidence.
+
+The corresponding roadmap issues are #256, #254, #255, #260, #267, #268,
+#262, and #269. They retain their own release scope and acceptance criteria;
+this document does not expand or duplicate them.
 
 ## What the engine is
 
@@ -239,10 +264,11 @@ These functions are available through the core package. Humidity ratio is part
 of the active v0.18 objective for moisture-exchange direction; absolute
 humidity remains available for display and diagnostics.
 
-## Not yet implemented in the active v0.18 path
+## Deferred topics for exploration
 
-The following capabilities belong to later DDP increments and must not be
-described as current behavior:
+The following capabilities are outside the v0.18 contract and must not be
+described as current behavior. Their release scope is defined by the later
+roadmap issues listed above:
 
 - pressure-aware CO2 conversion from mass concentration;
 - PM2.5, PM10, and pollen policies;
