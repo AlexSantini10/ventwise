@@ -689,14 +689,11 @@
           "unavailable": "传感器不可用"
         }
       },
-      "recommendation_confidence": {
-        "name": "建议置信度"
-      },
       "ventilation_score": {
-        "name": "通风分数"
+        "name": "评分 - 通风"
       },
       "co2": {
-        "name": "室内二氧化碳",
+        "name": "空气质量 - 室内二氧化碳",
         "state": {
           "disabled": "已禁用",
           "not_configured": "未配置",
@@ -704,16 +701,16 @@
         }
       },
       "forecast_temperature": {
-        "name": "预测温度"
+        "name": "温度 - 预测"
       },
       "outdoor_pressure": {
-        "name": "室外气压"
+        "name": "天气 - 室外气压"
       },
       "wind_gust": {
-        "name": "室外阵风"
+        "name": "天气 - 室外阵风"
       },
       "weather_condition": {
-        "name": "天气状况",
+        "name": "天气 - 状况",
         "state": {
           "clear-night": "晴朗夜间",
           "cloudy": "多云",
@@ -733,57 +730,57 @@
         }
       },
       "average_perceived_indoor_temperature": {
-        "name": "平均感知室内温度"
+        "name": "温度 - 平均感知室内"
       },
       "perceived_outdoor_temperature": {
-        "name": "感知室外温度"
+        "name": "温度 - 感知室外"
       },
       "effective_comfort_temperature": {
-        "name": "实际舒适温度"
+        "name": "温度 - 实际舒适"
       },
       "suggested_comfort_temperature": {
-        "name": "建议舒适温度"
+        "name": "温度 - 建议舒适"
       },
       "outdoor_temperature": {
-        "name": "室外温度"
+        "name": "温度 - 室外"
       },
       "outdoor_humidity": {
-        "name": "室外湿度"
+        "name": "湿度 - 室外"
       },
       "wind_speed": {
-        "name": "室外风速"
+        "name": "天气 - 室外风速"
       },
       "outdoor_absolute_humidity": {
-        "name": "室外绝对湿度（计算）"
+        "name": "湿度 - 室外绝对湿度（计算）"
       },
       "outdoor_humidity_ratio": {
-        "name": "室外含湿量比（计算）"
+        "name": "湿度 - 室外含湿量比（计算）"
       },
       "outdoor_vapor_pressure": {
-        "name": "室外水蒸气分压（计算）"
+        "name": "湿度 - 室外水蒸气分压（计算）"
       },
       "indoor_absolute_humidity": {
-        "name": "室内绝对湿度（计算）"
+        "name": "湿度 - 室内绝对湿度（计算）"
       },
       "indoor_humidity_ratio": {
-        "name": "室内含湿量比（计算）"
+        "name": "湿度 - 室内含湿量比（计算）"
       },
       "indoor_vapor_pressure": {
-        "name": "室内水蒸气分压（计算）"
+        "name": "湿度 - 室内水蒸气分压（计算）"
       },
       "indoor_outdoor_humidity_difference": {
-        "name": "室内外湿度差（计算）"
+        "name": "湿度 - 室外减室内差值（计算）"
       },
       "moisture_exchange_direction": {
-        "name": "湿度交换方向（计算）",
+        "name": "湿度 - 湿度较高区域",
         "state": {
-          "drying": "除湿",
-          "humidifying": "加湿",
-          "neutral": "中性"
+          "drying": "OUT（室外）",
+          "humidifying": "IN（室内）",
+          "neutral": "相同"
         }
       },
       "recommendation": {
-        "name": "建议",
+        "name": "建议 - 状态",
         "state": {
           "open": "打开窗户",
           "ventilate": "短暂通风",
@@ -792,7 +789,7 @@
         }
       },
       "window_state": {
-        "name": "窗户状态",
+        "name": "建议 - 窗户状态",
         "state": {
           "open": "打开",
           "closed": "关闭",
@@ -801,19 +798,19 @@
         }
       },
       "recommendation_score": {
-        "name": "建议分数"
+        "name": "评分 - 建议"
       },
       "recommendation_reason": {
-        "name": "建议原因"
+        "name": "建议 - 原因"
       },
       "perceived_indoor_temperature": {
-        "name": "感知室内温度"
+        "name": "温度 - 感知室内"
       },
       "temperature": {
-        "name": "温度"
+        "name": "温度 - 室内"
       },
       "indoor_humidity": {
-        "name": "室内湿度"
+        "name": "湿度 - 室内"
       }
     },
     "switch": {

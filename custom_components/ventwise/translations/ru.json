@@ -686,14 +686,11 @@
           "unavailable": "Датчик недоступен"
         }
       },
-      "recommendation_confidence": {
-        "name": "Уверенность рекомендации"
-      },
       "ventilation_score": {
-        "name": "Оценка проветривания"
+        "name": "Оценка - Проветривание"
       },
       "co2": {
-        "name": "CO₂ в помещении",
+        "name": "Качество воздуха - CO₂ в помещении",
         "state": {
           "disabled": "Отключён",
           "not_configured": "Не настроен",
@@ -701,16 +698,16 @@
         }
       },
       "forecast_temperature": {
-        "name": "Прогноз температуры"
+        "name": "Температура - Прогноз"
       },
       "outdoor_pressure": {
-        "name": "Давление на улице"
+        "name": "Погода - Давление на улице"
       },
       "wind_gust": {
-        "name": "Порыв ветра на улице"
+        "name": "Погода - Порыв ветра на улице"
       },
       "weather_condition": {
-        "name": "Погодные условия",
+        "name": "Погода - Условия",
         "state": {
           "clear-night": "Ясная ночь",
           "cloudy": "Облачно",
@@ -730,57 +727,57 @@
         }
       },
       "average_perceived_indoor_temperature": {
-        "name": "Средняя ощущаемая температура в помещении"
+        "name": "Температура - Средняя ощущаемая в помещении"
       },
       "perceived_outdoor_temperature": {
-        "name": "Ощущаемая температура на улице"
+        "name": "Температура - Ощущаемая на улице"
       },
       "effective_comfort_temperature": {
-        "name": "Действующая комфортная температура"
+        "name": "Температура - Комфортная фактическая"
       },
       "suggested_comfort_temperature": {
-        "name": "Адаптивная целевая комфортная температура"
+        "name": "Температура - Комфортная рекомендуемая"
       },
       "outdoor_temperature": {
-        "name": "Температура на улице"
+        "name": "Температура - На улице"
       },
       "outdoor_humidity": {
-        "name": "Влажность на улице"
+        "name": "Влажность - На улице"
       },
       "wind_speed": {
-        "name": "Скорость ветра на улице"
+        "name": "Погода - Скорость ветра на улице"
       },
       "outdoor_absolute_humidity": {
-        "name": "Absolyutnaya vlazhnost na ulice (raschyotnaya)"
+        "name": "Влажность - Абсолютная на улице (расчётная)"
       },
       "outdoor_humidity_ratio": {
-        "name": "Otnoshenie vlazhnosti na ulice (raschyotnoe)"
+        "name": "Влажность - Соотношение на улице (расчётное)"
       },
       "outdoor_vapor_pressure": {
-        "name": "Davlenie vodianogo para na ulice (raschyotnoe)"
+        "name": "Влажность - Давление пара на улице (расчётное)"
       },
       "indoor_absolute_humidity": {
-        "name": "Absolyutnaya vlazhnost v pomeshchenii (raschyotnaya)"
+        "name": "Влажность - Абсолютная в помещении (расчётная)"
       },
       "indoor_humidity_ratio": {
-        "name": "Otnoshenie vlazhnosti v pomeshchenii (raschyotnoe)"
+        "name": "Влажность - Соотношение в помещении (расчётное)"
       },
       "indoor_vapor_pressure": {
-        "name": "Davlenie vodianogo para v pomeshchenii (raschyotnoe)"
+        "name": "Влажность - Давление пара в помещении (расчётное)"
       },
       "indoor_outdoor_humidity_difference": {
-        "name": "Raznitsa vlazhnosti v pomeshchenii i na ulice (raschyotnaya)"
+        "name": "Влажность - Разница: улица минус помещение (расчётная)"
       },
       "moisture_exchange_direction": {
-        "name": "Napravlenie obmena vlagoi (raschyotnoe)",
+        "name": "Влажность - Где влажнее",
         "state": {
-          "drying": "Osushenie",
-          "humidifying": "Uvlazhnenie",
-          "neutral": "Neitralno"
+          "drying": "OUT (снаружи)",
+          "humidifying": "IN (в помещении)",
+          "neutral": "Одинаково"
         }
       },
       "recommendation": {
-        "name": "Рекомендация",
+        "name": "Рекомендация - Состояние",
         "state": {
           "open": "Открыть окна",
           "ventilate": "Ненадолго проветрить",
@@ -789,7 +786,7 @@
         }
       },
       "window_state": {
-        "name": "Состояние окон",
+        "name": "Рекомендация - Состояние окон",
         "state": {
           "open": "Открыты",
           "closed": "Закрыты",
@@ -798,19 +795,19 @@
         }
       },
       "recommendation_score": {
-        "name": "Оценка рекомендации"
+        "name": "Оценка - Рекомендация"
       },
       "recommendation_reason": {
-        "name": "Обоснование рекомендации"
+        "name": "Рекомендация - Причина"
       },
       "perceived_indoor_temperature": {
-        "name": "Ощущаемая температура в помещении"
+        "name": "Температура - Ощущаемая в помещении"
       },
       "temperature": {
-        "name": "Температура"
+        "name": "Температура - В помещении"
       },
       "indoor_humidity": {
-        "name": "Влажность в помещении"
+        "name": "Влажность - В помещении"
       }
     },
     "switch": {

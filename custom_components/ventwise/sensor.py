@@ -103,7 +103,6 @@ async def async_setup_entry(
             [
                 RoomRecommendationStateSensor(coordinator, room),
                 RoomRecommendationScoreSensor(coordinator, room),
-                RoomRecommendationConfidenceSensor(coordinator, room),
                 RoomVentilationScoreSensor(coordinator, room),
                 RoomRecommendationReasonSensor(coordinator, room),
                 RoomCalculatedRecommendationSensor(coordinator, room),
@@ -623,21 +622,6 @@ class RoomRecommendationScoreSensor(VentWiseRoomEntity, SensorEntity):
     def native_value(self) -> float:
         recommendation = find_room_recommendation(self.coordinator.data.summary, self.room)
         return 0.0 if recommendation is None else round(recommendation.score, 2)
-
-
-class RoomRecommendationConfidenceSensor(VentWiseRoomEntity, SensorEntity):
-    """Core confidence for the room recommendation."""
-
-    _attr_icon = "mdi:percent-outline"
-    _attr_native_unit_of_measurement = "%"
-
-    def __init__(self, coordinator: VentWiseCoordinator, room: RoomConfig) -> None:
-        super().__init__(coordinator, room, "confidence", "recommendation_confidence")
-
-    @property
-    def native_value(self) -> float | None:
-        result = _room_core_result(self.coordinator, self.room)
-        return None if result is None else round(result.confidence * 100.0, 2)
 
 
 class RoomVentilationScoreSensor(VentWiseRoomEntity, SensorEntity):

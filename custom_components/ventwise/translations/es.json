@@ -689,14 +689,11 @@
           "unavailable": "Sensor no disponible"
         }
       },
-      "recommendation_confidence": {
-        "name": "Confianza de la recomendación"
-      },
       "ventilation_score": {
-        "name": "Puntuación de ventilación"
+        "name": "Puntuación - Ventilación"
       },
       "co2": {
-        "name": "CO₂ interior",
+        "name": "Calidad del aire - CO₂ interior",
         "state": {
           "disabled": "Desactivado",
           "not_configured": "No configurado",
@@ -704,16 +701,16 @@
         }
       },
       "forecast_temperature": {
-        "name": "Temperatura prevista"
+        "name": "Temperatura - Prevista"
       },
       "outdoor_pressure": {
-        "name": "Presión exterior"
+        "name": "Meteorología - Presión exterior"
       },
       "wind_gust": {
-        "name": "Racha de viento exterior"
+        "name": "Meteorología - Racha de viento exterior"
       },
       "weather_condition": {
-        "name": "Condición meteorológica",
+        "name": "Meteorología - Condición",
         "state": {
           "clear-night": "Noche despejada",
           "cloudy": "Nublado",
@@ -733,57 +730,57 @@
         }
       },
       "average_perceived_indoor_temperature": {
-        "name": "Temperatura interior percibida media"
+        "name": "Temperatura - Interior percibida media"
       },
       "perceived_outdoor_temperature": {
-        "name": "Temperatura exterior percibida"
+        "name": "Temperatura - Exterior percibida"
       },
       "effective_comfort_temperature": {
-        "name": "Temperatura de confort efectiva"
+        "name": "Temperatura - Confort efectiva"
       },
       "suggested_comfort_temperature": {
-        "name": "Temperatura de confort sugerida"
+        "name": "Temperatura - Confort sugerida"
       },
       "outdoor_temperature": {
-        "name": "Temperatura exterior"
+        "name": "Temperatura - Exterior"
       },
       "outdoor_humidity": {
-        "name": "Humedad exterior"
+        "name": "Humedad - Exterior"
       },
       "wind_speed": {
-        "name": "Velocidad del viento exterior"
+        "name": "Meteorología - Velocidad del viento exterior"
       },
       "outdoor_absolute_humidity": {
-        "name": "Humedad absoluta exterior (calculada)"
+        "name": "Humedad - Absoluta exterior (calculada)"
       },
       "outdoor_humidity_ratio": {
-        "name": "Relacion de humedad exterior (calculada)"
+        "name": "Humedad - Relación exterior (calculada)"
       },
       "outdoor_vapor_pressure": {
-        "name": "Presion de vapor exterior (calculada)"
+        "name": "Humedad - Presión de vapor exterior (calculada)"
       },
       "indoor_absolute_humidity": {
-        "name": "Humedad absoluta interior (calculada)"
+        "name": "Humedad - Absoluta interior (calculada)"
       },
       "indoor_humidity_ratio": {
-        "name": "Relacion de humedad interior (calculada)"
+        "name": "Humedad - Relación interior (calculada)"
       },
       "indoor_vapor_pressure": {
-        "name": "Presion de vapor interior (calculada)"
+        "name": "Humedad - Presión de vapor interior (calculada)"
       },
       "indoor_outdoor_humidity_difference": {
-        "name": "Diferencia de humedad interior/exterior (calculada)"
+        "name": "Humedad - Diferencia exterior menos interior (calculada)"
       },
       "moisture_exchange_direction": {
-        "name": "Direccion del intercambio de humedad (calculada)",
+        "name": "Humedad - Zona más húmeda",
         "state": {
-          "drying": "Secante",
-          "humidifying": "Humidificante",
-          "neutral": "Neutro"
+          "drying": "OUT (exterior)",
+          "humidifying": "IN (interior)",
+          "neutral": "Igual"
         }
       },
       "recommendation": {
-        "name": "Recomendación",
+        "name": "Recomendación - Estado",
         "state": {
           "open": "Abrir las ventanas",
           "ventilate": "Ventilar brevemente",
@@ -792,7 +789,7 @@
         }
       },
       "window_state": {
-        "name": "Estado de las ventanas",
+        "name": "Recomendación - Estado de las ventanas",
         "state": {
           "open": "Abiertas",
           "closed": "Cerradas",
@@ -801,19 +798,19 @@
         }
       },
       "recommendation_score": {
-        "name": "Puntuación de recomendación"
+        "name": "Puntuación - Recomendación"
       },
       "recommendation_reason": {
-        "name": "Motivo de la recomendación"
+        "name": "Recomendación - Motivo"
       },
       "perceived_indoor_temperature": {
-        "name": "Temperatura interior percibida"
+        "name": "Temperatura - Interior percibida"
       },
       "temperature": {
-        "name": "Temperatura"
+        "name": "Temperatura - Interior"
       },
       "indoor_humidity": {
-        "name": "Humedad interior"
+        "name": "Humedad - Interior"
       }
     },
     "switch": {
