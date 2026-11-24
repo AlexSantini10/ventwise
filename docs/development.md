@@ -44,16 +44,6 @@ python scripts/run_tests.py
 python3 scripts/run_tests.py
 ```
 
-To enforce the same check automatically before every commit and push, enable
-the repository hooks once after cloning:
-
-```powershell
-git config core.hooksPath .githooks
-```
-
-The hooks use the cached Docker image and clean up the disposable container and
-Compose network when they finish. A failed test blocks the commit or push.
-
 The command needs Docker Desktop (Windows) or Docker Engine with Compose
 (Linux/macOS). It builds the pinned Python 3.14.2 image, mounts the checkout
 read-only, and runs each layer in a disposable Linux container. Reports are

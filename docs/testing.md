@@ -87,10 +87,6 @@ python scripts/run_tests.py
 python3 scripts/run_tests.py
 ```
 
-The repository also includes `pre-commit` and `pre-push` hooks. Enable them
-once with `git config core.hooksPath .githooks` to prevent an unverified
-commit or push.
-
 It uses the Python, Home Assistant and test dependency versions pinned in
 `requirements-test.txt`; no project Python packages are installed on the host.
 The checkout is mounted read-only, the container is removed after every run,

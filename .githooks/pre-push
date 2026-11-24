@@ -1,5 +1,0 @@
-#!/usr/bin/env sh
-set -eu
-
-echo "Running the VentWise local/CI test workflow before push..."
-python scripts/run_tests.py
