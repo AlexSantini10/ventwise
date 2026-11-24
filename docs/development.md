@@ -98,9 +98,12 @@ that owns the behavior.
 ## CI / Release
 
 - pushes to `main` run unit tests, HACS validation, Hassfest, and package build
-- pushes to `test` branches run the same checks and can publish prerelease artifacts
+- pushes to `test` branches run the same checks and publish one prerelease from
+  the final CI job; Pull Requests run validation only and never publish releases
 - tag pushes matching `v*` rerun validation, build the package, and create the GitHub Release
-- release checks reuse the same packaging script as CI
+- release checks reuse the same packaging script as CI, and experimental
+  publication is part of the push CI rather than a separate `workflow_run`
+  workflow
 
 ## Working Rules
 

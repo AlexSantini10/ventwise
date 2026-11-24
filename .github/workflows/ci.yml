@@ -8,7 +8,6 @@ on:
       - "**"
     paths:
       - ".github/workflows/ci.yml"
-      - ".github/workflows/experimental-release.yml"
       - ".github/workflows/release.yml"
       - "custom_components/**"
       - "src/**"
@@ -34,7 +33,6 @@ on:
   pull_request:
     paths:
       - ".github/workflows/ci.yml"
-      - ".github/workflows/experimental-release.yml"
       - ".github/workflows/release.yml"
       - "custom_components/**"
       - "src/**"
@@ -161,3 +159,142 @@ jobs:
 
       - name: Validate and execute the release package in isolation
         run: python -m pytest -q tests/unit/test_release_package.py -p no:cacheprovider
+
+  experimental-release:
+    name: experimental-release
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref_name == 'test' || startsWith(github.ref_name, 'test/') || startsWith(github.ref_name, 'test-'))
+    needs: [automated-tests, hassfest, hacs, package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read base version from manifest
+        id: version
+        shell: bash
+        run: |
+          base_version=$(python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/ventwise/manifest.json').read_text())['version'])")
+          beta_number=$(git rev-list --count HEAD)
+          version="${base_version}-beta.${beta_number}"
+          echo "base_version=$base_version" >> "$GITHUB_OUTPUT"
+          echo "beta_number=$beta_number" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare experimental package source
+        shell: bash
+        env:
+          EXPERIMENTAL_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          build_root="$(mktemp -d)"
+          export BUILD_ROOT="$build_root"
+          python - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          source_root = Path(".").resolve()
+          build_root = Path(os.environ["BUILD_ROOT"])
+
+          def ignore(_directory: str, names: list[str]) -> set[str]:
+              ignored = {".git", ".pytest_cache", "dist", ".venv", "__pycache__"}
+              return {name for name in names if name in ignored or name.endswith(".pyc")}
+
+          shutil.copytree(source_root, build_root, dirs_exist_ok=True, ignore=ignore)
+          manifest_path = build_root / "custom_components" / "ventwise" / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest["version"] = os.environ["EXPERIMENTAL_VERSION"]
+          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
+          echo "BUILD_ROOT=$build_root" >> "$GITHUB_ENV"
+
+      - name: Check whether the release already exists
+        id: release_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip if the release already exists
+        if: steps.release_check.outputs.exists == 'true'
+        run: echo "Release ${{ steps.version.outputs.tag }} already exists."
+
+      - name: Set up Python
+        if: steps.release_check.outputs.exists != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        if: steps.release_check.outputs.exists != 'true'
+        run: python -m pip install -e ".[dev]"
+
+      - name: Build experimental release package
+        if: steps.release_check.outputs.exists != 'true'
+        shell: bash
+        run: python scripts/build_release_package.py --source-path "$BUILD_ROOT" --output-path dist/ventwise.zip
+
+      - name: Verify package structure
+        if: steps.release_check.outputs.exists != 'true'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          import zipfile
+
+          zip_path = pathlib.Path("dist/ventwise.zip")
+          repo_root = pathlib.Path(".")
+          integration_dir = repo_root / "custom_components" / "ventwise"
+
+          with zipfile.ZipFile(zip_path) as archive:
+              entries = {entry.filename for entry in archive.infolist() if not entry.is_dir()}
+
+          expected = {
+              path.relative_to(integration_dir).as_posix()
+              for path in integration_dir.rglob("*")
+              if path.is_file()
+              and path.name != ".gitkeep"
+              and "__pycache__" not in path.parts
+              and path.suffix != ".pyc"
+          }
+          expected.update({"README.md", "LICENSE", "NOTICE", "hacs.json"})
+          core_dir = repo_root / "src" / "ventwise_core"
+          expected.update(
+              f"ventwise_core/{path.relative_to(core_dir).as_posix()}"
+              for path in core_dir.rglob("*")
+              if path.is_file()
+              and "__pycache__" not in path.parts
+              and path.suffix != ".pyc"
+          )
+
+          if any(entry.startswith("custom_components/ventwise/") for entry in entries):
+              raise SystemExit("package contains an extra custom_components/ventwise/ wrapper")
+          if any("__pycache__" in entry or entry.endswith(".pyc") for entry in entries):
+              raise SystemExit("package contains cached Python artifacts")
+
+          missing = sorted(expected.difference(entries))
+          extra = sorted(entries.difference(expected))
+          if missing:
+              raise SystemExit(f"package missing required entries: {missing}")
+          if extra:
+              raise SystemExit(f"package contains unexpected entries: {extra}")
+          PY
+
+      - name: Create GitHub prerelease
+        if: steps.release_check.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh release create "${{ steps.version.outputs.tag }}" dist/ventwise.zip --target "${{ github.sha }}" --title "VentWise v${{ steps.version.outputs.version }} (experimental)" --generate-notes --prerelease
