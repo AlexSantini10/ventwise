@@ -14,7 +14,7 @@ from custom_components.ventwise.units import (
     temperature_from_celsius, temperature_to_celsius,
     display_value, wind_speed_from_m_s, wind_speed_to_m_s,
 )
-from custom_components.ventwise.application.runtime import state_to_temperature_c
+from custom_components.ventwise.application.runtime.integration_runtime import state_to_temperature_c
 
 
 def test_temperature_conversion_round_trip() -> None:
@@ -36,6 +36,16 @@ def test_wind_speed_conversion_round_trip(unit: str, value: float) -> None:
 def test_home_assistant_temperature_source_uses_declared_unit() -> None:
     state = SimpleNamespace(state="68", attributes={"unit_of_measurement": UNIT_FAHRENHEIT})
     assert state_to_temperature_c(state) == pytest.approx(20.0)
+
+
+def test_home_assistant_temperature_source_converts_kelvin() -> None:
+    state = SimpleNamespace(state="293.15", attributes={"unit_of_measurement": "K"})
+    assert state_to_temperature_c(state) == pytest.approx(20.0)
+
+
+def test_home_assistant_temperature_source_rejects_unknown_unit() -> None:
+    state = SimpleNamespace(state="20", attributes={"unit_of_measurement": "rankine"})
+    assert state_to_temperature_c(state) is None
 
 
 def test_display_values_are_limited_to_two_decimal_places() -> None:

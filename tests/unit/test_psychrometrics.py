@@ -10,8 +10,15 @@ from ventwise_core import (
     relative_humidity_percent_from_absolute,
     relative_humidity_percent_from_humidity_ratio,
     pressure_hpa_or_default,
+    perceived_temperature_c,
     saturation_vapor_pressure_hpa,
 )
+
+
+def test_perceived_temperature_uses_vapor_pressure_not_raw_rh_delta():
+    warm_effect = perceived_temperature_c(30.0, 60.0, 22.0, 50.0) - 30.0
+    cool_effect = perceived_temperature_c(15.0, 60.0, 22.0, 50.0) - 15.0
+    assert warm_effect > cool_effect
 
 
 def test_saturation_pressure_at_twenty_celsius_matches_reference():

@@ -14,6 +14,7 @@ TEMPERATURE_UNITS = (UNIT_CELSIUS, UNIT_FAHRENHEIT, UNIT_KELVIN)
 HUMIDITY_UNITS = ("%", "ratio")
 WIND_SPEED_UNITS = (UNIT_METERS_PER_SECOND, UNIT_KILOMETERS_PER_HOUR, UNIT_MILES_PER_HOUR, UNIT_KNOTS)
 PRESSURE_UNITS = ("hPa", "Pa", "kPa", "bar", "atm", "psi", "inHg")
+CO2_UNITS = ("ppm",)
 DISPLAY_PRECISION = 2
 
 _UNIT_ALIASES = {
@@ -121,6 +122,8 @@ def state_unit(state, fallback: str, measurement: str | None = None) -> str:
         return attributes.get("unit_of_measurement") or attributes.get("temperature_unit") or fallback
     if measurement == "wind_speed":
         return attributes.get("unit_of_measurement") or attributes.get("wind_speed_unit") or fallback
+    if measurement == "pressure":
+        return attributes.get("pressure_unit") or attributes.get("unit_of_measurement") or fallback
     return attributes.get("unit_of_measurement") or fallback
 
 

@@ -1,8 +1,33 @@
-# VentWise v0.18 Decision Engine
+# VentWise DDP plan
 
-This document describes the behavior implemented in the current repository.
-It is intentionally more precise than the target DDP design documents: it
-separates shipped behavior from capabilities planned for later releases.
+This document is the implementation plan for the Deterministic Decision
+Pipeline (DDP). It separates the v0.18 scope already delivered from ideas to
+study in future exploration work. Future ideas are not release commitments or
+acceptance criteria for v0.18.
+
+## v0.18 scope
+
+The v0.18 deliverable is the first usable temperature-and-humidity DDP path:
+canonical observations, deterministic pure evaluation, psychrometric support,
+explicit data quality, minimum safety precedence, recommendation-only
+integration, and separated notification delivery. The implemented contract is
+described in the sections below.
+
+## Future exploration
+
+The following topics are outside the v0.18 scope. They are already represented
+by the later DDP roadmap issues and are not required to complete v0.18:
+
+- forecast-aware safety and candidate-duration filtering;
+- PM2.5, PM10, and pollen policies;
+- adaptive duration and optional room context;
+- advanced hysteresis, lockout, severity, and intensity handling;
+- optional local room-impact calibration;
+- golden replay datasets, cross-climate validation, and audit evidence.
+
+The corresponding roadmap issues are #256, #254, #255, #260, #267, #268,
+#262, and #269. They retain their own release scope and acceptance criteria;
+this document does not expand or duplicate them.
 
 ## What the engine is
 
@@ -18,9 +43,9 @@ notifications.
 
 Implementation:
 
-- `custom_components/ventwise/ventwise_core/decision.py`
-- `custom_components/ventwise/ventwise_core/models.py`
-- `custom_components/ventwise/application/runtime.py`
+- `src/ventwise_core/engine/decision_engine.py`
+- `src/ventwise_core/domain/decision_contracts.py`
+- `custom_components/ventwise/application/runtime/integration_runtime.py`
 - `custom_components/ventwise/application/coordinator.py`
 
 ## Inputs used today
@@ -28,20 +53,26 @@ Implementation:
 | Input | Used by v0.18 | Behavior |
 | --- | --- | --- |
 | Indoor temperature | Yes | Required for a room decision. |
-| Outdoor temperature | Yes | Required for a room decision. |
+| External temperature | Yes | One shared external reading for all room decisions; required for a room decision. |
 | Indoor relative humidity | Yes, optional | Contributes to perceived comfort when valid. |
-| Outdoor relative humidity | Yes, optional | Contributes to perceived outdoor comfort when valid. |
+| External relative humidity | Yes, optional | Contributes to perceived external comfort and absolute-humidity exchange when valid. |
 | Global target temperature | Yes | Default comfort target. |
 | Per-room target temperature | Yes | Overrides the global target when enabled. |
 | Per-room target humidity | Yes | Changes the comfort reference used by the objective. |
-| Wind speed | Yes, optional | Supports opening at low speed and reduces opening benefit as speed rises. |
-| Wind gust | Yes, optional | Uses the strongest available wind value and can trigger the hard wind block. |
-| Weather condition | Yes, optional | Severe conditions force `CLOSE`. |
+| External wind speed | Yes, optional | Supports opening at low speed and reduces opening benefit as speed rises. |
+| External wind gust | Yes, optional | Uses the strongest available wind value and can trigger the hard wind block. |
+| External weather condition | Yes, optional | Severe conditions force `CLOSE`. |
 | Window contacts | Yes, core and integration layer | Known state participates in safety; unknown configured contacts block new opening. |
-| Indoor CO2 | Yes, optional/configurable | Adds a bounded ventilation benefit in the same objective; it never bypasses safety. |
+| Indoor CO2 | Yes, optional/configurable per room | Can independently request `VENTILATE` above the threshold; it never bypasses safety. |
 | Quiet hours | Yes, integration layer | Suppress ordinary notification delivery. |
 | Notification cooldown | Yes, integration layer | Suppress repeated ordinary notifications. |
 | Evaluation timestamp | Yes | Makes freshness and deterministic replay explicit. |
+
+The integration also carries the nearest forecast observation and optional
+atmospheric pressure through the normalized snapshot. Forecast data is
+retained as explicit context until a corresponding core safety or scoring rule
+is enabled; pressure is available to the psychrometric calculations when a
+weather source provides it.
 
 Missing optional humidity is not replaced with `50%`. The decision remains
 possible using temperature, but the result does not claim a humidity benefit.
@@ -101,7 +132,10 @@ For valid relative humidity, the v0.18 heuristic calculates a perceived
 temperature approximation:
 
 ```text
-perceived = temperature_c + (humidity_percent - target_humidity_percent) * 0.04
+perceived = temperature_c + clamp(
+    (vapour_pressure - target_vapour_pressure) * 0.08,
+    -3, +3
+)
 ```
 
 When relative humidity is missing, perceived temperature falls back to the
@@ -112,12 +146,15 @@ The engine computes:
 
 1. indoor distance from the target comfort point;
 2. outdoor distance from the target comfort point;
-3. humidity ratio for the mass-based moisture-exchange contribution;
+3. absolute humidity for the volume-based moisture-exchange contribution;
 4. the bounded CO2 contribution when enabled and valid;
 5. the potential benefit of opening or closing;
 6. a short ventilation score when outdoor air crosses the comfort band.
 
-Relative humidity is not compared directly across different temperatures.
+Relative humidity is not compared directly across different temperatures:
+the perceived-temperature heuristic compares vapour pressure, while the
+moisture-exchange objective uses absolute humidity in `g/mÂ³`. This remains a
+bounded comfort heuristic, not a certified heat-index or PMV calculation.
 Missing humidity or CO2 remains unknown and is recorded in data quality; no
 value is fabricated.
 
@@ -139,6 +176,10 @@ The engine evaluates three actionable candidates:
 
 `NONE` is returned when the benefit is too small, candidates are too close to
   one another, or required evidence is unavailable.
+
+When CO2 is enabled and the room value is at or above the configured threshold
+(1000 ppm by default), CO2 can independently select `VENTILATE`, even when the
+external comfort score is worse. Hard safety blocks still take precedence.
 
 Selection is deterministic:
 
@@ -174,9 +215,11 @@ ordinary candidate scoring and retain an explicit blocker reason.
 Weather and wind remain optional only when unconfigured. Once a safety source
 is configured, missing, stale, invalid, future, or non-finite safety evidence
 fails closed for new openings. A known-open contact under a hard safety block
-produces an urgent `CLOSE`; delivery bypasses quiet hours, cooldown, and
-stability. A configured but unknown contact never proves that a window is open
-and therefore prevents a new `OPEN` or `VENTILATE` recommendation.
+produces an urgent `CLOSE`; delivery bypasses cooldown and stability. Quiet
+hours are respected unless the user explicitly enables the safety notification
+quiet-hours bypass. A configured but unknown contact never proves that a window is open
+and therefore prevents a new `OPEN` or `VENTILATE` recommendation. It does not
+hide an independent hard safety `CLOSE` recommendation.
 
 ## Home Assistant integration behavior
 
@@ -188,17 +231,19 @@ HA states and config
     -> build_decision_snapshot()
     -> DecisionEngine.evaluate()
     -> decision_to_summary()
-    -> window-state guards
-    -> action guards and notification policy
+    -> decision_to_summary()  # direct core projection
+    -> notification delivery projection
     -> HA entities and notifications
 ```
 
-The engine never sends notifications. The application layer applies:
+The engine never sends notifications. The core receives window state and
+persisted action-guardrail state, returns explicit traces and updated state,
+and remains the source of truth for all recommendation entities. The
+application layer applies:
 
-- known window contact state, suppressing `OPEN`/`VENTILATE` when windows are
-  already open and suppressing `CLOSE` when they are already closed;
 - quiet hours and notification cooldown;
-- persisted room action guards;
+- the user-configurable safety bypass for quiet hours;
+- channel availability and notification stability;
 - localized explanations and notification delivery.
 
 VentWise remains recommendation-only. No result invokes a window, fan, HVAC,
@@ -219,10 +264,11 @@ These functions are available through the core package. Humidity ratio is part
 of the active v0.18 objective for moisture-exchange direction; absolute
 humidity remains available for display and diagnostics.
 
-## Not yet implemented in the active v0.18 path
+## Deferred topics for exploration
 
-The following capabilities belong to later DDP increments and must not be
-described as current behavior:
+The following capabilities are outside the v0.18 contract and must not be
+described as current behavior. Their release scope is defined by the later
+roadmap issues listed above:
 
 - pressure-aware CO2 conversion from mass concentration;
 - PM2.5, PM10, and pollen policies;
@@ -249,3 +295,11 @@ The v0.18 behavior is covered by:
 When a future signal is added, it must be introduced through a canonical
 observation, an explicit quality policy, a focused objective change, and
 success/boundary/failure regression scenarios before it can affect actions.
+## Decision and delivery boundary
+
+The standalone `ventwise_core` package is the only implementation of domain
+decisions. Home Assistant creates the canonical snapshot and exposes the core
+result directly. Notification delivery is handled separately by the adapter:
+quiet hours, stability, cooldown, duplicate suppression, and notifier
+availability may suppress delivery, but must not change the core action, score,
+reason code, trace, or data quality.

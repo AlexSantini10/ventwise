@@ -1,7 +1,10 @@
 # DDP Data, Physical Models, and Objective Function
 
 This document defines the canonical data model, physical approximations, and
-proposed constrained objective for the target Deterministic Decision Pipeline.
+constrained objectives for the Deterministic Decision Pipeline. The active
+implementation exposes separate `BaselineAssessment`, `ImpactEstimate`,
+`ObjectiveContribution`, `ObjectiveAssessment`, and `CandidateAssessment`
+contracts while retaining the v0.18 result projections.
 Thresholds are software configuration proposals, not universal health limits.
 
 ## Scope and notation

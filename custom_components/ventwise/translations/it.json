@@ -14,23 +14,27 @@
           "wind_speed_unit": "Unità della velocità del vento",
           "target_temperature_c": "Temperatura di comfort",
           "auto_comfort_temperature": "Usa un target di comfort adattivo al clima",
-          "target_humidity_percent": "Umidità di comfort",
-          "stability_minutes": "Attesa prima della raccomandazione (minuti)",
+          "target_humidity_percent": "Umidità di comfort (%)",
+          "stability_minutes": "Attesa prima della raccomandazione (min)",
           "notification_device_id": "Dispositivi da notificare",
           "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant",
+          "safety_bypass_quiet_hours": "Consenti le notifiche di sicurezza durante la fascia silenziosa",
           "diagnostic_notification_level": "Notifiche diagnostiche",
-          "debug_mode_enabled": "Abilita modalità debug"
+          "debug_mode_enabled": "Mostra controlli di test delle notifiche di apertura e chiusura per ogni stanza. Le notifiche di debug sono solo informative e non eseguono mai automazioni Home Assistant.",
+          "co2_threshold_ppm": "Soglia per ventilare (ppm CO₂)"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Seleziona l'entità meteo standard di Home Assistant che VentWise può usare oggi. Se non vedi la sorgente che ti serve, apri una issue su GitHub.",
-          "target_temperature_c": "Imposta la temperatura di comfort interna che VentWise deve cercare di raggiungere.",
+          "target_temperature_c": "Inserisci la temperatura di comfort interna in {temperature_unit} che VentWise deve cercare di raggiungere.",
           "auto_comfort_temperature": "Usa la tua temperatura di comfort come base e la corregge gradualmente in base alla temperatura esterna percepita. Lo scostamento è limitato a ±2 °C nel range domestico di sicurezza 18–26 °C. I sensori della stanza determinano il consiglio, ma non spostano il target. Non controlla termostato o HVAC.",
           "target_humidity_percent": "Imposta l'umidità di comfort interna che VentWise deve cercare di raggiungere.",
-          "stability_minutes": "Per quanto tempo il suggerimento deve restare invariato prima che VentWise invii una notifica. Se non sei sicuro, lascia il valore predefinito.",
+          "stability_minutes": "Per quanto tempo il suggerimento deve restare invariato prima della notifica. Se non sei sicuro, lascia il valore predefinito.",
           "notification_device_id": "Facoltativo. Seleziona uno o più dispositivi che riceveranno le notifiche di VentWise.",
           "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant.",
+          "safety_bypass_quiet_hours": "Se abilitato, le notifiche di sicurezza urgenti possono essere inviate durante la fascia silenziosa. Stabilità, cooldown e deduplicazione restano applicati.",
           "diagnostic_notification_level": "Scegli se Home Assistant deve mostrare avvisi aggiuntivi per problemi di configurazione o dati dei sensori.",
-          "debug_mode_enabled": "Mostra controlli di test per ricevere notifiche di apertura e chiusura per ogni stanza. La conferma può eseguire l'automazione configurata."
+          "debug_mode_enabled": "Mostra controlli di test delle notifiche di apertura e chiusura per ogni stanza. Le notifiche di debug sono solo informative e non eseguono mai automazioni Home Assistant.",
+          "co2_threshold_ppm": "Sopra questo valore VentWise richiede VENTILATE, salvo condizioni di sicurezza."
         }
       },
       "units": {
@@ -56,16 +60,36 @@
       },
       "outdoor_overrides": {
         "title": "Valori esterni manuali",
-        "description": "Compila solo i campi che hai attivato con le checkbox.",
+        "description": "Compila solo i campi che hai attivato con le checkbox. Unità sorgenti rilevate: {sensor_units_summary}.",
         "data": {
           "outdoor_temperature_entity_id": "Temperatura esterna manuale",
+          "outdoor_temperature_unit": "Unità della temperatura esterna manuale",
           "outdoor_humidity_entity_id": "Umidità esterna manuale",
-          "wind_speed_entity_id": "Velocità del vento esterna manuale"
+          "outdoor_humidity_unit": "Unità dell'umidità esterna manuale",
+          "wind_speed_entity_id": "Velocità del vento esterna manuale",
+          "outdoor_wind_speed_unit": "Unità della velocità del vento esterna manuale"
         },
         "data_description": {
           "outdoor_temperature_entity_id": "Obbligatorio solo quando la temperatura manuale è attiva.",
+          "outdoor_temperature_unit": "Facoltativo. Usalo se il sensore selezionato non dichiara correttamente la propria unità.",
           "outdoor_humidity_entity_id": "Obbligatorio solo quando l'umidità manuale è attiva.",
-          "wind_speed_entity_id": "Obbligatorio solo quando la velocità del vento manuale è attiva."
+          "outdoor_humidity_unit": "Facoltativo. Usalo se il sensore selezionato non dichiara correttamente la propria unità.",
+          "wind_speed_entity_id": "Obbligatorio solo quando la velocità del vento manuale è attiva.",
+          "outdoor_wind_speed_unit": "Facoltativo. Usalo se il sensore selezionato non dichiara correttamente la propria unità."
+        }
+      },
+      "room_units": {
+        "title": "Unità dei sensori",
+        "description": "Controlla le unità rilevate per i sensori selezionati. Unità sorgenti rilevate: {sensor_units_summary}. Confermale o correggile prima di continuare. ratio indica una frazione da 0 a 1.",
+        "data": {
+          "temperature_unit_override": "Unità sorgente temperatura",
+          "humidity_unit_override": "Unità sorgente umidità",
+          "co2_unit_override": "Unità sorgente CO₂"
+        },
+        "data_description": {
+          "temperature_unit_override": "Seleziona l’unità dichiarata dal sensore della temperatura.",
+          "humidity_unit_override": "Seleziona l’unità dichiarata dal sensore dell’umidità.",
+          "co2_unit_override": "Seleziona l’unità dichiarata dal sensore CO₂."
         }
       },
       "rooms": {
@@ -98,9 +122,10 @@
       },
       "remove_room_select": {
         "title": "Rimuovi stanza",
-        "description": "Scegli la stanza che vuoi eliminare.",
+        "description": "Conferma la rimozione della stanza \"{room_name}\".",
         "data": {
-          "room_selection": "Stanza"
+          "room_selection": "Stanza",
+          "remove_room_confirmation": "Conferma rimozione stanza"
         },
         "data_description": {
           "room_selection": "Seleziona una delle stanze già salvate in VentWise."
@@ -110,6 +135,9 @@
         "title": "Aggiungi stanza",
         "description": "Crea una stanza normale con le proprie finestre. Puoi anche impostare un override della temperatura di comfort per questa stanza.",
         "data": {
+          "temperature_unit_override": "Override unità del sensore temperatura",
+          "humidity_unit_override": "Override unità del sensore umidità",
+          "co2_unit_override": "Override unità del sensore CO₂",
           "enabled": "Abilita questa stanza",
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
@@ -117,57 +145,71 @@
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "target_humidity_percent_override_enabled": "Abilita override umidità stanza",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ della stanza",
+          "co2_enabled": "Usa la CO₂ per questa stanza",
           "window_sensor_entity_ids": "Contatti finestre",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "target_humidity_percent_override": "Override umidità di comfort (%) stanza"
         },
         "data_description": {
           "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa stanza.",
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa stanza.",
-          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
+          "target_temperature_c_override": "Facoltativo. Inserisci la temperatura di comfort della stanza in {temperature_unit}.",
           "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ della stanza.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa stanza.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa stanza invece di quella globale."
         }
       },
       "edit_room_form": {
         "title": "Modifica stanza",
         "description": "Aggiorna la stanza selezionata. Puoi anche cambiare l'override della temperatura di comfort per questa stanza.",
         "data": {
-          "enabled": "Includi questa stanza",
+          "temperature_unit_override": "Override unità del sensore temperatura",
+          "humidity_unit_override": "Override unità del sensore umidità",
+          "co2_unit_override": "Override unità del sensore CO₂",
+          "enabled": "Abilita questa stanza",
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ della stanza",
+          "co2_enabled": "Usa la CO₂ per questa stanza",
           "window_sensor_entity_ids": "Contatti finestre",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "target_temperature_c_override_enabled": "Abilita override temperatura stanza",
+          "target_humidity_percent_override_enabled": "Abilita override umidità stanza",
+          "target_humidity_percent_override": "Override umidità di comfort (%) stanza"
         },
         "data_description": {
           "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa stanza.",
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
-          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
+          "target_temperature_c_override": "Facoltativo. Inserisci la temperatura di comfort della stanza in {temperature_unit}.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ della stanza.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa stanza.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa stanza.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa stanza.",
+          "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa stanza invece di quella globale."
         }
       },
       "add_macro_room": {
         "title": "Aggiungi macro-stanza",
         "description": "Crea un'area più grande che si comporta come una stanza. Puoi anche impostare un override della temperatura di comfort per questa area.",
         "data": {
+          "temperature_unit_override": "Override unità del sensore temperatura",
+          "humidity_unit_override": "Override unità del sensore umidità",
+          "co2_unit_override": "Override unità del sensore CO₂",
           "enabled": "Includi questa stanza",
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
@@ -175,57 +217,68 @@
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ dell'area",
+          "co2_enabled": "Usa la CO₂ per questa area",
           "window_sensor_entity_ids": "Contatti finestre",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "target_humidity_percent_override": "Override umidità di comfort (%) stanza"
         },
         "data_description": {
           "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa area.",
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa area.",
-          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
+          "target_temperature_c_override": "Facoltativo. Inserisci la temperatura di comfort dell’area in {temperature_unit}.",
           "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ di questa area.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa area.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa area invece di quella globale."
         }
       },
       "edit_macro_room_form": {
         "title": "Modifica macro-stanza",
         "description": "Aggiorna l'area selezionata. Puoi anche cambiare l'override della temperatura di comfort per questa area.",
         "data": {
+          "temperature_unit_override": "Override unità del sensore temperatura",
+          "humidity_unit_override": "Override unità del sensore umidità",
+          "co2_unit_override": "Override unità del sensore CO₂",
           "enabled": "Includi questa stanza",
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ dell'area",
+          "co2_enabled": "Usa la CO₂ per questa area",
           "window_sensor_entity_ids": "Contatti finestre",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
+          "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
+          "target_humidity_percent_override": "Override umidità di comfort (%) stanza"
         },
         "data_description": {
           "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa area.",
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
-          "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
+          "target_temperature_c_override": "Facoltativo. Inserisci la temperatura di comfort dell’area in {temperature_unit}.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ di questa area.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa area.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa area.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa area.",
+          "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa area invece di quella globale."
         }
       }
     },
     "error": {
       "invalid_input": "Uno o più valori non sono validi.",
-      "companion_app_required": "Seleziona un dispositivo di notifica Home Assistant Companion App prima di configurare le automazioni della stanza."
+      "required_unit": "Seleziona un'unità prima di continuare."
     }
   },
   "options": {
@@ -235,6 +288,9 @@
         "description": "Scegli cosa vuoi gestire.",
         "menu_options": {
           "units": "Unità di misura",
+          "comfort": "Impostazioni comfort",
+          "notifications": "Notifiche",
+          "overrides": "Override dati esterni",
           "settings": "Impostazioni",
           "rooms": "Stanze"
         },
@@ -259,17 +315,18 @@
           "wind_speed_unit": "Unità della velocità del vento",
           "target_temperature_c": "Temperatura di comfort",
           "auto_comfort_temperature": "Adatta automaticamente la temperatura di comfort",
-          "target_humidity_percent": "Umidità di comfort",
-          "stability_minutes": "Attesa prima della raccomandazione (minuti)",
+          "target_humidity_percent": "Umidità di comfort (%)",
+          "stability_minutes": "Attesa prima della raccomandazione (min)",
           "notification_device_id": "Dispositivi da notificare",
           "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant",
           "diagnostic_notification_level": "Notifiche diagnostiche",
-          "debug_mode_enabled": "Abilita modalità debug",
+          "debug_mode_enabled": "Mostra controlli di test delle notifiche di apertura e chiusura per ogni stanza. Le notifiche di debug sono solo informative e non eseguono mai automazioni Home Assistant.",
           "co2_enabled": "Considera CO₂ nelle raccomandazioni",
           "co2_entity_id": "Sensore CO₂ della casa",
-          "co2_threshold_ppm": "Soglia CO₂ (ppm)",
+          "co2_threshold_ppm": "Soglia per ventilare (ppm CO₂)",
           "soft_outdoor_threshold_c": "Soglia di comfort esterna",
           "cooldown_minutes": "Pausa notifiche per stanza (minuti)",
+          "safety_bypass_quiet_hours": "Consenti le notifiche di sicurezza durante la fascia silenziosa",
           "outdoor_temperature_override": "Usa temperatura esterna manuale",
           "outdoor_humidity_override": "Usa umidità esterna manuale",
           "wind_speed_override": "Usa velocità del vento esterna manuale",
@@ -286,12 +343,13 @@
           "notification_device_id": "Facoltativo. Seleziona i dispositivi che riceveranno le notifiche VentWise.",
           "home_assistant_notification_enabled": "Mostra ogni raccomandazione di VentWise nel pannello notifiche di Home Assistant.",
           "diagnostic_notification_level": "Scegli se Home Assistant deve mostrare avvisi aggiuntivi per problemi di configurazione o dati dei sensori.",
-          "debug_mode_enabled": "Mostra controlli di test per ricevere notifiche di apertura e chiusura per ogni stanza. La conferma può eseguire l'automazione configurata.",
+          "debug_mode_enabled": "Mostra controlli di test delle notifiche di apertura e chiusura per ogni stanza. Le notifiche di debug sono solo informative e non eseguono mai automazioni Home Assistant.",
           "co2_enabled": "Consigliato se è disponibile un sensore CO₂. Dà priorità al ricambio quando il CO₂ è alto.",
           "co2_entity_id": "Sensore CO₂ predefinito per le stanze senza un proprio sensore.",
-          "co2_threshold_ppm": "Livello di CO₂ oltre il quale VentWise dà priorità al ricambio.",
+          "co2_threshold_ppm": "Sopra questo valore VentWise richiede VENTILATE, salvo condizioni di sicurezza.",
           "soft_outdoor_threshold_c": "Sopra questa temperatura esterna aprire le finestre è meno utile.",
           "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare una raccomandazione aggiornata per ciascuna stanza. Le raccomandazioni identiche restano soppresse.",
+          "safety_bypass_quiet_hours": "Se abilitato, le notifiche di sicurezza urgenti possono essere inviate durante la fascia silenziosa. Stabilità, cooldown e deduplicazione restano applicati.",
           "outdoor_temperature_override": "Usa l'entità manuale sotto invece del forecast meteo.",
           "outdoor_humidity_override": "Usa l'entità manuale sotto invece del forecast meteo.",
           "wind_speed_override": "Usa l'entità manuale sotto invece del forecast meteo.",
@@ -340,6 +398,52 @@
           "cooldown_minutes": "Per quanto tempo VentWise aspetta prima di inviare una notifica aggiornata. Le raccomandazioni identiche restano soppresse."
         }
       },
+      "comfort": {
+        "title": "Impostazioni comfort",
+        "description": "Imposta comfort, umidità e soglie di qualità dell'aria usati da VentWise.",
+        "data": {
+          "target_temperature_c": "Temperatura di comfort",
+          "auto_comfort_temperature": "Adatta automaticamente la temperatura di comfort",
+          "target_humidity_percent": "Umidità di comfort",
+          "stability_minutes": "Attesa prima della raccomandazione (minuti)",
+          "soft_outdoor_threshold_c": "Soglia di comfort esterna",
+          "co2_enabled": "Considera il CO₂ nelle raccomandazioni",
+          "co2_entity_id": "Sensore CO₂ domestico",
+          "co2_threshold_ppm": "Soglia CO₂ (ppm)"
+        },
+        "data_description": {
+          "target_temperature_c": "Inserisci la temperatura di comfort in {temperature_unit}.",
+          "target_humidity_percent": "Imposta l’umidità di comfort interna.",
+          "soft_outdoor_threshold_c": "Inserisci la soglia di comfort esterna in {temperature_unit}.",
+          "co2_threshold_ppm": "Imposta la soglia oltre la quale VentWise considera prioritario il ricambio d’aria.",
+          "stability_minutes": "Imposta per quanto tempo la raccomandazione deve restare invariata."
+        }
+      },
+      "notifications": {
+        "title": "Notifiche",
+        "description": "Scegli dove inviare le notifiche VentWise e come diagnosticarne la consegna.",
+        "data": {
+          "notification_device_id": "Dispositivi da notificare",
+          "home_assistant_notification_enabled": "Mostra notifiche in Home Assistant",
+          "diagnostic_notification_level": "Notifiche diagnostiche",
+          "debug_mode_enabled": "Abilita i controlli di test delle notifiche",
+          "safety_bypass_quiet_hours": "Consenti notifiche di sicurezza durante la fascia silenziosa",
+          "cooldown_minutes": "Pausa notifiche (minuti)"
+        }
+      },
+      "overrides": {
+        "title": "Override dati esterni",
+        "description": "Scegli la sorgente meteo e le eventuali misurazioni esterne manuali.",
+        "data": {
+          "outdoor_weather_entity_id": "Sorgente meteo",
+          "outdoor_temperature_override": "Usa temperatura esterna manuale",
+          "outdoor_humidity_override": "Usa umidità esterna manuale",
+          "wind_speed_override": "Usa velocità del vento esterna manuale",
+          "outdoor_temperature_entity_id": "Temperatura esterna manuale",
+          "outdoor_humidity_entity_id": "Umidità esterna manuale",
+          "wind_speed_entity_id": "Velocità del vento esterna manuale"
+        }
+      },
       "rooms": {
         "title": "Stanze",
         "description": "Aggiungi, modifica o rimuovi stanze e aree raggruppate.",
@@ -362,7 +466,8 @@
         "title": "Modifica stanza",
         "description": "Scegli la stanza che vuoi aggiornare.",
         "data": {
-          "room_selection": "Stanza"
+          "room_selection": "Stanza",
+          "remove_room_confirmation": "Conferma rimozione stanza"
         },
         "data_description": {
           "room_selection": "Seleziona una delle stanze già salvate in VentWise."
@@ -370,9 +475,10 @@
       },
       "remove_room_select": {
         "title": "Rimuovi stanza",
-        "description": "Scegli la stanza che vuoi eliminare.",
+        "description": "Conferma la rimozione della stanza \"{room_name}\".",
         "data": {
-          "room_selection": "Stanza"
+          "room_selection": "Stanza",
+          "remove_room_confirmation": "Conferma rimozione stanza"
         },
         "data_description": {
           "room_selection": "Seleziona una delle stanze già salvate in VentWise."
@@ -385,28 +491,30 @@
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ della stanza",
           "window_sensor_entity_ids": "Contatti finestre",
           "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
           "target_humidity_percent_override": "Override umidità di comfort (%) stanza",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "enabled": "Abilita questa stanza",
+          "co2_enabled": "Usa la CO₂ per questa stanza"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ della stanza.",
           "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa stanza.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
           "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa stanza.",
           "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa stanza invece di quella globale.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa stanza.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa stanza."
         }
       },
       "edit_room_form": {
@@ -416,24 +524,30 @@
           "name": "Nome stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ della stanza",
           "window_sensor_entity_ids": "Contatti finestre",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "target_humidity_percent_override": "Override umidità di comfort (%) stanza",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
+          "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
+          "enabled": "Abilita questa stanza",
+          "co2_enabled": "Usa la CO₂ per questa stanza"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Camera o Studio.",
           "temperature_entity_id": "Seleziona il sensore della temperatura della stanza.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità della stanza.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ della stanza.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa stanza invece di quella globale.",
           "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa stanza invece di quella globale.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa stanza.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa stanza.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa stanza.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa stanza.",
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa stanza.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa stanza."
         }
       },
       "add_macro_room": {
@@ -443,28 +557,30 @@
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ dell'area",
           "window_sensor_entity_ids": "Contatti finestre",
           "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
           "target_humidity_percent_override": "Override umidità di comfort (%) stanza",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "enabled": "Includi questa stanza",
+          "co2_enabled": "Usa la CO₂ per questa area"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ di questa area.",
           "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa area.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
           "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa area.",
           "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa area invece di quella globale.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa area.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa area."
         }
       },
       "edit_macro_room_form": {
@@ -474,30 +590,36 @@
           "name": "Nome macro-stanza",
           "temperature_entity_id": "Sensore temperatura interna",
           "humidity_entity_id": "Sensore umidità interna",
+          "co2_entity_id": "Sensore CO₂ dell'area",
           "window_sensor_entity_ids": "Contatti finestre",
           "target_temperature_c_override": "Override temperatura di comfort stanza",
           "target_humidity_percent_override": "Override umidità di comfort (%) stanza",
-          "start_entity_id": "Automazione apertura finestre",
-          "stop_entity_id": "Automazione chiusura finestre",
           "action_change_hold_minutes": "Attesa prima di invertire il consiglio (minuti)",
-          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)"
+          "action_lockout_minutes": "Mantieni il consiglio della stanza per (minuti)",
+          "target_temperature_c_override_enabled": "Usa override temperatura di comfort stanza",
+          "target_humidity_percent_override_enabled": "Usa override umidità di comfort stanza",
+          "enabled": "Includi questa stanza",
+          "co2_enabled": "Usa la CO₂ per questa area"
         },
         "data_description": {
           "name": "Un nome facile da riconoscere, come Piano superiore o Zona giorno.",
           "temperature_entity_id": "Seleziona il sensore principale della temperatura di questa area.",
           "humidity_entity_id": "Facoltativo. Seleziona il sensore dell'umidità di questa area.",
+          "co2_entity_id": "Facoltativo. Seleziona il sensore CO₂ di questa area.",
           "target_temperature_c_override": "Facoltativo. Usa una temperatura di comfort specifica per questa area invece di quella globale.",
           "target_humidity_percent_override": "Facoltativo. Usa una percentuale di umidità di comfort specifica per questa area invece di quella globale.",
-          "start_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di aprire le finestre di questa area.",
-          "stop_entity_id": "Facoltativo. Seleziona l'automazione che VentWise deve eseguire quando chiede di chiudere le finestre di questa area.",
           "action_change_hold_minutes": "Attendi questo tempo prima di cambiare un consiglio da apri a chiudi, o viceversa.",
-          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate."
+          "action_lockout_minutes": "Dopo un consiglio di apertura o chiusura, impedisce il consiglio opposto per questo tempo. Le chiusure urgenti non vengono ritardate.",
+          "target_temperature_c_override_enabled": "Attiva questa opzione se vuoi che VentWise usi una temperatura di comfort specifica per questa area.",
+          "target_humidity_percent_override_enabled": "Attiva questa opzione se vuoi che VentWise usi un'umidità di comfort specifica per questa area.",
+          "enabled": "Disattiva questa opzione se non vuoi che VentWise consideri questa area.",
+          "co2_enabled": "Usa il sensore CO₂ selezionato per questa area."
         }
       }
     },
     "error": {
       "invalid_input": "Uno o più valori non sono validi.",
-      "companion_app_required": "Seleziona un dispositivo di notifica Home Assistant Companion App prima di configurare le automazioni della stanza."
+      "required_unit": "Seleziona un'unità prima di continuare."
     }
   },
   "selector": {
@@ -509,6 +631,17 @@
     }
   },
   "entity": {
+    "button": {
+      "request_recommendation": {
+        "name": "Ricevi consiglio ora"
+      },
+      "debug_open_notification": {
+        "name": "Ricevi notifica di apertura"
+      },
+      "debug_close_notification": {
+        "name": "Ricevi notifica di chiusura"
+      }
+    },
     "binary_sensor": {
       "notifications_currently_allowed": {
         "name": "Notifiche attualmente consentite"
@@ -541,47 +674,140 @@
       }
     },
     "sensor": {
+      "core_recommendation": {
+        "name": "Raccomandazione calcolata"
+      },
+      "co2_status": {
+        "name": "Stato CO₂ interna",
+        "state": {
+          "available": "Disponibile",
+          "disabled": "Disabilitata",
+          "not_configured": "Non configurata",
+          "unavailable": "Sensore non disponibile"
+        }
+      },
+      "ventilation_score": {
+        "name": "Punteggio - Ventilazione"
+      },
+      "co2": {
+        "name": "Qualità aria - CO₂ interna",
+        "state": {
+          "disabled": "Disabilitata",
+          "not_configured": "Non configurata",
+          "sensor_unavailable": "Sensore non disponibile"
+        }
+      },
+      "forecast_temperature": {
+        "name": "Temperatura - Prevista"
+      },
+      "outdoor_pressure": {
+        "name": "Meteo - Pressione esterna"
+      },
+      "wind_gust": {
+        "name": "Meteo - Raffica di vento esterna"
+      },
       "weather_condition": {
-        "name": "Condizione meteo"
+        "name": "Meteo - Condizione",
+        "state": {
+          "clear-night": "Notte serena",
+          "cloudy": "Nuvoloso",
+          "exceptional": "Eccezionale",
+          "fog": "Nebbia",
+          "hail": "Grandine",
+          "lightning": "Fulmini",
+          "lightning-rainy": "Temporale",
+          "partlycloudy": "Parzialmente nuvoloso",
+          "pouring": "Pioggia intensa",
+          "rainy": "Piovoso",
+          "snowy": "Nevoso",
+          "snowy-rainy": "Neve e pioggia",
+          "sunny": "Soleggiato",
+          "windy": "Ventoso",
+          "windy-variant": "Vento variabile"
+        }
       },
       "average_perceived_indoor_temperature": {
-        "name": "Temperatura interna percepita media"
+        "name": "Temperatura - Interna percepita media"
       },
       "perceived_outdoor_temperature": {
-        "name": "Temperatura esterna percepita"
+        "name": "Temperatura - Esterna percepita"
       },
       "effective_comfort_temperature": {
-        "name": "Temperatura di comfort effettiva"
+        "name": "Temperatura - Comfort effettiva"
       },
       "suggested_comfort_temperature": {
-        "name": "Target di comfort adattivo al clima"
+        "name": "Temperatura - Comfort suggerita"
       },
       "outdoor_temperature": {
-        "name": "Temperatura esterna"
+        "name": "Temperatura - Esterna"
       },
       "outdoor_humidity": {
-        "name": "Umidità esterna"
+        "name": "Umidità - Esterna"
       },
       "wind_speed": {
-        "name": "Velocità vento esterna"
+        "name": "Meteo - Velocità vento esterna"
+      },
+      "outdoor_absolute_humidity": {
+        "name": "Umidità - Assoluta esterna (calcolata)"
+      },
+      "outdoor_humidity_ratio": {
+        "name": "Umidità - Rapporto esterno (calcolato)"
+      },
+      "outdoor_vapor_pressure": {
+        "name": "Umidità - Pressione di vapore esterna (calcolata)"
+      },
+      "indoor_absolute_humidity": {
+        "name": "Umidità - Assoluta interna (calcolata)"
+      },
+      "indoor_humidity_ratio": {
+        "name": "Umidità - Rapporto interno (calcolato)"
+      },
+      "indoor_vapor_pressure": {
+        "name": "Umidità - Pressione di vapore interna (calcolata)"
+      },
+      "indoor_outdoor_humidity_difference": {
+        "name": "Umidità - Differenza esterno meno interno (calcolata)"
+      },
+      "moisture_exchange_direction": {
+        "name": "Umidità - Zona più umida",
+        "state": {
+          "drying": "OUT (esterno)",
+          "humidifying": "IN (interno)",
+          "neutral": "Uguale"
+        }
       },
       "recommendation": {
-        "name": "Raccomandazione"
+        "name": "Raccomandazione - Stato",
+        "state": {
+          "open": "Apri le finestre",
+          "ventilate": "Arieggia brevemente",
+          "close": "Chiudi le finestre",
+          "none": "Nessuna raccomandazione"
+        }
+      },
+      "window_state": {
+        "name": "Raccomandazione - Stato finestre",
+        "state": {
+          "open": "Aperte",
+          "closed": "Chiuse",
+          "not_configured": "Non configurato",
+          "unavailable": "Non disponibile"
+        }
       },
       "recommendation_score": {
-        "name": "Punteggio raccomandazione"
+        "name": "Punteggio - Raccomandazione"
       },
       "recommendation_reason": {
-        "name": "Motivo raccomandazione"
+        "name": "Raccomandazione - Motivo"
       },
       "perceived_indoor_temperature": {
-        "name": "Temperatura interna percepita"
+        "name": "Temperatura - Interna percepita"
       },
       "temperature": {
-        "name": "Temperatura"
+        "name": "Temperatura - Interna"
       },
       "indoor_humidity": {
-        "name": "Umidità interna"
+        "name": "Umidità - Interna"
       }
     },
     "switch": {
@@ -605,6 +831,14 @@
       },
       "humidity_override_enabled": {
         "name": "Override umidità abilitato"
+      }
+    },
+    "time": {
+      "quiet_hours_start_time": {
+        "name": "Inizio fascia silenziosa"
+      },
+      "quiet_hours_end_time": {
+        "name": "Fine fascia silenziosa"
       }
     }
   }

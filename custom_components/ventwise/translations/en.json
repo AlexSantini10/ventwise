@@ -14,23 +14,27 @@
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
           "auto_comfort_temperature": "Use a climate-adaptive comfort target",
-          "target_humidity_percent": "Comfort humidity",
-          "stability_minutes": "Wait before recommending (minutes)",
+          "target_humidity_percent": "Comfort humidity (%)",
+          "stability_minutes": "Wait before recommending (min)",
           "notification_device_id": "Notification devices",
           "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "safety_bypass_quiet_hours": "Allow safety notifications during quiet hours",
           "diagnostic_notification_level": "Diagnostic notifications",
-          "debug_mode_enabled": "Enable debug mode"
+          "debug_mode_enabled": "Shows per-room open and close notification test controls. Debug notifications are informational only and never execute Home Assistant automations.",
+          "co2_threshold_ppm": "CO₂ threshold (ppm)"
         },
         "data_description": {
           "outdoor_weather_entity_id": "Choose the standard Home Assistant weather entity VentWise can use today. If you do not see the source you need, open a GitHub issue.",
-          "target_temperature_c": "Set the indoor temperature that feels comfortable when you are home.",
+          "target_temperature_c": "Enter the indoor temperature in {temperature_unit} that feels comfortable when you are home.",
           "auto_comfort_temperature": "Uses your comfort temperature as a baseline and adjusts it gradually from the perceived outdoor temperature. The adjustment is limited to ±2°C within an 18–26°C indoor safety range. Room sensors determine the recommendation but never move the target. This does not control a thermostat or HVAC system.",
           "target_humidity_percent": "Set the indoor humidity that feels comfortable when you are home.",
-          "stability_minutes": "How long the recommendation must stay unchanged before VentWise notifies you. If you are not sure, leave the default value.",
+          "stability_minutes": "How long the recommendation should remain unchanged before notification. If you are not sure, leave the default value.",
           "notification_device_id": "Optional. Pick one or more devices that should receive VentWise notifications.",
           "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
+          "safety_bypass_quiet_hours": "When enabled, urgent safety notifications may be delivered during quiet hours. Stability, cooldown, and duplicate suppression still apply.",
           "diagnostic_notification_level": "Choose whether Home Assistant shows extra notifications for configuration or sensor-data problems.",
-          "debug_mode_enabled": "Shows per-room open and close notification test controls. Confirming a debug notification can run the configured automation."
+          "debug_mode_enabled": "Shows per-room open and close notification test controls. Debug notifications are informational only and never execute Home Assistant automations.",
+          "co2_threshold_ppm": "CO₂ level at which VentWise starts prioritizing fresh air."
         }
       },
       "units": {
@@ -56,16 +60,36 @@
       },
       "outdoor_overrides": {
         "title": "Manual outdoor values",
-        "description": "Fill in only the fields you turned on with the checkboxes.",
+        "description": "Fill in only the fields you turned on with the checkboxes. Detected source units: {sensor_units_summary}.",
         "data": {
           "outdoor_temperature_entity_id": "Manual outdoor temperature",
+          "outdoor_temperature_unit": "Manual outdoor temperature unit",
           "outdoor_humidity_entity_id": "Manual outdoor humidity",
-          "wind_speed_entity_id": "Manual outdoor wind speed"
+          "outdoor_humidity_unit": "Manual outdoor humidity unit",
+          "wind_speed_entity_id": "Manual outdoor wind speed",
+          "outdoor_wind_speed_unit": "Manual outdoor wind-speed unit"
         },
         "data_description": {
           "outdoor_temperature_entity_id": "Required only when manual temperature is enabled.",
+          "outdoor_temperature_unit": "Optional. Use this when the selected sensor does not declare its unit correctly.",
           "outdoor_humidity_entity_id": "Required only when manual humidity is enabled.",
-          "wind_speed_entity_id": "Required only when manual wind speed is enabled."
+          "outdoor_humidity_unit": "Optional. Use this when the selected sensor does not declare its unit correctly.",
+          "wind_speed_entity_id": "Required only when manual wind speed is enabled.",
+          "outdoor_wind_speed_unit": "Optional. Use this when the selected sensor does not declare its unit correctly."
+        }
+      },
+      "room_units": {
+        "title": "Sensor units",
+        "description": "Review the units detected for the selected sensors. Detected source units: {sensor_units_summary}. Confirm or correct them before continuing. A ratio is a fraction from 0 to 1.",
+        "data": {
+          "temperature_unit_override": "Temperature source unit",
+          "humidity_unit_override": "Humidity source unit",
+          "co2_unit_override": "CO₂ source unit"
+        },
+        "data_description": {
+          "temperature_unit_override": "Select the unit reported by the selected temperature sensor.",
+          "humidity_unit_override": "Select the unit reported by the selected humidity sensor.",
+          "co2_unit_override": "Select the unit reported by the selected CO₂ sensor."
         }
       },
       "rooms": {
@@ -98,9 +122,10 @@
       },
       "remove_room_select": {
         "title": "Remove room",
-        "description": "Choose the room you want to delete.",
+        "description": "Confirm removal of room \"{room_name}\".",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "Room",
+          "remove_room_confirmation": "Confirm room removal"
         },
         "data_description": {
           "room_selection": "Select one of the rooms already saved in VentWise."
@@ -110,6 +135,9 @@
         "title": "Add room",
         "description": "Create one room for a space with its own windows. You can optionally override the comfort temperature for this room.",
         "data": {
+          "temperature_unit_override": "Temperature sensor unit override",
+          "humidity_unit_override": "Humidity sensor unit override",
+          "co2_unit_override": "CO₂ sensor unit override",
           "enabled": "Enable this room",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
@@ -117,57 +145,71 @@
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
+          "co2_enabled": "Use CO₂ for this room",
           "window_sensor_entity_ids": "Window contacts",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "target_humidity_percent_override": "Room comfort humidity override (%)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this room.",
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort temperature.",
-          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
+          "target_temperature_c_override": "Optional. Enter this room-specific comfort temperature in {temperature_unit} instead of the global one.",
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
-          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "co2_entity_id": "Optional. Pick the room CO₂ sensor.",
+          "co2_enabled": "Use the selected CO₂ sensor for this room.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one."
         }
       },
       "edit_room_form": {
         "title": "Edit room",
         "description": "Update the selected room for a space with its own windows. You can also change the room-specific comfort temperature override.",
         "data": {
+          "temperature_unit_override": "Temperature sensor unit override",
+          "humidity_unit_override": "Humidity sensor unit override",
+          "co2_unit_override": "CO₂ sensor unit override",
           "enabled": "Enable this room",
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
+          "co2_enabled": "Use CO₂ for this room",
           "window_sensor_entity_ids": "Window contacts",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
+          "target_humidity_percent_override": "Room comfort humidity override (%)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this room.",
           "name": "A friendly name for this room, like Bedroom or Study.",
           "temperature_entity_id": "Pick the room temperature sensor.",
-          "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
+          "target_temperature_c_override": "Optional. Enter this room-specific comfort temperature in {temperature_unit} instead of the global one.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
-          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
-          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "co2_entity_id": "Optional. Pick the room CO₂ sensor.",
+          "co2_enabled": "Use the selected CO₂ sensor for this room.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort temperature.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
+          "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one."
         }
       },
       "add_macro_room": {
         "title": "Add macro-room",
         "description": "Create one grouped area for spaces that share the same windows. You can optionally override the comfort temperature for this area.",
         "data": {
+          "temperature_unit_override": "Temperature sensor unit override",
+          "humidity_unit_override": "Humidity sensor unit override",
+          "co2_unit_override": "CO₂ sensor unit override",
           "enabled": "Enable this room",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
@@ -175,57 +217,68 @@
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
+          "co2_enabled": "Use CO₂ for this room",
           "window_sensor_entity_ids": "Window contacts",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "target_humidity_percent_override": "Room comfort humidity override (%)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this area.",
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort temperature.",
-          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
+          "target_temperature_c_override": "Optional. Enter this area-specific comfort temperature in {temperature_unit} instead of the global one.",
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
-          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "co2_entity_id": "Optional. Pick the CO₂ sensor for this area.",
+          "co2_enabled": "Use the selected CO₂ sensor for this area.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one."
         }
       },
       "edit_macro_room_form": {
         "title": "Edit macro-room",
         "description": "Update the selected grouped area that shares the same windows. You can also change the area-specific comfort temperature override.",
         "data": {
+          "temperature_unit_override": "Temperature sensor unit override",
+          "humidity_unit_override": "Humidity sensor unit override",
+          "co2_unit_override": "CO₂ sensor unit override",
           "enabled": "Enable this room",
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "target_temperature_c_override": "Room comfort temperature override",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
+          "co2_enabled": "Use CO₂ for this room",
           "window_sensor_entity_ids": "Window contacts",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
+          "target_humidity_percent_override": "Room comfort humidity override (%)"
         },
         "data_description": {
           "enabled": "Turn this off if you do not want VentWise to consider this area.",
           "name": "A friendly name for this grouped area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
-          "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
+          "target_temperature_c_override": "Optional. Enter this area-specific comfort temperature in {temperature_unit} instead of the global one.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
-          "start_entity_id": "Optional. Select the automation VentWise runs after you confirm an open-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
-          "stop_entity_id": "Optional. Select the automation VentWise runs after you confirm a close-windows notification in the Home Assistant Companion App. Confirmation expires after 15 minutes and automation conditions still apply.",
+          "co2_entity_id": "Optional. Pick the CO₂ sensor for this area.",
+          "co2_enabled": "Use the selected CO₂ sensor for this area.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort temperature.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
+          "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one."
         }
       }
     },
     "error": {
-      "invalid_input": "One or more values are invalid.",
-      "companion_app_required": "Select a Home Assistant Companion App notification device before configuring room automations."
+      "invalid_input": "One or more values are invalid",
+      "required_unit": "Select a unit before continuing."
     }
   },
   "options": {
@@ -235,6 +288,9 @@
         "description": "Choose what you want to manage.",
         "menu_options": {
           "units": "Units of measurement",
+          "comfort": "Comfort settings",
+          "notifications": "Notifications",
+          "overrides": "Outdoor overrides",
           "settings": "Settings",
           "rooms": "Rooms"
         },
@@ -259,17 +315,18 @@
           "outdoor_weather_entity_id": "Weather source",
           "target_temperature_c": "Comfort temperature",
           "auto_comfort_temperature": "Adapt comfort temperature automatically",
-          "target_humidity_percent": "Comfort humidity",
-          "stability_minutes": "Wait before recommending (minutes)",
+          "target_humidity_percent": "Comfort humidity (%)",
+          "stability_minutes": "Wait before recommending (min)",
           "notification_device_id": "Notification devices",
           "home_assistant_notification_enabled": "Show notifications in Home Assistant",
           "diagnostic_notification_level": "Diagnostic notifications",
-          "debug_mode_enabled": "Enable debug mode",
+          "debug_mode_enabled": "Shows per-room open and close notification test controls. Debug notifications are informational only and never execute Home Assistant automations.",
           "co2_enabled": "Consider CO₂ in recommendations",
           "co2_entity_id": "Home CO₂ sensor",
           "co2_threshold_ppm": "CO₂ threshold (ppm)",
           "soft_outdoor_threshold_c": "Outdoor comfort threshold",
           "cooldown_minutes": "Per-room notification cooldown (minutes)",
+          "safety_bypass_quiet_hours": "Allow safety notifications during quiet hours",
           "outdoor_temperature_override": "Use manual outdoor temperature",
           "outdoor_humidity_override": "Use manual outdoor humidity",
           "wind_speed_override": "Use manual outdoor wind speed",
@@ -286,12 +343,13 @@
           "notification_device_id": "Optional. Pick devices that should receive VentWise notifications.",
           "home_assistant_notification_enabled": "Show each VentWise recommendation in Home Assistant's notification panel.",
           "diagnostic_notification_level": "Choose whether Home Assistant shows extra notifications for configuration or sensor-data problems.",
-          "debug_mode_enabled": "Shows per-room open and close notification test controls. Confirming a debug notification can run the configured automation.",
+          "debug_mode_enabled": "Shows per-room open and close notification test controls. Debug notifications are informational only and never execute Home Assistant automations.",
           "co2_enabled": "Recommended when a CO₂ sensor is available. It prioritizes fresh air when CO₂ is high.",
           "co2_entity_id": "Optional default CO₂ sensor used by rooms without their own sensor.",
           "co2_threshold_ppm": "CO₂ level at which VentWise starts prioritizing fresh air.",
           "soft_outdoor_threshold_c": "Above this temperature outside, opening windows becomes less useful.",
           "cooldown_minutes": "How long VentWise waits before sending an updated recommendation for each room. Identical recommendations stay suppressed.",
+          "safety_bypass_quiet_hours": "When enabled, urgent safety notifications may be delivered during quiet hours. Stability, cooldown, and duplicate suppression still apply.",
           "outdoor_temperature_override": "Use the manual temperature entity below instead of the weather forecast.",
           "outdoor_humidity_override": "Use the manual humidity entity below instead of the weather forecast.",
           "wind_speed_override": "Use the manual wind-speed entity below instead of the weather forecast.",
@@ -340,6 +398,52 @@
           "cooldown_minutes": "How long VentWise waits before sending an updated notification. Identical recommendations stay suppressed."
         }
       },
+      "comfort": {
+        "title": "Comfort settings",
+        "description": "Set the comfort targets and air-quality thresholds used by VentWise.",
+        "data": {
+          "target_temperature_c": "Comfort temperature",
+          "auto_comfort_temperature": "Adapt comfort temperature automatically",
+          "target_humidity_percent": "Comfort humidity (%)",
+          "stability_minutes": "Wait before recommending (min)",
+          "soft_outdoor_threshold_c": "Outdoor comfort threshold",
+          "co2_enabled": "Consider CO₂ in recommendations",
+          "co2_entity_id": "Home CO₂ sensor",
+          "co2_threshold_ppm": "CO₂ threshold (ppm)"
+        },
+        "data_description": {
+          "target_temperature_c": "Enter the comfort temperature in {temperature_unit}.",
+          "target_humidity_percent": "Enter the indoor comfort humidity.",
+          "soft_outdoor_threshold_c": "Enter the outdoor comfort threshold in {temperature_unit}.",
+          "co2_threshold_ppm": "Set the level at which VentWise starts prioritizing fresh air.",
+          "stability_minutes": "Set how long the recommendation must remain unchanged."
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose where VentWise notifications go and how delivery is diagnosed.",
+        "data": {
+          "notification_device_id": "Notification devices",
+          "home_assistant_notification_enabled": "Show notifications in Home Assistant",
+          "diagnostic_notification_level": "Diagnostic notifications",
+          "debug_mode_enabled": "Enable notification test controls",
+          "safety_bypass_quiet_hours": "Allow safety notifications during quiet hours",
+          "cooldown_minutes": "Notification cooldown (minutes)"
+        }
+      },
+      "overrides": {
+        "title": "Outdoor overrides",
+        "description": "Choose the weather source and optional manual outdoor measurements.",
+        "data": {
+          "outdoor_weather_entity_id": "Weather source",
+          "outdoor_temperature_override": "Use manual outdoor temperature",
+          "outdoor_humidity_override": "Use manual outdoor humidity",
+          "wind_speed_override": "Use manual outdoor wind speed",
+          "outdoor_temperature_entity_id": "Manual outdoor temperature",
+          "outdoor_humidity_entity_id": "Manual outdoor humidity",
+          "wind_speed_entity_id": "Manual outdoor wind speed"
+        }
+      },
       "rooms": {
         "title": "Rooms",
         "description": "Add, edit, or remove rooms and grouped areas.",
@@ -362,7 +466,8 @@
         "title": "Edit room",
         "description": "Choose the room you want to update.",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "Room",
+          "remove_room_confirmation": "Confirm room removal"
         },
         "data_description": {
           "room_selection": "Select one of the rooms already saved in VentWise."
@@ -370,9 +475,10 @@
       },
       "remove_room_select": {
         "title": "Remove room",
-        "description": "Choose the room you want to delete.",
+        "description": "Confirm removal of room \"{room_name}\".",
         "data": {
-          "room_selection": "Room"
+          "room_selection": "Room",
+          "remove_room_confirmation": "Confirm room removal"
         },
         "data_description": {
           "room_selection": "Select one of the rooms already saved in VentWise."
@@ -385,28 +491,30 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
           "window_sensor_entity_ids": "Window contacts",
           "target_temperature_c_override_enabled": "Enable room temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "enabled": "Enable this room",
+          "co2_enabled": "Use CO₂ for this room"
         },
         "data_description": {
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
+          "co2_entity_id": "Optional. Pick the room CO₂ sensor.",
           "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort temperature.",
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
           "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "enabled": "Turn this off if you do not want VentWise to consider this room.",
+          "co2_enabled": "Use the selected CO₂ sensor for this room."
         }
       },
       "edit_room_form": {
@@ -416,24 +524,30 @@
           "name": "Room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
           "window_sensor_entity_ids": "Window contacts",
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
+          "enabled": "Enable this room",
+          "co2_enabled": "Use CO₂ for this room"
         },
         "data_description": {
           "name": "A friendly name for this room, like Bedroom, Study, or Office.",
           "temperature_entity_id": "Pick the room temperature sensor.",
           "humidity_entity_id": "Optional. Pick the room humidity sensor.",
+          "co2_entity_id": "Optional. Pick the room CO₂ sensor.",
           "target_temperature_c_override": "Optional. Use this room-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override": "Optional. Use this room-specific comfort humidity percentage instead of the global one.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this room.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this room.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort temperature.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use a room-specific comfort humidity.",
+          "enabled": "Turn this off if you do not want VentWise to consider this room.",
+          "co2_enabled": "Use the selected CO₂ sensor for this room."
         }
       },
       "add_macro_room": {
@@ -443,28 +557,30 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
           "window_sensor_entity_ids": "Window contacts",
           "target_temperature_c_override_enabled": "Enable room temperature override",
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override_enabled": "Enable room humidity override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "enabled": "Enable this room",
+          "co2_enabled": "Use CO₂ for this room"
         },
         "data_description": {
           "name": "A friendly name for this larger area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
+          "co2_entity_id": "Optional. Pick the CO₂ sensor for this area.",
           "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort temperature.",
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
           "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "enabled": "Turn this off if you do not want VentWise to consider this area.",
+          "co2_enabled": "Use the selected CO₂ sensor for this area."
         }
       },
       "edit_macro_room_form": {
@@ -474,30 +590,36 @@
           "name": "Macro-room name",
           "temperature_entity_id": "Indoor temperature sensor",
           "humidity_entity_id": "Indoor humidity sensor",
+          "co2_entity_id": "Indoor CO₂ sensor",
           "window_sensor_entity_ids": "Window contacts",
           "target_temperature_c_override": "Room comfort temperature override",
           "target_humidity_percent_override": "Room comfort humidity override (%)",
-          "start_entity_id": "Open windows automation",
-          "stop_entity_id": "Close windows automation",
           "action_change_hold_minutes": "Wait before reversing advice (minutes)",
-          "action_lockout_minutes": "Keep room advice for (minutes)"
+          "action_lockout_minutes": "Keep room advice for (minutes)",
+          "target_temperature_c_override_enabled": "Enable room temperature override",
+          "target_humidity_percent_override_enabled": "Enable room humidity override",
+          "enabled": "Enable this room",
+          "co2_enabled": "Use CO₂ for this room"
         },
         "data_description": {
-          "name": "A friendly name for this grouped area, like Upstairs or Living area.",
+          "name": "A friendly name for this larger area, like Upstairs or Living area.",
           "temperature_entity_id": "Pick the main temperature sensor for this area.",
           "humidity_entity_id": "Optional. Pick the humidity sensor for this area.",
+          "co2_entity_id": "Optional. Pick the CO₂ sensor for this area.",
           "target_temperature_c_override": "Optional. Use this area-specific comfort temperature instead of the global one.",
           "target_humidity_percent_override": "Optional. Use this area-specific comfort humidity percentage instead of the global one.",
-          "start_entity_id": "Optional. Select the automation VentWise should run when it asks to open windows in this area.",
-          "stop_entity_id": "Optional. Select the automation VentWise should run when it asks to close windows in this area.",
           "action_change_hold_minutes": "Wait this long before changing an open recommendation into a close recommendation, or the reverse.",
-          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed."
+          "action_lockout_minutes": "After an open or close recommendation, prevent an opposite recommendation for this long. Urgent safety closures are never delayed.",
+          "target_temperature_c_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort temperature.",
+          "target_humidity_percent_override_enabled": "Turn this on if you want VentWise to use an area-specific comfort humidity.",
+          "enabled": "Turn this off if you do not want VentWise to consider this area.",
+          "co2_enabled": "Use the selected CO₂ sensor for this area."
         }
       }
     },
     "error": {
-      "invalid_input": "One or more values are invalid.",
-      "companion_app_required": "Select a Home Assistant Companion App notification device before configuring room automations."
+      "invalid_input": "One or more values are invalid",
+      "required_unit": "Select a unit before continuing."
     }
   },
   "selector": {
@@ -509,6 +631,17 @@
     }
   },
   "entity": {
+    "button": {
+      "request_recommendation": {
+        "name": "Request recommendation now"
+      },
+      "debug_open_notification": {
+        "name": "Receive open notification"
+      },
+      "debug_close_notification": {
+        "name": "Receive close notification"
+      }
+    },
     "binary_sensor": {
       "notifications_currently_allowed": {
         "name": "Notifications currently allowed"
@@ -541,47 +674,140 @@
       }
     },
     "sensor": {
+      "core_recommendation": {
+        "name": "Calculated recommendation"
+      },
+      "co2_status": {
+        "name": "Indoor CO₂ status",
+        "state": {
+          "available": "Available",
+          "disabled": "Disabled",
+          "not_configured": "Not configured",
+          "unavailable": "Sensor unavailable"
+        }
+      },
+      "ventilation_score": {
+        "name": "Score - Ventilation"
+      },
+      "co2": {
+        "name": "Air quality - Indoor CO₂",
+        "state": {
+          "disabled": "Disabled",
+          "not_configured": "Not configured",
+          "sensor_unavailable": "Sensor unavailable"
+        }
+      },
+      "forecast_temperature": {
+        "name": "Temperature - Forecast"
+      },
+      "outdoor_pressure": {
+        "name": "Weather - Outdoor pressure"
+      },
+      "wind_gust": {
+        "name": "Weather - Outdoor wind gust"
+      },
       "weather_condition": {
-        "name": "Weather condition"
+        "name": "Weather - Condition",
+        "state": {
+          "clear-night": "Clear night",
+          "cloudy": "Cloudy",
+          "exceptional": "Exceptional",
+          "fog": "Fog",
+          "hail": "Hail",
+          "lightning": "Lightning",
+          "lightning-rainy": "Lightning with rain",
+          "partlycloudy": "Partly cloudy",
+          "pouring": "Pouring rain",
+          "rainy": "Rainy",
+          "snowy": "Snowy",
+          "snowy-rainy": "Snowy rain",
+          "sunny": "Sunny",
+          "windy": "Windy",
+          "windy-variant": "Windy"
+        }
       },
       "average_perceived_indoor_temperature": {
-        "name": "Average perceived indoor temperature"
+        "name": "Temperature - Average perceived indoor"
       },
       "perceived_outdoor_temperature": {
-        "name": "Perceived outdoor temperature"
+        "name": "Temperature - Perceived outdoor"
       },
       "effective_comfort_temperature": {
-        "name": "Effective comfort temperature"
+        "name": "Temperature - Effective comfort"
       },
       "suggested_comfort_temperature": {
-        "name": "Climate-adaptive comfort target"
+        "name": "Temperature - Suggested comfort"
       },
       "outdoor_temperature": {
-        "name": "Outdoor temperature"
+        "name": "Temperature - Outdoor"
       },
       "outdoor_humidity": {
-        "name": "Outdoor humidity"
+        "name": "Humidity - Outdoor"
       },
       "wind_speed": {
-        "name": "Outdoor wind speed"
+        "name": "Weather - Outdoor wind speed"
+      },
+      "outdoor_absolute_humidity": {
+        "name": "Humidity - Outdoor absolute (calculated)"
+      },
+      "outdoor_humidity_ratio": {
+        "name": "Humidity - Outdoor ratio (calculated)"
+      },
+      "outdoor_vapor_pressure": {
+        "name": "Humidity - Outdoor vapor pressure (calculated)"
+      },
+      "indoor_absolute_humidity": {
+        "name": "Humidity - Indoor absolute (calculated)"
+      },
+      "indoor_humidity_ratio": {
+        "name": "Humidity - Indoor ratio (calculated)"
+      },
+      "indoor_vapor_pressure": {
+        "name": "Humidity - Indoor vapor pressure (calculated)"
+      },
+      "indoor_outdoor_humidity_difference": {
+        "name": "Humidity - Difference outdoor minus indoor (calculated)"
+      },
+      "moisture_exchange_direction": {
+        "name": "Humidity - More humid zone",
+        "state": {
+          "drying": "OUT",
+          "humidifying": "IN",
+          "neutral": "Equal"
+        }
       },
       "recommendation": {
-        "name": "Recommendation"
+        "name": "Recommendation - State",
+        "state": {
+          "open": "Open windows",
+          "ventilate": "Ventilate briefly",
+          "close": "Close windows",
+          "none": "No recommendation"
+        }
+      },
+      "window_state": {
+        "name": "Recommendation - Window state",
+        "state": {
+          "open": "Open",
+          "closed": "Closed",
+          "not_configured": "Not configured",
+          "unavailable": "Unavailable"
+        }
       },
       "recommendation_score": {
-        "name": "Recommendation score"
+        "name": "Score - Recommendation"
       },
       "recommendation_reason": {
-        "name": "Recommendation reason"
+        "name": "Recommendation - Reason"
       },
       "perceived_indoor_temperature": {
-        "name": "Perceived indoor temperature"
+        "name": "Temperature - Perceived indoor"
       },
       "temperature": {
-        "name": "Temperature"
+        "name": "Temperature - Indoor"
       },
       "indoor_humidity": {
-        "name": "Indoor humidity"
+        "name": "Humidity - Indoor"
       }
     },
     "switch": {
@@ -605,6 +831,14 @@
       },
       "humidity_override_enabled": {
         "name": "Humidity override enabled"
+      }
+    },
+    "time": {
+      "quiet_hours_start_time": {
+        "name": "Quiet hours start"
+      },
+      "quiet_hours_end_time": {
+        "name": "Quiet hours end"
       }
     }
   }

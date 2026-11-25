@@ -35,8 +35,9 @@ VentWise helps users decide when opening or closing windows is likely to improve
 > coverage and limited real-world use, but it has not been exhaustively tested
 > across all homes, sensors, weather conditions, or hardware. It provides
 > informational recommendations only; it is not a safety, security, weather-
-> protection, or automation-control system. Optional room automations require
-> an explicit Companion App notification confirmation. Always assess the actual conditions
+> protection, or automation-control system. VentWise never executes Home
+> Assistant automations; create any required automations yourself from the
+> recommendation entities. Always assess the actual conditions
 > before opening or closing anything, and do not rely on VentWise to prevent
 > injury, property damage, intrusion, rain exposure, or equipment damage. See
 > the full [license, disclaimer, and reporting guidance](docs/NOTICE.md).
@@ -70,7 +71,7 @@ Stable releases are published from `main`. Experimental prereleases from the
 - [User guide: installation, setup, updates, and removal](docs/user-guide.md)
 - [Docker Test Lab: local manual testing without hardware](docs/docker-test-lab.md)
 - [How the Home Assistant integration works](docs/home-assistant-integration.md)
-- [Current v0.18 decision-engine behavior](docs/ddp-v0.18-current.md)
+- [DDP plan: v0.18 scope and future exploration](docs/ddp-plan.md)
 - [Safety, beta status, and reporting guidance](docs/NOTICE.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Documentation index](docs/INDEX.md)

@@ -17,7 +17,9 @@ from homeassistant.config_entries import SOURCE_USER
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ventwise.const import (
+    CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
     CONF_CO2_THRESHOLD_PPM,
     CONF_COOLDOWN_MINUTES,
     CONF_HOME_ASSISTANT_NOTIFICATION_ENABLED,
@@ -28,18 +30,30 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
+    CONF_ROOM_HUMIDITY_ENTITY_ID,
     CONF_ROOM_NAME,
+    CONF_ROOM_SELECTION,
     CONF_ROOM_TEMPERATURE_ENTITY_ID,
+    CONF_ROOM_TEMPERATURE_UNIT,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
+    CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C,
+    CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED,
     CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS,
     CONF_STABILITY_MINUTES,
+    CONF_SOFT_OUTDOOR_THRESHOLD_C,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
+    CONF_TARGET_HUMIDITY_PERCENT,
     DOMAIN,
 )
 from custom_components.ventwise.application.coordinator import VentWiseCoordinator
-from custom_components.ventwise.application.notification import async_send_notification
+from custom_components.ventwise.application.notifications.service import async_send_notification
 from custom_components.ventwise.application import coordinator as coordinator_module
 from custom_components.ventwise import IntegrationRuntimeData
-from custom_components.ventwise.ventwise_core import RecommendationAction
+from ventwise_core import RecommendationAction
 
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
@@ -59,6 +73,7 @@ def _options(**overrides: object) -> dict[str, object]:
                 CONF_ROOM_NAME: "Test room",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.test_temperature",
                 CONF_ROOM_CO2_ENTITY_ID: "sensor.test_co2",
+                CONF_ROOM_CO2_ENABLED: True,
                 CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [
                     "binary_sensor.test_window_left",
                     "binary_sensor.test_window_right",
@@ -137,10 +152,137 @@ async def test_real_config_entry_setup_creates_entities_and_unloads_cleanly(
     runtime = hass.data[DOMAIN][entry.entry_id]
     assert isinstance(runtime, IntegrationRuntimeData)
     assert hass.states.get("sensor.test_room_recommendation") is not None
+    assert hass.states.get("sensor.test_room_co2").state == "700"
     assert hass.states.get("sensor.test_room_window_state").state == "closed"
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert entry.entry_id not in hass.data.get(DOMAIN, {})
+
+
+@pytest.mark.asyncio
+async def test_options_save_waits_for_updated_runtime_and_entities(
+    hass: HomeAssistant,
+) -> None:
+    """An options save must finish only after the new runtime is visible."""
+
+    _seed_states(hass)
+    entry = MockConfigEntry(domain=DOMAIN, version=2, data={}, options=_options())
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "comfort"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_TARGET_TEMPERATURE_C: 24.0,
+            CONF_AUTO_COMFORT_TEMPERATURE: False,
+            CONF_TARGET_HUMIDITY_PERCENT: 55.0,
+            CONF_STABILITY_MINUTES: 0,
+            CONF_SOFT_OUTDOOR_THRESHOLD_C: 22.0,
+            CONF_CO2_ENABLED: False,
+            CONF_CO2_ENTITY_ID: None,
+            CONF_CO2_THRESHOLD_PPM: 1000.0,
+        },
+    )
+
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    runtime = hass.data[DOMAIN][entry.entry_id]
+    assert runtime.coordinator.config.target_temperature_c == 24.0
+    assert entry.options[CONF_TARGET_TEMPERATURE_C] == 24.0
+    assert hass.states.get("sensor.test_room_co2").state == "700"
+
+
+@pytest.mark.asyncio
+async def test_room_options_save_removes_co2_from_the_saved_entry(
+    hass: HomeAssistant,
+) -> None:
+    """Removing a room CO₂ source through the real flow must be persisted."""
+
+    _seed_states(hass)
+    entry = MockConfigEntry(domain=DOMAIN, version=2, data={}, options=_options())
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "rooms"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_ROOM_SELECTION: "1. Test room (Room)"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "edit_room"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_ROOM_NAME: "Test room",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.test_temperature",
+            CONF_ROOM_CO2_ENTITY_ID: None,
+            CONF_ROOM_CO2_ENABLED: False,
+            CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: False,
+            CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: None,
+            CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: False,
+            CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE: None,
+        },
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_ROOM_TEMPERATURE_UNIT: "°C"}
+    )
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+
+    room = entry.options[CONF_ROOMS][0]
+    assert room[CONF_ROOM_CO2_ENTITY_ID] is None
+    assert room[CONF_ROOM_CO2_ENABLED] is False
+    assert hass.states.get("sensor.test_room_co2").state in {
+        "not_configured",
+        "unavailable",
+    }
+
+
+@pytest.mark.asyncio
+async def test_clearing_optional_bindings_keeps_ventwise_entities_available(
+    hass: HomeAssistant,
+) -> None:
+    """Removing source bindings keeps derived entities with clear states."""
+
+    _seed_states(hass)
+    options = _options()
+    options[CONF_ROOMS][0][CONF_ROOM_HUMIDITY_ENTITY_ID] = "sensor.test_humidity"
+    hass.states.async_set("sensor.test_humidity", "50")
+    entry = MockConfigEntry(domain=DOMAIN, version=6, data={}, options=options)
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    updated_options = dict(options)
+    updated_options[CONF_ROOMS] = [
+        {
+            CONF_ROOM_NAME: "Test room",
+            CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.test_temperature",
+            CONF_ROOM_CO2_ENABLED: False,
+            CONF_ROOM_WINDOW_SENSOR_ENTITY_IDS: [],
+        }
+    ]
+    hass.config_entries.async_update_entry(entry, options=updated_options)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.test_room_co2") is not None
+    assert hass.states.get("sensor.test_room_co2").state == "disabled"
+    assert hass.states.get("sensor.test_room_indoor_humidity") is not None
+    assert hass.states.get("sensor.test_room_indoor_humidity").state in {"unknown", "unavailable"}
+    assert hass.states.get("sensor.test_room_window_state") is not None
+    assert hass.states.get("sensor.test_room_window_state").state == "not_configured"
 
 
 @pytest.mark.asyncio
@@ -160,6 +302,18 @@ async def test_entity_ids_stay_english_when_home_assistant_uses_italian(
     assert hass.states.get("sensor.test_room_recommendation") is not None
     assert hass.states.get("sensor.test_room_raccomandazione") is None
 
+    recommendation = hass.states.get("sensor.test_room_recommendation")
+    score = hass.states.get("sensor.test_room_score")
+    reason = hass.states.get("sensor.test_room_reason")
+    assert recommendation is not None
+    assert score is not None
+    assert reason is not None
+    assert "Raccomandazione" in recommendation.attributes["friendly_name"]
+    assert "Punteggio" in score.attributes["friendly_name"]
+    assert "Recommendation" not in recommendation.attributes["friendly_name"]
+    assert "Score" not in score.attributes["friendly_name"]
+    assert "Outside" not in reason.state
+
 
 @pytest.mark.asyncio
 async def test_real_flow_manager_starts_the_ventwise_config_flow(
@@ -172,6 +326,12 @@ async def test_real_flow_manager_starts_the_ventwise_config_flow(
         context={"source": SOURCE_USER},
     )
     assert result["type"] == "form"
+    assert result["step_id"] == "units"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TEMPERATURE_UNIT: "°C", CONF_WIND_SPEED_UNIT: "m/s"},
+    )
     assert result["step_id"] == "user"
 
     result = await hass.config_entries.flow.async_configure(

@@ -18,6 +18,18 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
+## Agent Instructions
+
+`AGENTS.md` is the public, versioned guide for repository contributors and
+coding agents. It contains only reproducible project rules and must not contain
+secrets, personal paths, private endpoints, or machine-specific instructions.
+
+For owner- or machine-specific guidance, create `AGENTS.local.md` at the
+repository root. This file is ignored by Git and is loaded only when present;
+it is optional and must never be required to build, test, or contribute to the
+project. Keep credentials in environment variables or a local secret store,
+not in either instructions file.
+
 ## Common Commands
 
 Run the complete automated suite with the exact Python, Home Assistant, pytest,
@@ -32,16 +44,6 @@ python scripts/run_tests.py
 python3 scripts/run_tests.py
 ```
 
-To enforce the same check automatically before every commit and push, enable
-the repository hooks once after cloning:
-
-```powershell
-git config core.hooksPath .githooks
-```
-
-The hooks use the cached Docker image and clean up the disposable container and
-Compose network when they finish. A failed test blocks the commit or push.
-
 The command needs Docker Desktop (Windows) or Docker Engine with Compose
 (Linux/macOS). It builds the pinned Python 3.14.2 image, mounts the checkout
 read-only, and runs each layer in a disposable Linux container. Reports are
@@ -52,6 +54,11 @@ feedback or forward pytest options after `--`:
 python scripts/run_tests.py --layer unit
 python scripts/run_tests.py --layer integration -- -k notification
 ```
+
+Tests that are not executable or reliable on Windows, including Home Assistant
+integration/system tests and tests requiring the pinned CI dependencies, must
+be run through this Docker workflow. Do not treat a host-Python run as
+equivalent validation; use the disposable Linux container used by CI.
 
 The complete run writes `junit-unit.xml`, `junit-integration.xml`, and
 `junit-system.xml`, together with aggregated `coverage.xml`, `htmlcov/`, and
@@ -74,7 +81,9 @@ physical hardware.
 
 ## Repository Layout
 
-- `custom_components/ventwise/ventwise_core/` for the reusable decision core
+- `src/ventwise_core/` for the canonical reusable decision core, organized by
+  domain, engine, calculations, and serialization; the release
+  builder embeds it at the archive root as `ventwise_core/`
 - `custom_components/ventwise/application/` for runtime coordination, state, and notifications
 - `custom_components/ventwise/configuration/` for shared config and options-flow logic
 - `custom_components/ventwise/entities/` for shared entity behavior
@@ -89,9 +98,12 @@ that owns the behavior.
 ## CI / Release
 
 - pushes to `main` run unit tests, HACS validation, Hassfest, and package build
-- pushes to `test` branches run the same checks and can publish prerelease artifacts
+- pushes to `test` branches run the same checks and publish one prerelease from
+  the final CI job; Pull Requests run validation only and never publish releases
 - tag pushes matching `v*` rerun validation, build the package, and create the GitHub Release
-- release checks reuse the same packaging script as CI
+- release checks reuse the same packaging script as CI, and experimental
+  publication is part of the push CI rather than a separate `workflow_run`
+  workflow
 
 ## Working Rules
 

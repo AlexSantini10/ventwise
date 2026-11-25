@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Generic, Tuple, TypeVar
+from typing import TYPE_CHECKING, Generic, Tuple, TypeVar
+
+if TYPE_CHECKING:
+    from .baseline import BaselineAssessment
+    from .impacts import ImpactEstimate
+    from .objectives import ObjectiveAssessment
+    from .results import CandidateAssessment
 
 
 T = TypeVar("T")
@@ -88,6 +94,7 @@ class ComfortObservation:
     humidity_percent: float | None
     wind_speed_m_s: float | None = None
     wind_gust_m_s: float | None = None
+    pressure_hpa: float | None = None
     weather_condition: str | None = None
     forecast_temperature_c: float | None = None
     forecast: ForecastObservation | None = None
@@ -95,6 +102,7 @@ class ComfortObservation:
     humidity_source: SourceReading | None = None
     wind_speed_source: SourceReading | None = None
     wind_gust_source: SourceReading | None = None
+    pressure_source: SourceReading | None = None
     safety_evidence_configured: bool = False
 
 
@@ -168,6 +176,8 @@ class Observation(Generic[T]):
     freshness: timedelta | None = None
     quality_reason: str | None = None
     provenance: Tuple[str, ...] = ()
+    original_value: object | None = None
+    original_unit: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,29 +193,44 @@ class DecisionRoom:
     target_humidity_percent: float | None = None
     co2_ppm: Observation[float] | None = None
     window_contact_configured: bool = False
+    action_change_hold_seconds: int = 0
+    action_lockout_seconds: int = 0
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionOutdoor:
-    """Canonical outdoor inputs for one evaluation."""
+class ExternalConditions:
+    """Canonical conditions measured outside the home."""
 
     temperature_c: Observation[float]
     humidity_percent: Observation[float] | None
     wind_speed_m_s: Observation[float] | None = None
     wind_gust_m_s: Observation[float] | None = None
     weather_condition: Observation[str] | None = None
+    forecast: "ForecastObservation" | None = None
     safety_evidence_configured: bool = False
     pressure_hpa: Observation[float] | None = None
 
 
 @dataclass(frozen=True, slots=True)
-class DecisionContext:
-    """Explicit delivery context; the core does not own notification state."""
+class DecisionRuntimeContext:
+    """Runtime flags supplied with a snapshot; delivery flags do not alter core scoring."""
 
     quiet_hours_active: bool = False
     cooldown_active: bool = False
     stable_for_seconds: int = 0
     stability_seconds_required: int = 0
+    room_guardrails: Tuple["RoomGuardrailState", ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class RoomGuardrailState:
+    """Persisted action-transition state supplied to the core."""
+
+    room_id: str
+    accepted_action: str | None = None
+    lockout_until: datetime | None = None
+    pending_action: str | None = None
+    pending_since: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -215,7 +240,17 @@ class DecisionSnapshot:
     rooms: Tuple[DecisionRoom, ...]
     outdoor: DecisionOutdoor
     evaluated_at: datetime
-    context: DecisionContext = field(default_factory=DecisionContext)
+    context: DecisionRuntimeContext = field(default_factory=DecisionRuntimeContext)
+
+    @property
+    def external_conditions(self) -> ExternalConditions:
+        """Preferred semantic name for the shared external readings."""
+
+        return self.outdoor
+
+
+# Backwards-compatible name for integrations and tests using the v0.18 API.
+DecisionOutdoor = ExternalConditions
 
 
 @dataclass(frozen=True, slots=True)
@@ -224,6 +259,64 @@ class TraceEntry:
 
     code: str
     detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionOption:
+    """One concrete action considered by the decision pipeline."""
+
+    action: RecommendationAction
+    duration_minutes: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class OptionEligibility:
+    """Safety and policy result for one decision option."""
+
+    allowed: bool = True
+    hard_blocks: Tuple[TraceEntry, ...] = ()
+    penalties: Tuple[TraceEntry, ...] = ()
+    reason_code: str = "allowed"
+
+
+@dataclass(frozen=True, slots=True)
+class ExpectedEffect:
+    """Structured effect information retained for one decision option."""
+
+    temperature: float = 0.0
+    humidity: float = 0.0
+    co2: float = 0.0
+    confidence: float = 0.0
+    evidence: Tuple[TraceEntry, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class OptionEvaluationContext:
+    """Immutable context shared by the option-evaluation pipeline."""
+
+    room: DecisionRoom
+    snapshot: DecisionSnapshot | None
+    config: object
+    baseline: str = "UNKNOWN"
+    trace: Tuple[TraceEntry, ...] = ()
+    candidate_scores: CandidateScores | None = None
+    selected_action: RecommendationAction = RecommendationAction.NONE
+
+
+@dataclass(frozen=True, slots=True)
+class OptionEvaluation:
+    """Complete, inspectable evaluation of one decision option."""
+
+    option: DecisionOption
+    eligibility: OptionEligibility = field(default_factory=OptionEligibility)
+    expected_effect: ExpectedEffect = field(default_factory=ExpectedEffect)
+    score: float = 0.0
+    confidence: float = 0.0
+    selected: bool = False
+    reason_code: str = "not_selected"
+    baseline_assessment: "BaselineAssessment | None" = None
+    impact_estimate: "ImpactEstimate | None" = None
+    objective_assessment: "ObjectiveAssessment | None" = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -249,7 +342,7 @@ class DataQualitySummary:
 
 @dataclass(frozen=True, slots=True)
 class DecisionResult:
-    """Pure core truth and delivery eligibility for one room."""
+    """Immutable domain result; Home Assistant may project delivery separately."""
 
     room_id: str
     core_action: RecommendationAction
@@ -269,10 +362,14 @@ class DecisionResult:
     evaluated_at: datetime | None = None
     baseline: str = "UNKNOWN"
     component_contributions: Tuple[TraceEntry, ...] = ()
+    option_evaluations: Tuple[OptionEvaluation, ...] = ()
     urgent: bool = False
     co2_ppm: float | None = None
     co2_influence: float = 0.0
     quality: Availability = Availability.AVAILABLE
+    guardrail_state: RoomGuardrailState | None = None
+    candidate_assessments: Tuple["CandidateAssessment", ...] = ()
+    selection_reason_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -284,3 +381,4 @@ class AggregateDecisionResult:
     room_results: Tuple[DecisionResult, ...] = ()
     trace: Tuple[TraceEntry, ...] = ()
     evaluated_at: datetime | None = None
+    guardrail_states: Tuple[RoomGuardrailState, ...] = ()

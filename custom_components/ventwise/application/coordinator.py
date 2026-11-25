@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import secrets
 from math import fsum
 from dataclasses import dataclass, replace
 from collections.abc import Callable
@@ -11,7 +10,7 @@ from datetime import datetime, time, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_point_in_time, async_track_state_change_event
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -19,14 +18,36 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from ..ventwise_core import (
-    DecisionEngine,
-    ForecastObservation,
-    RecommendationAction,
-    RecommendationSummary,
-)
+try:
+    from ..ventwise_core import (
+        DecisionEngine,
+        ForecastObservation,
+        perceived_temperature_c,
+        RecommendationAction,
+        RecommendationSummary,
+    )
+    from ..ventwise_core.domain.constants import (
+        COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C,
+        COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C,
+        MAX_COMFORT_TEMPERATURE_C,
+        MIN_COMFORT_TEMPERATURE_C,
+    )
+except ImportError:  # Local source-tree development uses the standalone package.
+    from ventwise_core import (
+        DecisionEngine,
+        ForecastObservation,
+        perceived_temperature_c,
+        RecommendationAction,
+        RecommendationSummary,
+    )
+    from ventwise_core.domain.constants import (
+        COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C,
+        COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C,
+        MAX_COMFORT_TEMPERATURE_C,
+        MIN_COMFORT_TEMPERATURE_C,
+    )
 
-from .runtime import (
+from .runtime.integration_runtime import (
     IntegrationConfig,
     NotificationMarker,
     RoomActionGuard,
@@ -35,15 +56,17 @@ from .runtime import (
     build_integration_config,
     build_decision_config,
     build_decision_snapshot,
+    build_delivered_result,
     decision_to_summary,
     build_room_profiles,
     dump_runtime_state,
-    gate_room_recommendations,
     load_runtime_state,
     is_quiet_hours_active,
     room_window_states,
 )
-from .notification import (
+from .notifications.constants import ELEVATED_RECOMMENDATION_SCORE, URGENT_RECOMMENDATION_SCORE
+from .notifications.policy import DeliveryRequest, evaluate_delivery
+from .notifications.service import (
     async_dismiss_persistent_notification,
     async_create_persistent_notification,
     async_send_notification,
@@ -53,9 +76,9 @@ from .notification import (
     home_assistant_diagnostic_notification_id,
     home_assistant_notification_id_for_room,
     home_assistant_on_demand_notification_id,
-    is_companion_app_notification_entity,
     notification_entity_ids_for_device_ids,
 )
+from .constants import DEFAULT_FORECAST_FRESHNESS_MINUTES, DEFAULT_FORECAST_LOOKAHEAD_HOURS
 from ..const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_ROOM_ENABLED,
@@ -80,22 +103,6 @@ from ..units import state_unit, temperature_to_celsius, wind_speed_to_m_s
 
 _LOGGER = logging.getLogger(__name__)
 
-_NOTIFICATION_SEVERITY_ELEVATED_SCORE = 0.55
-_NOTIFICATION_SEVERITY_URGENT_SCORE = 0.75
-_CONFIRMATION_TTL = timedelta(minutes=15)
-_MOBILE_APP_NOTIFICATION_ACTION = "mobile_app_notification_action"
-
-
-@dataclass(frozen=True, slots=True)
-class PendingAutomationConfirmation:
-    """A short-lived, explicit request to run one room automation."""
-
-    room_key: str
-    action: RecommendationAction
-    expires_at: datetime
-    debug: bool = False
-
-
 class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     """Coordinate state across all VentWise entities."""
 
@@ -119,16 +126,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self._last_diagnostic_log_issue: str | None = None
         self._state_listener_unsubs: list[Callable[[], None]] = []
         self._time_listener_unsubs: list[Callable[[], None]] = []
-        self._pending_confirmations: dict[str, PendingAutomationConfirmation] = {}
-        self._confirmation_listener_unsub: Callable[[], None] | None = None
         self._listeners_initialized = False
         self._suppress_automatic_notifications = False
-        bus = getattr(hass, "bus", None)
-        if bus is not None:
-            self._confirmation_listener_unsub = bus.async_listen(
-                _MOBILE_APP_NOTIFICATION_ACTION,
-                self._handle_mobile_app_notification_action,
-            )
         config_entry.async_on_unload(self._async_remove_listeners)
         super().__init__(
             hass,
@@ -203,17 +202,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             )
 
         delivered = False
-        has_mobile_app_target = any(
-            is_companion_app_notification_entity(self.hass, entity_id)
-            for entity_id in notification_entity_ids
-        )
         for recommendation in actionable_recommendations:
             title, message = build_room_notification_payload(recommendation, language=language)
-            mobile_action = (
-                self._mobile_confirmation_action(recommendation)
-                if has_mobile_app_target
-                else None
-            )
             sent = await async_send_notification(
                 self.hass,
                 notification_entity_ids,
@@ -224,7 +214,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 home_assistant_notification_id=home_assistant_notification_id_for_room(
                     recommendation
                 ),
-                mobile_action=mobile_action,
             )
             if sent:
                 delivered = True
@@ -236,14 +225,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     title,
                     message,
                 )
-                if mobile_action is not None:
-                    self._pending_confirmations[mobile_action["action"]] = (
-                        PendingAutomationConfirmation(
-                            recommendation.room_id or recommendation.room_name,
-                            recommendation.action,
-                            dt_util.now() + _CONFIRMATION_TTL,
-                        )
-                    )
         if delivered:
             self._persist_runtime_state()
         return delivered
@@ -297,14 +278,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             forced_recommendation,
             language=language,
         )
-        mobile_action = (
-            self._mobile_confirmation_action(forced_recommendation)
-            if any(
-                is_companion_app_notification_entity(self.hass, entity_id)
-                for entity_id in notification_entity_ids
-            )
-            else None
-        )
         delivered = await async_send_notification(
             self.hass,
             notification_entity_ids,
@@ -315,15 +288,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             home_assistant_notification_id=home_assistant_notification_id_for_room(
                 forced_recommendation
             ),
-            mobile_action=mobile_action,
         )
-        if delivered and mobile_action is not None:
-            self._pending_confirmations[mobile_action["action"]] = PendingAutomationConfirmation(
-                forced_recommendation.room_id or forced_recommendation.room_name,
-                action,
-                dt_util.now() + _CONFIRMATION_TTL,
-                debug=True,
-            )
         return delivered
 
     async def _async_update_data(self) -> RuntimeSnapshot:
@@ -352,6 +317,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_temperature_c=None,
                 forecast_temperature_c=None,
                 outdoor_humidity_percent=None,
+                outdoor_pressure_hpa=None,
                 wind_speed_m_s=None,
                 wind_gust_m_s=None,
                 notification_allowed=False,
@@ -400,6 +366,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 outdoor_temperature_c=None,
                 forecast_temperature_c=forecast.temperature_c if forecast else None,
                 outdoor_humidity_percent=None,
+                outdoor_pressure_hpa=None,
                 wind_speed_m_s=None,
                 wind_gust_m_s=None,
                 notification_allowed=False,
@@ -426,15 +393,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 ),
                 target_perceived_c=self._config.target_temperature_c,
                 suggested_comfort_temperature_c=None,
-                outdoor_perceived_c=outdoor.temperature_c
-                + (
-                    ((outdoor.humidity_percent if outdoor.humidity_percent is not None else self._config.target_humidity_percent) - self._config.target_humidity_percent)
-                    * 0.04
+                outdoor_perceived_c=perceived_temperature_c(
+                    outdoor.temperature_c,
+                    outdoor.humidity_percent,
+                    self._config.target_temperature_c,
+                    self._config.target_humidity_percent,
                 ),
                 active_indoor_perceived_c=None,
                 outdoor_temperature_c=outdoor.temperature_c,
                 forecast_temperature_c=forecast.temperature_c if forecast else None,
                 outdoor_humidity_percent=outdoor.humidity_percent,
+                outdoor_pressure_hpa=outdoor.pressure_hpa,
                 wind_speed_m_s=outdoor.wind_speed_m_s,
                 wind_gust_m_s=outdoor.wind_gust_m_s,
                 notification_allowed=False,
@@ -450,11 +419,14 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         await self._set_diagnostic_issue(None)
 
         now = dt_util.now()
-        outdoor_perceived_c = outdoor.temperature_c + (
-            ((outdoor.humidity_percent if outdoor.humidity_percent is not None else self._config.target_humidity_percent) - self._config.target_humidity_percent) * 0.04
+        outdoor_perceived_c = perceived_temperature_c(
+            outdoor.temperature_c,
+            outdoor.humidity_percent,
+            self._config.target_temperature_c,
+            self._config.target_humidity_percent,
         )
         suggested_target = round(
-            max(18.0, min(26.0, self._config.target_temperature_c + max(-2.0, min(2.0, (outdoor_perceived_c - 20.0) * 0.25)))),
+            max(MIN_COMFORT_TEMPERATURE_C, min(MAX_COMFORT_TEMPERATURE_C, self._config.target_temperature_c + max(-COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C, min(COMFORT_TEMPERATURE_ADJUSTMENT_LIMIT_C, (outdoor_perceived_c - COMFORT_TEMPERATURE_OUTDOOR_REFERENCE_C) * 0.25)))),
             1,
         )
         effective_target_temperature_c = suggested_target if self._config.auto_comfort_temperature_enabled else self._config.target_temperature_c
@@ -466,11 +438,27 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             outdoor,
             now,
             window_states=window_states,
+            room_action_guards=self._room_action_guards,
         )
-        summary = decision_to_summary(self._decision_engine, decision_snapshot)
+        calculated_snapshot = build_decision_snapshot(
+            rooms,
+            outdoor,
+            now,
+            window_states=window_states,
+            room_action_guards={},
+        )
+        calculated_result = self._decision_engine.evaluate(calculated_snapshot)
+        core_result = self._decision_engine.evaluate(decision_snapshot)
+        self._update_room_action_guards_from_core(core_result)
+        core_result_by_room = {
+            room_result.room_id: room_result for room_result in core_result.room_results
+        }
+        summary = decision_to_summary(
+            self._decision_engine,
+            decision_snapshot,
+            result=core_result,
+        )
         summary = _with_suggested_comfort_temperature(summary, suggested_target)
-        summary = gate_room_recommendations(summary, window_states)
-        summary = self._apply_room_action_guardrails(summary, now)
         signature = self._signature(summary)
         if signature != self._last_action_signature:
             self._last_action_signature = signature
@@ -490,6 +478,11 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             ),
             None,
         )
+        best_room_result = (
+            core_result_by_room.get(best_recommendation.room_id or "")
+            if best_recommendation is not None
+            else None
+        )
         notification_marker = self._notification_markers.get(summary.best_room or "")
         cooldown_active = (
             notification_marker is not None
@@ -499,6 +492,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             and not self._should_bypass_notification_cooldown(
                 notification_marker,
                 best_recommendation,
+                is_safety=bool(best_room_result and best_room_result.urgent),
             )
         )
 
@@ -508,14 +502,15 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 bool(notification_entity_ids)
                 or self._config.home_assistant_notification_enabled
             )
-            and not quiet_hours_active
-            and stable_for_seconds >= self._config.stability_minutes * 60
         )
         if self._suppress_automatic_notifications:
             notification_channel_available = False
+        delivery_suppressed_by: dict[str, str] = {}
         notification_allowed = False
         for recommendation in summary.room_recommendations:
             room_signature = self._notification_identity(recommendation)
+            room_result = core_result_by_room.get(recommendation.room_id or "")
+            is_safety = bool(room_result and room_result.urgent)
             room_marker = self._notification_markers.get(recommendation.room_name)
             matches_marker = room_marker is not None and self._matches_notification_marker(
                 room_marker,
@@ -524,6 +519,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             bypasses_cooldown = room_marker is not None and self._should_bypass_notification_cooldown(
                 room_marker,
                 recommendation,
+                is_safety=is_safety,
             )
             room_cooldown_active = (
                 room_marker is not None
@@ -531,14 +527,29 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 < timedelta(minutes=self._config.cooldown_minutes)
                 and not bypasses_cooldown
             )
-            room_notification_allowed = (
-                notification_channel_available
-                and recommendation.action != RecommendationAction.NONE
-                and recommendation.score >= self._config.minimum_score
-                and not matches_marker
-                and not room_cooldown_active
+            delivery_decision = evaluate_delivery(
+                DeliveryRequest(
+                    action=recommendation.action,
+                    score=recommendation.score,
+                    notification_enabled=self._config.notification_enabled,
+                    channel_available=notification_channel_available,
+                    quiet_hours_active=quiet_hours_active,
+                    cooldown_active=room_cooldown_active,
+                    stable_for_seconds=stable_for_seconds,
+                    stability_seconds_required=self._config.stability_minutes * 60,
+                    duplicate=matches_marker,
+                    minimum_score=self._config.minimum_score,
+                    is_safety=is_safety,
+                    safety_bypasses_quiet_hours=self._config.safety_bypass_quiet_hours,
+                )
             )
+            room_notification_allowed = delivery_decision.should_notify
             if not room_notification_allowed:
+                if recommendation.action is not RecommendationAction.NONE:
+                    delivery_suppressed_by.setdefault(
+                        recommendation.room_id or recommendation.room_name,
+                        delivery_decision.suppressed_by or "notification_channel",
+                    )
                 if matches_marker:
                     _LOGGER.debug(
                         "VentWise notification suppressed: equivalent recommendation "
@@ -590,14 +601,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 recommendation,
                 language=getattr(getattr(self.hass, "config", None), "language", None),
             )
-            mobile_action = (
-                self._mobile_confirmation_action(recommendation)
-                if any(
-                    is_companion_app_notification_entity(self.hass, entity_id)
-                    for entity_id in notification_entity_ids
-                )
-                else None
-            )
             delivered = await async_send_notification(
                 self.hass,
                 notification_entity_ids,
@@ -608,7 +611,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                 home_assistant_notification_id=home_assistant_notification_id_for_room(
                     recommendation
                 ),
-                mobile_action=mobile_action,
             )
             if delivered:
                 self._notification_markers[recommendation.room_name] = NotificationMarker(
@@ -619,16 +621,13 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
                     title,
                     message,
                 )
-                if mobile_action is not None:
-                    self._pending_confirmations[mobile_action["action"]] = (
-                        PendingAutomationConfirmation(
-                            recommendation.room_id or recommendation.room_name,
-                            recommendation.action,
-                            now + _CONFIRMATION_TTL,
-                        )
-                    )
                 notification_allowed = True
 
+        delivered_result = build_delivered_result(
+            core_result,
+            summary,
+            delivery_suppressed_by,
+        )
         target_perceived_c = effective_target_temperature_c
         active_indoor_perceived_c = _average_room_indoor_perceived_temperature(summary)
 
@@ -645,6 +644,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             outdoor_temperature_c=outdoor.temperature_c,
             forecast_temperature_c=forecast.temperature_c if forecast else None,
             outdoor_humidity_percent=outdoor.humidity_percent,
+            outdoor_pressure_hpa=outdoor.pressure_hpa,
             wind_speed_m_s=outdoor.wind_speed_m_s,
             wind_gust_m_s=outdoor.wind_gust_m_s,
             notification_allowed=notification_allowed,
@@ -654,6 +654,10 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             stable_for_seconds=stable_for_seconds,
             last_updated=now,
             window_states=window_states,
+            core_snapshot=decision_snapshot,
+            core_result=core_result,
+            calculated_result=calculated_result,
+            delivered_result=delivered_result,
         )
         self._persist_runtime_state()
         self._refresh_time_listener(now, snapshot)
@@ -662,8 +666,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     async def async_set_enabled(self, enabled: bool) -> None:
         """Persist the master enable flag in config entry options."""
 
-        self._update_entry_options({"enabled": enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({"enabled": enabled})
 
     async def _async_forecast(self, now: datetime) -> ForecastObservation | None:
         """Return the most relevant hourly forecast within the next two hours."""
@@ -673,7 +676,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             return None
         if (
             self._forecast_fetched_at is not None
-            and now - self._forecast_fetched_at < timedelta(minutes=15)
+            and now - self._forecast_fetched_at < timedelta(minutes=DEFAULT_FORECAST_FRESHNESS_MINUTES)
         ):
             return self._forecast
 
@@ -753,56 +756,48 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     async def async_set_notification_enabled(self, enabled: bool) -> None:
         """Persist the notification enable flag in config entry options."""
 
-        self._update_entry_options({CONF_NOTIFICATION_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_NOTIFICATION_ENABLED: enabled})
 
     async def async_set_quiet_hours_enabled(self, enabled: bool) -> None:
         """Persist the quiet-hours enable flag in config entry options."""
 
-        self._update_entry_options({CONF_QUIET_HOURS_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_QUIET_HOURS_ENABLED: enabled})
 
     async def async_set_stability_minutes(self, minutes: int) -> None:
         """Persist the global stability window in config entry options."""
 
-        self._update_entry_options({CONF_STABILITY_MINUTES: minutes})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_STABILITY_MINUTES: minutes})
 
     async def async_set_target_temperature(self, temperature_c: float) -> None:
         """Persist the global comfort temperature in config entry options."""
 
-        self._update_entry_options({CONF_TARGET_TEMPERATURE_C: temperature_c})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_TARGET_TEMPERATURE_C: temperature_c})
 
     async def async_set_auto_comfort_temperature_enabled(self, enabled: bool) -> None:
         """Persist the automatic comfort temperature flag in config entry options."""
 
-        self._update_entry_options({CONF_AUTO_COMFORT_TEMPERATURE: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_AUTO_COMFORT_TEMPERATURE: enabled})
 
     async def async_set_target_humidity(self, humidity_percent: float) -> None:
         """Persist the global comfort humidity in config entry options."""
 
-        self._update_entry_options({CONF_TARGET_HUMIDITY_PERCENT: humidity_percent})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_TARGET_HUMIDITY_PERCENT: humidity_percent})
 
     async def async_set_quiet_hours_start(self, value: str) -> None:
         """Persist the global quiet-hours start time in config entry options."""
 
-        self._update_entry_options({CONF_QUIET_HOURS_START: value})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_QUIET_HOURS_START: value})
 
     async def async_set_quiet_hours_end(self, value: str) -> None:
         """Persist the global quiet-hours end time in config entry options."""
 
-        self._update_entry_options({CONF_QUIET_HOURS_END: value})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_apply_options({CONF_QUIET_HOURS_END: value})
 
     async def async_set_room_enabled(self, room_key: str, enabled: bool) -> None:
         """Persist the enabled flag for one room."""
 
         self._update_room(room_key, {CONF_ROOM_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_temperature_override_enabled(
         self,
@@ -812,7 +807,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the temperature override enable flag for one room."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_temperature_override(
         self,
@@ -822,7 +817,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the room comfort temperature override."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_TEMPERATURE_OVERRIDE_C: temperature_c})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_humidity_override_enabled(
         self,
@@ -832,7 +827,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the humidity override enable flag for one room."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED: enabled})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     async def async_set_room_target_humidity_override(
         self,
@@ -842,7 +837,7 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         """Persist the room comfort humidity override."""
 
         self._update_room(room_key, {CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE: humidity_percent})
-        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+        await self._async_reload_after_options_update()
 
     def _signature(self, summary: RecommendationSummary) -> tuple[str, str]:
         return (summary.action.value, summary.best_room or "")
@@ -857,9 +852,9 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
     def _notification_severity(score: float) -> str:
         """Bucket a score so material urgency changes bypass the cooldown."""
 
-        if score >= _NOTIFICATION_SEVERITY_URGENT_SCORE:
+        if score >= URGENT_RECOMMENDATION_SCORE:
             return "urgent"
-        if score >= _NOTIFICATION_SEVERITY_ELEVATED_SCORE:
+        if score >= ELEVATED_RECOMMENDATION_SCORE:
             return "elevated"
         return "normal"
 
@@ -886,6 +881,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         self,
         marker: NotificationMarker,
         recommendation,
+        *,
+        is_safety: bool = False,
     ) -> bool:
         """Allow only stable action changes and urgent escalations through a cooldown."""
 
@@ -895,133 +892,23 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             or marker.severity is None
         ):
             return True
+        if is_safety:
+            return True
         return (
             self._notification_severity(recommendation.score) == "urgent"
             and marker.severity != "urgent"
         )
 
-    def _apply_room_action_guardrails(
-        self,
-        summary: RecommendationSummary,
-        now: datetime,
-    ) -> RecommendationSummary:
-        """Hold per-room reversals so sensor noise cannot flip advice rapidly."""
+    def _update_room_action_guards_from_core(self, result) -> None:
+        """Persist the state transition produced by the core evaluation."""
 
-        room_config_by_key = {
-            (room.room_id or room.name): room for room in self._config.rooms
-        }
-        guarded_recommendations = []
-        for recommendation in summary.room_recommendations:
-            room_key = recommendation.room_id or recommendation.room_name
-            room = room_config_by_key.get(room_key)
-            if room is None:
-                guarded_recommendations.append(recommendation)
-                continue
-            guarded_recommendations.append(
-                self._guard_room_recommendation(recommendation, room, now)
+        for state in result.guardrail_states:
+            self._room_action_guards[state.room_id] = RoomActionGuard(
+                accepted_action=state.accepted_action or RecommendationAction.NONE.value,
+                lockout_until=state.lockout_until,
+                pending_action=state.pending_action,
+                pending_since=state.pending_since,
             )
-
-        actionable = [
-            recommendation
-            for recommendation in guarded_recommendations
-            if recommendation.action != RecommendationAction.NONE
-        ]
-        if not actionable:
-            return replace(
-                summary,
-                action=RecommendationAction.NONE,
-                score=0.0,
-                reason="No room currently has a stable action recommendation.",
-                best_room=None,
-                room_recommendations=tuple(guarded_recommendations),
-            )
-        best = max(actionable, key=lambda recommendation: recommendation.score)
-        return replace(
-            summary,
-            action=best.action,
-            score=best.score,
-            reason=best.reason,
-            best_room=best.room_name,
-            room_recommendations=tuple(guarded_recommendations),
-        )
-
-    def _guard_room_recommendation(self, recommendation, room, now: datetime):
-        """Apply one room's reversal hold and action lockout."""
-
-        if recommendation.action == RecommendationAction.NONE:
-            return recommendation
-
-        room_key = recommendation.room_id or recommendation.room_name
-        guard = self._room_action_guards.get(room_key)
-        action = recommendation.action.value
-        if guard is None:
-            self._accept_room_action(room_key, action, room.action_lockout_minutes, now)
-            return recommendation
-        if action == guard.accepted_action:
-            if guard.pending_action is not None:
-                self._room_action_guards[room_key] = replace(
-                    guard, pending_action=None, pending_since=None
-                )
-            return recommendation
-
-        # A close recommendation with an urgent score is safety-critical and is
-        # never delayed by a previous open suggestion.
-        if (
-            recommendation.action == RecommendationAction.CLOSE
-            and self._notification_severity(recommendation.score) == "urgent"
-        ):
-            self._accept_room_action(room_key, action, room.action_lockout_minutes, now)
-            return recommendation
-
-        if guard.lockout_until is not None and now < guard.lockout_until:
-            return self._guarded_recommendation(
-                recommendation,
-                "VentWise is keeping the previous room advice until its safety lock expires.",
-            )
-
-        if guard.pending_action != action or guard.pending_since is None:
-            self._room_action_guards[room_key] = replace(
-                guard, pending_action=action, pending_since=now
-            )
-            return self._guarded_recommendation(
-                recommendation,
-                "VentWise is waiting for this room's changed advice to settle.",
-            )
-
-        if (now - guard.pending_since) < timedelta(minutes=room.action_change_hold_minutes):
-            return self._guarded_recommendation(
-                recommendation,
-                "VentWise is waiting for this room's changed advice to settle.",
-            )
-
-        self._accept_room_action(room_key, action, room.action_lockout_minutes, now)
-        return recommendation
-
-    def _accept_room_action(
-        self,
-        room_key: str,
-        action: str,
-        lockout_minutes: int,
-        now: datetime,
-    ) -> None:
-        self._room_action_guards[room_key] = RoomActionGuard(
-            accepted_action=action,
-            lockout_until=now + timedelta(minutes=lockout_minutes)
-            if lockout_minutes
-            else None,
-        )
-
-    @staticmethod
-    def _guarded_recommendation(recommendation, reason: str):
-        """Hide an unstable reversal until the room-specific guard permits it."""
-
-        return replace(
-            recommendation,
-            action=RecommendationAction.NONE,
-            score=0.0,
-            reason=reason,
-            reason_code="guarded",
-        )
 
     def _load_runtime_state(self) -> RuntimeState:
         return load_runtime_state({**self._config_entry.data, **self._config_entry.options})
@@ -1136,10 +1023,8 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             entity_ids.add(room.temperature_entity_id)
             if room.humidity_entity_id:
                 entity_ids.add(room.humidity_entity_id)
-            if self._config.co2_enabled:
-                co2_entity_id = room.co2_entity_id or self._config.co2_entity_id
-                if co2_entity_id:
-                    entity_ids.add(co2_entity_id)
+            if room.co2_enabled and room.co2_entity_id:
+                entity_ids.add(room.co2_entity_id)
             entity_ids.update(room.window_sensor_entity_ids)
         return sorted(entity_ids)
 
@@ -1152,105 +1037,6 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
         for unsub in self._time_listener_unsubs:
             unsub()
         self._time_listener_unsubs = []
-        if self._confirmation_listener_unsub is not None:
-            self._confirmation_listener_unsub()
-            self._confirmation_listener_unsub = None
-        self._pending_confirmations.clear()
-
-    def _mobile_confirmation_action(self, recommendation) -> dict[str, str] | None:
-        """Build a Companion App confirmation button for a configured room action."""
-
-        if recommendation.action not in {RecommendationAction.OPEN, RecommendationAction.CLOSE}:
-            return None
-        room = next(
-            (
-                configured_room
-                for configured_room in self._config.rooms
-                if (configured_room.room_id or configured_room.name)
-                == (recommendation.room_id or recommendation.room_name)
-            ),
-            None,
-        )
-        if room is None:
-            return None
-        automation_id = (
-            room.start_entity_id
-            if recommendation.action == RecommendationAction.OPEN
-            else room.stop_entity_id
-        )
-        if automation_id is None:
-            return None
-        token = f"ventwise_confirm_{secrets.token_urlsafe(24)}"
-        language = getattr(getattr(self.hass, "config", None), "language", None)
-        italian = str(language or "").lower().startswith("it")
-        return {
-            "action": token,
-            "title": (
-                "Conferma apertura"
-                if recommendation.action == RecommendationAction.OPEN
-                else "Conferma chiusura"
-            )
-            if italian
-            else (
-                "Confirm opening"
-                if recommendation.action == RecommendationAction.OPEN
-                else "Confirm closing"
-            ),
-        }
-
-    @callback
-    def _handle_mobile_app_notification_action(self, event: Event) -> None:
-        """Schedule validation of a Companion App confirmation event."""
-
-        token = event.data.get("action")
-        if not isinstance(token, str) or token not in self._pending_confirmations:
-            return
-        self.hass.async_create_task(self._async_confirm_room_automation(token))
-
-    async def _async_confirm_room_automation(self, token: str) -> None:
-        """Run a configured automation only after a valid explicit confirmation."""
-
-        pending = self._pending_confirmations.pop(token, None)
-        if pending is None or dt_util.now() > pending.expires_at:
-            return
-        await self.async_request_refresh()
-        if not pending.debug:
-            recommendation = next(
-                (
-                    candidate
-                    for candidate in self.data.summary.room_recommendations
-                    if (candidate.room_id or candidate.room_name) == pending.room_key
-                ),
-                None,
-            )
-            if recommendation is None or recommendation.action != pending.action:
-                return
-        room = next(
-            (
-                configured_room
-                for configured_room in self._config.rooms
-                if (configured_room.room_id or configured_room.name) == pending.room_key
-            ),
-            None,
-        )
-        automation_id = (
-            room.start_entity_id
-            if pending.action == RecommendationAction.OPEN
-            else room.stop_entity_id
-        ) if room is not None else None
-        if automation_id is None:
-            return
-        try:
-            await self.hass.services.async_call(
-                "automation",
-                "trigger",
-                {"skip_condition": False},
-                target={"entity_id": automation_id},
-                blocking=True,
-            )
-        except Exception:
-            _LOGGER.exception("VentWise could not run a confirmed room automation")
-
     def _persist_runtime_state(self) -> None:
         runtime_state = RuntimeState(
             last_action_signature=self._last_action_signature,
@@ -1275,6 +1061,17 @@ class VentWiseCoordinator(DataUpdateCoordinator[RuntimeSnapshot]):
             self._config_entry,
             options={**self._config_entry.options, **updates},
         )
+
+    async def _async_apply_options(self, updates: dict[str, Any]) -> None:
+        """Apply options and wait until all entities expose the new state."""
+
+        self._update_entry_options(updates)
+        await self._async_reload_after_options_update()
+
+    async def _async_reload_after_options_update(self) -> None:
+        """Schedule the standard Home Assistant config-entry reload."""
+
+        self.hass.config_entries.async_schedule_reload(self._config_entry.entry_id)
 
     def _update_room(self, room_key: str, updates: dict[str, Any]) -> None:
         options = dict(self._config_entry.options)
@@ -1374,7 +1171,7 @@ def _near_term_forecast(
             continue
         if forecast_at.tzinfo is None:
             forecast_at = forecast_at.replace(tzinfo=now.tzinfo)
-        if now <= forecast_at <= now + timedelta(hours=2):
+        if now <= forecast_at <= now + timedelta(hours=DEFAULT_FORECAST_LOOKAHEAD_HOURS):
             candidates.append((forecast_at, ForecastObservation(
                 temperature_c=_convert_optional_temperature(
                     forecast.get("temperature"), temperature_source_unit
