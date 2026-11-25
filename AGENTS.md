@@ -105,6 +105,24 @@ needed, without weakening its safety, quality, or delivery requirements.
 - Do not change deployment, publishing, environments, or CI/CD secrets without
   explicit owner approval. Make CI results actionable with reports and context.
 
+### Authenticated headless Docker Lab checks
+
+- Headless Home Assistant checks must use the dedicated Chrome profile managed
+  by `python scripts/ha-headless-browser.py`; never use the default personal
+  Chrome profile or copy browser cookies, passwords, tokens, or session data
+  into the repository.
+- Bootstrap the profile once with
+  `python scripts/ha-headless-browser.py bootstrap`, complete the local Docker
+  Lab login manually, close the browser, and then require
+  `python scripts/ha-headless-browser.py check` before any headless dashboard
+  test.
+- The profile defaults to `%LOCALAPPDATA%\\VentWise-HA-Headless-Chrome` and
+  can be overridden with `VENTWISE_HEADLESS_PROFILE`; keep it outside the
+  repository. The check must fail closed when Home Assistant redirects to its
+  authorization page.
+- Do not automate password entry or print authentication diagnostics. If the
+  profile is missing or expired, stop and request a manual bootstrap.
+
 ## Reliability, Compatibility, and Security
 
 - Use useful, non-sensitive structured logging when supported. Make errors

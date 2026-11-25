@@ -49,6 +49,28 @@ con due pagine e due istanze:
 - **VentWise Test Lab**: Camera e Soggiorno, contatti finestra, notifiche,
   quiet hours, cooldown e stabilità.
 
+### Headless Chrome authentication
+
+Headless dashboard checks must use a dedicated Chrome profile, never a personal
+browser profile. Bootstrap it once with:
+
+```powershell
+python scripts/ha-headless-browser.py bootstrap
+```
+
+Complete the local Home Assistant login manually in the opened browser, close
+that window, and verify the session before every headless check:
+
+```powershell
+python scripts/ha-headless-browser.py check
+```
+
+The profile is stored outside the repository under
+`%LOCALAPPDATA%\\VentWise-HA-Headless-Chrome`. The helper never stores or logs
+credentials and exits non-zero if the Lab redirects to the authorization page.
+Use `VENTWISE_HEADLESS_PROFILE` only when an equivalent dedicated profile is
+stored outside the repository.
+
 ## Uso rapido
 
 La dashboard contiene tutto ciò che serve per una prova immediata:
