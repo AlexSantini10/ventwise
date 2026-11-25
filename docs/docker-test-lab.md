@@ -98,6 +98,15 @@ risultato della config entry core. Confronta `sensor.core_engine_room_*` con
 `sensor.camera_test_*` nella pagina completa per verificare che l'azione core
 non venga modificata dalla delivery HA.
 
+### Headless result interpretation
+
+The authenticated headless harness compares the authoritative
+`sensor.camera_test_core_recommendation` state. The delivery sensor may remain
+`none` because stability, cooldown, quiet-hours, or notification availability
+filters affect delivery only. The `Open recommendation` and `Humidity exchange`
+presets may therefore produce either `open` or `ventilate` in the core result;
+the CO2 threshold preset is inclusive, so `1000 ppm` produces `ventilate`.
+
 ### Scenario finestre consigliato
 
 1. Lascia chiusi tutti i contatti.

@@ -122,6 +122,10 @@ needed, without weakening its safety, quality, or delivery requirements.
   authorization page.
 - Do not automate password entry or print authentication diagnostics. If the
   profile is missing or expired, stop and request a manual bootstrap.
+- After `check` passes, run
+  `python scripts/ha-headless-dashboard-test.py` for Docker Lab dashboard
+  scenarios. Compare authoritative `*_core_recommendation` entities; delivery
+  entities may be `none` when notification filters suppress delivery.
 
 ## Reliability, Compatibility, and Security
 
