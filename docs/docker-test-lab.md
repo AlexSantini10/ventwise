@@ -71,6 +71,10 @@ credentials and exits non-zero if the Lab redirects to the authorization page.
 Use `VENTWISE_HEADLESS_PROFILE` only when an equivalent dedicated profile is
 stored outside the repository.
 
+If `check` reports that the profile is still in use, close the dedicated Chrome
+window completely and retry. Chrome must not have a background process holding
+the profile lock while the headless check runs.
+
 ## Uso rapido
 
 La dashboard contiene tutto ciò che serve per una prova immediata:

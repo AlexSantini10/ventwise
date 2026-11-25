@@ -44,6 +44,8 @@ def chrome_args(*, url: str, profile: Path, headless: bool) -> list[str]:
         "--no-first-run",
         "--no-default-browser-check",
         "--disable-extensions",
+        "--disable-background-mode",
+        "--disable-crash-reporter",
         url,
     ]
     if headless:
@@ -86,6 +88,13 @@ def check(url: str, profile: Path) -> int:
         check=False,
     )
     if result.returncode != 0:
+        if "ProcessSingleton" in result.stderr or "Lock file" in result.stderr:
+            print(
+                "The dedicated Chrome profile is still in use. Close every "
+                "Chrome window using this profile, then retry.",
+                file=sys.stderr,
+            )
+            return 4
         print("Chrome headless failed to load the Docker Lab.", file=sys.stderr)
         return result.returncode or 1
     if not is_authenticated_dom(result.stdout):
