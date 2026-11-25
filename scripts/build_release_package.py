@@ -3,19 +3,25 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 
 _ROOT_FILES = ("README.md", "LICENSE", "NOTICE", "hacs.json")
-
-
 def _package_files(source_path: Path) -> list[tuple[Path, Path]]:
     """Return source and archive paths for every distributable file."""
     integration_path = source_path / "custom_components" / "ventwise"
     if not integration_path.is_dir():
         msg = f"VentWise integration directory not found: {integration_path}"
         raise FileNotFoundError(msg)
+
+    manifest_path = integration_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("config_flow") and not (integration_path / "config_flow.py").is_file():
+        raise FileNotFoundError(
+            "VentWise manifest enables config_flow, but config_flow.py is missing"
+        )
 
     files = [
         (path, path.relative_to(integration_path))
@@ -24,7 +30,16 @@ def _package_files(source_path: Path) -> list[tuple[Path, Path]]:
         and path.name != ".gitkeep"
         and "__pycache__" not in path.parts
         and path.suffix != ".pyc"
+        and "ventwise_core" not in path.relative_to(integration_path).parts
     ]
+
+    standalone_core = source_path / "src" / "ventwise_core"
+    if not standalone_core.is_dir():
+        msg = f"Required standalone core directory not found: {standalone_core}"
+        raise FileNotFoundError(msg)
+    for path in standalone_core.rglob("*"):
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            files.append((path, Path("ventwise_core") / path.relative_to(standalone_core)))
 
     for name in _ROOT_FILES:
         path = source_path / name

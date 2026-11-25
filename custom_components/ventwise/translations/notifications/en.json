@@ -1,0 +1,22 @@
+{
+  "open": "open windows.",
+  "close": "close windows.",
+  "none": "no action needed.",
+  "open_reason": "Outside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+  "close_reason": "Inside is more comfortable right now: {delta:.1f}°C closer to comfort.",
+  "forecast_reason": "Short-term forecast: outside conditions are expected to become less comfortable soon.",
+  "failed_title": "VentWise notification delivery failed",
+  "failed_targets": "Failed targets",
+  "action_ventilate": "Ventilate briefly",
+  "on_demand_title": "VentWise · Recommendation requested now",
+  "ventilation_reason": "Ventilate for about {minutes} minutes, then close and check again.",
+  "status_quiet_hours": "Recommendations are paused during quiet hours.",
+  "status_cooldown": "The same recommendation was sent recently.",
+  "status_stability": "Waiting for the recommendation to remain stable.",
+  "status_unavailable": "Waiting for the required sensor data.",
+  "status_disabled": "VentWise is disabled.",
+  "diagnostic_unavailable_data_title": "VentWise data unavailable",
+  "diagnostic_unavailable_data_message": "Required weather or room sensor data is unavailable.",
+  "diagnostic_no_enabled_rooms_title": "VentWise needs an enabled room",
+  "diagnostic_no_enabled_rooms_message": "No enabled rooms are configured."
+}

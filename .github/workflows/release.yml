@@ -10,6 +10,12 @@ on:
       - completed
   workflow_dispatch:
 
+concurrency:
+  # Prevent duplicate release jobs for the same successful CI result or
+  # overlapping manual runs.
+  group: release-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 

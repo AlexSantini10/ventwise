@@ -13,16 +13,25 @@ from .const import (
     CONF_RUNTIME_LAST_NOTIFICATION_AT,
     CONF_RUNTIME_LAST_NOTIFICATION_SIGNATURE,
     CONF_RUNTIME_STATE,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
+    CONF_ROOM_CO2_ENTITY_ID,
+    CONF_ROOM_KIND,
+    CONF_ROOMS,
+    CONF_SAFETY_BYPASS_QUIET_HOURS,
     CONF_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_UNIT,
     DEFAULT_TEMPERATURE_UNIT,
     DEFAULT_WIND_SPEED_UNIT,
+    DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
     DOMAIN,
     NAME,
 )
 
 _LOGGER = logging.getLogger(__name__)
-_CONFIG_ENTRY_VERSION = 3
+_CONFIG_ENTRY_VERSION = 7
+_LEGACY_ROOM_AUTOMATION_KEYS = ("start_entity_id", "stop_entity_id")
 _LEGACY_RUNTIME_KEYS = (
     CONF_RUNTIME_LAST_ACTION_SIGNATURE,
     CONF_RUNTIME_LAST_ACTION_STARTED_AT,
@@ -67,6 +76,60 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     migrated_options = dict(entry.options)
     migrated_options.setdefault(CONF_TEMPERATURE_UNIT, DEFAULT_TEMPERATURE_UNIT)
     migrated_options.setdefault(CONF_WIND_SPEED_UNIT, DEFAULT_WIND_SPEED_UNIT)
+    migrated_options.setdefault(
+        CONF_SAFETY_BYPASS_QUIET_HOURS,
+        DEFAULT_SAFETY_BYPASS_QUIET_HOURS,
+    )
+    if entry.version < 5:
+        legacy_enabled = bool(
+            migrated_options.get(CONF_CO2_ENABLED, migrated_data.get(CONF_CO2_ENABLED, False))
+        )
+        legacy_entity = migrated_options.get(
+            CONF_CO2_ENTITY_ID, migrated_data.get(CONF_CO2_ENTITY_ID)
+        )
+        rooms = migrated_options.get(CONF_ROOMS, migrated_data.get(CONF_ROOMS, []))
+        if isinstance(rooms, list) and (rooms or legacy_entity or legacy_enabled):
+            migrated_rooms = []
+            for raw_room in rooms:
+                room = dict(raw_room) if isinstance(raw_room, Mapping) else {}
+                room_entity = room.get(CONF_ROOM_CO2_ENTITY_ID) or legacy_entity
+                room.setdefault(CONF_ROOM_CO2_ENTITY_ID, room_entity)
+                room.setdefault(CONF_ROOM_CO2_ENABLED, bool(legacy_enabled and room_entity))
+                migrated_rooms.append(room)
+            target = migrated_options if CONF_ROOMS in migrated_options else migrated_data
+            target[CONF_ROOMS] = migrated_rooms
+        migrated_data.pop(CONF_CO2_ENABLED, None)
+        migrated_data.pop(CONF_CO2_ENTITY_ID, None)
+        migrated_options.pop(CONF_CO2_ENABLED, None)
+        migrated_options.pop(CONF_CO2_ENTITY_ID, None)
+    removed_room_automation_count = 0
+    if entry.version < 6:
+        for container in (migrated_data, migrated_options):
+            rooms = container.get(CONF_ROOMS)
+            if not isinstance(rooms, list):
+                continue
+            migrated_rooms = []
+            for raw_room in rooms:
+                room = dict(raw_room) if isinstance(raw_room, Mapping) else {}
+                for key in _LEGACY_ROOM_AUTOMATION_KEYS:
+                    if room.pop(key, None) is not None:
+                        removed_room_automation_count += 1
+                migrated_rooms.append(room)
+            container[CONF_ROOMS] = migrated_rooms
+    if entry.version < 7:
+        converted_macro_room_count = 0
+        for container in (migrated_data, migrated_options):
+            rooms = container.get(CONF_ROOMS)
+            if not isinstance(rooms, list):
+                continue
+            migrated_rooms = []
+            for raw_room in rooms:
+                room = dict(raw_room) if isinstance(raw_room, Mapping) else {}
+                if room.get(CONF_ROOM_KIND) == "macro_room":
+                    room[CONF_ROOM_KIND] = "room"
+                    converted_macro_room_count += 1
+                migrated_rooms.append(room)
+            container[CONF_ROOMS] = migrated_rooms
     runtime_state = migrated_options.get(
         CONF_RUNTIME_STATE, migrated_data.get(CONF_RUNTIME_STATE)
     )
@@ -91,6 +154,21 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.entry_id,
         len(migrated_data) + len(migrated_options),
     )
+    if removed_room_automation_count:
+        _LOGGER.warning(
+            "Removed %d legacy room automation reference(s) from VentWise config "
+            "entry %s. VentWise now exposes recommendations only; create any "
+            "required Home Assistant automations from VentWise entities.",
+            removed_room_automation_count,
+            entry.entry_id,
+        )
+    if converted_macro_room_count:
+        _LOGGER.info(
+            "Converted %d legacy macro-room configuration(s) to regular rooms "
+            "for VentWise config entry %s",
+            converted_macro_room_count,
+            entry.entry_id,
+        )
     hass.config_entries.async_update_entry(
         entry,
         data=migrated_data,

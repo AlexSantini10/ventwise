@@ -13,8 +13,11 @@ build/
 .venv*/
 *.egg-info/
 *.log
-AGENTS.md
+AGENTS.local.md
+.agents/
 
 .idea
 /.codex-tmp
 temp/
+/.codex
+/.headless-browser/

@@ -1,8 +1,9 @@
 # DDP Software Architecture and Implementation Plan
 
-The implementation should migrate incrementally from coupled scoring and
-decision logic to a small deterministic pipeline. The core remains pure Python;
-Home Assistant and external providers stay at the boundary.
+The implementation migrates incrementally from the former coupled scoring
+engine to the active deterministic pipeline. The v0.18 core is pure Python;
+Home Assistant and external providers stay at the boundary. The legacy scoring
+engine has been removed after the coordinator migration.
 
 ## Target architecture
 
@@ -35,7 +36,7 @@ and `DecisionMemory`.
 Time must be explicit in formulas and selectors. No domain calculation may
 implicitly read system time.
 
-The main variation points are narrow protocols:
+The implemented variation points are narrow protocols:
 
 ```python
 class ImpactEstimator(Protocol):
@@ -44,15 +45,15 @@ class ImpactEstimator(Protocol):
 class ConstraintPolicy(Protocol):
     def evaluate(self, context, candidate) -> ConstraintResult: ...
 
-class ObjectiveFunction(Protocol):
+class Objective(Protocol):
     def assess(self, context, baseline, candidate, constraints) -> CandidateAssessment: ...
 
 class CandidateGenerator(Protocol):
     def generate(self, context) -> tuple[Candidate, ...]: ...
 ```
 
-These are proposed contracts, not ready-to-run public APIs. Final names and
-fields follow the canonical model when implementation begins. Sensor mapping,
+These contracts are implemented under `src/ventwise_core/domain/` and
+`src/ventwise_core/engine/`. Sensor mapping,
 unit resolution, and provider-specific logic stay in adapters. Pure formulas
 remain stateless functions. The Home Assistant composition root selects
 conservative default implementations and may select a calibrated estimator only
@@ -65,14 +66,15 @@ integration adapter       snapshot creation and provider mapping
 coordinator               scheduling, I/O, cache, and persistence
 configuration             config entry, options, and migrations
 presentation              entities, translations, and notifications
-core.models               DTOs, enums, and domain state
+core.domain               observations, baselines, candidates, constraints,
+                          impacts, objectives, and results
 core.units                dimensional conversion
 core.psychrometrics       pure physical formulas
 core.validation           quality, freshness, and consistency
 core.constraints          hard blocks, penalties, and precedence
 core.candidates           baselines and adaptive durations
 core.estimation           heuristic and calibrated estimators
-core.objective            normalized discomfort and net benefit
+core.objectives           normalized discomfort and net benefit
 core.stabilization        hysteresis and decision memory
 core.engine               pure orchestration
 core.diagnostics          reason codes and trace output
@@ -142,7 +144,8 @@ after the heuristic contract is stable and local parameters are available.
 
 Add hysteresis, persistence, rechecks, reason codes, diagnostics, translations,
 entities, and notification policy. Cooldown applies to delivery, not safety
-evaluation. Preserve existing configuration and automation compatibility.
+evaluation. Migrate legacy room-automation references out of persisted
+configuration; user-owned Home Assistant automations remain outside VentWise.
 
 ### Phase 7: optional local calibration
 

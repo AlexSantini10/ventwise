@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -13,6 +14,7 @@ from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_HUMIDITY_OVERRIDE,
+    CONF_OUTDOOR_TEMPERATURE_UNIT,
     CONF_OUTDOOR_TEMPERATURE_OVERRIDE,
     CONF_OUTDOOR_WEATHER_ENTITY_ID,
     CONF_ROOM_ENABLED,
@@ -27,22 +29,27 @@ from custom_components.ventwise.const import (
     CONF_STABILITY_MINUTES,
     CONF_TARGET_HUMIDITY_PERCENT,
     CONF_TARGET_TEMPERATURE_C,
+    CONF_TEMPERATURE_UNIT,
+    CONF_WIND_SPEED_UNIT,
+    CONF_ROOM_TEMPERATURE_UNIT,
     CONF_WIND_SPEED_OVERRIDE,
     DOMAIN,
 )
 from custom_components.ventwise.config_flow import VentWiseConfigFlow
-from custom_components.ventwise.configuration.flow import (
+from custom_components.ventwise.configuration.configuration_helpers import (
     normalize_basic_config,
     normalize_outdoor_source_config,
     normalize_room_config,
 )
-from custom_components.ventwise.application.notification import build_recommendation_explanation
-from custom_components.ventwise.application.runtime import (
+from custom_components.ventwise.application.notifications.service import build_recommendation_explanation
+from custom_components.ventwise.application.runtime.integration_runtime import (
+    build_decision_config,
+    build_decision_snapshot,
     build_integration_config,
     build_room_profiles,
-    build_scoring_config,
+    decision_to_summary,
 )
-from custom_components.ventwise.ventwise_core import ComfortRecommender, RecommendationAction
+from ventwise_core import DecisionEngine, RecommendationAction
 
 
 class _StandaloneVentWiseConfigFlow(VentWiseConfigFlow):
@@ -107,7 +114,10 @@ def _evaluate(options: dict[str, object], states: dict[str, object]):
     config = build_integration_config(options)
     rooms, outdoor = build_room_profiles(config, states.get)
     assert outdoor is not None
-    summary = ComfortRecommender(build_scoring_config(config)).evaluate(rooms, outdoor)
+    summary = decision_to_summary(
+        DecisionEngine(build_decision_config(config)),
+        build_decision_snapshot(rooms, outdoor, datetime.now(timezone.utc)),
+    )
     assert summary.room_recommendations
     return summary, summary.room_recommendations[0]
 
@@ -141,11 +151,20 @@ def test_config_flow_creates_a_room_from_the_user_journey() -> None:
 
     async def run_flow() -> tuple[dict[str, object], dict[str, object], str | None]:
         flow = _StandaloneVentWiseConfigFlow()
+        assert (await flow.async_step_user({}))["step_id"] == "units"
+        assert (
+            await flow.async_step_units(
+                {CONF_TEMPERATURE_UNIT: "°C", CONF_WIND_SPEED_UNIT: "m/s"}
+            )
+        )["step_id"] == "user"
         outdoor_result = await flow.async_step_user(basic_input)
         assert outdoor_result["step_id"] == "outdoor"
         rooms_result = await flow.async_step_outdoor(outdoor_input)
         assert rooms_result["step_id"] == "rooms"
         updated_rooms_result = await flow.async_step_add_room(room_input)
+        updated_rooms_result = await flow.async_step_room_units(
+            {CONF_ROOM_TEMPERATURE_UNIT: "°C"}
+        )
         assert updated_rooms_result["step_id"] == "rooms"
         result = await flow.async_step_finish()
         repeated_result = await flow.async_step_finish()
@@ -163,26 +182,33 @@ def test_config_flow_creates_a_room_from_the_user_journey() -> None:
 def test_config_flow_prevents_a_second_ventwise_entry() -> None:
     """A second setup attempt must not create a duplicate integration entry."""
 
-    result = asyncio.run(
-        _ExistingEntryVentWiseConfigFlow().async_step_user(
+    async def run_flow() -> dict[str, object]:
+        flow = _ExistingEntryVentWiseConfigFlow()
+        await flow.async_step_units(
+            {CONF_TEMPERATURE_UNIT: "°C", CONF_WIND_SPEED_UNIT: "m/s"}
+        )
+        return await flow.async_step_user(
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.ventwise_test_weather",
                 CONF_TARGET_TEMPERATURE_C: 22.0,
                 CONF_NOTIFICATION_DEVICE_ID: [],
             }
         )
-    )
+
+    result = asyncio.run(run_flow())
 
     assert result["type"] == "abort"
     assert result["reason"] == "single_instance_allowed"
 
 
 def test_config_flow_room_management_paths_preserve_staged_configuration() -> None:
-    """Exercise macro-room add, edit, remove and finish branches deterministically."""
+    """Exercise room add, edit, remove and finish branches deterministically."""
 
     async def run_flow() -> dict[str, object]:
         flow = _StandaloneVentWiseConfigFlow()
-        flow.hass = SimpleNamespace(config=SimpleNamespace(language="it"))
+        await flow.async_step_units(
+            {CONF_TEMPERATURE_UNIT: "°C", CONF_WIND_SPEED_UNIT: "m/s"}
+        )
         await flow.async_step_user(
             {
                 CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.ventwise_test_weather",
@@ -197,24 +223,32 @@ def test_config_flow_room_management_paths_preserve_staged_configuration() -> No
                 CONF_WIND_SPEED_OVERRIDE: False,
             }
         )
-        added = await flow.async_step_add_macro_room(
+        flow.hass = SimpleNamespace(
+            config=SimpleNamespace(language="it"),
+            states=SimpleNamespace(get=lambda _entity_id: None),
+            data={},
+        )
+        added = await flow.async_step_add_room(
             {
                 CONF_ROOM_ENABLED: True,
                 CONF_ROOM_NAME: "Piano superiore",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.upstairs_temperature",
             }
         )
+        added = await flow.async_step_room_units({CONF_ROOM_TEMPERATURE_UNIT: "°C"})
         assert added["type"] == "menu"
         selection = flow._room_selection_options()[0]
-        assert (await flow.async_step_edit_room({"room_selection": selection}))["step_id"] == "edit_macro_room_form"
-        edited = await flow.async_step_edit_macro_room_form(
+        assert (await flow.async_step_edit_room({"room_selection": selection}))["step_id"] == "edit_room_form"
+        edited = await flow.async_step_edit_room_form(
             {
                 CONF_ROOM_NAME: "Studio",
                 CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.study_temperature",
             }
         )
+        edited = await flow.async_step_room_units({CONF_ROOM_TEMPERATURE_UNIT: "°C"})
         assert edited["type"] == "menu"
-        assert (await flow.async_step_remove_room({"room_selection": flow._room_selection_options()[0]}))["type"] == "menu"
+        assert (await flow.async_step_remove_room({"room_selection": flow._room_selection_options()[0]}))["step_id"] == "remove_room_select"
+        await flow.async_step_confirm_remove_room({"remove_room_confirmation": True})
         return await flow.async_step_finish()
 
     result = asyncio.run(run_flow())
@@ -228,7 +262,9 @@ def test_config_flow_manual_source_and_validation_branches() -> None:
 
     async def run_flow() -> None:
         flow = _StandaloneVentWiseConfigFlow()
-        flow.hass = SimpleNamespace(config=SimpleNamespace(language="en"))
+        await flow.async_step_units(
+            {CONF_TEMPERATURE_UNIT: "°C", CONF_WIND_SPEED_UNIT: "m/s"}
+        )
         outdoor = await flow.async_step_user(
             {CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.ventwise_test_weather", CONF_NOTIFICATION_DEVICE_ID: []}
         )
@@ -244,6 +280,7 @@ def test_config_flow_manual_source_and_validation_branches() -> None:
         rooms = await flow.async_step_outdoor_overrides(
             {
                 "outdoor_temperature_entity_id": "sensor.outdoor_temperature",
+                CONF_OUTDOOR_TEMPERATURE_UNIT: "°C",
                 "outdoor_humidity_entity_id": None,
                 "wind_speed_entity_id": None,
             }
@@ -270,7 +307,7 @@ def test_setup_to_user_facing_open_and_close_recommendations() -> None:
 
     assert open_summary.action is RecommendationAction.OPEN
     assert build_recommendation_explanation(open_room, language="it") == (
-        "Fuori è più confortevole adesso: 3.2°C più vicino al comfort."
+        "Fuori è più confortevole adesso: 3.3°C più vicino al comfort."
     )
 
     states["weather.ventwise_test_weather"] = SimpleNamespace(
@@ -283,5 +320,5 @@ def test_setup_to_user_facing_open_and_close_recommendations() -> None:
 
     assert close_summary.action is RecommendationAction.CLOSE
     assert build_recommendation_explanation(close_room, language="it") == (
-        "Dentro è più confortevole adesso: 2.8°C più vicino al comfort."
+            "Dentro è più confortevole adesso: 3.1°C più vicino al comfort."
     )

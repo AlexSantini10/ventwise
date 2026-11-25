@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 from datetime import datetime, time, timezone
 
 from custom_components.ventwise.const import (
     CONF_AUTO_COMFORT_TEMPERATURE,
     CONF_COOLDOWN_MINUTES,
+    CONF_CO2_ENABLED,
+    CONF_CO2_ENTITY_ID,
     CONF_ENABLED,
     CONF_NOTIFICATION_DEVICE_ID,
     CONF_OUTDOOR_HUMIDITY_ENTITY_ID,
@@ -18,6 +21,8 @@ from custom_components.ventwise.const import (
     CONF_QUIET_HOURS_START,
     CONF_ROOMS,
     CONF_ROOM_HUMIDITY_ENTITY_ID,
+    CONF_ROOM_CO2_ENABLED,
+    CONF_ROOM_CO2_ENTITY_ID,
     CONF_ROOM_NAME,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE_ENABLED,
     CONF_ROOM_TARGET_HUMIDITY_PERCENT_OVERRIDE,
@@ -29,14 +34,18 @@ from custom_components.ventwise.const import (
     CONF_TARGET_TEMPERATURE_C,
     CONF_SOFT_OUTDOOR_THRESHOLD_C,
 )
-from custom_components.ventwise.application.runtime import (
+from custom_components.ventwise.application.runtime.integration_runtime import (
+    build_decision_config,
+    build_decision_snapshot,
     build_integration_config,
     build_debug_attributes,
     build_room_profiles,
+    decision_to_summary,
     dump_runtime_state,
     is_quiet_hours_active,
     load_runtime_state,
     room_target_temperature_c,
+    room_co2_status,
     room_window_states,
     gate_room_recommendations,
     state_to_bool,
@@ -51,15 +60,15 @@ from custom_components.ventwise.const import (
     CONF_RUNTIME_NOTIFICATION_MARKERS,
     CONF_RUNTIME_ROOM_ACTION_GUARDS,
 )
-from custom_components.ventwise.application.runtime import RuntimeSnapshot
+from custom_components.ventwise.application.runtime.integration_runtime import RuntimeSnapshot
 from ventwise_core import (
     ComfortObservation,
-    ComfortRecommender,
-    RecommendationContext,
+    ForecastObservation,
     RoomObservation,
     RoomProfile,
 )
-from custom_components.ventwise.ventwise_core.models import (
+from ventwise_core import DecisionEngine
+from ventwise_core.domain.decision_contracts import (
     RecommendationAction,
     RecommendationSummary,
     RoomRecommendation,
@@ -71,6 +80,38 @@ def test_state_helpers_parse_values() -> None:
     assert state_to_float(SimpleNamespace(state="unknown")) is None
     assert state_to_float(SimpleNamespace(state="not-a-number")) is None
     assert state_to_bool(SimpleNamespace(state="on")) is True
+
+
+def test_room_co2_status_distinguishes_disabled_and_unavailable() -> None:
+    disabled = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.room_co2",
+                    CONF_ROOM_CO2_ENABLED: False,
+                }
+            ]
+        }
+    ).rooms[0]
+    unavailable = build_integration_config(
+        {
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.room_co2",
+                    CONF_ROOM_CO2_ENABLED: True,
+                }
+            ]
+        }
+    ).rooms[0]
+
+    states = {"sensor.room_co2": SimpleNamespace(state="unavailable")}
+
+    assert room_co2_status(disabled, states.get) == "disabled"
+    assert room_co2_status(unavailable, states.get) == "unavailable"
     assert state_to_bool(SimpleNamespace(state="off")) is False
     assert state_to_bool(SimpleNamespace(state="1")) is True
     assert state_to_bool(SimpleNamespace(state="0")) is False
@@ -136,6 +177,100 @@ def test_build_runtime_config_and_room_profiles() -> None:
     assert rooms[0].name == "Camera"
 
 
+def test_build_room_profiles_uses_global_co2_for_rooms_without_local_sensor() -> None:
+    config = build_integration_config(
+        {
+            CONF_CO2_ENABLED: True,
+            CONF_CO2_ENTITY_ID: "sensor.home_co2",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                },
+                {
+                    CONF_ROOM_NAME: "Studio",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.studio_temp",
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.studio_co2",
+                },
+            ],
+        }
+    )
+    states = {
+        "sensor.home_co2": SimpleNamespace(state="900", attributes={"unit_of_measurement": "ppm"}),
+        "sensor.studio_co2": SimpleNamespace(state="1400", attributes={"unit_of_measurement": "ppm"}),
+        "sensor.room_temp": SimpleNamespace(state="22"),
+        "sensor.studio_temp": SimpleNamespace(state="22"),
+    }
+
+    rooms, _ = build_room_profiles(config, states.get)
+
+    assert rooms[0].co2_ppm == 900.0
+    assert rooms[0].co2_source is not None
+    assert rooms[0].co2_source.source_id == "sensor.home_co2"
+    assert rooms[1].co2_ppm == 1400.0
+    assert rooms[1].co2_source is not None
+    assert rooms[1].co2_source.source_id == "sensor.studio_co2"
+
+
+def test_build_room_profiles_only_reads_co2_for_enabled_rooms() -> None:
+    config = build_integration_config(
+        {
+            CONF_CO2_ENABLED: True,
+            CONF_CO2_ENTITY_ID: "sensor.home_co2",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Enabled",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.enabled_temp",
+                    CONF_ROOM_CO2_ENABLED: True,
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.enabled_co2",
+                },
+                {
+                    CONF_ROOM_NAME: "Disabled",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.disabled_temp",
+                    CONF_ROOM_CO2_ENABLED: False,
+                    CONF_ROOM_CO2_ENTITY_ID: "sensor.disabled_co2",
+                },
+            ],
+        }
+    )
+    states = {
+        "sensor.enabled_temp": SimpleNamespace(state="22"),
+        "sensor.enabled_co2": SimpleNamespace(
+            state="1400", attributes={"unit_of_measurement": "ppm"}
+        ),
+        "sensor.disabled_temp": SimpleNamespace(state="22"),
+        "sensor.disabled_co2": SimpleNamespace(
+            state="1800", attributes={"unit_of_measurement": "ppm"}
+        ),
+    }
+
+    rooms, _ = build_room_profiles(config, states.get)
+
+    assert rooms[0].co2_ppm == 1400.0
+    assert rooms[1].co2_ppm is None
+
+
+def test_find_room_recommendation_matches_legacy_room_without_room_id() -> None:
+    from custom_components.ventwise.application.runtime.integration_runtime import find_room_recommendation
+    from ventwise_core import RecommendationAction, RoomRecommendation
+
+    recommendation = RoomRecommendation(
+        room_name="Bedroom",
+        room_id="Bedroom",
+        action=RecommendationAction.VENTILATE,
+        score=0.5,
+        reason="High CO₂",
+        target_perceived_c=22.0,
+        indoor_perceived_c=22.0,
+        outdoor_perceived_c=20.0,
+        suggested_comfort_temperature_c=22.0,
+    )
+    summary = SimpleNamespace(room_recommendations=(recommendation,))
+    room = SimpleNamespace(room_id=None, name="Bedroom")
+
+    assert find_room_recommendation(summary, room) is recommendation
+
+
 def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
     config = build_integration_config(
         {
@@ -147,6 +282,7 @@ def test_build_runtime_config_uses_safe_defaults_for_quiet_hours() -> None:
     assert config.quiet_hours_start == "22:00:00"
     assert config.quiet_hours_end == "07:00:00"
     assert config.diagnostic_notification_level == "essential"
+    assert config.safety_bypass_quiet_hours is False
 
     config = build_integration_config(
         {
@@ -280,7 +416,7 @@ def test_window_states_gate_only_advice_already_satisfied_by_a_contact() -> None
     ]
 
 
-def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_missing() -> None:
+def test_build_room_profiles_preserves_missing_outdoor_humidity() -> None:
     config = build_integration_config(
         {
             CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
@@ -305,7 +441,7 @@ def test_build_room_profiles_uses_neutral_humidity_when_outdoor_humidity_is_miss
 
     assert outdoor is not None
     assert outdoor.temperature_c == 20.0
-    assert outdoor.humidity_percent == 50.0
+    assert outdoor.humidity_percent is None
     assert outdoor.wind_speed_m_s is None
     assert len(rooms) == 1
 
@@ -338,6 +474,48 @@ def test_build_room_profiles_reads_wind_gust_from_weather_attributes() -> None:
     assert len(rooms) == 1
 
 
+def test_decision_snapshot_carries_forecast_and_pressure() -> None:
+    config = build_integration_config(
+        {
+            CONF_OUTDOOR_WEATHER_ENTITY_ID: "weather.home",
+            CONF_ROOMS: [
+                {
+                    CONF_ROOM_NAME: "Camera",
+                    CONF_ROOM_TEMPERATURE_ENTITY_ID: "sensor.room_temp",
+                }
+            ],
+        }
+    )
+    states = {
+        "weather.home": SimpleNamespace(
+            state="sunny",
+            attributes={
+                "temperature": 20.0,
+                "humidity": 50.0,
+                "pressure": 1012.0,
+                "wind_gust_speed": 8.0,
+            },
+        ),
+        "sensor.room_temp": SimpleNamespace(state="24.0"),
+    }
+    rooms, outdoor = build_room_profiles(
+        config,
+        states.get,
+        forecast=ForecastObservation(temperature_c=18.0, weather_condition="rainy"),
+    )
+
+    snapshot = build_decision_snapshot(
+        rooms,
+        outdoor,
+        datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc),
+    )
+
+    assert snapshot.outdoor.pressure_hpa is not None
+    assert snapshot.outdoor.pressure_hpa.value == 1012.0
+    assert snapshot.outdoor.forecast is not None
+    assert snapshot.outdoor.forecast.temperature_c == 18.0
+
+
 def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> None:
     config = build_integration_config(
         {
@@ -360,7 +538,7 @@ def test_build_room_profiles_falls_back_to_weather_state_without_attribute() -> 
 
     assert outdoor is not None
     assert outdoor.temperature_c == 21.5
-    assert outdoor.humidity_percent == 50.0
+    assert outdoor.humidity_percent is None
     assert outdoor.wind_speed_m_s is None
     assert rooms[0].name == "Camera"
 
@@ -410,7 +588,6 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
             ],
         }
     )
-    recommender = ComfortRecommender()
     room_profiles = [
         RoomProfile(
             name="Camera",
@@ -418,10 +595,10 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         )
     ]
     outdoor = ComfortObservation(temperature_c=20.0, humidity_percent=45.0)
-    summary = recommender.evaluate(
-        room_profiles,
-        outdoor,
-        RecommendationContext(stable_for_seconds=900),
+    evaluated_at = datetime(2026, 7, 21, 13, 0, tzinfo=timezone.utc)
+    summary = decision_to_summary(
+        DecisionEngine(build_decision_config(config)),
+        build_decision_snapshot(room_profiles, outdoor, evaluated_at),
     )
     snapshot = RuntimeSnapshot(
         summary=summary,
@@ -462,6 +639,10 @@ def test_build_debug_attributes_includes_summary_and_room_details() -> None:
         == summary.room_recommendations[0].suggested_comfort_temperature_c
     )
     assert attributes["best_room_recommendation"]["room_name"] == "Camera"
+    encoded = json.dumps(attributes, separators=(",", ":"))
+    assert len(encoded.encode("utf-8")) < 16_384
+    assert "core_result" not in attributes
+    assert "normalized_input_snapshot" not in attributes
 
 
 def test_room_target_temperature_prefers_enabled_override() -> None:

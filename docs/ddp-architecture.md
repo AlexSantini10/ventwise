@@ -1,8 +1,10 @@
 # DDP Architecture and Decision Pipeline
 
-The Deterministic Decision Pipeline (DDP) is the target architecture for
-VentWise recommendations. It describes intended behavior and contracts; it
-does not claim that every stage is implemented in the current integration.
+The Deterministic Decision Pipeline (DDP) is the active architecture for
+VentWise recommendations. The v0.18 foundation is implemented in the pure
+`DecisionEngine`, with Home Assistant adapters responsible for observation
+acquisition and presentation. Later DDP stages remain explicitly marked as
+future work where applicable.
 
 ## Purpose and invariants
 
@@ -45,6 +47,18 @@ Sources (sensors, weather, forecast, configuration)
 Environmental evaluation and notification delivery are separate concerns.
 Quiet hours and cooldowns can suppress non-critical delivery, but must not
 change the engine's environmental result.
+
+The core exposes explicit seams for the evaluation pipeline. A baseline
+assessor establishes the maintained state first. Each candidate then passes
+through constraint evaluation, impact estimation, and the registered
+objectives before selection. The implemented contracts are
+`BaselineAssessor`, `ImpactEstimator`, `Objective`, `CandidateGenerator`,
+`ConstraintPolicy`, and `CandidateSelector` under `src/ventwise_core/engine/`.
+
+The result contains one `OptionEvaluation` per option, including baseline
+assessment, impact estimate, objective contributions, blocked alternatives,
+and non-selected options. Existing trace and candidate-score fields remain
+compatibility projections of these structured assessments.
 
 ## Pipeline stages
 
@@ -118,12 +132,12 @@ complete air replacement.
 
 ### Impact estimation
 
-`HeuristicImpactEstimator` is the initial proposed estimator. It reports
+`HeuristicImpactEstimator` is the active conservative estimator. It reports
 direction, normalized magnitude, and confidence for temperature, humidity, and
 CO2 without inventing future degrees or ppm values that the model cannot
 justify.
 
-`CalibratedImpactEstimator` is a later option. It may produce trajectories
+`CalibratedImpactEstimator` remains a later option. It may produce trajectories
 using local air-exchange rate, thermal inertia, occupancy, and other validated
 parameters. It must return assumptions, confidence, and an explicit fallback.
 

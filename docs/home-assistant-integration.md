@@ -55,15 +55,35 @@ changes in the config entry.
 
 Expose one logical device that groups runtime state and controls:
 
-- recommendation state
-- score
-- reason
+- aggregate recommendation, score, and localized reason
+- current weather, forecast temperature, outdoor pressure, wind speed, and wind gust
+- measured and calculated outdoor moisture sensors, including absolute humidity,
+  humidity ratio, vapor pressure, and indoor/outdoor moisture difference
 - master enable control
 - quiet-hour or notification state
 - notification target or delivery state
 - detailed debug attributes for the recommendation sensors
 - one room-level window-state sensor that reports `open`, `closed`,
   `unavailable`, or `not_configured`
+
+The optional global CO₂ sensor is used as the fallback for rooms without a
+room-specific CO₂ sensor. A room-specific sensor always takes precedence.
+Decision diagnostics remain available as structured attributes on aggregate
+and room recommendation entities, including normalized inputs, quality,
+traces, candidate scores, core results, and delivery projections.
+
+Measured and calculated sensors are regular Home Assistant sensors. The same
+outdoor measurements and calculated values are mirrored on every room device,
+so a room such as `Sala visione` can show the shared outdoor context alongside
+its indoor values. Diagnostic entity categories are reserved for core and
+debug-only values.
+
+VentWise provides native Home Assistant translations for all supported
+platforms, including sensors, controls, diagnostics, time entities, states,
+and weather conditions. Entity names are resolved using the Home Assistant
+server language when the entity is first registered; changing that language
+later requires reloading or recreating the integration entities to replace
+names already stored in the entity registry.
 
 Use the config flow and options flow for all user-editable inputs such as room
 sensors, comfort temperature, notification target entities, quiet hours, and

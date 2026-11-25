@@ -32,13 +32,18 @@ the core engine and the Home Assistant runtime layer.
 
 ## Test Types
 
-- `tests/unit/`: pure scoring, runtime parsing, sensor aggregation, package, and runner tests
+- `tests/unit/`: pure decision-engine, psychrometric, runtime parsing, sensor aggregation, package, and runner tests
 - `tests/integration/`: configuration, entities, coordinator, notifications, translations, and Home Assistant framework tests
 - `tests/system/`: end-to-end user journeys from submitted setup data to advice
 
 Every user-visible behavior change needs a focused regression in the narrowest
 layer that proves it; use integration or system tests when Home Assistant state
 delivery or the full configuration journey matters.
+
+The documentation-to-test traceability matrix is maintained in
+`tests/fixtures/documentation_decision_matrix.yaml`. Core scenarios must be
+executable without Home Assistant; adapter tests separately verify that
+delivery filters suppress notifications without changing the core result.
 
 ## Supported Home Assistant Version
 
@@ -57,11 +62,17 @@ installed in CI.
 - multi-room evaluation with rooms treated independently
 - configured window contacts suppress only advice already satisfied; multiple
   contacts aggregate deterministically
-- quiet hours and cooldown gate the recommendation
+- quiet hours and cooldown gate notification delivery without changing the core recommendation
+- safety notifications bypass stability and cooldown, respect quiet hours by default, and optionally bypass quiet hours when configured
+- identical safety notifications remain deduplicated even when the safety quiet-hours bypass is enabled
 - Home Assistant state events trigger one eligible notification, suppress
   duplicates, and use the configured notify service target
 - persisted state is reloaded after restart
 - debug attributes expose summary and per-room details
+- every configuration save completes only after the entry reload and entity states
+  expose the new settings; no previous sensor value may remain visible
+- verify the same behavior for Options Flow settings and direct switch, number,
+  and time entity controls; ordinary source-sensor events use coordinator refresh
 
 ## Local Workflow
 
@@ -76,15 +87,16 @@ python scripts/run_tests.py
 python3 scripts/run_tests.py
 ```
 
-The repository also includes `pre-commit` and `pre-push` hooks. Enable them
-once with `git config core.hooksPath .githooks` to prevent an unverified
-commit or push.
-
 It uses the Python, Home Assistant and test dependency versions pinned in
 `requirements-test.txt`; no project Python packages are installed on the host.
 The checkout is mounted read-only, the container is removed after every run,
 and per-layer JUnit, XML/HTML coverage, and timing reports are saved under
 `.test-artifacts/`. Select a layer or pass pytest flags after `--`:
+
+Tests that cannot run reliably on Windows must be executed through this Docker
+workflow. In particular, Home Assistant integration/system tests and checks
+that depend on the pinned CI environment must not be validated only with the
+host Python interpreter.
 
 ```powershell
 python scripts/run_tests.py --layer unit
@@ -133,8 +145,10 @@ testing can use stale code.
 
 VentWise entity IDs in the Lab are deterministic English technical IDs (for
 example `sensor.camera_test_recommendation`), independent of the Home Assistant
-UI language. Only the displayed labels are localized, so automations and the
-dashboard remain stable when users change language.
+UI language. Entity labels and supported sensor state labels are resolved from
+Home Assistant's native translation catalog, so the frontend can reflect a
+language change without changing the technical entity IDs. Automations and
+dashboards therefore remain stable when users change language.
 
 The sandbox automatically provisions adjustable test fixtures:
 
@@ -152,6 +166,11 @@ test entry. Change the helpers from the **VentWise Test Lab** sidebar dashboard
 to create repeatable open, close, humidity, CO₂, wind, and multiple-window
 scenarios. The dashboard displays the resulting recommendation, score, reason,
 active flag, and aggregate window state for each room.
+
+The Lab also provisions a **VentWise Units Lab** entry and sidebar dashboard.
+Its adjustable helpers use Kelvin for temperature, ratio for humidity, and
+km/h for wind speed. The corresponding VentWise entities must continue to use
+the converted canonical values (Â°C, %, and m/s).
 
 For immediate use, the first dashboard control is **Ricevi consiglio ora**: it
 waits for pending Home Assistant state updates, refreshes the evaluation, and

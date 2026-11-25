@@ -1,7 +1,10 @@
 # DDP Data, Physical Models, and Objective Function
 
 This document defines the canonical data model, physical approximations, and
-proposed constrained objective for the target Deterministic Decision Pipeline.
+constrained objectives for the Deterministic Decision Pipeline. The active
+implementation exposes separate `BaselineAssessment`, `ImpactEstimate`,
+`ObjectiveContribution`, `ObjectiveAssessment`, and `CandidateAssessment`
+contracts while retaining the v0.18 result projections.
 Thresholds are software configuration proposals, not universal health limits.
 
 ## Scope and notation
@@ -58,6 +61,12 @@ Every normalized value includes source, observed or valid time, original unit,
 quality, and provenance. Conversion is rejected when the dimension or unit is
 ambiguous.
 
+The runtime quality vocabulary is `AVAILABLE`, `ESTIMATED`, `MISSING`,
+`INVALID`, `STALE`, `UNCONFIGURED`, and `AWAITING_SOURCE`. An absent barometric
+pressure uses the documented `1013.25 hPa` fallback only for the psychrometric
+calculation; the observation remains estimated and confidence is reduced. It
+is never presented as measured pressure.
+
 For CO2 supplied in mg/m3, the ideal-gas conversion is:
 
 $$
@@ -106,6 +115,10 @@ Values above 100% indicate saturation, condensation risk, or model limits and
 must not be silently clipped. Exchange decisions use `W`, not a direct RH
 comparison. Cold outdoor air can have higher RH but less water content than
 warm indoor air.
+
+The public core exposes both directions: `humidity_ratio_g_kg(T, RH, p)` and
+`relative_humidity_percent_from_humidity_ratio(T, W, p)`. Both validate finite
+values and physical domains, and require a positive total pressure.
 
 ## Dynamic impact models
 
@@ -233,6 +246,12 @@ $$
 Stability is a separate gate. A critical close guardrail takes precedence over
 ordinary gates. Confidence cannot be converted into a comfort cost that a high
 score can overcome.
+
+Each evaluation records an explicit baseline (`KEEP_CLOSED`, `KEEP_OPEN`, or
+`UNKNOWN`), component contributions, separate penalties, source provenance,
+and a timestamp. Candidate order is fixed as `OPEN`, `VENTILATE`, `CLOSE`,
+`NONE`; ties and minimum-benefit rejection are deterministic. Safety blocks are
+evaluated before CO2 or comfort benefits.
 
 ## Initial parameters and validation
 

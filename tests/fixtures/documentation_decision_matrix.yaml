@@ -1,0 +1,39 @@
+# Documentation-to-test traceability for the standalone decision core.
+# Keep this artifact in English so it can be consumed by tooling and reviewers.
+- requirement_id: DDP-COMFORT-001
+  document: docs/ddp-plan.md
+  scenario: outdoor perceived comfort is materially better than indoor comfort
+  expected_action: open
+  tests:
+    - tests/unit/test_decision_pipeline.py::test_hot_room_with_cooler_outdoors_opens
+- requirement_id: DDP-COMFORT-002
+  document: docs/ddp-plan.md
+  scenario: outdoor and indoor conditions are inside the same comfort band
+  expected_action: none
+  tests:
+    - tests/unit/test_decision_pipeline.py::test_balanced_conditions_return_none
+- requirement_id: DDP-COMFORT-003
+  document: docs/ddp-plan.md
+  scenario: outdoor conditions cross the comfort band and brief exchange is preferred
+  expected_action: ventilate
+  tests:
+    - tests/unit/test_decision_pipeline.py::test_crossing_comfort_band_prefers_brief_ventilation
+- requirement_id: DDP-SAFETY-001
+  document: docs/ddp-plan.md
+  scenario: severe weather takes precedence over comfort
+  expected_action: close
+  tests:
+    - tests/unit/test_decision_pipeline.py::test_severe_weather_forces_close
+- requirement_id: DDP-QUALITY-001
+  document: docs/ddp-plan.md
+  scenario: missing optional humidity is reported without fabricating a value
+  expected_action: open
+  tests:
+    - tests/unit/test_decision_pipeline.py::test_missing_optional_humidity_keeps_thermal_decision_available
+- requirement_id: DDP-DELIVERY-001
+  document: docs/project-rules.md
+  scenario: quiet hours suppress notification delivery but preserve the core action
+  expected_action: open
+  tests:
+    - tests/unit/test_delivery_policy.py::test_quiet_hours_suppress_only_delivery
+    - tests/unit/test_standalone_evaluator.py::test_ha_delivery_projection_changes_only_delivered_action

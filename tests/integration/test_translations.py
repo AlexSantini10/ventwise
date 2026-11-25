@@ -10,6 +10,7 @@ import pytest
 
 
 TRANSLATIONS_DIR = Path(__file__).parents[2] / "custom_components" / "ventwise" / "translations"
+NATIVE_STRINGS_PATH = TRANSLATIONS_DIR.parent / "strings.json"
 
 
 def _load_translation(language: str) -> dict[str, Any]:
@@ -41,12 +42,24 @@ def _leaf_paths(value: Any, prefix: str = "") -> set[str]:
     }
 
 
+def _leaf_values(value: Any, prefix: str = "") -> dict[str, str]:
+    """Return string leaves keyed by their nested translation path."""
+
+    if isinstance(value, str):
+        return {prefix: value}
+    if not isinstance(value, dict):
+        return {}
+    return {
+        path: child
+        for key, nested in value.items()
+        for path, child in _leaf_values(nested, f"{prefix}.{key}" if prefix else key).items()
+    }
+
+
 REVIEWED_LANGUAGES = ("it", "es", "ru", "zh-Hans", "fr", "de")
 ROOM_FORM_STEPS = (
     "add_room",
     "edit_room_form",
-    "add_macro_room",
-    "edit_macro_room_form",
 )
 
 
@@ -70,6 +83,29 @@ def test_translation_files_reject_duplicate_keys(language: str) -> None:
         pytest.fail(f"{language}.json is invalid: {error}")
 
 
+def test_native_strings_catalog_covers_entity_translations() -> None:
+    """Ensure Home Assistant can resolve every translated entity key."""
+
+    native = json.loads(NATIVE_STRINGS_PATH.read_text(encoding="utf-8"))
+    english = _load_translation("en")
+    assert _leaf_paths(native["entity"]) == _leaf_paths(english["entity"])
+
+
+@pytest.mark.parametrize("language", REVIEWED_LANGUAGES)
+def test_localized_catalogs_do_not_copy_english_user_facing_values(language: str) -> None:
+    """Catch untranslated UI strings while allowing the integration title."""
+
+    english = _leaf_values(_load_translation("en"))
+    localized = _leaf_values(_load_translation(language))
+    copied = {
+        path
+        for path, value in localized.items()
+        if path != "title" and value == english.get(path)
+    }
+
+    assert not copied, f"{language} copies English UI values: {sorted(copied)}"
+
+
 @pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
 def test_room_forms_localize_the_window_contacts_field(language: str) -> None:
     """Keep the optional contact picker readable in every supported UI locale."""
@@ -80,6 +116,18 @@ def test_room_forms_localize_the_window_contacts_field(language: str) -> None:
             assert (
                 translation[section]["step"][step]["data"]["window_sensor_entity_ids"]
             )
+
+
+@pytest.mark.parametrize("language", ("en", *REVIEWED_LANGUAGES))
+def test_room_forms_localize_optional_co2_sensor(language: str) -> None:
+    """Keep the optional room CO2 selector from falling back to its field ID."""
+
+    translation = _load_translation(language)
+    for section in ("config", "options"):
+        for step in ROOM_FORM_STEPS:
+            form = translation[section]["step"][step]
+            assert form["data"]["co2_entity_id"]
+            assert form["data_description"]["co2_entity_id"]
 
 
 def test_adaptive_comfort_help_explains_the_calculation_and_control_boundary() -> None:

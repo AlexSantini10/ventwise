@@ -18,13 +18,21 @@ custom integration.
 ## Suggested Repository Shape
 
 - `custom_components/ventwise/`
-- `custom_components/ventwise/ventwise_core/`
+- `src/ventwise_core/` as the canonical standalone core
+- `ventwise_core/` at the archive root as the release-vendored runtime package;
+  HACS extracts this alongside the integration files under
+  `custom_components/ventwise/`
 - `tests/`
 - `docs/`
 
 ## Release Principles
 
 - Keep the core reusable and versioned.
+- Build releases from the canonical `src/ventwise_core/` sources and embed the
+  resulting package tree under `ventwise_core/` in the integration package so HA
+  installations do not require a separately installed Python distribution. The
+  integration imports the vendored package relatively; this is required because
+  HACS does not install archive-root files as top-level Python modules.
 - Keep the integration stable before publishing.
 - Add clear install steps for HACS users.
 - Avoid requiring manual YAML edits for standard setup.

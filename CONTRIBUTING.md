@@ -79,3 +79,5 @@ Anything a reviewer should know.
 - Prefer clear, boring changes over broad refactors.
 - Keep release notes and docs aligned with behavior changes.
 - If a change affects Home Assistant behavior, include the relevant tests.
+- When changing user-visible text, update every supported locale in the same
+  change and run `python scripts/check_localization.py --strict`.

@@ -8,23 +8,25 @@ comfort, while keeping the configuration simple from the Home Assistant UI.
 
 ## Final Delivery Model
 
-- Reusable comfort-scoring core in Python.
+- Reusable deterministic decision core in Python.
 - Home Assistant custom integration on top of the core.
 - HACS as the distribution channel.
 - UI-first configuration with no manual YAML required for normal use.
 - No AppDaemon layer.
+- VentWise exposes decisions and informative notifications; users own any
+  automations that act on those decisions.
 
 ## High-Level Layers
 
-### 1. Core Engine
+### 1. Decision Engine
 
 - Pure Python logic.
 - Independent from Home Assistant APIs.
 - Handles:
-  - comfort scoring
-  - indoor vs outdoor comparison
-  - humidity and wind modifiers
-  - anti-spam and cooldown decisions
+  - immutable canonical observations and quality states
+  - baseline-relative temperature and humidity decisions
+  - safety constraints before candidate scoring
+  - deterministic actions, reason codes, and traces
 
 ### 2. Home Assistant Integration
 
@@ -93,9 +95,11 @@ The user should be able to:
 
 ## Current Repo Mapping
 
-- `custom_components/ventwise/ventwise_core/`: reusable scoring logic.
+- `src/ventwise_core/`: canonical pure decision contracts, engine,
+  serialization, and psychrometric calculations, organized by responsibility.
+  The release builder embeds it into the integration package for Home Assistant.
 - `custom_components/ventwise/`: Home Assistant integration code.
-- `tests/`: scoring and behavior tests.
+- `tests/`: decision-engine, integration, and behavior tests.
 - `examples/`: sample configurations and scenarios.
 - `docs/`: design and usage notes.
 
@@ -104,3 +108,22 @@ The user should be able to:
 VentWise is installable now as a HACS custom repository. Inclusion in HACS's
 public catalogue is a separate publication step; see
 [HACS packaging](hacs-packaging.md).
+# Decision and delivery boundary
+
+`src/ventwise_core/` is the only source of VentWise domain decisions. It is
+dependency-free, deterministic, and consumes a canonical `DecisionSnapshot`.
+The Home Assistant integration converts entity states into that snapshot and
+projects the returned core result directly onto entities and diagnostics.
+
+Notification delivery is an adapter concern. Quiet hours, stability,
+cooldown, duplicate suppression, and notifier availability can suppress a
+notification, but they must never change the core action, score, reason code,
+trace, or data-quality result. Safety notifications bypass stability and
+cooldown; quiet-hours bypass is an explicit user option and is disabled by
+default. The pure delivery policy lives in
+`custom_components/ventwise/application/notifications/policy.py` so it can be tested
+without a Home Assistant instance.
+
+VentWise never selects, confirms, or triggers a Home Assistant automation.
+Users can build their own automations from the recommendation sensor states
+and structured attributes exposed by the integration.

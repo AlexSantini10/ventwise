@@ -1,4 +1,12 @@
-# Scoring Model
+# Decision Objective
+
+VentWise no longer uses the former standalone scoring engine. The active
+implementation is the pure `DecisionEngine`, documented in the [DDP
+architecture](ddp-architecture.md) and implemented under
+`src/ventwise_core/` (vendored into the release integration package).
+
+This page retains the user-facing objective and terminology while the DDP
+documentation defines the canonical contracts.
 
 ## Goal
 

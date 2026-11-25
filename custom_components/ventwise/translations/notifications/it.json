@@ -1,0 +1,15 @@
+{
+  "open": "apri le finestre.", "close": "chiudi le finestre.", "none": "nessuna azione necessaria.",
+  "open_reason": "Fuori è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+  "close_reason": "Dentro è più confortevole adesso: {delta:.1f}°C più vicino al comfort.",
+  "forecast_reason": "Previsione a breve termine: fuori sarà presto meno confortevole.",
+  "failed_title": "Consegna notifica VentWise fallita", "failed_targets": "Target falliti",
+  "action_ventilate": "Arieggia brevemente", "on_demand_title": "VentWise · Consiglio richiesto ora",
+  "ventilation_reason": "Arieggia per circa {minutes} minuti, poi richiudi e ricontrolla.",
+  "status_quiet_hours": "Le raccomandazioni sono sospese durante la fascia silenziosa.",
+  "status_cooldown": "La stessa raccomandazione è stata inviata di recente.",
+  "status_stability": "In attesa che la raccomandazione resti stabile.",
+  "status_unavailable": "In attesa dei dati richiesti dai sensori.", "status_disabled": "VentWise è disabilitato.",
+  "diagnostic_unavailable_data_title": "Dati VentWise non disponibili", "diagnostic_unavailable_data_message": "I dati meteo o dei sensori della stanza richiesti non sono disponibili.",
+  "diagnostic_no_enabled_rooms_title": "VentWise richiede una stanza attiva", "diagnostic_no_enabled_rooms_message": "Non sono configurate stanze attive."
+}

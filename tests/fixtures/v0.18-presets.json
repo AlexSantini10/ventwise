@@ -1,0 +1,13 @@
+{
+  "schema_version": "v0.18",
+  "presets": [
+    {"name": "reset_neutral", "expected_check": "neutral_baseline"},
+    {"name": "open_recommendation", "expected_check": "opening_advice"},
+    {"name": "humidity_exchange", "expected_check": "objective.moisture_exchange"},
+    {"name": "co2_influence", "expected_check": "objective.co2"},
+    {"name": "weather_block", "expected_check": "severe_weather"},
+    {"name": "wind_block", "expected_check": "unsafe_wind"},
+    {"name": "urgent_close", "expected_check": "urgent_close"},
+    {"name": "multi_room_split", "expected_check": "independent_room_results"}
+  ]
+}
