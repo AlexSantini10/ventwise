@@ -744,14 +744,14 @@ views:
       - type: entities
         title: Core inputs
         entities:
-          - input_number.ventwise_test_outdoor_temperature
-          - input_number.ventwise_test_outdoor_humidity
-          - input_number.ventwise_test_wind_speed
-          - input_number.ventwise_test_wind_gust
-          - input_select.ventwise_test_weather_condition
-          - input_number.ventwise_test_bedroom_temperature
-          - input_number.ventwise_test_bedroom_humidity
-          - input_number.ventwise_test_bedroom_co2
+          - {entity: input_number.ventwise_test_outdoor_temperature, name: Outdoor temp}
+          - {entity: input_number.ventwise_test_outdoor_humidity, name: Outdoor RH}
+          - {entity: input_number.ventwise_test_wind_speed, name: Wind speed}
+          - {entity: input_number.ventwise_test_wind_gust, name: Wind gust}
+          - {entity: input_select.ventwise_test_weather_condition, name: Weather}
+          - {entity: input_number.ventwise_test_bedroom_temperature, name: Bedroom temp}
+          - {entity: input_number.ventwise_test_bedroom_humidity, name: Bedroom RH}
+          - {entity: input_number.ventwise_test_bedroom_co2, name: Bedroom CO2}
       - type: button
         entity: button.ventwise_core_lab_request_recommendation
         name: Ricevi consiglio core
@@ -948,30 +948,30 @@ views:
       - type: entities
         title: Dati esterni simulati
         entities:
-          - input_number.ventwise_test_outdoor_temperature
-          - input_number.ventwise_test_outdoor_humidity
-          - input_number.ventwise_test_wind_speed
-          - input_number.ventwise_test_wind_gust
-          - input_select.ventwise_test_weather_condition
-          - weather.ventwise_test_weather
+          - {entity: input_number.ventwise_test_outdoor_temperature, name: Outdoor temp}
+          - {entity: input_number.ventwise_test_outdoor_humidity, name: Outdoor RH}
+          - {entity: input_number.ventwise_test_wind_speed, name: Wind speed}
+          - {entity: input_number.ventwise_test_wind_gust, name: Wind gust}
+          - {entity: input_select.ventwise_test_weather_condition, name: Weather}
+          - {entity: weather.ventwise_test_weather, name: Outdoor weather}
       - type: entities
         title: Dati simulati — Camera
         entities:
-          - input_number.ventwise_test_bedroom_temperature
-          - input_number.ventwise_test_bedroom_humidity
-          - input_number.ventwise_test_bedroom_co2
-          - input_boolean.ventwise_test_bedroom_window_left
-          - input_boolean.ventwise_test_bedroom_window_right
-          - binary_sensor.ventwise_test_bedroom_window_left
-          - binary_sensor.ventwise_test_bedroom_window_right
+          - {entity: input_number.ventwise_test_bedroom_temperature, name: Bedroom temp}
+          - {entity: input_number.ventwise_test_bedroom_humidity, name: Bedroom RH}
+          - {entity: input_number.ventwise_test_bedroom_co2, name: Bedroom CO2}
+          - {entity: input_boolean.ventwise_test_bedroom_window_left, name: Left contact}
+          - {entity: input_boolean.ventwise_test_bedroom_window_right, name: Right contact}
+          - {entity: binary_sensor.ventwise_test_bedroom_window_left, name: Left state}
+          - {entity: binary_sensor.ventwise_test_bedroom_window_right, name: Right state}
       - type: entities
         title: Dati simulati — Soggiorno
         entities:
-          - input_number.ventwise_test_living_room_temperature
-          - input_number.ventwise_test_living_room_humidity
-          - input_number.ventwise_test_living_room_co2
-          - input_boolean.ventwise_test_living_room_window
-          - binary_sensor.ventwise_test_living_room_window
+          - {entity: input_number.ventwise_test_living_room_temperature, name: Living temp}
+          - {entity: input_number.ventwise_test_living_room_humidity, name: Living RH}
+          - {entity: input_number.ventwise_test_living_room_co2, name: Living room CO2}
+          - {entity: input_boolean.ventwise_test_living_room_window, name: Window contact}
+          - {entity: binary_sensor.ventwise_test_living_room_window, name: Window state}
       - type: button
         entity: button.ventwise_test_lab_request_recommendation
         name: Ricevi consiglio ora
@@ -984,28 +984,28 @@ views:
       - type: entities
         title: Controlli VentWise
         entities:
-          - switch.ventwise_test_lab_master_enable
-          - switch.ventwise_test_lab_notification_enable
-          - switch.ventwise_test_lab_auto_comfort_temperature
-          - switch.ventwise_test_lab_quiet_hours_enable
-          - time.ventwise_test_lab_quiet_hours_start
-          - time.ventwise_test_lab_quiet_hours_end
+          - {entity: switch.ventwise_test_lab_master_enable, name: Integration enabled}
+          - {entity: switch.ventwise_test_lab_notification_enable, name: Notifications enabled}
+          - {entity: switch.ventwise_test_lab_auto_comfort_temperature, name: Automatic comfort}
+          - {entity: switch.ventwise_test_lab_quiet_hours_enable, name: Quiet hours enabled}
+          - {entity: time.ventwise_test_lab_quiet_hours_start, name: Quiet hours start}
+          - {entity: time.ventwise_test_lab_quiet_hours_end, name: Quiet hours end}
       - type: entities
         title: Risultati VentWise — Camera
         entities:
-          - sensor.camera_test_recommendation
-          - sensor.camera_test_score
-          - sensor.camera_test_reason
-          - sensor.camera_test_window_state
-          - binary_sensor.camera_test_active
+          - {entity: sensor.camera_test_recommendation, name: Recommendation}
+          - {entity: sensor.camera_test_score, name: Score}
+          - {entity: sensor.camera_test_reason, name: Reason}
+          - {entity: sensor.camera_test_window_state, name: Window state}
+          - {entity: binary_sensor.camera_test_active, name: Active}
       - type: entities
         title: Risultati VentWise — Soggiorno
         entities:
-          - sensor.living_room_recommendation
-          - sensor.living_room_score
-          - sensor.living_room_reason
-          - sensor.living_room_window_state
-          - binary_sensor.living_room_active
+          - {entity: sensor.living_room_recommendation, name: Recommendation}
+          - {entity: sensor.living_room_score, name: Score}
+          - {entity: sensor.living_room_reason, name: Reason}
+          - {entity: sensor.living_room_window_state, name: Window state}
+          - {entity: binary_sensor.living_room_active, name: Active}
       - type: markdown
         content: |
           ## Raw engine output

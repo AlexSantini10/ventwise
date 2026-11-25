@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import shutil
@@ -159,7 +160,7 @@ def call_service(devtools: DevTools, domain: str, service: str, data: dict[str, 
         raise RuntimeError(f"Authenticated Home Assistant service call failed: {result}")
 
 
-def run(url: str, profile: Path, selected: list[str]) -> int:
+def run(url: str, profile: Path, selected: list[str], screenshot: Path | None) -> int:
     if not profile.exists():
         raise RuntimeError("Run ha-headless-browser.py bootstrap first")
     port = 9223
@@ -191,6 +192,12 @@ def run(url: str, profile: Path, selected: list[str]) -> int:
             raise RuntimeError("Headless Chrome is not authenticated; run the profile bootstrap")
         devtools.evaluate("location.href = '/ventwise-test-lab/0'")
         time.sleep(5)
+        if screenshot is not None:
+            capture = devtools.call(
+                "Page.captureScreenshot",
+                {"format": "png", "captureBeyondViewport": True, "fromSurface": True},
+            )
+            screenshot.write_bytes(base64.b64decode(capture["result"]["data"]))
         results = []
         for key in selected:
             script_entity, expected_actions = PRESETS[key]
@@ -230,9 +237,10 @@ def main() -> int:
     parser.add_argument("--url", default=DEFAULT_URL)
     parser.add_argument("--profile", type=Path, default=DEFAULT_PROFILE)
     parser.add_argument("--preset", action="append", choices=sorted(PRESETS))
+    parser.add_argument("--screenshot", type=Path)
     args = parser.parse_args()
     selected = args.preset or list(PRESETS)
-    return run(args.url, args.profile, selected)
+    return run(args.url, args.profile, selected, args.screenshot)
 
 
 if __name__ == "__main__":
