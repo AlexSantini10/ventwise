@@ -473,9 +473,10 @@ def build_decision_snapshot(
             if not lower <= normalized <= upper:
                 reason = "out_of_range"
                 normalized = None
-        # Older test doubles and legacy adapters may not expose HA's timestamp;
-        # preserve their established refresh-time semantics while real HA
-        # states retain last_updated above.
+        # Home Assistant state objects expose last_updated. Older adapters and
+        # deterministic test doubles do not; their refresh time is the only
+        # available observation boundary, while canonical Observation callers
+        # still retain strict missing-timestamp handling in the core.
         observed_at = reading.observed_at or snapshot_evaluated_at
         availability = Availability.AVAILABLE if reason is None and normalized is not None else (
             Availability.MISSING if reason == "missing" else Availability.INVALID

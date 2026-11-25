@@ -16,3 +16,7 @@ class ImpactEstimate:
     confidence: float = 0.0
     assumptions: tuple[str, ...] = ()
     evidence: tuple[TraceEntry, ...] = ()
+    # Additive field kept after the original positional contract.
+    moisture_delta_g_m3: float = 0.0
+    # Additive pressure-aware moisture signal for psychrometric exchange.
+    moisture_delta_g_kg: float = 0.0

@@ -130,10 +130,13 @@ class DecisionEngine:
             else (
                 ThermalComfortObjective(self.config.target_temperature_c),
                 MoistureExchangeObjective(),
-                CarbonDioxideObjective(),
+                *((CarbonDioxideObjective(self.config.co2_threshold_ppm),) if self.config.co2_enabled else ()),
             )
         )
-        self.candidate_selector = candidate_selector or HighestNetBenefitSelector()
+        self.candidate_selector = candidate_selector or HighestNetBenefitSelector(
+            minimum_benefit=self.config.meaningful_benefit,
+            winner_margin=self.config.winner_margin,
+        )
 
     def evaluate(self, snapshot: DecisionSnapshot) -> AggregateDecisionResult:
         results = tuple(
@@ -299,14 +302,31 @@ class DecisionEngine:
             trace.append(TraceEntry("modifier.wind_reduces_opening"))
 
         penalties = (TraceEntry("penalty.wind", f"{max(0.0, 1.0 - open_score):.6f}"),) if effective_wind is not None else ()
-        scores = CandidateScores(round(open_score, SCORE_PRECISION_DECIMAL_PLACES), round(ventilate_score, SCORE_PRECISION_DECIMAL_PLACES), round(close_score, SCORE_PRECISION_DECIMAL_PLACES), penalties=penalties)
+        legacy_scores = CandidateScores(
+            round(open_score, SCORE_PRECISION_DECIMAL_PLACES),
+            round(ventilate_score, SCORE_PRECISION_DECIMAL_PLACES),
+            round(close_score, SCORE_PRECISION_DECIMAL_PLACES),
+            penalties=penalties,
+        )
+        candidate_assessments, selection = self._assess_candidates(
+            room, snapshot, trace, baseline, legacy_scores
+        )
+        selected_candidate = (
+            candidate_assessments[selection.selected_index]
+            if selection.selected_index is not None
+            else None
+        )
+        if selection.reason_code == "no_actionable_candidate":
+            action, reason = self._select(legacy_scores)
+        else:
+            action = selected_candidate.candidate.action if selected_candidate is not None else RecommendationAction.NONE
+            reason = selection.reason_code
         co2_trigger = self.config.co2_enabled and co2_value is not None and co2_value >= self.config.co2_threshold_ppm
         if co2_trigger:
-            action, reason = RecommendationAction.VENTILATE, "co2_ventilation"
-        elif max(inside_distance, outside_distance, co2_influence) < self.config.meaningful_benefit:
-            action, reason = RecommendationAction.NONE, "insufficient_benefit"
-        else:
-            action, reason = self._select(scores)
+            action = RecommendationAction.VENTILATE
+            reason = "co2_ventilation"
+        objective_scores = _objective_scores(candidate_assessments, penalties)
+        scores = objective_scores
         trace.extend((TraceEntry("score.open", f"{scores.open:.6f}"), TraceEntry("score.ventilate", f"{scores.ventilate:.6f}"), TraceEntry("score.close", f"{scores.close:.6f}"), TraceEntry("score.none", "0.000000"), TraceEntry(f"selection.{reason}")))
         action, window_reason = self._apply_window_state(room, action, contact)
         if window_reason:
@@ -329,6 +349,28 @@ class DecisionEngine:
         if top < self.config.meaningful_benefit or top - ranked[1][0] < self.config.winner_margin:
             return RecommendationAction.NONE, "insufficient_or_tied_benefit"
         return action, {RecommendationAction.OPEN: "comfort_open", RecommendationAction.VENTILATE: "comfort_ventilate", RecommendationAction.CLOSE: "comfort_close"}[action]
+
+    def _assess_candidates(self, room, snapshot, trace, baseline, scores):
+        context = OptionEvaluationContext(
+            room=room,
+            snapshot=snapshot,
+            config=self.config,
+            baseline=baseline,
+            trace=tuple(trace),
+            candidate_scores=scores,
+        )
+        baseline_assessment = self.baseline_assessor.assess(room)
+        assessments = []
+        for option in self.option_generator.generate(context):
+            eligibility = self.eligibility_policy.check(context, option)
+            impact = self.impact_estimator.estimate(room, snapshot, option)
+            objectives = self.objective_registry.assess(
+                room, snapshot, baseline_assessment, option, impact
+            )
+            assessments.append(
+                CandidateAssessment(option, eligibility, impact, objectives, baseline_assessment)
+            )
+        return tuple(assessments), self.candidate_selector.select(tuple(assessments))
 
     @staticmethod
     def _apply_window_state(room: DecisionRoom, action: RecommendationAction, contact) -> tuple[RecommendationAction, str | None]:
@@ -413,37 +455,63 @@ class DecisionEngine:
             candidate_scores=scores,
             selected_action=core,
         )
-        baseline_assessment = self.baseline_assessor.assess(room)
+        candidate_assessments, selection = self._assess_candidates(
+            room, snapshot, trace, baseline, scores
+        ) if snapshot is not None else ((), None)
+        objective_scores = _objective_scores(candidate_assessments, scores.penalties)
+        context = replace(
+            context,
+            candidate_scores=objective_scores,
+            selected_action=core,
+        )
         evaluations = []
-        candidate_assessments = []
-        for option in self.option_generator.generate(context):
-            eligibility = self.eligibility_policy.check(context, option)
+        for assessment in candidate_assessments:
+            option = assessment.candidate
             effect = self.effect_estimator.estimate(context, option, DEFAULT_VENTILATION_DURATION_MINUTES)
-            impact = self.impact_estimator.estimate(room, snapshot, option) if snapshot is not None else None
-            objective_assessment = (
-                self.objective_registry.assess(room, snapshot, baseline_assessment, option, impact)
-                if snapshot is not None and impact is not None
-                else None
+            option_evaluation = self.option_scorer.evaluate(
+                context, option, assessment.eligibility, effect
             )
-            option_evaluation = self.option_scorer.evaluate(context, option, eligibility, effect)
             evaluations.append(
                 replace(
                     option_evaluation,
-                    baseline_assessment=baseline_assessment,
-                    impact_estimate=impact,
-                    objective_assessment=objective_assessment,
+                    baseline_assessment=assessment.baseline,
+                    impact_estimate=assessment.impact,
+                    objective_assessment=assessment.objectives,
                 )
             )
-            candidate_assessments.append(
-                CandidateAssessment(option, eligibility, impact, objective_assessment, baseline_assessment)
-            )
-        selection = self.candidate_selector.select(tuple(candidate_assessments))
+        if snapshot is None:
+            candidate_assessments = ()
+            objective_scores = scores
         result = DecisionResult(room.room_id, core, delivered, scores, round(confidence, 6), reason, round(max(scores.open, scores.ventilate, scores.close), 6), reason, target, indoor, outdoor, suggested, tuple(trace), quality, suppressed, evaluated_at=evaluated_at, baseline=baseline, component_contributions=tuple(entry for entry in trace if entry.code.startswith(("objective.", "penalty.", "component."))), option_evaluations=tuple(evaluations), urgent=urgent, co2_ppm=co2, co2_influence=round(co2_influence, 6), quality=quality_state, guardrail_state=guardrail_state)
         return replace(
             result,
             candidate_assessments=tuple(candidate_assessments),
             selection_reason_code=selection.reason_code,
         )
+
+
+def _objective_scores(
+    assessments: tuple[CandidateAssessment, ...], penalties: tuple[TraceEntry, ...] = ()
+) -> CandidateScores:
+    """Project objective net benefits into the backwards-compatible score view."""
+
+    values = {
+        RecommendationAction.OPEN: 0.0,
+        RecommendationAction.VENTILATE: 0.0,
+        RecommendationAction.CLOSE: 0.0,
+    }
+    for assessment in assessments:
+        if assessment.allowed and assessment.objectives is not None:
+            values[assessment.candidate.action] = round(
+                max(0.0, assessment.objectives.net_benefit),
+                SCORE_PRECISION_DECIMAL_PLACES,
+            )
+    return CandidateScores(
+        open=values[RecommendationAction.OPEN],
+        ventilate=values[RecommendationAction.VENTILATE],
+        close=values[RecommendationAction.CLOSE],
+        penalties=penalties,
+    )
 
 
 def _determine_baseline(room: DecisionRoom) -> str:

@@ -68,6 +68,34 @@ def test_heuristic_estimator_reports_directional_opening_impact() -> None:
     assert "directional_effect_only" in estimate.assumptions
 
 
+def test_heuristic_estimator_uses_water_content_for_moisture_impact() -> None:
+    snapshot = _snapshot()
+    room = snapshot.rooms[0]
+    room = room.__class__(
+        room_id=room.room_id,
+        name=room.name,
+        temperature_c=_observation(24.0, "Â°C"),
+        humidity_percent=_observation(70.0, "%"),
+        window_open=room.window_open,
+        target_temperature_c=room.target_temperature_c,
+        target_humidity_percent=50.0,
+    )
+    outdoor = snapshot.outdoor.__class__(
+        temperature_c=_observation(5.0, "Â°C"),
+        humidity_percent=_observation(90.0, "%"),
+    )
+    snapshot = snapshot.__class__((room,), outdoor, snapshot.evaluated_at)
+
+    estimate = HeuristicImpactEstimator().estimate(
+        room,
+        snapshot,
+        DecisionOption(RecommendationAction.OPEN),
+    )
+
+    assert estimate.moisture_delta_g_m3 < 0
+    assert estimate.moisture_delta_g_kg < 0
+
+
 def test_engine_attaches_baseline_impact_and_objective_assessments() -> None:
     result = DecisionEngine().evaluate(_snapshot()).room_results[0]
 

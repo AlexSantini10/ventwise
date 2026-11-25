@@ -11,6 +11,7 @@ from ventwise_core import (
     DecisionRoom,
     DecisionSnapshot,
     Observation,
+    ObjectiveContribution,
     RecommendationAction,
     RoomGuardrailState,
     Validity,
@@ -113,6 +114,17 @@ def test_invalid_observation_is_reported():
     ).room_results[0]
     assert result.reason_code == "insufficient_evidence"
     assert "outdoor.temperature" in result.data_quality.discarded
+
+
+def test_missing_timestamp_is_not_treated_as_current():
+    data = snapshot()
+    missing_timestamp = Observation(20.0, "Â°C", None, "weather")
+    result = DecisionEngine().evaluate(
+        DecisionSnapshot(data.rooms, DecisionOutdoor(missing_timestamp, data.outdoor.humidity_percent), NOW)
+    ).room_results[0]
+
+    assert result.core_action is RecommendationAction.NONE
+    assert "outdoor.temperature:missing_timestamp" in result.data_quality.discarded_reasons
 
 
 def test_configured_but_missing_safety_evidence_fails_closed():
@@ -293,6 +305,25 @@ def test_result_contains_one_structured_evaluation_per_decision_option():
         item for item in result.option_evaluations
         if item.option.action is RecommendationAction.OPEN
     ).score == result.candidate_scores.open
+
+
+def test_configured_objective_selector_controls_the_core_action():
+    class PreferVentilation:
+        objective_id = "test_prefer_ventilation"
+
+        def assess(self, room, snapshot, baseline, candidate, impact):
+            return ObjectiveContribution(
+                self.objective_id,
+                benefit=1.0 if candidate.action is RecommendationAction.VENTILATE else 0.0,
+                confidence=1.0,
+            )
+
+    result = DecisionEngine(objectives=(PreferVentilation(),)).evaluate(
+        snapshot(indoor=22.0, outdoor=22.0)
+    ).room_results[0]
+
+    assert result.core_action is RecommendationAction.VENTILATE
+    assert result.selection_reason_code == "highest_net_benefit"
 
 
 def test_pipeline_components_can_be_replaced_without_changing_result_contract():
